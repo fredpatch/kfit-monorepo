@@ -42,9 +42,9 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 
 ### Current execution order
 
-1. Implement AuditService foundation.
-2. Add local tests for audit event creation and metadata hashing.
-3. Implement session/token service only after AuditService validation.
+1. [x] Implement AuditService foundation.
+2. [ ] Locally validate AuditService event creation and metadata hashing tests.
+3. [ ] Implement session/token service only after AuditService validation.
 4. Implement controllers/routes and middleware after service validation.
 5. Add shared auth contracts/types.
 6. Add client session restoration/login flows only after server behavior is tested.

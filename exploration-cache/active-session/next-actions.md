@@ -3,8 +3,8 @@
 > Updated: 2026-08-25
 
 1. Continue on branch `sprint-1/auth-foundation`.
-2. Start the next task boundary: staging-style cookies/CSRF/session validation.
-3. First inspect Docker, Nginx/staging compose, server cookie mode, client API base URL and CORS/proxy requirements before changing code.
-4. Implement only the minimal configuration or test harness needed to validate cookie auth behavior behind the staging-style path.
-5. Provide exact Windows/Git Bash validation commands.
-6. Do not mark Sprint 1 complete until the project owner confirms staging-style validation is green.
+2. Project owner pulls the latest branch.
+3. Project owner validates staging-style cookies/CSRF/session behavior with the exact commands provided in chat.
+4. Diagnose/fix any local validation failures before moving on.
+5. After green local validation, mark this slice complete in GitHub/Notion.
+6. Then close Sprint 1 only if all Sprint 1 acceptance criteria are satisfied.

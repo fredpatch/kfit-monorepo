@@ -20,6 +20,7 @@ Build K'FIT authentication, sessions, OTP and security foundation server-first o
 - JWT/cookie session resolution plus login/logout/refresh route behavior — locally validated.
 - Bootstrap/password hashing policy — locally validated.
 - Client auth foundation/session restore/login flows — locally validated.
+- Staging-style cookies/CSRF/session behavior behind Nginx — locally validated.
 
 JWT/cookie route validation included:
 
@@ -34,7 +35,7 @@ JWT/cookie route validation included:
 
 ## Current implementation task
 
-Locally validate staging-style cookies/CSRF/session behavior before Sprint 1 closure.
+Perform Sprint 1 closure review and decide the next sprint boundary.
 
 ## Bootstrap/password validation
 
@@ -77,24 +78,31 @@ Validated command set:
 
 No schema migration was required.
 
-## Staging-style auth validation implementation state
+## Staging-style auth validation
 
-- Added local Nginx staging auth proxy at `ops/nginx/staging-auth.conf`.
-- Added `auth_proxy` service to `docker-compose.staging.yml`, exposed on `${STAGING_AUTH_PROXY_PORT:-8080}`.
-- Added auth smoke server script using the validated Express auth boundary.
-- Added auth staging preflight script that validates cookie attributes, CSRF rejection/acceptance, refresh, logout and session restore through Nginx.
-- Added `docs/sprint-1-auth-staging-validation.md`.
-- No real production secrets or schema migration were added.
+The project owner confirmed staging-style auth validation is locally green.
+
+Validated command/output included:
+
+- `docker compose -f docker-compose.staging.yml exec auth_proxy getent hosts host.docker.internal`
+- `docker compose -f docker-compose.staging.yml exec auth_proxy wget -S -O- http://host.docker.internal:3001/health`
+- `curl -i http://127.0.0.1:18080/health` returned `Server: nginx/1.27.5` and `{"status":"ok"}`
+- `AUTH_STAGING_PROXY_URL=http://127.0.0.1:18080 npm run preflight:auth-staging`
+
+Preflight confirmed:
+
+- staging proxy health route reachable
+- auth cookies keep `HttpOnly`/`Secure`/`SameSite`/`Path` attributes through Nginx
+- readable CSRF cookie is forwarded as `x-csrf-token`
+- refresh/logout reject missing CSRF and accept valid double-submit CSRF
+- session restore works through the staging-style Nginx path
 
 ## Acceptance criteria for current task
 
-- [x] Client auth foundation was locally validated by the project owner.
-- [x] Inspect Docker/Nginx/staging compose configuration and auth cookie settings before changing code.
-- [x] Define the staging-style validation path for cookies, credentials, CSRF and session restore.
-- [x] Implement only the minimal configuration/test harness changes needed for staging-style auth validation.
-- [x] Provide exact local Windows/Git Bash commands.
-- [ ] Project owner locally validates the staging-style auth preflight.
-- [ ] Do not close Sprint 1 until the project owner confirms local staging-style validation is green.
+- [x] Project owner locally validated the staging-style auth preflight.
+- [ ] Reconcile Sprint 1 checklist, known gaps and Notion/GitHub state before closing the sprint.
+- [ ] Confirm whether password reset/recovery HTTP flow is Sprint 1 closure scope or a later slice.
+- [ ] Do not begin Sprint 2 implementation until Sprint 1 closure review is complete.
 
 ## Constraints
 

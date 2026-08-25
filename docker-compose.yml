@@ -1,0 +1,30 @@
+name: kfit-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kfit-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kfit_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-kfit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kfit_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - kfit_postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kfit} -d ${POSTGRES_DB:-kfit_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - kfit_backend
+
+volumes:
+  kfit_postgres_dev_data:
+
+networks:
+  kfit_backend:
+    driver: bridge

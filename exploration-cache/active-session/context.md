@@ -44,7 +44,7 @@ The project owner locally validated the auth schema/primitives slice:
 - Client auth foundation for session restoration and login flows has been implemented and locally validated; the Vite app launches.
 - JWT/cookie session resolution plus login/logout/refresh route behavior has been implemented and locally validated.
 - Bootstrap/password hashing policy has been implemented and locally validated.
-- Next work: staging-style cookie/CSRF/session validation before Sprint 1 closure.
+- Staging-style cookie/CSRF/session validation harness has been implemented and is awaiting project-owner local validation before Sprint 1 closure.
 
 ## Active constraints
 

@@ -68,6 +68,10 @@ async function dispatchAuthRoute(
   }
 
   switch (route.handler) {
+    case "bootstrapStatus":
+      return controller.bootstrapStatus();
+    case "bootstrap":
+      return controller.bootstrap(context, typeof body === "object" && body !== null ? body as { email?: unknown; password?: unknown } : {});
     case "login":
       return controller.login(context, typeof body === "object" && body !== null ? body as { email?: unknown; password?: unknown } : {});
     case "refresh":

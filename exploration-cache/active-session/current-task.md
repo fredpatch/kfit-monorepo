@@ -1,10 +1,10 @@
 # Current Task
 
-> Sprint: Sprint 0 | Date: 2026-08-25
+> Sprint: Sprint 0 | Date: 2026-08-25 | Status: Complete
 
 ## Task
 
-Close Sprint 0 by synchronizing execution memory, technical gotchas, TASKS.md, session notes, and Notion with the infrastructure that has been locally validated.
+Close Sprint 0 by synchronizing execution memory, technical gotchas, TASKS.md, session notes, blockers, and Notion with the infrastructure that has been locally validated.
 
 ## Acceptance criteria
 
@@ -18,17 +18,18 @@ Close Sprint 0 by synchronizing execution memory, technical gotchas, TASKS.md, s
 - [x] Puppeteer PDF pre-flight validated
 - [x] node-cron/idempotency/advisory-lock job pre-flight validated
 - [x] Encrypted PostgreSQL + private-file backup and isolated restore validated
-- [ ] TASKS.md synchronized
-- [ ] technical/gotchas.md synchronized
-- [ ] active-session next actions and Sprint 0 session log synchronized
-- [ ] Notion Sprint 0 dashboard and backlog reconciled
+- [x] TASKS.md synchronized
+- [x] technical/gotchas.md synchronized
+- [x] active-session next actions, blockers and Sprint 0 session log synchronized
+- [x] Notion Sprint 0 dashboard and backlog reconciled
 
-## Important remaining blockers before functional implementation
+## Remaining gates before later work
 
-- Local path to the reusable implementation-pattern Markdown library must be recorded for the development agent before covered Sprint 1 capabilities are implemented.
-- Sponsor validation of the V1 Core / V1.1 scope remains a business governance blocker.
-- Legal validation remains mandatory before production, not before Sprint 1 engineering.
+- Record the local filesystem path of the reusable implementation-pattern Markdown library before covered Sprint 1 capabilities are implemented.
+- Obtain sponsor validation of the V1 Core / V1.1 scope before scope-dependent business modules proceed.
+- Complete legal validation before production.
+- Configure a true off-server production backup destination before production readiness.
 
-## Next task after closure
+## Next task
 
-Sprint 1 — Authentication, sessions, OTP and security foundation, implemented server-first using the validated Cookie JWT Authentication and OTP patterns.
+Sprint 1 — Authentication, sessions, OTP and security foundation, implemented server-first using the validated Administrative Foundation, Cookie JWT Authentication and OTP patterns.

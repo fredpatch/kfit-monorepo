@@ -66,6 +66,7 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 14. [x] Locally validate shared auth contracts.
 15. [x] Bind the server HTTP foundation to the concrete app/router after shared-contract validation.
 16. [x] Locally validate Express app/router binding.
-17. [ ] Implement real JWT/cookie session resolution plus login/logout/refresh route behavior.
-18. [ ] Add client session restoration/login flows only after server behavior is tested.
-19. [ ] Validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.
+17. [x] Implement real JWT/cookie session resolution plus login/logout/refresh route behavior.
+18. [ ] Locally validate JWT/cookie session resolution plus login/logout/refresh route behavior.
+19. [ ] Add client session restoration/login flows only after server behavior is tested.
+20. [ ] Validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.

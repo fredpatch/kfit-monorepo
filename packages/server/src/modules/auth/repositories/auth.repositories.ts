@@ -9,6 +9,7 @@ import type {
 } from "../services/session.service.js";
 import type { SessionLookupRepository } from "../services/access-token-session.resolver.js";
 import type { AuthUserRecord, AuthUserRepository } from "../services/auth-route.service.js";
+import type { BootstrapRepository } from "../services/bootstrap.service.js";
 import type {
   CreateOtpChallengeRecordInput,
   OtpChallengeLookup,
@@ -213,5 +214,33 @@ export class DrizzleAuthUserRepository implements AuthUserRepository {
       .limit(1);
 
     return user ? mapAuthUser(user) : null;
+  }
+}
+
+
+export class DrizzleBootstrapRepository implements BootstrapRepository {
+  constructor(private readonly database: AuthDb) {}
+
+  async countUsers(): Promise<number> {
+    const rows = await this.database.select({ id: users.id }).from(users).limit(1);
+    return rows.length;
+  }
+
+  async createFirstUser(input: { email: string; passwordHash: string; role: "admin" | "coach" }): Promise<AuthUserRecord> {
+    if (await this.countUsers() > 0) {
+      throw new Error("BOOTSTRAP_ALREADY_COMPLETED");
+    }
+
+    const [user] = await this.database
+      .insert(users)
+      .values({
+        email: input.email,
+        passwordHash: input.passwordHash,
+        role: input.role,
+        status: "active",
+      })
+      .returning();
+
+    return mapAuthUser(requireRow(user, "Bootstrap user insert did not return a row"));
   }
 }

@@ -1,13 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  authApiRoutes,
   authErrorCodes,
   authOtpRejectReasons,
   type CurrentSessionResponse,
   type SensitiveActionOtpVerifyRequest,
 } from "./contracts.js";
 
-test("auth shared contracts expose stable API error and OTP reason enums", () => {
+test("auth shared contracts expose stable API routes, error codes and OTP reason enums", () => {
+  assert.deepEqual(authApiRoutes, {
+    currentSession: "/auth/session",
+    requestSensitiveActionOtp: "/auth/otp/sensitive-action",
+    verifySensitiveActionOtp: "/auth/otp/sensitive-action/verify",
+  });
+
   assert.deepEqual(authErrorCodes, [
     "AUTH_SESSION_REQUIRED",
     "AUTH_CSRF_INVALID",

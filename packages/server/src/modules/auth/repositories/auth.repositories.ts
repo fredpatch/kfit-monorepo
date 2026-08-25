@@ -1,12 +1,14 @@
 import { and, desc, eq, isNull, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { db as appDb } from "../../../db/client.js";
-import { authSessions, otpChallenges } from "../../../db/schema/auth.js";
+import { authSessions, otpChallenges, users } from "../../../db/schema/auth.js";
 import type {
   AuthSessionRecord,
   CreateSessionRecordInput,
   SessionRepository,
 } from "../services/session.service.js";
+import type { SessionLookupRepository } from "../services/access-token-session.resolver.js";
+import type { AuthUserRecord, AuthUserRepository } from "../services/auth-route.service.js";
 import type {
   CreateOtpChallengeRecordInput,
   OtpChallengeLookup,
@@ -37,7 +39,7 @@ function mapOtpChallenge(row: typeof otpChallenges.$inferSelect): OtpChallengeRe
   };
 }
 
-export class DrizzleSessionRepository implements SessionRepository {
+export class DrizzleSessionRepository implements SessionRepository, SessionLookupRepository {
   constructor(private readonly database: AuthDb) {}
 
   async create(input: CreateSessionRecordInput): Promise<AuthSessionRecord> {
@@ -47,6 +49,16 @@ export class DrizzleSessionRepository implements SessionRepository {
       .returning();
 
     return mapSession(requireRow(session, "Session insert did not return a row"));
+  }
+
+  async findById(sessionId: string): Promise<AuthSessionRecord | null> {
+    const [session] = await this.database
+      .select()
+      .from(authSessions)
+      .where(eq(authSessions.id, sessionId))
+      .limit(1);
+
+    return session ? mapSession(session) : null;
   }
 
   async findByRefreshTokenHash(refreshTokenHash: string): Promise<AuthSessionRecord | null> {
@@ -78,6 +90,16 @@ export class DrizzleSessionRepository implements SessionRepository {
       .returning();
 
     return mapSession(requireRow(session, "Session rotation did not return a row"));
+  }
+
+  async revokeSession(input: { sessionId: string; revokedAt: Date }): Promise<AuthSessionRecord | null> {
+    const [session] = await this.database
+      .update(authSessions)
+      .set({ revokedAt: input.revokedAt })
+      .where(eq(authSessions.id, input.sessionId))
+      .returning();
+
+    return session ? mapSession(session) : null;
   }
 
   async markTokenFamilyCompromised(input: {
@@ -156,5 +178,40 @@ export class DrizzleOtpChallengeRepository implements OtpChallengeRepository {
       .returning();
 
     return mapOtpChallenge(requireRow(challenge, "OTP consume update did not return a row"));
+  }
+}
+
+
+function mapAuthUser(row: typeof users.$inferSelect): AuthUserRecord {
+  return {
+    id: row.id,
+    email: row.email,
+    passwordHash: row.passwordHash,
+    status: row.status as AuthUserRecord["status"],
+    role: row.role as AuthUserRecord["role"],
+  };
+}
+
+export class DrizzleAuthUserRepository implements AuthUserRepository {
+  constructor(private readonly database: AuthDb) {}
+
+  async findByEmail(email: string): Promise<AuthUserRecord | null> {
+    const [user] = await this.database
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    return user ? mapAuthUser(user) : null;
+  }
+
+  async findById(userId: string): Promise<AuthUserRecord | null> {
+    const [user] = await this.database
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    return user ? mapAuthUser(user) : null;
   }
 }

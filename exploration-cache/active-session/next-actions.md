@@ -3,9 +3,9 @@
 > Updated: 2026-08-25
 
 1. Continue on branch `sprint-1/auth-foundation`.
-2. Project owner pulls the latest auth HTTP foundation commits.
-3. Project owner runs exact local validation commands on Windows/Git Bash.
-4. Diagnose/fix any local validation failures before moving on.
-5. After server HTTP auth foundation validation, add shared auth contracts.
-6. Keep implementation order: Service → Controller → Route/Middleware → shared contracts → client.
+2. Synchronize Sprint 1 Notion page/backlog status.
+3. Add shared auth contracts after Notion tracking is corrected.
+4. Ask the project owner to run exact local validation commands on Windows/Git Bash.
+5. Diagnose/fix any local validation failures before moving on.
+6. After shared auth contracts validation, bind the server HTTP foundation to the concrete app/router.
 7. Before Sprint 1 closure, validate cookies/CSRF/session behavior behind Nginx/staging-style deployment.

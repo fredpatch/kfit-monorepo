@@ -4,6 +4,13 @@ export type UserRole = (typeof userRoles)[number];
 export const userStatuses = ["active", "locked", "archived"] as const;
 export type UserStatus = (typeof userStatuses)[number];
 
+export const otpPurposes = [
+  "password_recovery",
+  "suspicious_device_login",
+  "sensitive_action",
+] as const;
+export type OtpPurpose = (typeof otpPurposes)[number];
+
 export const serviceAvailabilityStatuses = [
   "open",
   "temporarily_closed",

@@ -56,7 +56,7 @@ test("Drizzle auth repositories persist session, OTP and audit lifecycle data", 
     requestId,
     ipAddress: "192.0.2.10",
     userAgent: "KFIT integration",
-    now: new Date("2026-08-25T08:01:00Z"),
+    now: new Date("2026-08-25T08:00:30Z"),
   });
 
   assert.equal(rotated.status, "rotated");

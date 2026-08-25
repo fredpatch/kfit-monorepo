@@ -55,7 +55,7 @@ export class AuthController {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
 
-    if (typeof body.code !== "string" || !/^\\d{6}$/.test(body.code)) {
+    if (typeof body.code !== "string" || !/^\d{6}$/.test(body.code)) {
       return { status: 400, body: { error: "AUTH_OTP_CODE_INVALID_FORMAT" } };
     }
 

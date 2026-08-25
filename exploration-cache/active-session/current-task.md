@@ -25,15 +25,22 @@ Validated commands/output:
 
 ## Current implementation task
 
-Implement AuditService foundation.
+Validate AuditService foundation locally.
+
+## Implemented for current task
+
+- `packages/server/src/modules/auth/audit.service.ts`
+- `packages/server/src/modules/auth/audit.service.test.ts`
+- `AUTH_AUDIT_HASH_PEPPER` documented in `.env.example`
+- `loadAuthConfig` exposes `auditHashPepper` with fallback to `AUTH_OTP_PEPPER`
 
 ## Acceptance criteria for current task
 
-- [ ] Audit service can write stable auth/security audit events.
-- [ ] Actor, entity, result, request ID and metadata are stored consistently.
-- [ ] IP and user-agent values are hashed before storage.
-- [ ] Service API is reusable by auth/session/OTP services.
-- [ ] Unit/integration tests are added.
+- [x] Audit service can write stable auth/security audit events.
+- [x] Actor, entity, result, request ID and metadata are stored consistently.
+- [x] IP and user-agent values are hashed before storage.
+- [x] Service API is reusable by auth/session/OTP services.
+- [x] Unit tests are added.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints

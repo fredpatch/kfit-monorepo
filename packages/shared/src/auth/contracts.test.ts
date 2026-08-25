@@ -53,6 +53,7 @@ test("auth shared contracts expose stable API routes, cookies, CSRF header, erro
     "AUTH_RECOVERY_CODE_INVALID",
     "AUTH_RECOVERY_GRANT_INVALID",
     "AUTH_RATE_LIMITED",
+    "AUTH_ORIGIN_INVALID",
   ]);
 
   assert.deepEqual(authOtpRejectReasons, [

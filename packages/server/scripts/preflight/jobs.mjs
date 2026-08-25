@@ -1,5 +1,6 @@
 import "dotenv/config";
 import crypto from "node:crypto";
+import cron from "node-cron";
 import pg from "pg";
 
 const { Client } = pg;
@@ -19,6 +20,28 @@ const assert = (condition, message) => {
 
 const clientA = new Client({ connectionString: databaseUrl });
 const clientB = new Client({ connectionString: databaseUrl });
+
+async function verifySchedulerTick() {
+  let ticks = 0;
+  let task;
+
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      task?.stop();
+      reject(new Error("node-cron did not fire within the pre-flight timeout"));
+    }, 3500);
+
+    task = cron.schedule("* * * * * *", () => {
+      ticks += 1;
+      task.stop();
+      clearTimeout(timeout);
+      resolve();
+    });
+  });
+
+  assert(ticks === 1, "Scheduler should fire exactly once in the controlled pre-flight");
+  console.log("node-cron scheduler tick verified");
+}
 
 async function advisoryTryLock(client) {
   const result = await client.query(
@@ -43,6 +66,8 @@ async function cleanup() {
 }
 
 try {
+  await verifySchedulerTick();
+
   await clientA.connect();
   await clientB.connect();
 

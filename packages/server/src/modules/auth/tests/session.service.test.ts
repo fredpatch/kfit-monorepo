@@ -69,6 +69,9 @@ test("SessionService creates sessions with hash-only refresh tokens and expiry c
     async markTokenFamilyCompromised() {
       return 0;
     },
+    async revokeSession() {
+      return null;
+    },
   };
   const audit = makeAuditRecorder();
   const service = new SessionService(repository, audit, {
@@ -120,6 +123,9 @@ test("SessionService rotates a valid refresh token and increments the rotation c
     async markTokenFamilyCompromised() {
       return 0;
     },
+    async revokeSession() {
+      return null;
+    },
   };
   const audit = makeAuditRecorder();
   const service = new SessionService(repository, audit, {
@@ -154,6 +160,9 @@ test("SessionService blocks invalid sessions before rotation", async () => {
     async markTokenFamilyCompromised() {
       return 0;
     },
+    async revokeSession() {
+      return null;
+    },
   };
   const audit = makeAuditRecorder();
   const service = new SessionService(repository, audit, {
@@ -186,6 +195,9 @@ test("SessionService can mark a token family compromised for reuse detection", a
       assert.equal(input.reason, "refresh_reuse_detected");
       return 2;
     },
+    async revokeSession() {
+      return null;
+    },
   };
   const audit = makeAuditRecorder();
   const service = new SessionService(repository, audit, {
@@ -204,4 +216,42 @@ test("SessionService can mark a token family compromised for reuse detection", a
 
   assert.equal(result.affectedSessions, 2);
   assert.equal(audit.events[0]?.eventType, "auth.session.token_family_compromised");
+});
+
+
+test("SessionService revokes a session and records logout audit evidence", async () => {
+  const repository: SessionRepository = {
+    async create() {
+      throw new Error("not used");
+    },
+    async findByRefreshTokenHash() {
+      return null;
+    },
+    async rotateRefreshToken() {
+      throw new Error("not used");
+    },
+    async markTokenFamilyCompromised() {
+      return 0;
+    },
+    async revokeSession(input) {
+      assert.equal(input.sessionId, "00000000-0000-0000-0000-000000000001");
+      return makeSession({ revokedAt: input.revokedAt });
+    },
+  };
+  const audit = makeAuditRecorder();
+  const service = new SessionService(repository, audit, {
+    refreshTokenPepper: pepper,
+    auditHashPepper,
+    refreshTokenTtlMs: 60_000,
+    absoluteSessionTtlMs: 120_000,
+    inactivityTimeoutMs: 30_000,
+  });
+
+  const revoked = await service.revokeSession({
+    sessionId: "00000000-0000-0000-0000-000000000001",
+    now: baseNow,
+  });
+
+  assert.equal(revoked?.revokedAt?.toISOString(), baseNow.toISOString());
+  assert.equal(audit.events[0]?.eventType, "auth.session.revoked");
 });

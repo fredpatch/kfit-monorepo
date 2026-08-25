@@ -38,8 +38,10 @@ test("fresh OTP cannot be future-dated or older than its configured window", () 
 
 test("typed auth configuration rejects missing secrets and invalid lifetime ordering", () => {
   assert.throws(() => loadAuthConfig({}), /AUTH_OTP_PEPPER/);
+  assert.throws(() => loadAuthConfig({ AUTH_OTP_PEPPER: pepper, AUTH_ACCESS_TOKEN_SECRET: "short" }), /AUTH_ACCESS_TOKEN_SECRET/);
   assert.throws(() => loadAuthConfig({ AUTH_OTP_PEPPER: pepper, AUTH_ACCESS_TOKEN_TTL_MS: "100", AUTH_REFRESH_TOKEN_TTL_MS: "50" }), /shorter/);
   const config = loadAuthConfig({ AUTH_OTP_PEPPER: pepper });
   assert.equal(config.otpMaxAttempts, 5);
   assert.equal(config.auditHashPepper, pepper);
+  assert.equal(config.accessTokenSecret, pepper);
 });

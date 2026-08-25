@@ -17,7 +17,8 @@
     "db:generate": "npm run db:generate --workspace @kfit/server",
     "db:migrate": "npm run db:migrate --workspace @kfit/server",
     "preflight:otp": "npm run preflight:otp --workspace @kfit/server",
-    "preflight:smtp": "npm run preflight:smtp --workspace @kfit/server"
+    "preflight:smtp": "npm run preflight:smtp --workspace @kfit/server",
+    "preflight:files": "npm run preflight:files --workspace @kfit/server"
   },
   "engines": {
     "node": ">=20"

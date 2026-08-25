@@ -2,13 +2,12 @@
 
 > Updated: 2026-08-25
 
-1. Fred switches to `sprint-2/catalogue-foundation` and pulls latest changes.
-2. Fred validates S2.2 locally:
-   - `npm run build --workspace @kfit/server`
-   - `node --test packages/server/dist/db/seeds/catalogue.seed.test.js`
-   - `npm run seed:catalogue`
-   - `npm run preflight:catalogue-seed`
-   - `npm run db:check`
-3. If validation fails, diagnose the exact output and apply the smallest correction.
-4. After green validation, mark S2.2 validated/completed and update GitHub, Notion, TASKS and changelog.
-5. Then choose the next Sprint 2 slice: admin catalogue editing or public landing page consumption.
+1. Finish external state sync for validated S2.2:
+   - Notion dashboard
+   - Sprint 2 page
+   - Sprint 2.2 backlog task
+2. Choose the next Sprint 2 slice:
+   - S2.3 admin catalogue editing, if service configuration must be editable before UI consumption.
+   - S2.4 public landing page catalogue consumption, if the priority is showing validated offers to prospects.
+3. If continuing with backend-first flow, inspect the validated catalogue module and define the admin editing boundary before implementation.
+4. Before merging to `main`, decide whether to merge now as a clean S2.2 checkpoint or keep the branch open through the next related catalogue slice.

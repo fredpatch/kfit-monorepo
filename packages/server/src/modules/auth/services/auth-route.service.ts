@@ -84,6 +84,10 @@ function authSuccessBody(user: AuthUserRecord, session: AuthSessionRecord): Auth
   };
 }
 
+function withOptionalNow<T extends object>(input: T, now: Date | undefined): T & { now?: Date } {
+  return now === undefined ? input : { ...input, now };
+}
+
 function authCookies(input: {
   accessToken: string;
   refreshToken: string;
@@ -162,13 +166,12 @@ export class AuthRouteService {
       return { status: "rejected", reason: "account_unavailable" };
     }
 
-    const created = await this.sessions.createSession({
+    const created = await this.sessions.createSession(withOptionalNow({
       userId: user.id,
       requestId: input.requestId ?? null,
       ipAddress: input.ipAddress ?? null,
       userAgent: input.userAgent ?? null,
-      now: input.now,
-    });
+    }, input.now));
 
     await this.audit.record({
       actorType: "user",
@@ -183,14 +186,13 @@ export class AuthRouteService {
       metadata: { role: user.role },
     });
 
-    const accessToken = signAccessToken({
+    const accessToken = signAccessToken(withOptionalNow({
       userId: user.id,
       sessionId: created.session.id,
       role: user.role,
       secret: this.options.accessTokenSecret,
       ttlMs: this.options.accessTokenTtlMs,
-      now: input.now,
-    });
+    }, input.now));
 
     return {
       status: "authenticated",
@@ -207,12 +209,11 @@ export class AuthRouteService {
   async refresh(refreshToken: string | undefined, input: AuthRouteContext = {}): Promise<RefreshResult> {
     if (!refreshToken) return { status: "invalid", reason: "missing" };
 
-    const rotated = await this.sessions.rotateRefreshToken(refreshToken, {
+    const rotated = await this.sessions.rotateRefreshToken(refreshToken, withOptionalNow({
       requestId: input.requestId ?? null,
       ipAddress: input.ipAddress ?? null,
       userAgent: input.userAgent ?? null,
-      now: input.now,
-    });
+    }, input.now));
 
     if (rotated.status !== "rotated") {
       return { status: "invalid", reason: "invalid" };
@@ -223,14 +224,13 @@ export class AuthRouteService {
       return { status: "invalid", reason: "invalid" };
     }
 
-    const accessToken = signAccessToken({
+    const accessToken = signAccessToken(withOptionalNow({
       userId: user.id,
       sessionId: rotated.session.id,
       role: user.role,
       secret: this.options.accessTokenSecret,
       ttlMs: this.options.accessTokenTtlMs,
-      now: input.now,
-    });
+    }, input.now));
 
     return {
       status: "authenticated",
@@ -246,13 +246,12 @@ export class AuthRouteService {
 
   async logout(input: { sessionId?: string | null } & AuthRouteContext = {}): Promise<{ status: "logged_out"; cookies: AuthCookie[] }> {
     if (input.sessionId) {
-      await this.sessions.revokeSession({
+      await this.sessions.revokeSession(withOptionalNow({
         sessionId: input.sessionId,
         requestId: input.requestId ?? null,
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
-        now: input.now,
-      });
+      }, input.now));
     }
 
     return {

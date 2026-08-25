@@ -84,7 +84,7 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 
 ## Sprint 2 — Catalogue, service offers and public availability
 
-Execution rule: implementation continues on `sprint-1/auth-foundation` until a branch transition is explicitly decided. Local command execution is performed by Fred; ChatGPT/Codex updates GitHub/Notion and only marks validation after pasted local output confirms success.
+Execution rule: implementation continues on `sprint-2/catalogue-foundation`. Sprint 1/auth and validated Sprint 2.1 work were fast-forwarded to `main` before this branch was created. Local command execution is performed by Fred; ChatGPT/Codex updates GitHub/Notion and only marks validation after pasted local output confirms success.
 
 ### Current execution order
 

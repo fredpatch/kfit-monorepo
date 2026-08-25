@@ -4,7 +4,7 @@
 
 ## Where we left off
 
-Sprint 1 auth foundation is complete and locally validated. The post-closure deferred auth slice for password reset/recovery HTTP flow is also complete and locally validated, including the real SMTP/Mailpit HTTP/email preflight. Sponsor/Konny scope validation is treated as confirmed for execution, so Sprint 2 is active.
+Sprint 1 auth foundation is complete and locally validated. The post-closure deferred auth slice for password reset/recovery HTTP flow is also complete and locally validated, including the real SMTP/Mailpit HTTP/email preflight. Sponsor/Konny scope validation is treated as confirmed for execution, so Sprint 2 is active on `sprint-2/catalogue-foundation`.
 
 ## Pattern source
 
@@ -59,3 +59,9 @@ Fred confirmed all green for:
 - Only mark validation after Fred provides successful local output.
 - Legal validation is required before production.
 - Keep native PostgreSQL on host 5432 and K'FIT Docker PostgreSQL on host 5433 unless explicitly changed.
+
+## Branch hygiene
+
+- `main` was fast-forwarded to validated head `3cf4138` after Sprint 2.1 validation.
+- `sprint-2/catalogue-foundation` was created from `main` for continuing Sprint 2.
+- No further Sprint 2 work should be committed to `sprint-1/auth-foundation`.

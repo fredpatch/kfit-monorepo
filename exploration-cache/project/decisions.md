@@ -1,3 +1,13 @@
+## 2026-08-25 — Sprint branch transition after validated Sprint 2.1
+
+**Context**: Sprint 2.1 was implemented and validated while still on the Sprint 1 auth branch due to handoff inertia.
+
+**Decision**: Fast-forward `main` to validated head `3cf4138`, then create `sprint-2/catalogue-foundation` from `main` for all remaining Sprint 2 work.
+
+**Rationale**: Each sprint should start from validated mainline state. Sprint 2 is related to Sprint 1 only by dependency, not by branch ownership.
+
+**Impact**: Future Sprint 2 commits should target `sprint-2/catalogue-foundation`; `sprint-1/auth-foundation` remains historical for the auth closure.
+
 ## 2026-08-25 — Sprint 2.1 catalogue public API foundation validated
 
 **Context**: Sprint 2 opened after sponsor validation was treated as confirmed. The first catalogue slice added shared contracts and a public read endpoint over existing Sprint 0 catalogue tables.

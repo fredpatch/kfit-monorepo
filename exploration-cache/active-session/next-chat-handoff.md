@@ -18,7 +18,9 @@ Do **not** restart feasibility, Sprint 0, Sprint 1 planning, auth closure, or Sp
 ## Repository / branch
 
 - Repository: `fredpatch/kfit-monorepo`
-- Current branch: `sprint-1/auth-foundation`
+- Main: fast-forwarded to validated head `3cf4138`
+- Current branch: `sprint-2/catalogue-foundation`
+- Previous auth branch: `sprint-1/auth-foundation` should no longer receive Sprint 2 work
 
 ## Validated Sprint 2.1 slice
 
@@ -54,7 +56,7 @@ Fred confirmed all green for:
 
 ## Next task
 
-Start Sprint 2.2 — seed initial services/variants/components/policies.
+Continue on `sprint-2/catalogue-foundation`, then start Sprint 2.2 — seed initial services/variants/components/policies.
 
 Inspect first:
 
@@ -72,7 +74,7 @@ Keep S2.2 server/data-first. Do not implement landing page UI or admin catalogue
 ## Ready-to-paste continuation prompt
 
 ```text
-Continue K'FIT from Sprint 2.1 catalogue public API foundation closure.
+Continue K'FIT from Sprint 2.1 catalogue public API foundation closure on `sprint-2/catalogue-foundation`.
 
 Do not rerun feasibility or Sprint 0/Sprint 1 planning. Sprint 1 auth foundation, password reset/recovery HTTP flow and Sprint 2.1 catalogue public API foundation are locally validated and closed.
 

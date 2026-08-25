@@ -17,7 +17,8 @@
     "preflight:pdf": "node ./scripts/preflight/pdf.mjs",
     "preflight:jobs": "node ./scripts/preflight/jobs.mjs",
     "preflight:backup": "node ./scripts/preflight/backup-restore.mjs",
-    "preflight:auth-staging": "node ./scripts/preflight/auth-staging.mjs"
+    "preflight:auth-staging": "node ./scripts/preflight/auth-staging.mjs",
+    "preflight:auth-recovery": "node ./scripts/preflight/password-recovery.mjs"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

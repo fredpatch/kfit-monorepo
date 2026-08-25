@@ -79,5 +79,5 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 23. [x] Implement staging-style Nginx auth proxy validation harness.
 24. [x] Locally validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.
 25. [x] Perform Sprint 1 closure review and decide next sprint boundary.
-26. [ ] Later auth slice: password reset/recovery HTTP flow implemented on GitHub; awaiting Fred local validation.
+26. [ ] Later auth slice: server recovery logic locally validated; Mailpit-backed HTTP/email preflight implemented and awaiting Fred validation.
 27. [ ] Start Sprint 2 only after sponsor confirms V1 Core/V1.1 scope.

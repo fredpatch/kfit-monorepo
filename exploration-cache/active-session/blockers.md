@@ -21,4 +21,4 @@ The governance/production items above did not block Sprint 1 auth foundation imp
 
 ## Deferred technical work
 
-- **Password reset/recovery HTTP flow** — implemented on GitHub as a separate server-first slice; local validation by Fred is pending.
+- **Password reset/recovery HTTP flow** — server logic locally validated by Fred; automated Mailpit-backed HTTP/email preflight is awaiting local validation.

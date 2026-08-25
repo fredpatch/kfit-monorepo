@@ -1,16 +1,64 @@
 import type { OtpChallengeService } from "../services/otp-challenge.service.js";
 import { authCookieNames } from "../middleware/auth.cookies.js";
 import type { AuthRouteService } from "../services/auth-route.service.js";
+import type { BootstrapService } from "../services/bootstrap.service.js";
 import { requireAuthenticatedSession } from "../middleware/auth.middleware.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../types/auth.http.types.js";
 
 export type AuthControllerDeps = {
   otpChallengeService: Pick<OtpChallengeService, "issue" | "verify">;
   authRouteService?: Pick<AuthRouteService, "login" | "refresh" | "logout">;
+  bootstrapService?: Pick<BootstrapService, "status" | "create">;
 };
 
 export class AuthController {
   constructor(private readonly deps: AuthControllerDeps) {}
+
+  async bootstrapStatus(): Promise<HttpJsonResponse> {
+    if (!this.deps.bootstrapService) {
+      return { status: 501, body: { error: "AUTH_BOOTSTRAP_SERVICE_NOT_BOUND" } };
+    }
+
+    return { status: 200, body: await this.deps.bootstrapService.status() };
+  }
+
+  async bootstrap(context: AuthHttpRequestContext, body: { email?: unknown; password?: unknown }): Promise<HttpJsonResponse> {
+    if (!this.deps.bootstrapService) {
+      return { status: 501, body: { error: "AUTH_BOOTSTRAP_SERVICE_NOT_BOUND" } };
+    }
+
+    if (typeof body.email !== "string" || typeof body.password !== "string" || body.email.trim() === "" || body.password === "") {
+      return { status: 400, body: { error: "AUTH_BOOTSTRAP_INVALID_FORMAT" } };
+    }
+
+    const result = await this.deps.bootstrapService.create({
+      email: body.email,
+      password: body.password,
+      requestId: context.requestId,
+      ipAddress: context.ipAddress ?? null,
+      userAgent: context.userAgent ?? null,
+    });
+
+    if (result.status === "already_completed") {
+      return { status: 409, body: { error: "BOOTSTRAP_ALREADY_COMPLETED" } };
+    }
+
+    if (result.status === "invalid_password") {
+      return { status: 400, body: { error: "AUTH_PASSWORD_POLICY_FAILED", reason: result.reason } };
+    }
+
+    return {
+      status: 201,
+      body: {
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          role: result.user.role,
+          status: result.user.status,
+        },
+      },
+    };
+  }
 
   async login(context: AuthHttpRequestContext, body: { email?: unknown; password?: unknown }): Promise<HttpJsonResponse> {
     if (!this.deps.authRouteService) {

@@ -34,7 +34,7 @@ JWT/cookie route validation included:
 
 ## Current implementation task
 
-Prepare staging-style cookies/CSRF/session validation before Sprint 1 closure.
+Locally validate staging-style cookies/CSRF/session behavior before Sprint 1 closure.
 
 ## Bootstrap/password validation
 
@@ -77,13 +77,23 @@ Validated command set:
 
 No schema migration was required.
 
+## Staging-style auth validation implementation state
+
+- Added local Nginx staging auth proxy at `ops/nginx/staging-auth.conf`.
+- Added `auth_proxy` service to `docker-compose.staging.yml`, exposed on `${STAGING_AUTH_PROXY_PORT:-8080}`.
+- Added auth smoke server script using the validated Express auth boundary.
+- Added auth staging preflight script that validates cookie attributes, CSRF rejection/acceptance, refresh, logout and session restore through Nginx.
+- Added `docs/sprint-1-auth-staging-validation.md`.
+- No real production secrets or schema migration were added.
+
 ## Acceptance criteria for current task
 
 - [x] Client auth foundation was locally validated by the project owner.
-- [ ] Inspect Docker/Nginx/staging compose configuration and auth cookie settings before changing code.
-- [ ] Define the staging-style validation path for cookies, credentials, CSRF and session restore.
-- [ ] Implement only the minimal configuration/test harness changes needed for staging-style auth validation.
-- [ ] Provide exact local Windows/Git Bash commands.
+- [x] Inspect Docker/Nginx/staging compose configuration and auth cookie settings before changing code.
+- [x] Define the staging-style validation path for cookies, credentials, CSRF and session restore.
+- [x] Implement only the minimal configuration/test harness changes needed for staging-style auth validation.
+- [x] Provide exact local Windows/Git Bash commands.
+- [ ] Project owner locally validates the staging-style auth preflight.
 - [ ] Do not close Sprint 1 until the project owner confirms local staging-style validation is green.
 
 ## Constraints

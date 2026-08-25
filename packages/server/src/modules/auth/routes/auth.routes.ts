@@ -2,6 +2,20 @@ import type { AuthRouteDefinition } from "../types/auth.http.types.js";
 
 export const authRoutes: AuthRouteDefinition[] = [
   {
+    method: "GET",
+    path: "/auth/bootstrap/status",
+    handler: "bootstrapStatus",
+    requiresAuth: false,
+    requiresCsrf: false,
+  },
+  {
+    method: "POST",
+    path: "/auth/bootstrap",
+    handler: "bootstrap",
+    requiresAuth: false,
+    requiresCsrf: false,
+  },
+  {
     method: "POST",
     path: "/auth/login",
     handler: "login",

@@ -80,3 +80,24 @@ The database foundation is accepted only when all of the following pass on a fre
 - `npm run db:migrate` applies successfully to the Docker database.
 - A second `npm run db:migrate` is safe/no-op.
 - PostgreSQL can be stopped and restarted without losing migrated schema.
+
+## Sprint 1 staging-style auth proxy
+
+Sprint 1 includes a local staging-style auth proxy for cookie/CSRF/session validation before full application containers exist.
+
+- Nginx listens on `${STAGING_AUTH_PROXY_PORT:-8080}`.
+- `/auth/*` and `/health` proxy to the local auth smoke server on `${AUTH_STAGING_SMOKE_PORT:-3001}`.
+- Other paths proxy to the local Vite client on `5173`.
+- The proxy uses `host.docker.internal`, which is supported by Docker Desktop on Windows.
+
+Validation flow:
+
+```bash
+npm run build --workspace @kfit/shared
+npm run build --workspace @kfit/server
+npm run dev:auth-staging-smoke --workspace @kfit/server
+docker compose -f docker-compose.staging.yml up -d auth_proxy
+npm run preflight:auth-staging
+```
+
+Run the long-lived smoke server and Vite client in separate terminals when doing manual browser checks.

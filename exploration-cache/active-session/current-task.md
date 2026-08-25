@@ -32,17 +32,28 @@ JWT/cookie route validation included:
 
 ## Current implementation task
 
-Implement bootstrap/password hashing policy before client auth.
+Locally validate bootstrap/password hashing policy.
+
+## Bootstrap/password implementation state
+
+- Added adaptive Node `scrypt` password hashing and verification.
+- Added password strength policy: minimum length, at least one letter, at least one number.
+- Added BootstrapService for `required` status and first-user creation.
+- Added `/auth/bootstrap/status` and `/auth/bootstrap`.
+- Added shared contracts and stable bootstrap/password errors.
+- Added Drizzle bootstrap repository with PostgreSQL advisory transaction lock for first-user serialization.
+- Added focused password/bootstrap/controller/Express tests.
+- No schema migration was required.
 
 ## Acceptance criteria for current task
 
-- [ ] Inspect current user schema, auth route service, Notion Sprint 1 contract and pattern decisions before changing code.
-- [ ] Define minimal password hashing/verifier policy for V1.
-- [ ] Define one-time bootstrap contract without default credentials.
-- [ ] Implement server-first bootstrap/password services, controllers/routes if in scope.
-- [ ] Keep login route using the validated injectable password verifier boundary.
-- [ ] Add focused tests for password digesting/verification and bootstrap once-only behavior.
-- [ ] Do not implement client auth UI/session restore yet.
+- [x] Inspect current user schema, auth route service, Notion Sprint 1 contract and pattern decisions before changing code.
+- [x] Define minimal password hashing/verifier policy for V1.
+- [x] Define one-time bootstrap contract without default credentials.
+- [x] Implement server-first bootstrap/password services, controllers/routes.
+- [x] Keep login route using the validated injectable password verifier boundary.
+- [x] Add focused tests for password digesting/verification and bootstrap once-only behavior.
+- [x] Do not implement client auth UI/session restore yet.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints

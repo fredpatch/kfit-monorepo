@@ -38,9 +38,9 @@ The project owner locally validated the auth schema/primitives slice:
 - OTP challenge service foundation is implemented and locally validated.
 - Drizzle auth repository adapters are implemented and locally validated.
 - Server auth controllers/routes/middleware foundation is implemented and locally validated.
-- Auth module folder structure has been refactored and is awaiting local validation.
+- Auth module folder structure has been refactored and locally validated.
 - No frontend/client auth flows are validated yet.
-- Next work remains server-first/shared-boundary: validate structure refactor, then shared auth contracts.
+- Next work remains server-first/shared-boundary: shared auth contracts.
 
 ## Active constraints
 

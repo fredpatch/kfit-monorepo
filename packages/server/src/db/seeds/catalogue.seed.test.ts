@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { kfitInitialCatalogueSeed } from "./catalogue.seed.js";
+import { kfitInitialCatalogueSeed } from "./catalogue.seed-data.js";
 
 test("initial catalogue seed defines stable public K'FIT services", () => {
   assert.equal(kfitInitialCatalogueSeed.services.length, 3);

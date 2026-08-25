@@ -3,8 +3,9 @@
 > Updated: 2026-08-25
 
 1. Continue on branch `sprint-1/auth-foundation`.
-2. Project owner runs `npm install` because Express dependencies were added.
-3. Project owner locally validates Express app/router binding with the exact commands provided in chat.
-4. Diagnose/fix any local validation failures before moving on.
-5. After app/router binding validation, continue server-first toward login/logout/refresh/session route behavior.
-6. Before Sprint 1 closure, validate cookies/CSRF/session behavior behind Nginx/staging-style deployment.
+2. Inspect auth services, repositories, schema and Express binding before coding.
+3. Define the minimal server route contracts for login/logout/refresh/current-session.
+4. Implement real JWT/cookie session resolution and route behavior server-first.
+5. Ask the project owner to run exact local validation commands on Windows/Git Bash.
+6. Diagnose/fix any local validation failures before moving on.
+7. Do not start client auth UI/session restore until server behavior is locally validated.

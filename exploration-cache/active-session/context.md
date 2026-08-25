@@ -25,7 +25,7 @@ The reusable implementation patterns for K'FIT are recorded as Notion pages, not
 
 ## Current Sprint 2 state
 
-Sprint 2 has started with the catalogue/service offers foundation.
+Sprint 2 is active on `sprint-2/catalogue-foundation`.
 
 Validated in Sprint 2.1:
 
@@ -65,3 +65,10 @@ Fred confirmed all green for:
 - `main` was fast-forwarded to validated head `3cf4138` after Sprint 2.1 validation.
 - `sprint-2/catalogue-foundation` was created from `main` for continuing Sprint 2.
 - No further Sprint 2 work should be committed to `sprint-1/auth-foundation`.
+
+## Current S2.2 implementation pending validation
+
+- Initial deterministic catalogue seed implemented.
+- Seed content covers services, variants, components and policies.
+- `preflight:catalogue-seed` validates idempotency and public API read model through the real Drizzle repository/service.
+- This slice is not locally validated until Fred runs the commands and confirms green output.

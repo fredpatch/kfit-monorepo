@@ -18,7 +18,9 @@
     "preflight:jobs": "node ./scripts/preflight/jobs.mjs",
     "preflight:backup": "node ./scripts/preflight/backup-restore.mjs",
     "preflight:auth-staging": "node ./scripts/preflight/auth-staging.mjs",
-    "preflight:auth-recovery": "node ./scripts/preflight/password-recovery.mjs"
+    "preflight:auth-recovery": "node ./scripts/preflight/password-recovery.mjs",
+    "seed:catalogue": "node ./dist/db/seeds/catalogue.seed.js",
+    "preflight:catalogue-seed": "node ./scripts/preflight/catalogue-seed.mjs"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

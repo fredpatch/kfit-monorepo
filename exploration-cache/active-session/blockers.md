@@ -16,4 +16,4 @@
 
 ## Current technical validation pending
 
-- None for the closed Sprint 2.1 slice.
+- **Sprint 2.2 initial catalogue seed** — implemented on GitHub and awaiting Fred's local validation.

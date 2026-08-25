@@ -1,51 +1,47 @@
 # Current Task
 
-> Slice: Sprint 2.1 — catalogue public API foundation | Date: 2026-08-25 | Status: Completed and locally validated
+> Slice: Sprint 2.2 — initial catalogue seed | Date: 2026-08-25 | Status: Implemented, awaiting local validation
 
 ## Task
 
-Start Sprint 2 with the backend/public catalogue foundation before client UI or admin CMS editing.
+Seed initial K'FIT services, variants, components and policies so the validated public catalogue API can return realistic business content.
 
-## Completed implementation
+## Implemented scope
 
-- Shared catalogue contracts exported from `@kfit/shared`.
-- Stable public catalogue route: `GET /catalogue/services`.
-- Server catalogue module structure aligned with Sprint 1 folder conventions.
-- CatalogueService assembles public services with variants, components and policies.
-- DrizzleCatalogueRepository reads from the existing Sprint 0 catalogue tables.
-- Express catalogue router exposes the public read endpoint without auth.
-- `createServerApp` can mount the catalogue router when a catalogue controller is provided.
-- Unit/route tests added for shared contracts, service assembly and Express route behavior.
-- Express router test fixed by mounting the router through an Express app before creating the HTTP server.
-
-## Locally validated by Fred
-
-- `npm run build --workspace @kfit/shared`
-- `npm run build --workspace @kfit/server`
-- `node --test packages/shared/dist/catalogue/contracts.test.js`
-- `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js`
-- `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js`
-- `npm run db:check`
+- Deterministic, idempotent catalogue seed data.
+- Three public K'FIT service offers:
+  - Coaching nutrition personnalisé
+  - Programme sportif 12 semaines
+  - Bilan individuel
+- Service variants for Standard/Premium and programme follow-up.
+- Package components for WhatsApp follow-up, individual session, training plan and initial assessment.
+- Service policies for follow-up frequency, late cancellation, missed sessions and medical-clearance behavior.
+- Root/server npm scripts:
+  - `seed:catalogue`
+  - `preflight:catalogue-seed`
+- Seed definition test.
+- DB-backed preflight that runs the seed twice and validates the real Drizzle repository + CatalogueService public response.
 
 ## Acceptance criteria
 
-- [x] `npm run build --workspace @kfit/shared` passes.
-- [x] `npm run build --workspace @kfit/server` passes.
-- [x] `node --test packages/shared/dist/catalogue/contracts.test.js` passes.
-- [x] `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js` passes.
-- [x] `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js` passes.
-- [x] `npm run db:check` passes; no migration required for this slice.
-- [x] Public catalogue response includes services, variants, components and policies without exposing admin-only data.
+- [ ] `git switch sprint-2/catalogue-foundation`
+- [ ] `git pull`
+- [ ] `npm run build --workspace @kfit/server`
+- [ ] `node --test packages/server/dist/db/seeds/catalogue.seed.test.js`
+- [ ] `npm run seed:catalogue`
+- [ ] `npm run preflight:catalogue-seed`
+- [ ] `npm run db:check`
+- [ ] Seed is idempotent and does not create duplicate services/variants/components/policies.
+- [ ] Public catalogue output includes realistic K'FIT content and hides admin-only fields.
 
 ## Explicitly out of scope for this slice
 
-- Client landing page UI.
-- Admin catalogue CMS editing.
+- Landing page UI.
+- Admin catalogue CRUD.
 - Capacity computation from active subscriptions.
 - Prospect request form.
-- Waitlist workflow.
-- Catalogue seed content beyond existing DB/table support.
+- Waitlist workflow behavior beyond seeded availability flags.
 
-## Next boundary
+## Next boundary after validation
 
-Next Sprint 2 slice: seed initial services/variants/components/policies so the public API has realistic K'FIT catalogue content to serve.
+After Fred validates S2.2 locally, update GitHub/Notion/changelog, then choose S2.3 admin catalogue editing or S2.4 public landing page consumption.

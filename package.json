@@ -23,7 +23,9 @@
     "preflight:jobs": "npm run preflight:jobs --workspace @kfit/server",
     "preflight:backup": "npm run preflight:backup --workspace @kfit/server",
     "preflight:auth-staging": "npm run preflight:auth-staging --workspace @kfit/server",
-    "preflight:auth-recovery": "npm run preflight:auth-recovery --workspace @kfit/server"
+    "preflight:auth-recovery": "npm run preflight:auth-recovery --workspace @kfit/server",
+    "seed:catalogue": "npm run seed:catalogue --workspace @kfit/server",
+    "preflight:catalogue-seed": "npm run preflight:catalogue-seed --workspace @kfit/server"
   },
   "engines": {
     "node": ">=20"

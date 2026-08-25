@@ -15,6 +15,7 @@ export const authErrorCodes = [
   "AUTH_RECOVERY_CODE_INVALID",
   "AUTH_RECOVERY_GRANT_INVALID",
   "AUTH_RATE_LIMITED",
+  "AUTH_ORIGIN_INVALID",
 ] as const;
 
 export type AuthErrorCode = (typeof authErrorCodes)[number];

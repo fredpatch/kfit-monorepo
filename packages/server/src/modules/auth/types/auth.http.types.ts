@@ -42,4 +42,5 @@ export type AuthRouteDefinition = {
   handler: string;
   requiresAuth: boolean;
   requiresCsrf: boolean;
+  requiresOriginCheck?: boolean;
 };

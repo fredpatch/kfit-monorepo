@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { AuthController } from "../controllers/auth.controller.js";
 import { authCookieNames, generateCsrfToken, parseCookieHeader, verifyDoubleSubmitCsrf } from "../middleware/auth.cookies.js";
-import { requireAuthenticatedSession, requireCsrf, requireFreshOtp } from "../middleware/auth.middleware.js";
+import { requireAuthenticatedSession, requireCsrf, requireFreshOtp, requireSameOrigin } from "../middleware/auth.middleware.js";
 import { authRoutes } from "../routes/auth.routes.js";
 import type { AuthHttpRequestContext } from "../types/auth.http.types.js";
 import type { OtpChallengeRecord, VerifyOtpResult } from "../services/otp-challenge.service.js";
@@ -70,6 +70,15 @@ test("auth middleware enforces session, fresh OTP and double-submit CSRF", () =>
   assert.equal(verifyDoubleSubmitCsrf(csrf, csrf), true);
   assert.equal(requireCsrf({ ...context, cookies: { [authCookieNames.csrfToken]: csrf }, headers: { "x-csrf-token": csrf } }), null);
   assert.equal(requireCsrf(context)?.status, 403);
+
+  assert.equal(requireSameOrigin({
+    ...context,
+    headers: { origin: "https://kfit.local", host: "kfit.local" },
+  }), null);
+  assert.deepEqual(requireSameOrigin({
+    ...context,
+    headers: { origin: "https://attacker.example", host: "kfit.local" },
+  }), { status: 403, body: { error: "AUTH_ORIGIN_INVALID" } });
 });
 
 test("cookie parsing keeps named auth cookies available for adapters", () => {

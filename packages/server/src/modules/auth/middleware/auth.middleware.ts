@@ -28,3 +28,19 @@ export function requireCsrf(context: AuthHttpRequestContext): HttpJsonResponse<{
   if (verifyDoubleSubmitCsrf(tokenFromCookie, tokenFromHeader)) return null;
   return { status: 403, body: { error: "AUTH_CSRF_INVALID" } };
 }
+
+export function requireSameOrigin(context: AuthHttpRequestContext): HttpJsonResponse<{ error: string }> | null {
+  const origin = context.headers.origin;
+  if (!origin) return null;
+
+  const expectedHost = context.headers["x-forwarded-host"] ?? context.headers.host;
+  if (!expectedHost) return { status: 403, body: { error: "AUTH_ORIGIN_INVALID" } };
+
+  try {
+    return new URL(origin).host === expectedHost
+      ? null
+      : { status: 403, body: { error: "AUTH_ORIGIN_INVALID" } };
+  } catch {
+    return { status: 403, body: { error: "AUTH_ORIGIN_INVALID" } };
+  }
+}

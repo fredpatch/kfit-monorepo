@@ -49,6 +49,7 @@ export const authRoutes: AuthRouteDefinition[] = [
     handler: "requestPasswordRecovery",
     requiresAuth: false,
     requiresCsrf: false,
+    requiresOriginCheck: true,
   },
   {
     method: "POST",
@@ -56,6 +57,7 @@ export const authRoutes: AuthRouteDefinition[] = [
     handler: "verifyPasswordRecovery",
     requiresAuth: false,
     requiresCsrf: false,
+    requiresOriginCheck: true,
   },
   {
     method: "POST",
@@ -63,6 +65,7 @@ export const authRoutes: AuthRouteDefinition[] = [
     handler: "resetPassword",
     requiresAuth: false,
     requiresCsrf: false,
+    requiresOriginCheck: true,
   },
   {
     method: "POST",

@@ -3,7 +3,7 @@ import type { Request, Response, Router } from "express";
 import { Router as createRouter } from "express";
 import type { AuthController } from "../controllers/auth.controller.js";
 import { parseCookieHeader } from "../middleware/auth.cookies.js";
-import { requireCsrf } from "../middleware/auth.middleware.js";
+import { requireCsrf, requireSameOrigin } from "../middleware/auth.middleware.js";
 import { authRoutes } from "./auth.routes.js";
 import type {
   AuthenticatedSessionContext,
@@ -62,6 +62,10 @@ async function dispatchAuthRoute(
   context: AuthHttpRequestContext,
   body: unknown,
 ): Promise<HttpJsonResponse> {
+  if (route.requiresOriginCheck) {
+    const originFailure = requireSameOrigin(context);
+    if (originFailure) return originFailure;
+  }
   if (route.requiresCsrf) {
     const csrfFailure = requireCsrf(context);
     if (csrfFailure) return csrfFailure;

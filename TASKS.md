@@ -46,7 +46,8 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 2. [x] Locally validate AuditService event creation and metadata hashing tests.
 3. [x] Implement session/token service.
 4. [x] Locally validate session/token service tests.
-5. [ ] Implement OTP challenge service.
+5. [x] Implement OTP challenge service.
+6. [ ] Locally validate OTP challenge service tests.
 4. Implement controllers/routes and middleware after service validation.
 5. Add shared auth contracts/types.
 6. Add client session restoration/login flows only after server behavior is tested.

@@ -1,73 +1,41 @@
 # Current Task
 
-> Slice: Deferred auth — password reset/recovery | Date: 2026-08-25 | Status: Completed and locally validated
+> Slice: Sprint 2 — catalogue/service offers foundation | Date: 2026-08-25 | Status: Implemented, awaiting local validation
 
 ## Task
 
-Implement and validate the password reset/recovery HTTP flow that was deferred from Sprint 1 closure.
+Start Sprint 2 with the backend/public catalogue foundation before client UI or admin CMS editing.
 
-## Completed implementation
+## Implemented scope
 
-The recovery slice provides:
-
-- Neutral account-enumeration-safe recovery request responses.
-- Real OTP email delivery through the auth mail delivery abstraction.
-- Hash-only OTP verification.
-- Short-lived signed reset grants.
-- One-time reset grant redemption.
-- Password policy enforcement.
-- Atomic password update with session and trusted-device revocation.
-- Delivery and completion audit events.
-- Same-origin guard for browser recovery mutations.
-- Process-local V1 rate limiting for abuse reduction.
-- Automated Mailpit-backed HTTP/email preflight.
-
-## Locally validated by Fred
-
-- Shared/server typecheck and builds.
-- Shared auth contracts.
-- Password recovery service behavior.
-- Auth controller and Express routing.
-- PostgreSQL one-time reset hard commit.
-- Atomic password update with session and trusted-device revocation.
-- Drizzle schema consistency; no migration required.
-- Real SMTP/Mailpit HTTP/email preflight.
-
-## Final Mailpit preflight validation
-
-Fred ran:
-
-```bash
-npm run preflight:auth-recovery
-```
-
-Confirmed green output:
-
-```text
-✓ unknown recovery request returns the neutral accepted response
-✓ recovery request sends a real OTP email through SMTP to Mailpit
-✓ HTTP responses never expose the OTP
-✓ Mailpit message contains the expected French subject and six-digit code
-✓ emailed OTP produces a short-lived reset grant through HTTP
-✓ password reset succeeds once and replay is rejected
-✓ recovery delivery and completion audit events are recorded
-```
+- Shared catalogue contracts exported from `@kfit/shared`.
+- Stable public catalogue route: `GET /catalogue/services`.
+- Server catalogue module structure aligned with Sprint 1 folder conventions.
+- CatalogueService assembles public services with variants, components and policies.
+- DrizzleCatalogueRepository reads from the existing Sprint 0 catalogue tables.
+- Express catalogue router exposes the public read endpoint without auth.
+- `createServerApp` can mount the catalogue router when a catalogue controller is provided.
+- Unit/route tests added for shared contracts, service assembly and Express route behavior.
 
 ## Acceptance criteria
 
-- [x] Shared/server typecheck and builds pass.
-- [x] Shared auth contract tests pass.
-- [x] Password recovery service tests pass.
-- [x] Auth HTTP and Express tests pass.
-- [x] PostgreSQL reset hard-commit integration passes.
-- [x] Drizzle schema check passes; no migration is required.
-- [x] Recovery request is neutral for unknown identities.
-- [x] Reset grant can be redeemed once only.
-- [x] Successful reset invalidates all sessions and trusted devices.
-- [x] Mailpit receives the real recovery OTP email.
-- [x] HTTP responses never expose the OTP.
-- [x] The emailed OTP completes verify/reset and replay rejection through HTTP.
+- [ ] `npm run build --workspace @kfit/shared` passes.
+- [ ] `npm run build --workspace @kfit/server` passes.
+- [ ] `node --test packages/shared/dist/catalogue/contracts.test.js` passes.
+- [ ] `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js` passes.
+- [ ] `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js` passes.
+- [ ] `npm run db:check` passes; no migration should be required for this slice.
+- [ ] Public catalogue response includes services, variants, components and policies without exposing admin-only data.
 
-## Next boundary
+## Explicitly out of scope for this slice
 
-Sprint 2 remains blocked until sponsor/Konny confirms V1 Core / V1.1 scope and consolidated business rules.
+- Client landing page UI.
+- Admin catalogue CMS editing.
+- Capacity computation from active subscriptions.
+- Prospect request form.
+- Waitlist workflow.
+- Catalogue seed content beyond existing DB/table support.
+
+## Next boundary after validation
+
+After Fred validates this slice locally, update GitHub/Notion/changelog, then implement the next Sprint 2 slice: catalogue seed/admin editing or public landing page consumption.

@@ -2,8 +2,14 @@
 
 > Updated: 2026-08-25
 
-1. Keep Sprint 1 auth foundation closed as locally validated.
-2. Keep the post-closure password reset/recovery HTTP slice closed as locally validated.
-3. Get Konny/sponsor validation for the consolidated V1 Core / V1.1 scope and business rules.
-4. If sponsor validation is confirmed, begin Sprint 2 — catalogue/service offer foundation.
-5. If sponsor validation is still pending, do not open scope-dependent business modules; choose the next pre-production auth/security/UI slice explicitly.
+1. Fred pulls the latest `sprint-1/auth-foundation`.
+2. Fred validates the Sprint 2 catalogue foundation locally:
+   - `npm run build --workspace @kfit/shared`
+   - `npm run build --workspace @kfit/server`
+   - `node --test packages/shared/dist/catalogue/contracts.test.js`
+   - `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js`
+   - `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js`
+   - `npm run db:check`
+3. If validation fails, diagnose exact output and apply the smallest correction.
+4. After green validation, mark the catalogue foundation validated/completed and update GitHub, Notion, TASKS and changelog.
+5. Continue Sprint 2 with the next explicit slice.

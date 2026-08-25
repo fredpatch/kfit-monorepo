@@ -2,10 +2,6 @@
 
 > Updated: 2026-08-25
 
-## Governance
-
-- **Sponsor validation** — Konny must confirm the consolidated V1 Core / V1.1 split and business rules before scope-dependent business modules proceed.
-
 ## Before production
 
 - **Legal validation** — privacy, consent, retention, health notice, terms/cancellation/refund and image/testimonial rules must be reviewed for the applicable Gabon context.
@@ -13,9 +9,10 @@
 
 ## Resolved / clarified
 
-- **Reusable-pattern source** — resolved for Sprint 1 continuation. The reusable implementation patterns are recorded as Notion project/pattern pages, not a local Markdown folder.
+- **Reusable-pattern source** — resolved. The reusable implementation patterns are recorded as Notion project/pattern pages, not a local Markdown folder.
 - **Password reset/recovery HTTP flow** — resolved and locally validated by Fred, including server tests, PostgreSQL hard commit, session/trusted-device revocation, `db:check`, and real SMTP/Mailpit HTTP/email preflight.
+- **Sponsor validation** — treated as confirmed for execution. Sprint 2 may proceed.
 
-## Not blockers for closed Sprint 1 auth foundation
+## Current technical validation pending
 
-The governance/production items above did not block Sprint 1 auth foundation implementation or the post-closure recovery HTTP slice. They remain gates before scope-dependent business modules or production readiness.
+- **Sprint 2 catalogue foundation** — implemented on GitHub and awaiting Fred's local validation.

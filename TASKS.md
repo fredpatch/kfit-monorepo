@@ -23,7 +23,7 @@
 ## Sprint 0 closure blockers
 
 - [x] Reusable Implementation Patterns & Blueprints source recorded: Notion project/pattern pages, not a local Markdown folder for this Sprint 1 continuation.
-- [ ] Obtain sponsor validation of the consolidated V1 Core / V1.1 scope and rules with Konny.
+- [x] Sponsor validation of the consolidated V1 Core / V1.1 scope and rules with Konny treated as confirmed for execution.
 
 ## Sprint 1 — Authentication, sessions, OTP and security
 
@@ -80,4 +80,15 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 24. [x] Locally validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.
 25. [x] Perform Sprint 1 closure review and decide next sprint boundary.
 26. [x] Later auth slice: password reset/recovery HTTP flow locally validated end-to-end, including server tests, PostgreSQL hard commit, session/trusted-device revocation, `db:check`, and real SMTP/Mailpit HTTP/email preflight.
-27. [ ] Start Sprint 2 only after sponsor confirms V1 Core/V1.1 scope.
+27. [x] Start Sprint 2 after sponsor validation is treated as confirmed for execution.
+
+## Sprint 2 — Catalogue, service offers and public availability
+
+Execution rule: implementation continues on `sprint-1/auth-foundation` until a branch transition is explicitly decided. Local command execution is performed by Fred; ChatGPT/Codex updates GitHub/Notion and only marks validation after pasted local output confirms success.
+
+### Current execution order
+
+1. [ ] Implement and locally validate catalogue public API foundation: shared contracts, service/repository/controller, Express route and tests.
+2. [ ] Seed initial services/variants/components/policies after API foundation validation.
+3. [ ] Implement admin catalogue editing after seed/public-read behavior is validated.
+4. [ ] Implement public landing page catalogue consumption after backend behavior is validated.

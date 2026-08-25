@@ -1,3 +1,13 @@
+## 2026-08-25 — Sponsor validation treated as confirmed and Sprint 2 opened
+
+**Context**: Sprint 1 auth foundation and the deferred password reset/recovery HTTP slice are locally validated and closed. Fred confirmed that Konny/sponsor validation can be considered done for execution.
+
+**Decision**: Open Sprint 2 — catalogue/service offers foundation.
+
+**Rationale**: M1 catalogue is the first business dependency after auth/security. The backend/public read foundation can be implemented safely before client UI, admin editing, prospects or waitlist behavior.
+
+**Impact**: Sprint 2 starts with shared catalogue contracts and a public read endpoint over existing Sprint 0 catalogue tables. Production gates for legal validation and off-server backup remain active.
+
 ## 2026-08-25 — Password reset/recovery HTTP slice validated and closed
 
 **Context**: Sprint 1 auth foundation was already closed. The deferred password reset/recovery HTTP flow reused validated OTP, password, session, trusted-device and audit foundations.

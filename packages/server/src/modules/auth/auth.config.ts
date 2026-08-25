@@ -1,6 +1,7 @@
 export type AuthConfig = {
   otpPepper: string;
   auditHashPepper: string;
+  refreshTokenPepper: string;
   otpTtlMs: number;
   otpMaxAttempts: number;
   freshOtpWindowMs: number;
@@ -30,6 +31,7 @@ export function loadAuthConfig(env: NodeJS.ProcessEnv): AuthConfig {
   const config: AuthConfig = {
     otpPepper,
     auditHashPepper: env.AUTH_AUDIT_HASH_PEPPER || otpPepper,
+    refreshTokenPepper: env.AUTH_REFRESH_TOKEN_PEPPER || otpPepper,
     otpTtlMs: positiveInteger(env, "AUTH_OTP_TTL_MS", 5 * 60_000),
     otpMaxAttempts: positiveInteger(env, "AUTH_OTP_MAX_ATTEMPTS", 5),
     freshOtpWindowMs: positiveInteger(env, "AUTH_FRESH_OTP_WINDOW_MS", 10 * 60_000),

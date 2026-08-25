@@ -4,7 +4,7 @@
 
 Sprint 2 — catalogue/service offers foundation is active on `sprint-2/catalogue-foundation`.
 
-Do **not** restart feasibility, Sprint 0, Sprint 1 planning, auth closure, or Sprint 2.1. Sprint 1 auth foundation, password reset/recovery HTTP flow and Sprint 2.1 catalogue public API foundation are closed and locally validated.
+Do **not** restart feasibility, Sprint 0, Sprint 1 planning, auth closure, Sprint 2.1, or Sprint 2.2. Sprint 1 auth foundation, password reset/recovery HTTP flow, Sprint 2.1 catalogue public API foundation and Sprint 2.2 catalogue seed foundation are closed and locally validated.
 
 ## Execution rule still active
 
@@ -18,33 +18,34 @@ Do **not** restart feasibility, Sprint 0, Sprint 1 planning, auth closure, or Sp
 ## Repository / branch
 
 - Repository: `fredpatch/kfit-monorepo`
-- Main: fast-forwarded to validated head `3cf4138`
+- Main: fast-forwarded to validated head `3cf4138` before Sprint 2 branch creation
 - Current branch: `sprint-2/catalogue-foundation`
 
-## Current implemented slice
+## Validated Sprint 2 state
 
-Sprint 2.2 — initial catalogue seed is implemented and awaiting local validation.
+Sprint 2.1 — public catalogue API foundation:
 
-Implemented:
+- Shared catalogue contracts.
+- Public route `GET /catalogue/services`.
+- Server catalogue controller/service/repository/router/tests.
+- Express app binding.
 
-- Deterministic seed in `packages/server/src/db/seeds/catalogue.seed.ts`.
+Sprint 2.2 — initial catalogue seed:
+
 - Seeded services:
   - Coaching nutrition personnalisé
   - Programme sportif 12 semaines
   - Bilan individuel
-- Seeded variants, components and policies.
+- Seeded variants, components and policy snapshots.
 - Scripts:
   - `npm run seed:catalogue`
   - `npm run preflight:catalogue-seed`
 - Preflight validates idempotency and public read model through the real Drizzle repository/service.
-- Validation fix `8905d4a`: seed CLI and preflight now load `.env` before importing `db/client`, resolving the reported `DATABASE_URL is required` failure path.
+- Validation fix `8905d4a`: seed CLI and preflight load `.env` before importing `db/client`.
 
-## Validation commands to request from Fred
+Fred confirmed all green for S2.2:
 
 ```bash
-git switch sprint-2/catalogue-foundation
-git pull
-npm run build --workspace @kfit/server
 node --test packages/server/dist/db/seeds/catalogue.seed.test.js
 npm run seed:catalogue
 npm run preflight:catalogue-seed
@@ -55,9 +56,12 @@ npm run db:check
 
 - Legal validation before production.
 - Real off-server backup destination before production.
-- Sprint 2.2 local validation pending.
 
-## Next after green validation
+## Next decision
 
-- Update TASKS, changelog, exploration-cache and Notion.
-- Then choose S2.3 admin catalogue editing or S2.4 public landing page consumption.
+Choose the next Sprint 2 slice:
+
+1. S2.3 admin catalogue editing, if the business needs editable service setup first.
+2. S2.4 public landing page catalogue consumption, if the priority is showing validated offers to prospects first.
+
+Before merging to `main`, decide whether to merge S2.2 as a clean checkpoint now or keep `sprint-2/catalogue-foundation` open through the next related catalogue slice.

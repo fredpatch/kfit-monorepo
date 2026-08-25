@@ -1,4 +1,8 @@
 export const authErrorCodes = [
+  "AUTH_INVALID_CREDENTIALS",
+  "AUTH_ACCOUNT_UNAVAILABLE",
+  "AUTH_LOGIN_INVALID_FORMAT",
+  "AUTH_REFRESH_INVALID",
   "AUTH_SESSION_REQUIRED",
   "AUTH_CSRF_INVALID",
   "AUTH_FRESH_OTP_REQUIRED",
@@ -38,7 +42,12 @@ export type AuthOtpRejectedResponse = {
   reason: AuthOtpRejectReason;
 };
 
-export type CurrentSessionResponse = {
+export type LoginRequest = {
+  email: string;
+  password: string;
+};
+
+export type AuthenticatedSessionResponse = {
   user: {
     id: string;
     role: AuthRole;
@@ -47,6 +56,16 @@ export type CurrentSessionResponse = {
     id: string;
     freshOtp: boolean;
   };
+};
+
+export type CurrentSessionResponse = AuthenticatedSessionResponse;
+
+export type LoginResponse = AuthenticatedSessionResponse;
+
+export type RefreshResponse = AuthenticatedSessionResponse;
+
+export type LogoutResponse = {
+  loggedOut: true;
 };
 
 export type SensitiveActionOtpRequestResponse = {
@@ -66,6 +85,9 @@ export type SensitiveActionOtpVerifyResponse = {
 };
 
 export type AuthApiResponse =
+  | LoginResponse
+  | RefreshResponse
+  | LogoutResponse
   | CurrentSessionResponse
   | SensitiveActionOtpRequestResponse
   | SensitiveActionOtpVerifyResponse

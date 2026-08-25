@@ -49,6 +49,7 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 - [x] Implement and locally validate Express app/router binding.
 - [x] Implement and locally validate JWT/cookie session resolution plus login/logout/refresh route behavior.
 - [x] Implement and locally validate bootstrap/password hashing policy.
+- [x] Implement and locally validate client session restoration/login flows.
 
 ### Current execution order
 
@@ -73,5 +74,5 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 19. [x] Implement bootstrap/password hashing policy before client auth.
 20. [x] Locally validate bootstrap/password hashing policy.
 21. [x] Implement client session restoration/login flows after server behavior was tested.
-22. [ ] Locally validate client session restoration/login flows.
+22. [x] Locally validate client session restoration/login flows.
 23. [ ] Validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.

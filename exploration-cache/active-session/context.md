@@ -42,7 +42,8 @@ The project owner locally validated the auth schema/primitives slice:
 - Shared auth contracts have been implemented in `@kfit/shared` and locally validated.
 - Express app/router binding has been implemented and locally validated.
 - No frontend/client auth flows are validated yet.
-- Next work remains server-first: implement real JWT/cookie session resolution plus login/logout/refresh/session route behavior.
+- JWT/cookie session resolution plus login/logout/refresh route behavior has been implemented and is awaiting local validation.
+- Next work remains server-first: validate this route behavior before client auth work.
 
 ## Active constraints
 

@@ -57,7 +57,9 @@ async function withTestServer<T>(resolveSession: () => AuthenticatedSessionConte
   await once(server, "listening");
 
   const address = server.address() as AddressInfo | null;
-  assert.notEqual(address, null);
+  if (!address) {
+    throw new Error("Test server did not expose a TCP address");
+  }
 
   try {
     return await run(`http://127.0.0.1:${address.port}`);

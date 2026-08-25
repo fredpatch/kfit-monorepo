@@ -5,7 +5,8 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     env_file:
-      - .env.staging
+      - path: .env.staging
+        required: false
     volumes:
       - kfit_postgres_staging_data:/var/lib/postgresql/data
     healthcheck:
@@ -26,8 +27,6 @@ services:
       - "${STAGING_AUTH_PROXY_PORT:-8080}:80"
     volumes:
       - ./ops/nginx/staging-auth.conf:/etc/nginx/conf.d/default.conf:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
       - kfit_edge
 

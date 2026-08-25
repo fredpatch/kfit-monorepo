@@ -51,7 +51,8 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 7. [x] Implement auth Drizzle repository adapters.
 8. [x] Locally validate auth repository adapter integration.
 9. [x] Implement server auth controllers/routes/middleware foundation.
-10. [ ] Locally validate server auth HTTP foundation tests.
+10. [x] Locally validate server auth HTTP foundation tests.
+11. [ ] Add shared auth contracts.
 4. Implement controllers/routes and middleware after service validation.
 5. Add shared auth contracts/types.
 6. Add client session restoration/login flows only after server behavior is tested.

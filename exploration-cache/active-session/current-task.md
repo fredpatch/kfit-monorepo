@@ -1,6 +1,6 @@
 # Current Task
 
-> Slice: Sprint 2.2 — initial catalogue seed | Date: 2026-08-25 | Status: Implemented, awaiting local validation
+> Slice: Sprint 2.2 — initial catalogue seed | Date: 2026-08-25 | Status: Implemented, validation fix applied, awaiting local validation
 
 ## Task
 
@@ -21,6 +21,7 @@ Seed initial K'FIT services, variants, components and policies so the validated 
   - `preflight:catalogue-seed`
 - Seed definition test.
 - DB-backed preflight that runs the seed twice and validates the real Drizzle repository + CatalogueService public response.
+- Validation fix `8905d4a`: seed CLI and preflight load `.env` before importing `db/client`, avoiding `DATABASE_URL is required` when run from npm scripts.
 
 ## Acceptance criteria
 

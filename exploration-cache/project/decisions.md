@@ -1,3 +1,13 @@
+## 2026-08-25 — Sprint 2.1 catalogue public API foundation validated
+
+**Context**: Sprint 2 opened after sponsor validation was treated as confirmed. The first catalogue slice added shared contracts and a public read endpoint over existing Sprint 0 catalogue tables.
+
+**Decision**: Close Sprint 2.1 as locally validated.
+
+**Rationale**: Fred confirmed green shared/server builds, shared catalogue contract test, catalogue service test, catalogue Express route test and `db:check` after the Express router test fix in `c81c056`.
+
+**Impact**: The catalogue foundation can now support seeded service data, admin editing and public landing page consumption in later Sprint 2 slices.
+
 ## 2026-08-25 — Sponsor validation treated as confirmed and Sprint 2 opened
 
 **Context**: Sprint 1 auth foundation and the deferred password reset/recovery HTTP slice are locally validated and closed. Fred confirmed that Konny/sponsor validation can be considered done for execution.

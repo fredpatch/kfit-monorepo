@@ -88,7 +88,7 @@ Execution rule: implementation continues on `sprint-1/auth-foundation` until a b
 
 ### Current execution order
 
-1. [ ] Implement and locally validate catalogue public API foundation: shared contracts, service/repository/controller, Express route and tests.
+1. [x] Implement and locally validate catalogue public API foundation: shared contracts, service/repository/controller, Express route and tests.
 2. [ ] Seed initial services/variants/components/policies after API foundation validation.
 3. [ ] Implement admin catalogue editing after seed/public-read behavior is validated.
 4. [ ] Implement public landing page catalogue consumption after backend behavior is validated.

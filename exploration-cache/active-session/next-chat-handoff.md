@@ -2,9 +2,9 @@
 
 ## Current objective
 
-Sprint 2 — catalogue/service offers foundation has started.
+Sprint 2 — catalogue/service offers foundation is active.
 
-Do **not** restart feasibility, Sprint 0, Sprint 1 planning, or auth closure. Sprint 1 auth foundation and password reset/recovery HTTP flow are closed and locally validated.
+Do **not** restart feasibility, Sprint 0, Sprint 1 planning, auth closure, or Sprint 2.1. Sprint 1 auth foundation, password reset/recovery HTTP flow and Sprint 2.1 catalogue public API foundation are closed and locally validated.
 
 ## Execution rule still active
 
@@ -20,11 +20,11 @@ Do **not** restart feasibility, Sprint 0, Sprint 1 planning, or auth closure. Sp
 - Repository: `fredpatch/kfit-monorepo`
 - Current branch: `sprint-1/auth-foundation`
 
-## Current implemented slice
+## Validated Sprint 2.1 slice
 
-Sprint 2 catalogue foundation is implemented and awaiting local validation.
+Catalogue public API foundation is closed as locally validated.
 
-Implemented:
+Validated:
 
 - Shared catalogue API contracts in `packages/shared/src/catalogue/contracts.ts`.
 - Public route contract: `GET /catalogue/services`.
@@ -35,27 +35,64 @@ Implemented:
   - Express router
   - tests
 - Optional catalogue router binding in `createServerApp`.
-- Existing Sprint 0 catalogue schema is reused; no migration should be needed.
+- Existing Sprint 0 catalogue schema reused; no migration required.
+- Express router test fixed in `c81c056`.
 
-## Validation commands to request from Fred
+Fred confirmed all green for:
 
-```bash
-git pull
-npm run build --workspace @kfit/shared
-npm run build --workspace @kfit/server
-node --test packages/shared/dist/catalogue/contracts.test.js
-node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js
-node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js
-npm run db:check
-```
+- `npm run build --workspace @kfit/shared`
+- `npm run build --workspace @kfit/server`
+- `node --test packages/shared/dist/catalogue/contracts.test.js`
+- `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js`
+- `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js`
+- `npm run db:check`
 
 ## Current blockers
 
 - Legal validation before production.
 - Real off-server backup destination before production.
-- Sprint 2 catalogue foundation local validation pending.
 
-## Next after green validation
+## Next task
 
-- Update TASKS, changelog, exploration-cache and Notion.
-- Then continue Sprint 2 with one explicit next slice: catalogue seed/admin editing or public landing page consumption.
+Start Sprint 2.2 — seed initial services/variants/components/policies.
+
+Inspect first:
+
+1. `packages/server/src/db/schema/catalogue.ts`
+2. `packages/server/src/db/migrations/`
+3. `packages/server/scripts/`
+4. `exploration-cache/project/database-schema.md`
+5. Notion page: K'FIT — Plan Projet Consolidé
+6. Notion page: K'FIT — Étude de Faisabilité Consolidée
+7. Notion page: K'FIT — Décisions Métier Consolidées
+8. Notion Sprint 2 page
+
+Keep S2.2 server/data-first. Do not implement landing page UI or admin catalogue CMS until seed/public-read behavior is validated.
+
+## Ready-to-paste continuation prompt
+
+```text
+Continue K'FIT from Sprint 2.1 catalogue public API foundation closure.
+
+Do not rerun feasibility or Sprint 0/Sprint 1 planning. Sprint 1 auth foundation, password reset/recovery HTTP flow and Sprint 2.1 catalogue public API foundation are locally validated and closed.
+
+First inspect:
+- exploration-cache/active-session/context.md
+- exploration-cache/active-session/current-task.md
+- exploration-cache/active-session/next-actions.md
+- exploration-cache/active-session/blockers.md
+- exploration-cache/active-session/next-chat-handoff.md
+- TASKS.md
+- changelog.md
+- packages/server/src/db/schema/catalogue.ts
+- packages/server/src/db/migrations/
+- packages/server/scripts/
+- Notion page: K'FIT — Tableau de Bord Projet
+- Notion page: K'FIT - Sprint 2 · Catalogue, services, forfaits et disponibilité
+
+Next task:
+Start Sprint 2.2 — seed initial services/variants/components/policies.
+
+Respect workflow:
+inspect → implement/commit → give Fred exact local Windows/Git Bash commands → Fred validates → diagnose/fix → update GitHub/Notion state.
+```

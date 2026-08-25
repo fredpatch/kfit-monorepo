@@ -1,12 +1,12 @@
 # Current Task
 
-> Slice: Sprint 2 — catalogue/service offers foundation | Date: 2026-08-25 | Status: Implemented, awaiting local validation
+> Slice: Sprint 2.1 — catalogue public API foundation | Date: 2026-08-25 | Status: Completed and locally validated
 
 ## Task
 
 Start Sprint 2 with the backend/public catalogue foundation before client UI or admin CMS editing.
 
-## Implemented scope
+## Completed implementation
 
 - Shared catalogue contracts exported from `@kfit/shared`.
 - Stable public catalogue route: `GET /catalogue/services`.
@@ -16,16 +16,26 @@ Start Sprint 2 with the backend/public catalogue foundation before client UI or 
 - Express catalogue router exposes the public read endpoint without auth.
 - `createServerApp` can mount the catalogue router when a catalogue controller is provided.
 - Unit/route tests added for shared contracts, service assembly and Express route behavior.
+- Express router test fixed by mounting the router through an Express app before creating the HTTP server.
+
+## Locally validated by Fred
+
+- `npm run build --workspace @kfit/shared`
+- `npm run build --workspace @kfit/server`
+- `node --test packages/shared/dist/catalogue/contracts.test.js`
+- `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js`
+- `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js`
+- `npm run db:check`
 
 ## Acceptance criteria
 
-- [ ] `npm run build --workspace @kfit/shared` passes.
-- [ ] `npm run build --workspace @kfit/server` passes.
-- [ ] `node --test packages/shared/dist/catalogue/contracts.test.js` passes.
-- [ ] `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js` passes.
-- [ ] `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js` passes.
-- [ ] `npm run db:check` passes; no migration should be required for this slice.
-- [ ] Public catalogue response includes services, variants, components and policies without exposing admin-only data.
+- [x] `npm run build --workspace @kfit/shared` passes.
+- [x] `npm run build --workspace @kfit/server` passes.
+- [x] `node --test packages/shared/dist/catalogue/contracts.test.js` passes.
+- [x] `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js` passes.
+- [x] `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js` passes.
+- [x] `npm run db:check` passes; no migration required for this slice.
+- [x] Public catalogue response includes services, variants, components and policies without exposing admin-only data.
 
 ## Explicitly out of scope for this slice
 
@@ -36,6 +46,6 @@ Start Sprint 2 with the backend/public catalogue foundation before client UI or 
 - Waitlist workflow.
 - Catalogue seed content beyond existing DB/table support.
 
-## Next boundary after validation
+## Next boundary
 
-After Fred validates this slice locally, update GitHub/Notion/changelog, then implement the next Sprint 2 slice: catalogue seed/admin editing or public landing page consumption.
+Next Sprint 2 slice: seed initial services/variants/components/policies so the public API has realistic K'FIT catalogue content to serve.

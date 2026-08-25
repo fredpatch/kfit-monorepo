@@ -2,6 +2,15 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-08-25 — Sprint 2.1 catalogue public API foundation
+
+- Validated the Sprint 2.1 public catalogue API foundation after the Express router test fix in `c81c056`.
+- Confirmed shared/server builds, shared catalogue contracts, catalogue service test, catalogue Express route test and `db:check`.
+- Added stable public route contract `GET /catalogue/services`.
+- Added shared catalogue response contracts for services, variants, components and policies.
+- Added server catalogue module structure with controller, service, Drizzle repository, Express router and tests.
+- Reused existing Sprint 0 catalogue schema; no migration required.
+
 ## 2026-08-25 — Sprint 1 post-closure auth recovery
 
 - Validated the deferred password reset/recovery HTTP flow end-to-end.

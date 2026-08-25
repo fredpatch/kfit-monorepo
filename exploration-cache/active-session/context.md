@@ -4,7 +4,7 @@
 
 ## Where we left off
 
-Sprint 1 auth foundation is complete and locally validated. The post-closure deferred auth slice for password reset/recovery HTTP flow is also complete and locally validated, including the real SMTP/Mailpit HTTP/email preflight. Sponsor/Konny scope validation is now treated as confirmed for execution, so Sprint 2 has started.
+Sprint 1 auth foundation is complete and locally validated. The post-closure deferred auth slice for password reset/recovery HTTP flow is also complete and locally validated, including the real SMTP/Mailpit HTTP/email preflight. Sponsor/Konny scope validation is treated as confirmed for execution, so Sprint 2 is active.
 
 ## Pattern source
 
@@ -21,12 +21,13 @@ The reusable implementation patterns for K'FIT are recorded as Notion pages, not
 - Sprint 0 is closed.
 - Sprint 1 auth foundation is closed and locally validated.
 - Password reset/recovery HTTP flow is closed and locally validated.
+- Sprint 2.1 catalogue public API foundation is closed and locally validated.
 
 ## Current Sprint 2 state
 
 Sprint 2 has started with the catalogue/service offers foundation.
 
-Implemented in the current slice and awaiting local validation:
+Validated in Sprint 2.1:
 
 - Shared catalogue API contracts in `@kfit/shared`.
 - Public catalogue route contract: `GET /catalogue/services`.
@@ -41,6 +42,16 @@ Implemented in the current slice and awaiting local validation:
 - Drizzle catalogue repository using existing Sprint 0 catalogue tables.
 - Express public catalogue router.
 - Optional `createServerApp` catalogue router binding.
+- Express router test fix in `c81c056`.
+
+Fred confirmed all green for:
+
+- `npm run build --workspace @kfit/shared`
+- `npm run build --workspace @kfit/server`
+- `node --test packages/shared/dist/catalogue/contracts.test.js`
+- `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js`
+- `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js`
+- `npm run db:check`
 
 ## Active constraints
 

@@ -1,121 +1,42 @@
 # Current Task
 
-> Sprint: Sprint 1 | Date: 2026-08-25 | Status: In progress
+> Slice: Deferred auth — password reset/recovery | Date: 2026-08-25 | Status: Implemented, awaiting local validation
 
 ## Task
 
-Build K'FIT authentication, sessions, OTP and security foundation server-first on branch `sprint-1/auth-foundation`.
+Validate the server-first password reset/recovery HTTP flow on branch `sprint-1/auth-foundation`.
 
-## Validated Sprint 1 slices
+## Implemented scope
 
-- Auth schema and pure primitives — locally validated.
-- AuditService foundation — locally validated.
-- Session/token service foundation — locally validated.
-- OTP challenge service foundation — locally validated.
-- Drizzle auth repository adapters — locally validated.
-- Server auth controllers/routes/middleware foundation — locally validated.
-- Auth module structure refactor — locally validated.
-- Shared auth contracts — locally validated.
-- Express app/router binding — locally validated.
-- JWT/cookie session resolution plus login/logout/refresh route behavior — locally validated.
-- Bootstrap/password hashing policy — locally validated.
-- Client auth foundation/session restore/login flows — locally validated.
-- Staging-style cookies/CSRF/session behavior behind Nginx — locally validated.
+- Neutral `POST /auth/recovery/request` response for known and unknown identities.
+- Password-recovery OTP issuance through the validated OTP service.
+- Nodemailer delivery adapter with French recovery message.
+- `POST /auth/recovery/verify` returning a short-lived signed reset grant.
+- `POST /auth/recovery/reset` enforcing password policy.
+- One-time transactional grant redemption using the locked OTP challenge version.
+- Atomic password update, all-session revocation and trusted-device revocation.
+- Process-local request/verify/reset rate limiter for V1 (no Redis).
+- Stable shared contracts and controller/Express route bindings.
+- Service, controller and contract tests.
 
-JWT/cookie route validation included:
+## Validation status
 
-- `git pull`
-- `rm -rf packages/server/dist packages/shared/dist`
-- `npm run typecheck`
-- `npm run build --workspace @kfit/shared`
-- `node --test packages/shared/dist/auth/contracts.test.js`
-- `npm run build --workspace @kfit/server`
-- auth foundation/session/auth-route/access-token-session/http/express/repository tests
-- `npm run db:check`
+Implementation and static inspection only. Fred has not yet run the local validation commands, so this slice is not validated or complete.
 
-## Current implementation task
+## Acceptance criteria
 
-Sprint 1 closure review complete. Prepare next task boundary.
-
-## Bootstrap/password validation
-
-The project owner confirmed the bootstrap/password hashing policy is locally validated after the typed `scrypt` wrapper fix.
-
-Validated command set:
-
-- `git pull`
-- `rm -rf packages/server/dist packages/shared/dist`
-- `npm run typecheck`
-- `npm run build --workspace @kfit/shared`
-- `node --test packages/shared/dist/auth/contracts.test.js`
-- `npm run build --workspace @kfit/server`
-- `node --test packages/server/dist/modules/auth/tests/password.service.test.js`
-- `node --test packages/server/dist/modules/auth/tests/bootstrap.service.test.js`
-- `node --test packages/server/dist/modules/auth/tests/auth.http.test.js`
-- `node --test packages/server/dist/modules/auth/tests/auth.express.test.js`
-- `node --test packages/server/dist/modules/auth/tests/auth-route.service.test.js`
-- `node --test packages/server/dist/modules/auth/tests/auth.repositories.integration.js`
-- `npm run db:check`
-
-No schema migration was required.
-
-## Client auth foundation validation
-
-The project owner confirmed the client auth foundation is locally validated and the Vite app launches.
-
-Validated command set:
-
-- `git pull`
-- `npm install`
-- `rm -rf packages/client/dist packages/shared/dist packages/server/dist`
-- `npm run build --workspace @kfit/shared`
-- `npm run typecheck`
-- `node --test packages/shared/dist/auth/contracts.test.js`
-- `npm run build --workspace @kfit/client`
-- `npm run build --workspace @kfit/server`
-- `npm run db:check`
-- `npm run dev --workspace @kfit/client`
-
-No schema migration was required.
-
-## Staging-style auth validation
-
-The project owner confirmed staging-style auth validation is locally green.
-
-Validated command/output included:
-
-- `docker compose -f docker-compose.staging.yml exec auth_proxy getent hosts host.docker.internal`
-- `docker compose -f docker-compose.staging.yml exec auth_proxy wget -S -O- http://host.docker.internal:3001/health`
-- `curl -i http://127.0.0.1:18080/health` returned `Server: nginx/1.27.5` and `{"status":"ok"}`
-- `AUTH_STAGING_PROXY_URL=http://127.0.0.1:18080 npm run preflight:auth-staging`
-
-Preflight confirmed:
-
-- staging proxy health route reachable
-- auth cookies keep `HttpOnly`/`Secure`/`SameSite`/`Path` attributes through Nginx
-- readable CSRF cookie is forwarded as `x-csrf-token`
-- refresh/logout reject missing CSRF and accept valid double-submit CSRF
-- session restore works through the staging-style Nginx path
-
-## Sprint 1 closure decision
-
-Sprint 1 auth foundation is complete and locally validated.
-
-Password reset/recovery HTTP flow is intentionally deferred to a later auth slice. The validated OTP/password/session/audit foundations are ready to support it, but the full recovery flow requires email delivery UX, abuse limits, session invalidation rules, audit lifecycle and client screens. It is not a Sprint 1 closure blocker.
-
-## Acceptance criteria for current task
-
-- [x] Project owner locally validated the staging-style auth preflight.
-- [x] Reconcile Sprint 1 checklist, known gaps and Notion/GitHub state before closing the sprint.
-- [x] Confirm password reset/recovery HTTP flow is deferred to a later auth slice.
-- [x] Do not begin Sprint 2 implementation until Sprint 1 closure review is complete.
-
-## Next task boundary
-
-Before Sprint 2 implementation, resolve the sponsor validation blocker for V1 Core/V1.1 scope with Konny. If sponsor validation is available, Sprint 2 starts with catalogue/service offer foundation. If not, the next safe technical slice is the deferred password reset/recovery flow.
+- [ ] Shared/server typecheck and builds pass.
+- [ ] Shared auth contract tests pass.
+- [ ] Password recovery service tests pass.
+- [ ] Auth HTTP and Express tests pass.
+- [ ] Drizzle schema check passes; no migration is required.
+- [ ] Recovery request is neutral for unknown identities.
+- [ ] Valid Mailpit delivery contains the OTP and no OTP appears in HTTP responses.
+- [ ] A reset grant can be redeemed once only.
+- [ ] Successful reset invalidates all sessions and trusted devices.
 
 ## Constraints
 
-- Do not run npm, Docker, PostgreSQL, migrations, pre-flight scripts or tests from ChatGPT/Codex runtime.
-- Provide exact Windows/Git Bash commands when execution is needed.
-- Do not implement unrelated features.
+- Do not start the client recovery screens before server behavior is locally validated.
+- Do not start Sprint 2 while sponsor/Konny V1 Core/V1.1 validation remains pending.
+- Do not mark this task validated until Fred returns green local output.

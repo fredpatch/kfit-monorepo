@@ -11,6 +11,12 @@ export type AuthConfig = {
   inactivityTimeoutMs: number;
   absoluteSessionTtlMs: number;
   trustedDeviceTtlMs: number;
+  recoveryTokenSecret: string;
+  recoveryGrantTtlMs: number;
+  recoveryRateLimitWindowMs: number;
+  recoveryRequestMax: number;
+  recoveryVerifyMax: number;
+  recoveryResetMax: number;
 };
 
 function positiveInteger(env: NodeJS.ProcessEnv, key: string, fallback: number) {
@@ -42,10 +48,19 @@ export function loadAuthConfig(env: NodeJS.ProcessEnv): AuthConfig {
     inactivityTimeoutMs: positiveInteger(env, "AUTH_INACTIVITY_TIMEOUT_MS", 30 * 60_000),
     absoluteSessionTtlMs: positiveInteger(env, "AUTH_ABSOLUTE_SESSION_TTL_MS", 12 * 60 * 60_000),
     trustedDeviceTtlMs: positiveInteger(env, "AUTH_TRUSTED_DEVICE_TTL_MS", 30 * 24 * 60 * 60_000),
+    recoveryTokenSecret: env.AUTH_RECOVERY_TOKEN_SECRET || otpPepper,
+    recoveryGrantTtlMs: positiveInteger(env, "AUTH_RECOVERY_GRANT_TTL_MS", 10 * 60_000),
+    recoveryRateLimitWindowMs: positiveInteger(env, "AUTH_RECOVERY_RATE_LIMIT_WINDOW_MS", 15 * 60_000),
+    recoveryRequestMax: positiveInteger(env, "AUTH_RECOVERY_REQUEST_MAX", 5),
+    recoveryVerifyMax: positiveInteger(env, "AUTH_RECOVERY_VERIFY_MAX", 10),
+    recoveryResetMax: positiveInteger(env, "AUTH_RECOVERY_RESET_MAX", 5),
   };
 
   if (config.accessTokenSecret.length < 32) {
     throw new Error("AUTH_ACCESS_TOKEN_SECRET must contain at least 32 characters");
+  }
+  if (config.recoveryTokenSecret.length < 32) {
+    throw new Error("AUTH_RECOVERY_TOKEN_SECRET must contain at least 32 characters");
   }
   if (config.accessTokenTtlMs >= config.refreshTokenTtlMs) {
     throw new Error("AUTH_ACCESS_TOKEN_TTL_MS must be shorter than AUTH_REFRESH_TOKEN_TTL_MS");

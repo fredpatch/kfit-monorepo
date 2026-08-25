@@ -10,6 +10,8 @@ import {
   type BootstrapRequest,
   type LoginRequest,
   type SensitiveActionOtpVerifyRequest,
+  type PasswordRecoveryRequest,
+  type PasswordRecoveryResetRequest,
 } from "./contracts.js";
 
 test("auth shared contracts expose stable API routes, cookies, CSRF header, error codes and OTP reason enums", () => {
@@ -29,6 +31,9 @@ test("auth shared contracts expose stable API routes, cookies, CSRF header, erro
     currentSession: "/auth/session",
     requestSensitiveActionOtp: "/auth/otp/sensitive-action",
     verifySensitiveActionOtp: "/auth/otp/sensitive-action/verify",
+    requestPasswordRecovery: "/auth/recovery/request",
+    verifyPasswordRecovery: "/auth/recovery/verify",
+    resetPassword: "/auth/recovery/reset",
   });
 
   assert.deepEqual(authErrorCodes, [
@@ -44,6 +49,10 @@ test("auth shared contracts expose stable API routes, cookies, CSRF header, erro
     "AUTH_FRESH_OTP_REQUIRED",
     "AUTH_OTP_CODE_INVALID_FORMAT",
     "AUTH_OTP_REJECTED",
+    "AUTH_RECOVERY_INVALID_FORMAT",
+    "AUTH_RECOVERY_CODE_INVALID",
+    "AUTH_RECOVERY_GRANT_INVALID",
+    "AUTH_RATE_LIMITED",
   ]);
 
   assert.deepEqual(authOtpRejectReasons, [
@@ -60,6 +69,8 @@ test("auth shared contracts type-check core request and response shapes", () => 
   const bootstrap: BootstrapRequest = { email: "coach@kfit.local", password: "CorrectHorse9" };
   const login: LoginRequest = { email: "coach@kfit.local", password: "secret" };
   const request: SensitiveActionOtpVerifyRequest = { code: "123456" };
+  const recovery: PasswordRecoveryRequest = { email: "coach@kfit.local" };
+  const reset: PasswordRecoveryResetRequest = { resetToken: "signed-token", password: "CorrectHorse10" };
   const response: CurrentSessionResponse = {
     user: { id: "11111111-1111-1111-1111-111111111111", role: "coach" },
     session: { id: "22222222-2222-2222-2222-222222222222", freshOtp: true },
@@ -69,4 +80,6 @@ test("auth shared contracts type-check core request and response shapes", () => 
   assert.equal(login.email, "coach@kfit.local");
   assert.equal(request.code, "123456");
   assert.equal(response.user.role, "coach");
+  assert.equal(recovery.email, "coach@kfit.local");
+  assert.equal(reset.resetToken, "signed-token");
 });

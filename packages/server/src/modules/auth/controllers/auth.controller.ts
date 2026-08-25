@@ -2,6 +2,7 @@ import type { OtpChallengeService } from "../services/otp-challenge.service.js";
 import { authCookieNames } from "../middleware/auth.cookies.js";
 import type { AuthRouteService } from "../services/auth-route.service.js";
 import type { BootstrapService } from "../services/bootstrap.service.js";
+import type { PasswordRecoveryService } from "../services/password-recovery.service.js";
 import { requireAuthenticatedSession } from "../middleware/auth.middleware.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../types/auth.http.types.js";
 
@@ -9,6 +10,7 @@ export type AuthControllerDeps = {
   otpChallengeService: Pick<OtpChallengeService, "issue" | "verify">;
   authRouteService?: Pick<AuthRouteService, "login" | "refresh" | "logout">;
   bootstrapService?: Pick<BootstrapService, "status" | "create">;
+  passwordRecoveryService?: Pick<PasswordRecoveryService, "request" | "verify" | "reset">;
 };
 
 export class AuthController {
@@ -137,6 +139,85 @@ export class AuthController {
         },
       },
     };
+  }
+
+  async requestPasswordRecovery(context: AuthHttpRequestContext, body: { email?: unknown }): Promise<HttpJsonResponse> {
+    if (!this.deps.passwordRecoveryService) {
+      return { status: 501, body: { error: "AUTH_RECOVERY_SERVICE_NOT_BOUND" } };
+    }
+    if (typeof body.email !== "string" || body.email.trim() === "") {
+      return { status: 400, body: { error: "AUTH_RECOVERY_INVALID_FORMAT" } };
+    }
+
+    const result = await this.deps.passwordRecoveryService.request(body.email, {
+      requestId: context.requestId,
+      ipAddress: context.ipAddress ?? null,
+      userAgent: context.userAgent ?? null,
+    });
+    if (result.status === "rate_limited") {
+      return { status: 429, body: { error: "AUTH_RATE_LIMITED" } };
+    }
+    return { status: 202, body: { accepted: true } };
+  }
+
+  async verifyPasswordRecovery(context: AuthHttpRequestContext, body: { email?: unknown; code?: unknown }): Promise<HttpJsonResponse> {
+    if (!this.deps.passwordRecoveryService) {
+      return { status: 501, body: { error: "AUTH_RECOVERY_SERVICE_NOT_BOUND" } };
+    }
+    if (
+      typeof body.email !== "string" ||
+      body.email.trim() === "" ||
+      typeof body.code !== "string" ||
+      !/^\d{6}$/.test(body.code)
+    ) {
+      return { status: 400, body: { error: "AUTH_RECOVERY_INVALID_FORMAT" } };
+    }
+
+    const result = await this.deps.passwordRecoveryService.verify(body.email, body.code, {
+      requestId: context.requestId,
+      ipAddress: context.ipAddress ?? null,
+      userAgent: context.userAgent ?? null,
+    });
+    if (result.status === "rate_limited") {
+      return { status: 429, body: { error: "AUTH_RATE_LIMITED" } };
+    }
+    if (result.status !== "verified") {
+      return { status: 400, body: { error: "AUTH_RECOVERY_CODE_INVALID" } };
+    }
+    return {
+      status: 200,
+      body: { resetToken: result.resetToken, expiresAt: result.expiresAt.toISOString() },
+    };
+  }
+
+  async resetPassword(context: AuthHttpRequestContext, body: { resetToken?: unknown; password?: unknown }): Promise<HttpJsonResponse> {
+    if (!this.deps.passwordRecoveryService) {
+      return { status: 501, body: { error: "AUTH_RECOVERY_SERVICE_NOT_BOUND" } };
+    }
+    if (
+      typeof body.resetToken !== "string" ||
+      body.resetToken === "" ||
+      typeof body.password !== "string" ||
+      body.password === ""
+    ) {
+      return { status: 400, body: { error: "AUTH_RECOVERY_INVALID_FORMAT" } };
+    }
+
+    const result = await this.deps.passwordRecoveryService.reset(body.resetToken, body.password, {
+      requestId: context.requestId,
+      ipAddress: context.ipAddress ?? null,
+      userAgent: context.userAgent ?? null,
+    });
+    if (result.status === "rate_limited") {
+      return { status: 429, body: { error: "AUTH_RATE_LIMITED" } };
+    }
+    if (result.status === "invalid_password") {
+      return { status: 400, body: { error: "AUTH_PASSWORD_POLICY_FAILED", reason: result.reason } };
+    }
+    if (result.status === "invalid_grant") {
+      return { status: 400, body: { error: "AUTH_RECOVERY_GRANT_INVALID" } };
+    }
+    return { status: 200, body: { reset: true } };
   }
 
   async requestSensitiveActionOtp(context: AuthHttpRequestContext): Promise<HttpJsonResponse> {

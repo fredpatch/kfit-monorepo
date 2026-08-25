@@ -45,6 +45,27 @@ export const authRoutes: AuthRouteDefinition[] = [
   },
   {
     method: "POST",
+    path: "/auth/recovery/request",
+    handler: "requestPasswordRecovery",
+    requiresAuth: false,
+    requiresCsrf: false,
+  },
+  {
+    method: "POST",
+    path: "/auth/recovery/verify",
+    handler: "verifyPasswordRecovery",
+    requiresAuth: false,
+    requiresCsrf: false,
+  },
+  {
+    method: "POST",
+    path: "/auth/recovery/reset",
+    handler: "resetPassword",
+    requiresAuth: false,
+    requiresCsrf: false,
+  },
+  {
+    method: "POST",
     path: "/auth/otp/sensitive-action",
     handler: "requestSensitiveActionOtp",
     requiresAuth: true,

@@ -21,4 +21,4 @@ The governance/production items above did not block Sprint 1 auth foundation imp
 
 ## Deferred technical work
 
-- **Password reset/recovery HTTP flow** — intentionally deferred from Sprint 1 closure. The validated OTP/password/session/audit foundations support it, but the full flow should be implemented as its own auth slice.
+- **Password reset/recovery HTTP flow** — implemented on GitHub as a separate server-first slice; local validation by Fred is pending.

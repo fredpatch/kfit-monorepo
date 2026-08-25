@@ -1,10 +1,10 @@
 # Session Context
 
-> Date: 2026-08-25 | Sprint: Sprint 1 auth foundation
+> Date: 2026-08-25 | Slice: Deferred auth — password reset/recovery
 
 ## Where we left off
 
-Sprint 0 technical foundations are complete and locally validated. Sprint 1 has started on branch `sprint-1/auth-foundation`.
+Sprint 1 auth foundation is complete and locally validated. Sponsor/Konny scope validation is still pending, so the deferred password reset/recovery HTTP slice is now implemented on branch `sprint-1/auth-foundation` and awaits Fred's local validation.
 
 ## Pattern source
 
@@ -46,7 +46,8 @@ The project owner locally validated the auth schema/primitives slice:
 - Bootstrap/password hashing policy has been implemented and locally validated.
 - Staging-style cookie/CSRF/session validation behind Nginx has been implemented and locally validated.
 - Sprint 1 closure review is complete: auth foundation is closed, and password reset/recovery is deferred to a later auth slice.
-- Next boundary depends on sponsor validation: Sprint 2 catalogue/service offers if sponsor scope is confirmed; otherwise deferred password reset/recovery is the safe next technical slice.
+- Deferred password reset/recovery server slice is implemented but not yet locally validated.
+- Sprint 2 remains unopened while sponsor scope validation is pending.
 
 ## Active constraints
 

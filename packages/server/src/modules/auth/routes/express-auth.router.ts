@@ -80,6 +80,12 @@ async function dispatchAuthRoute(
       return controller.logout(context);
     case "currentSession":
       return controller.currentSession(context);
+    case "requestPasswordRecovery":
+      return controller.requestPasswordRecovery(context, typeof body === "object" && body !== null ? body as { email?: unknown } : {});
+    case "verifyPasswordRecovery":
+      return controller.verifyPasswordRecovery(context, typeof body === "object" && body !== null ? body as { email?: unknown; code?: unknown } : {});
+    case "resetPassword":
+      return controller.resetPassword(context, typeof body === "object" && body !== null ? body as { resetToken?: unknown; password?: unknown } : {});
     case "requestSensitiveActionOtp":
       return controller.requestSensitiveActionOtp(context);
     case "verifySensitiveActionOtp":

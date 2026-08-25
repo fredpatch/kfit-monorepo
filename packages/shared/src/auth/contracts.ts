@@ -11,6 +11,10 @@ export const authErrorCodes = [
   "AUTH_FRESH_OTP_REQUIRED",
   "AUTH_OTP_CODE_INVALID_FORMAT",
   "AUTH_OTP_REJECTED",
+  "AUTH_RECOVERY_INVALID_FORMAT",
+  "AUTH_RECOVERY_CODE_INVALID",
+  "AUTH_RECOVERY_GRANT_INVALID",
+  "AUTH_RATE_LIMITED",
 ] as const;
 
 export type AuthErrorCode = (typeof authErrorCodes)[number];
@@ -43,6 +47,9 @@ export const authApiRoutes = {
   currentSession: "/auth/session",
   requestSensitiveActionOtp: "/auth/otp/sensitive-action",
   verifySensitiveActionOtp: "/auth/otp/sensitive-action/verify",
+  requestPasswordRecovery: "/auth/recovery/request",
+  verifyPasswordRecovery: "/auth/recovery/verify",
+  resetPassword: "/auth/recovery/reset",
 } as const;
 
 export type AuthApiRoute = (typeof authApiRoutes)[keyof typeof authApiRoutes];
@@ -123,6 +130,33 @@ export type SensitiveActionOtpVerifyResponse = {
   consumedAt: string | null;
 };
 
+export type PasswordRecoveryRequest = {
+  email: string;
+};
+
+export type PasswordRecoveryRequestResponse = {
+  accepted: true;
+};
+
+export type PasswordRecoveryVerifyRequest = {
+  email: string;
+  code: string;
+};
+
+export type PasswordRecoveryVerifyResponse = {
+  resetToken: string;
+  expiresAt: string;
+};
+
+export type PasswordRecoveryResetRequest = {
+  resetToken: string;
+  password: string;
+};
+
+export type PasswordRecoveryResetResponse = {
+  reset: true;
+};
+
 export type AuthApiResponse =
   | BootstrapStatusResponse
   | BootstrapResponse
@@ -133,5 +167,8 @@ export type AuthApiResponse =
   | CurrentSessionResponse
   | SensitiveActionOtpRequestResponse
   | SensitiveActionOtpVerifyResponse
+  | PasswordRecoveryRequestResponse
+  | PasswordRecoveryVerifyResponse
+  | PasswordRecoveryResetResponse
   | AuthErrorResponse
   | AuthOtpRejectedResponse;

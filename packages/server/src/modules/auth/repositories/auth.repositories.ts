@@ -1,7 +1,7 @@
-import { and, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { db as appDb } from "../../../db/client.js";
-import { authSessions, otpChallenges, users } from "../../../db/schema/auth.js";
+import { authSessions, otpChallenges, trustedDevices, users } from "../../../db/schema/auth.js";
 import type {
   AuthSessionRecord,
   CreateSessionRecordInput,
@@ -10,6 +10,7 @@ import type {
 import type { SessionLookupRepository } from "../services/access-token-session.resolver.js";
 import type { AuthUserRecord, AuthUserRepository } from "../services/auth-route.service.js";
 import type { BootstrapRepository } from "../services/bootstrap.service.js";
+import type { PasswordRecoveryRepository } from "../services/password-recovery.service.js";
 import type {
   CreateOtpChallengeRecordInput,
   OtpChallengeLookup,
@@ -214,6 +215,77 @@ export class DrizzleAuthUserRepository implements AuthUserRepository {
       .limit(1);
 
     return user ? mapAuthUser(user) : null;
+  }
+}
+
+export class DrizzlePasswordRecoveryRepository implements PasswordRecoveryRepository {
+  constructor(private readonly database: AuthDb) {}
+
+  async findByEmail(email: string): Promise<AuthUserRecord | null> {
+    const [user] = await this.database
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    return user ? mapAuthUser(user) : null;
+  }
+
+  async completeReset(input: {
+    userId: string;
+    challengeId: string;
+    verifiedAt: string;
+    passwordHash: string;
+    completedAt: Date;
+  }): Promise<boolean> {
+    return this.database.transaction(async (tx) => {
+      const [challenge] = await tx
+        .select()
+        .from(otpChallenges)
+        .where(and(
+          eq(otpChallenges.id, input.challengeId),
+          eq(otpChallenges.userId, input.userId),
+          eq(otpChallenges.purpose, "password_recovery"),
+          isNotNull(otpChallenges.consumedAt),
+          isNull(otpChallenges.supersededAt),
+        ))
+        .for("update")
+        .limit(1);
+
+      if (
+        !challenge?.consumedAt ||
+        challenge.consumedAt.toISOString() !== input.verifiedAt ||
+        challenge.updatedAt.toISOString() !== challenge.consumedAt.toISOString()
+      ) return false;
+
+      const redeemed = await tx
+        .update(otpChallenges)
+        .set({ updatedAt: input.completedAt })
+        .where(and(
+          eq(otpChallenges.id, challenge.id),
+          eq(otpChallenges.updatedAt, challenge.updatedAt),
+        ))
+        .returning({ id: otpChallenges.id });
+      if (redeemed.length !== 1) return false;
+
+      const changedUsers = await tx
+        .update(users)
+        .set({ passwordHash: input.passwordHash, updatedAt: input.completedAt })
+        .where(and(eq(users.id, input.userId), eq(users.status, "active")))
+        .returning({ id: users.id });
+      if (changedUsers.length !== 1) return false;
+
+      await tx
+        .update(authSessions)
+        .set({ revokedAt: input.completedAt })
+        .where(and(eq(authSessions.userId, input.userId), isNull(authSessions.revokedAt)));
+
+      await tx
+        .update(trustedDevices)
+        .set({ revokedAt: input.completedAt, updatedAt: input.completedAt })
+        .where(and(eq(trustedDevices.userId, input.userId), isNull(trustedDevices.revokedAt)));
+
+      return true;
+    });
   }
 }
 

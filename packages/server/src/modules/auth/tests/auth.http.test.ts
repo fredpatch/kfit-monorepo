@@ -50,6 +50,9 @@ test("auth routes expose the server-side auth foundation endpoints", () => {
     "/auth/refresh",
     "/auth/logout",
     "/auth/session",
+    "/auth/recovery/request",
+    "/auth/recovery/verify",
+    "/auth/recovery/reset",
     "/auth/otp/sensitive-action",
     "/auth/otp/sensitive-action/verify",
   ]);
@@ -140,6 +143,39 @@ test("AuthController maps OTP rejection reasons to stable HTTP responses", async
   const response = await controller.verifySensitiveActionOtp(context, { code: "123456" });
   assert.equal(response.status, 423);
   assert.deepEqual(response.body, { error: "AUTH_OTP_REJECTED", reason: "locked" });
+});
+
+test("AuthController maps password recovery responses without exposing account existence", async () => {
+  const controller = new AuthController({
+    passwordRecoveryService: {
+      async request() { return { status: "accepted" }; },
+      async verify() {
+        return {
+          status: "verified",
+          resetToken: "signed-reset-token",
+          expiresAt: new Date("2026-08-25T08:10:00Z"),
+        };
+      },
+      async reset() { return { status: "reset" }; },
+    },
+    otpChallengeService: {
+      async issue() { throw new Error("not used"); },
+      async verify(): Promise<VerifyOtpResult> { throw new Error("not used"); },
+    },
+  });
+
+  assert.deepEqual(await controller.requestPasswordRecovery(context, { email: "missing@kfit.local" }), {
+    status: 202,
+    body: { accepted: true },
+  });
+  assert.deepEqual(await controller.verifyPasswordRecovery(context, { email: "coach@kfit.local", code: "123456" }), {
+    status: 200,
+    body: { resetToken: "signed-reset-token", expiresAt: "2026-08-25T08:10:00.000Z" },
+  });
+  assert.deepEqual(await controller.resetPassword(context, { resetToken: "signed-reset-token", password: "CorrectHorse10" }), {
+    status: 200,
+    body: { reset: true },
+  });
 });
 
 

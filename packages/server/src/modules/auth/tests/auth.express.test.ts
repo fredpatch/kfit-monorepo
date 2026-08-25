@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 import { AuthController } from "../controllers/auth.controller.js";
+import { clearAuthCookies } from "../services/auth-route.service.js";
 import { authCookieNames } from "../middleware/auth.cookies.js";
 import { createServerApp } from "../../../app.js";
 import type { AuthenticatedSessionContext } from "../types/auth.http.types.js";
@@ -37,6 +38,31 @@ function makeChallenge(input: Partial<OtpChallengeRecord> = {}): OtpChallengeRec
 
 async function withTestServer<T>(resolveSession: () => AuthenticatedSessionContext | null, run: (baseUrl: string) => Promise<T>): Promise<T> {
   const controller = new AuthController({
+    authRouteService: {
+      async login() {
+        return {
+          status: "authenticated",
+          body: {
+            user: { id: session.userId, role: "coach" },
+            session: { id: session.sessionId, freshOtp: false },
+          },
+          cookies: [],
+        };
+      },
+      async refresh() {
+        return {
+          status: "authenticated",
+          body: {
+            user: { id: session.userId, role: "coach" },
+            session: { id: session.sessionId, freshOtp: false },
+          },
+          cookies: [],
+        };
+      },
+      async logout() {
+        return { status: "logged_out", cookies: clearAuthCookies("development") };
+      },
+    },
     otpChallengeService: {
       async issue() {
         return { challenge: makeChallenge(), code: "123456" };
@@ -137,5 +163,41 @@ test("Express auth router forwards JSON bodies to OTP verification controller", 
       challengeId: "00000000-0000-0000-0000-000000000001",
       consumedAt: "2026-08-25T08:01:00.000Z",
     });
+  });
+});
+
+
+test("Express auth router exposes login, refresh and logout route behavior", async () => {
+  await withTestServer(() => session, async (baseUrl) => {
+    const login = await fetch(`${baseUrl}/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "coach@kfit.local", password: "correct-password" }),
+    });
+    assert.equal(login.status, 200);
+    assert.deepEqual(await login.json(), {
+      user: { id: session.userId, role: "coach" },
+      session: { id: session.sessionId, freshOtp: false },
+    });
+
+    const csrf = "csrf-token";
+    const refresh = await fetch(`${baseUrl}/auth/refresh`, {
+      method: "POST",
+      headers: {
+        cookie: `${authCookieNames.csrfToken}=${csrf}; ${authCookieNames.refreshToken}=refresh-token`,
+        "x-csrf-token": csrf,
+      },
+    });
+    assert.equal(refresh.status, 200);
+
+    const logout = await fetch(`${baseUrl}/auth/logout`, {
+      method: "POST",
+      headers: {
+        cookie: `${authCookieNames.csrfToken}=${csrf}`,
+        "x-csrf-token": csrf,
+      },
+    });
+    assert.equal(logout.status, 200);
+    assert.deepEqual(await logout.json(), { loggedOut: true });
   });
 });

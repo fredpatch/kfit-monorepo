@@ -2,6 +2,27 @@ import type { AuthRouteDefinition } from "../types/auth.http.types.js";
 
 export const authRoutes: AuthRouteDefinition[] = [
   {
+    method: "POST",
+    path: "/auth/login",
+    handler: "login",
+    requiresAuth: false,
+    requiresCsrf: false,
+  },
+  {
+    method: "POST",
+    path: "/auth/refresh",
+    handler: "refresh",
+    requiresAuth: false,
+    requiresCsrf: true,
+  },
+  {
+    method: "POST",
+    path: "/auth/logout",
+    handler: "logout",
+    requiresAuth: false,
+    requiresCsrf: true,
+  },
+  {
     method: "GET",
     path: "/auth/session",
     handler: "currentSession",

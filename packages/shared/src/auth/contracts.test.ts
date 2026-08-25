@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   authApiRoutes,
+  authCookieNames,
+  authCsrfHeaderName,
   authErrorCodes,
   authOtpRejectReasons,
   type CurrentSessionResponse,
@@ -10,7 +12,14 @@ import {
   type SensitiveActionOtpVerifyRequest,
 } from "./contracts.js";
 
-test("auth shared contracts expose stable API routes, error codes and OTP reason enums", () => {
+test("auth shared contracts expose stable API routes, cookies, CSRF header, error codes and OTP reason enums", () => {
+  assert.deepEqual(authCookieNames, {
+    accessToken: "kfit_access",
+    refreshToken: "kfit_refresh",
+    csrfToken: "kfit_csrf",
+  });
+  assert.equal(authCsrfHeaderName, "x-csrf-token");
+
   assert.deepEqual(authApiRoutes, {
     bootstrapStatus: "/auth/bootstrap/status",
     bootstrap: "/auth/bootstrap",

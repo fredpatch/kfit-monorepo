@@ -1,4 +1,7 @@
 export const authErrorCodes = [
+  "BOOTSTRAP_ALREADY_COMPLETED",
+  "AUTH_BOOTSTRAP_INVALID_FORMAT",
+  "AUTH_PASSWORD_POLICY_FAILED",
   "AUTH_INVALID_CREDENTIALS",
   "AUTH_ACCOUNT_UNAVAILABLE",
   "AUTH_LOGIN_INVALID_FORMAT",
@@ -24,6 +27,8 @@ export const authOtpRejectReasons = [
 export type AuthOtpRejectReason = (typeof authOtpRejectReasons)[number];
 
 export const authApiRoutes = {
+  bootstrapStatus: "/auth/bootstrap/status",
+  bootstrap: "/auth/bootstrap",
   login: "/auth/login",
   refresh: "/auth/refresh",
   logout: "/auth/logout",
@@ -43,6 +48,29 @@ export type AuthErrorResponse = {
 export type AuthOtpRejectedResponse = {
   error: "AUTH_OTP_REJECTED";
   reason: AuthOtpRejectReason;
+};
+
+export type BootstrapStatusResponse = {
+  required: boolean;
+};
+
+export type BootstrapRequest = {
+  email: string;
+  password: string;
+};
+
+export type BootstrapResponse = {
+  user: {
+    id: string;
+    email: string;
+    role: AuthRole;
+    status: "active" | "locked" | "archived";
+  };
+};
+
+export type PasswordPolicyErrorResponse = {
+  error: "AUTH_PASSWORD_POLICY_FAILED";
+  reason: "too_short" | "missing_letter" | "missing_number";
 };
 
 export type LoginRequest = {
@@ -88,6 +116,9 @@ export type SensitiveActionOtpVerifyResponse = {
 };
 
 export type AuthApiResponse =
+  | BootstrapStatusResponse
+  | BootstrapResponse
+  | PasswordPolicyErrorResponse
   | LoginResponse
   | RefreshResponse
   | LogoutResponse

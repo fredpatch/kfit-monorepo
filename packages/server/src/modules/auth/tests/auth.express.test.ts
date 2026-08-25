@@ -79,6 +79,21 @@ async function withTestServer<T>(resolveSession: () => AuthenticatedSessionConte
         return { status: "logged_out", cookies: clearAuthCookies("development") };
       },
     },
+    passwordRecoveryService: {
+      async request() {
+        return { status: "accepted" };
+      },
+      async verify() {
+        return {
+          status: "verified",
+          resetToken: "signed-reset-token",
+          expiresAt: new Date("2026-08-25T08:10:00.000Z"),
+        };
+      },
+      async reset() {
+        return { status: "reset" };
+      },
+    },
     otpChallengeService: {
       async issue() {
         return { challenge: makeChallenge(), code: "123456" };
@@ -240,5 +255,47 @@ test("Express auth router exposes bootstrap status and creation routes", async (
         status: "active",
       },
     });
+  });
+});
+
+test("Express auth router exposes recovery flow and rejects foreign browser origins", async () => {
+  await withTestServer(() => null, async (baseUrl) => {
+    const request = await fetch(`${baseUrl}/auth/recovery/request`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "missing@kfit.local" }),
+    });
+    assert.equal(request.status, 202);
+    assert.deepEqual(await request.json(), { accepted: true });
+
+    const foreignOrigin = await fetch(`${baseUrl}/auth/recovery/request`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: "https://attacker.example",
+      },
+      body: JSON.stringify({ email: "coach@kfit.local" }),
+    });
+    assert.equal(foreignOrigin.status, 403);
+    assert.deepEqual(await foreignOrigin.json(), { error: "AUTH_ORIGIN_INVALID" });
+
+    const verify = await fetch(`${baseUrl}/auth/recovery/verify`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "coach@kfit.local", code: "123456" }),
+    });
+    assert.equal(verify.status, 200);
+    assert.deepEqual(await verify.json(), {
+      resetToken: "signed-reset-token",
+      expiresAt: "2026-08-25T08:10:00.000Z",
+    });
+
+    const reset = await fetch(`${baseUrl}/auth/recovery/reset`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ resetToken: "signed-reset-token", password: "CorrectHorse10" }),
+    });
+    assert.equal(reset.status, 200);
+    assert.deepEqual(await reset.json(), { reset: true });
   });
 });

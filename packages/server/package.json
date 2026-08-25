@@ -13,7 +13,8 @@
     "preflight:smtp": "node ./scripts/preflight/smtp.mjs",
     "preflight:files": "node ./scripts/preflight/files.mjs",
     "preflight:pdf": "node ./scripts/preflight/pdf.mjs",
-    "preflight:jobs": "node ./scripts/preflight/jobs.mjs"
+    "preflight:jobs": "node ./scripts/preflight/jobs.mjs",
+    "preflight:backup": "node ./scripts/preflight/backup-restore.mjs"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

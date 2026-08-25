@@ -38,6 +38,22 @@ function makeChallenge(input: Partial<OtpChallengeRecord> = {}): OtpChallengeRec
 
 async function withTestServer<T>(resolveSession: () => AuthenticatedSessionContext | null, run: (baseUrl: string) => Promise<T>): Promise<T> {
   const controller = new AuthController({
+    bootstrapService: {
+      async status() {
+        return { required: true };
+      },
+      async create() {
+        return {
+          status: "created",
+          user: {
+            id: session.userId,
+            email: "coach@kfit.local",
+            role: "coach",
+            status: "active",
+          },
+        };
+      },
+    },
     authRouteService: {
       async login() {
         return {
@@ -199,5 +215,30 @@ test("Express auth router exposes login, refresh and logout route behavior", asy
     });
     assert.equal(logout.status, 200);
     assert.deepEqual(await logout.json(), { loggedOut: true });
+  });
+});
+
+
+test("Express auth router exposes bootstrap status and creation routes", async () => {
+  await withTestServer(() => null, async (baseUrl) => {
+    const status = await fetch(`${baseUrl}/auth/bootstrap/status`);
+    assert.equal(status.status, 200);
+    assert.deepEqual(await status.json(), { required: true });
+
+    const created = await fetch(`${baseUrl}/auth/bootstrap`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "coach@kfit.local", password: "CorrectHorse9" }),
+    });
+
+    assert.equal(created.status, 201);
+    assert.deepEqual(await created.json(), {
+      user: {
+        id: session.userId,
+        email: "coach@kfit.local",
+        role: "coach",
+        status: "active",
+      },
+    });
   });
 });

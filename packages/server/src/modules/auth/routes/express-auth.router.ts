@@ -82,13 +82,31 @@ async function dispatchAuthRoute(
   }
 }
 
+function registerAuthRoute(router: Router, route: AuthRouteDefinition, handler: (request: Request, response: Response) => Promise<void>): void {
+  switch (route.method) {
+    case "GET":
+      router.get(route.path, handler);
+      return;
+    case "POST":
+      router.post(route.path, handler);
+      return;
+    case "PUT":
+      router.put(route.path, handler);
+      return;
+    case "PATCH":
+      router.patch(route.path, handler);
+      return;
+    case "DELETE":
+      router.delete(route.path, handler);
+      return;
+  }
+}
+
 export function createExpressAuthRouter(deps: ExpressAuthRouterDeps): Router {
   const router = createRouter();
 
   for (const route of authRoutes) {
-    const register = router[route.method.toLowerCase() as Lowercase<AuthRouteDefinition["method"]>].bind(router);
-
-    register(route.path, async (request: Request, response: Response) => {
+    registerAuthRoute(router, route, async (request: Request, response: Response) => {
       try {
         const context = await toAuthContext(request, deps.resolveSession);
         const result = await dispatchAuthRoute(route, deps.controller, context, request.body);

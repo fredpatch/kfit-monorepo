@@ -69,7 +69,7 @@ async function dispatchAuthRoute(
 
   switch (route.handler) {
     case "login":
-      return controller.login(context, typeof body === "object" && body !== null ? body : {});
+      return controller.login(context, typeof body === "object" && body !== null ? body as { email?: unknown; password?: unknown } : {});
     case "refresh":
       return controller.refresh(context);
     case "logout":
@@ -79,7 +79,7 @@ async function dispatchAuthRoute(
     case "requestSensitiveActionOtp":
       return controller.requestSensitiveActionOtp(context);
     case "verifySensitiveActionOtp":
-      return controller.verifySensitiveActionOtp(context, typeof body === "object" && body !== null ? body : {});
+      return controller.verifySensitiveActionOtp(context, typeof body === "object" && body !== null ? body as { code?: unknown } : {});
     default:
       return {
         status: 500,

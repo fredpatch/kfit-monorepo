@@ -46,3 +46,8 @@ Never restore a backup directly over the active database as the first recovery t
 ## Backup encryption key
 
 `BACKUP_ENCRYPTION_KEY` must never be committed. Production backup keys must be stored separately from the encrypted backup payloads and must not reuse Sprint 0/dev test keys.
+
+
+## Staging-style auth proxy is transport validation
+
+The Sprint 1 staging auth proxy uses a local smoke server behind Nginx to validate cookie and CSRF transport behavior before full app containers exist. This proves proxy/cookie/CSRF/session mechanics, not real database persistence. The real staging deployment must replace the smoke server with the concrete application container.

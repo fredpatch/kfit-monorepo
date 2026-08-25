@@ -5,12 +5,15 @@ import {
   authErrorCodes,
   authOtpRejectReasons,
   type CurrentSessionResponse,
+  type BootstrapRequest,
   type LoginRequest,
   type SensitiveActionOtpVerifyRequest,
 } from "./contracts.js";
 
 test("auth shared contracts expose stable API routes, error codes and OTP reason enums", () => {
   assert.deepEqual(authApiRoutes, {
+    bootstrapStatus: "/auth/bootstrap/status",
+    bootstrap: "/auth/bootstrap",
     login: "/auth/login",
     refresh: "/auth/refresh",
     logout: "/auth/logout",
@@ -20,6 +23,9 @@ test("auth shared contracts expose stable API routes, error codes and OTP reason
   });
 
   assert.deepEqual(authErrorCodes, [
+    "BOOTSTRAP_ALREADY_COMPLETED",
+    "AUTH_BOOTSTRAP_INVALID_FORMAT",
+    "AUTH_PASSWORD_POLICY_FAILED",
     "AUTH_INVALID_CREDENTIALS",
     "AUTH_ACCOUNT_UNAVAILABLE",
     "AUTH_LOGIN_INVALID_FORMAT",
@@ -42,6 +48,7 @@ test("auth shared contracts expose stable API routes, error codes and OTP reason
 });
 
 test("auth shared contracts type-check core request and response shapes", () => {
+  const bootstrap: BootstrapRequest = { email: "coach@kfit.local", password: "CorrectHorse9" };
   const login: LoginRequest = { email: "coach@kfit.local", password: "secret" };
   const request: SensitiveActionOtpVerifyRequest = { code: "123456" };
   const response: CurrentSessionResponse = {
@@ -49,6 +56,7 @@ test("auth shared contracts type-check core request and response shapes", () => 
     session: { id: "22222222-2222-2222-2222-222222222222", freshOtp: true },
   };
 
+  assert.equal(bootstrap.password, "CorrectHorse9");
   assert.equal(login.email, "coach@kfit.local");
   assert.equal(request.code, "123456");
   assert.equal(response.user.role, "coach");

@@ -30,15 +30,24 @@ Shared contracts validation included:
 
 ## Current implementation task
 
-Bind the server auth HTTP foundation to the concrete Express app/router.
+Locally validate Express app/router binding.
+
+## Express binding implementation state
+
+- Added Express dependency to `@kfit/server`.
+- Added `createExpressAuthRouter` adapter for the validated auth route manifest.
+- Added `createServerApp` composition factory with JSON parsing, health route and auth router mount.
+- Added index exports for app/router factories.
+- Added focused Express HTTP tests using Node's built-in test runner and fetch.
+- Kept concrete JWT/session resolution injectable for the next server-first slice.
 
 ## Acceptance criteria for current task
 
-- [ ] Inspect current server entrypoint/app shape before changing code.
-- [ ] Create or extend the concrete Express app composition point.
-- [ ] Mount auth routes using the validated auth route manifest/controller boundary.
-- [ ] Ensure cookie parsing, CSRF extraction and auth middleware assumptions are represented at app level.
-- [ ] Keep server-first tests focused on route/app binding; do not add client auth UI yet.
+- [x] Inspect current server entrypoint/app shape before changing code.
+- [x] Create or extend the concrete Express app composition point.
+- [x] Mount auth routes using the validated auth route manifest/controller boundary.
+- [x] Ensure cookie parsing, CSRF extraction and auth middleware assumptions are represented at app level.
+- [x] Keep server-first tests focused on route/app binding; do not add client auth UI yet.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints

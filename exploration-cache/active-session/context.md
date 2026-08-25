@@ -36,8 +36,9 @@ The project owner locally validated the auth schema/primitives slice:
 - AuditService foundation is implemented and locally validated.
 - Session/token service foundation is implemented and locally validated.
 - OTP challenge service foundation is implemented and locally validated.
+- Drizzle auth repository adapters are implemented and locally validated.
 - No functional auth HTTP routes/controllers/client flows are validated yet.
-- Next work remains server-first: Drizzle repository adapters.
+- Next work remains server-first: auth controllers/routes/middleware foundation.
 
 ## Active constraints
 

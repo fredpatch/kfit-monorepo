@@ -22,19 +22,30 @@
 
 ## Sprint 0 closure blockers
 
-- [ ] Record the local filesystem path of the Reusable Implementation Patterns & Blueprints Markdown library before Sprint 1 implementation.
+- [x] Reusable Implementation Patterns & Blueprints source recorded: Notion project/pattern pages, not a local Markdown folder for this Sprint 1 continuation.
 - [ ] Obtain sponsor validation of the consolidated V1 Core / V1.1 scope and rules with Konny.
 
 ## Sprint 1 — Authentication, sessions, OTP and security
 
-Do not begin implementation until Sprint 0 is formally closed in Notion and the local reusable-pattern library path is available to the development agent.
+Execution rule: implementation happens on `sprint-1/auth-foundation`. Local command execution is performed by the project owner; ChatGPT/Codex updates GitHub/Notion and only marks validation after pasted local output confirms success.
 
-Planned first execution order:
+### Validated slices
 
-1. Review/adapt `Administrative Foundation`, `Cookie JWT Authentication`, `OTP Account Activation`, and fresh-OTP patterns.
-2. Finalize auth/session configuration and environment contract.
-3. Implement server authentication services first.
-4. Implement controllers/routes and middleware after services.
+- [x] Inspect/adapt `Administrative Foundation`, `Cookie JWT Authentication`, OTP/fresh-OTP, CSRF and audit patterns from Notion.
+- [x] Finalize K'FIT auth/session invariants and API baseline in `docs/sprint-1-auth-adaptation-contract.md`.
+- [x] Implement and locally validate auth schema adaptation and pure auth primitives:
+  - trusted-device/session/OTP/audit schema gaps
+  - auth environment config
+  - OTP crypto helpers
+  - session/fresh-OTP policy helpers
+  - Node test coverage for pure primitives
+
+### Current execution order
+
+1. Implement AuditService foundation.
+2. Add local tests for audit event creation and metadata hashing.
+3. Implement session/token service only after AuditService validation.
+4. Implement controllers/routes and middleware after service validation.
 5. Add shared auth contracts/types.
 6. Add client session restoration/login flows only after server behavior is tested.
 7. Validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.

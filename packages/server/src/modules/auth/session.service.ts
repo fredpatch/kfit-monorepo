@@ -8,6 +8,7 @@ export type AuthSessionRecord = SessionClock & {
   tokenFamilyId: string;
   refreshTokenHash: string;
   rotationCounter: number;
+  issuedAt: Date;
   trustedDeviceId: string | null;
   ipHash: string | null;
   userAgentHash: string | null;

@@ -21,56 +21,46 @@ Validated by project-owner local Windows/Git Bash execution:
 
 ### AuditService foundation
 
-Validated by project-owner confirmation after running:
+Validated locally by project owner.
+
+### Session/token service foundation
+
+Validated locally by project owner.
+
+### OTP challenge service foundation
+
+Validated locally by project owner after running:
 
 - `git pull`
 - `npm run typecheck`
 - `npm run build --workspace @kfit/server`
 - `node --test packages/server/dist/modules/auth/auth-foundation.test.js`
 - `node --test packages/server/dist/modules/auth/audit.service.test.js`
-- `npm run db:check`
-
-### Session/token service foundation
-
-Validated by project-owner confirmation after running:
-
-- `git pull`
-- `npm run typecheck`
-- `npm run build --workspace @kfit/server`
 - `node --test packages/server/dist/modules/auth/session.service.test.js`
+- `node --test packages/server/dist/modules/auth/otp-challenge.service.test.js`
 - `npm run db:check`
 
 Implemented files:
 
-- `packages/server/src/modules/auth/session.service.ts`
-- `packages/server/src/modules/auth/session.service.test.ts`
-- `AUTH_REFRESH_TOKEN_PEPPER` documented in `.env.example`
-- `loadAuthConfig` exposes `refreshTokenPepper` with fallback to `AUTH_OTP_PEPPER`
-
-## Current implementation task
-
-Validate OTP challenge service foundation locally.
-
-## Implemented for current task
-
 - `packages/server/src/modules/auth/otp-challenge.service.ts`
 - `packages/server/src/modules/auth/otp-challenge.service.test.ts`
 
+## Current implementation task
+
+Implement Drizzle repository adapters for the validated auth services.
+
 ## Acceptance criteria for current task
 
-- [x] OTP service can create hash-only OTP challenges.
-- [x] Existing active challenges for the same user/session/purpose are superseded before resend.
-- [x] Verification rejects expired, consumed, superseded or max-attempt challenges.
-- [x] Verification increments attempts on wrong code.
-- [x] Verification consumes challenge on valid code.
-- [x] Fresh-OTP use case supports `sensitive_action` and session binding.
-- [x] AuditService is called for OTP issue/verify/block events.
-- [x] Unit tests are added.
+- [ ] Audit repository/service adapter can persist real audit events.
+- [ ] Session repository adapter can create, find, rotate and compromise sessions.
+- [ ] OTP repository adapter can supersede, create, find latest, increment attempts and consume challenges.
+- [ ] Repository adapters use existing Drizzle schema without new migration unless a real schema gap appears.
+- [ ] Repository tests or type-level integration tests are added without requiring uncontrolled local execution from ChatGPT/Codex.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints
 
 - Do not run npm, Docker, PostgreSQL, migrations, pre-flight scripts or tests from ChatGPT/Codex runtime.
 - Provide exact Windows/Git Bash commands when execution is needed.
-- Do not implement controllers/routes/client until service-level validation passes.
+- Do not implement controllers/routes/client until repository adapter validation passes.
 - Do not implement unrelated business modules.

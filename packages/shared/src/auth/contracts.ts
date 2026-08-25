@@ -24,6 +24,9 @@ export const authOtpRejectReasons = [
 export type AuthOtpRejectReason = (typeof authOtpRejectReasons)[number];
 
 export const authApiRoutes = {
+  login: "/auth/login",
+  refresh: "/auth/refresh",
+  logout: "/auth/logout",
   currentSession: "/auth/session",
   requestSensitiveActionOtp: "/auth/otp/sensitive-action",
   verifySensitiveActionOtp: "/auth/otp/sensitive-action/verify",

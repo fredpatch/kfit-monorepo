@@ -29,14 +29,13 @@ export function loadSmtpAuthMailConfig(env: NodeJS.ProcessEnv): SmtpAuthMailConf
     host: env.SMTP_HOST,
     port,
     secure: env.SMTP_SECURE === "true",
-    user: env.SMTP_USER || undefined,
-    pass: env.SMTP_PASS || undefined,
     from: env.SMTP_FROM,
+    ...(env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASS ?? "" } : {}),
   };
 }
 
 export class NodemailerAuthMailDelivery implements AuthMailDelivery {
-  private readonly transport;
+  private readonly transport: ReturnType<typeof nodemailer.createTransport>;
 
   constructor(private readonly config: SmtpAuthMailConfig) {
     this.transport = nodemailer.createTransport({

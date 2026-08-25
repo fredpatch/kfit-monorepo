@@ -257,6 +257,13 @@ export class DrizzlePasswordRecoveryRepository implements PasswordRecoveryReposi
         challenge.updatedAt.toISOString() !== challenge.consumedAt.toISOString()
       ) return false;
 
+      const changedUsers = await tx
+        .update(users)
+        .set({ passwordHash: input.passwordHash, updatedAt: input.completedAt })
+        .where(and(eq(users.id, input.userId), eq(users.status, "active")))
+        .returning({ id: users.id });
+      if (changedUsers.length !== 1) return false;
+
       const redeemed = await tx
         .update(otpChallenges)
         .set({ updatedAt: input.completedAt })
@@ -265,14 +272,9 @@ export class DrizzlePasswordRecoveryRepository implements PasswordRecoveryReposi
           eq(otpChallenges.updatedAt, challenge.updatedAt),
         ))
         .returning({ id: otpChallenges.id });
-      if (redeemed.length !== 1) return false;
-
-      const changedUsers = await tx
-        .update(users)
-        .set({ passwordHash: input.passwordHash, updatedAt: input.completedAt })
-        .where(and(eq(users.id, input.userId), eq(users.status, "active")))
-        .returning({ id: users.id });
-      if (changedUsers.length !== 1) return false;
+      if (redeemed.length !== 1) {
+        throw new Error("Password recovery grant redemption lost its lock");
+      }
 
       await tx
         .update(authSessions)

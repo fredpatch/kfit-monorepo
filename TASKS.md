@@ -47,6 +47,7 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 - [x] Refactor auth module into responsibility folders and locally validate the structure.
 - [x] Implement and locally validate shared auth contracts.
 - [x] Implement and locally validate Express app/router binding.
+- [x] Implement and locally validate JWT/cookie session resolution plus login/logout/refresh route behavior.
 
 ### Current execution order
 
@@ -67,6 +68,7 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 15. [x] Bind the server HTTP foundation to the concrete app/router after shared-contract validation.
 16. [x] Locally validate Express app/router binding.
 17. [x] Implement real JWT/cookie session resolution plus login/logout/refresh route behavior.
-18. [ ] Locally validate JWT/cookie session resolution plus login/logout/refresh route behavior.
-19. [ ] Add client session restoration/login flows only after server behavior is tested.
-20. [ ] Validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.
+18. [x] Locally validate JWT/cookie session resolution plus login/logout/refresh route behavior.
+19. [ ] Implement bootstrap/password hashing policy before client auth.
+20. [ ] Add client session restoration/login flows only after server behavior is tested.
+21. [ ] Validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.

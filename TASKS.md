@@ -53,7 +53,7 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 9. [x] Implement server auth controllers/routes/middleware foundation.
 10. [x] Locally validate server auth HTTP foundation tests.
 11. [x] Refactor auth module into responsibility folders.
-12. [ ] Locally validate auth module structure refactor.
+12. [x] Locally validate auth module structure refactor.
 13. [ ] Add shared auth contracts.
 4. Implement controllers/routes and middleware after service validation.
 5. Add shared auth contracts/types.

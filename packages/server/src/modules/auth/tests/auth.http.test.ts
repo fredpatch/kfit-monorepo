@@ -44,6 +44,8 @@ function makeChallenge(input: Partial<OtpChallengeRecord> = {}): OtpChallengeRec
 
 test("auth routes expose the server-side auth foundation endpoints", () => {
   assert.deepEqual(authRoutes.map((route) => route.path), [
+    "/auth/bootstrap/status",
+    "/auth/bootstrap",
     "/auth/login",
     "/auth/refresh",
     "/auth/logout",
@@ -138,4 +140,47 @@ test("AuthController maps OTP rejection reasons to stable HTTP responses", async
   const response = await controller.verifySensitiveActionOtp(context, { code: "123456" });
   assert.equal(response.status, 423);
   assert.deepEqual(response.body, { error: "AUTH_OTP_REJECTED", reason: "locked" });
+});
+
+
+test("AuthController exposes bootstrap status and one-time creation boundary", async () => {
+  const controller = new AuthController({
+    bootstrapService: {
+      async status() {
+        return { required: true };
+      },
+      async create(input) {
+        assert.equal(input.email, "coach@kfit.local");
+        return {
+          status: "created",
+          user: {
+            id: "11111111-1111-1111-1111-111111111111",
+            email: "coach@kfit.local",
+            role: "coach",
+            status: "active",
+          },
+        };
+      },
+    },
+    otpChallengeService: {
+      async issue() {
+        throw new Error("not used");
+      },
+      async verify(): Promise<VerifyOtpResult> {
+        throw new Error("not used");
+      },
+    },
+  });
+
+  assert.deepEqual((await controller.bootstrapStatus()).body, { required: true });
+  const response = await controller.bootstrap(context, { email: "coach@kfit.local", password: "CorrectHorse9" });
+  assert.equal(response.status, 201);
+  assert.deepEqual(response.body, {
+    user: {
+      id: "11111111-1111-1111-1111-111111111111",
+      email: "coach@kfit.local",
+      role: "coach",
+      status: "active",
+    },
+  });
 });

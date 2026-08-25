@@ -39,9 +39,9 @@ The project owner locally validated the auth schema/primitives slice:
 - Drizzle auth repository adapters are implemented and locally validated.
 - Server auth controllers/routes/middleware foundation is implemented and locally validated.
 - Auth module folder structure has been refactored and locally validated.
-- Shared auth contracts have been implemented in `@kfit/shared`; local validation is pending project-owner command output.
+- Shared auth contracts have been implemented in `@kfit/shared` and locally validated.
 - No frontend/client auth flows are validated yet.
-- Next work remains server-first: locally validate shared auth contracts before binding the auth HTTP foundation into a concrete app/router.
+- Next work remains server-first: bind the validated auth HTTP foundation into a concrete Express app/router.
 
 ## Active constraints
 

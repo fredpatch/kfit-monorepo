@@ -11,13 +11,15 @@
     "db:check": "drizzle-kit check",
     "preflight:otp": "node ./scripts/preflight/otp.mjs",
     "preflight:smtp": "node ./scripts/preflight/smtp.mjs",
-    "preflight:files": "node ./scripts/preflight/files.mjs"
+    "preflight:files": "node ./scripts/preflight/files.mjs",
+    "preflight:pdf": "node ./scripts/preflight/pdf.mjs"
   },
   "dependencies": {
     "dotenv": "^16.6.1",
     "drizzle-orm": "^0.44.5",
     "nodemailer": "^7.0.6",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "puppeteer": "^24.16.0"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

@@ -120,18 +120,18 @@ export class CatalogueService {
       policyByScope.set(`${policy.serviceId}:${policy.variantId ?? "service"}`, policy);
     }
 
-    const services: CataloguePublicService[] = snapshot.services
-      .toSorted(bySortThenName)
+    const services: CataloguePublicService[] = [...snapshot.services]
+      .sort(bySortThenName)
       .map((service) => {
-        const serviceComponents = (componentsByScope.get(`${service.id}:service`) ?? [])
-          .toSorted(byComponentLabel)
+        const serviceComponents = [...(componentsByScope.get(`${service.id}:service`) ?? [])]
+          .sort(byComponentLabel)
           .map(toComponent);
 
-        const variants: CatalogueServiceVariant[] = (variantsByService.get(service.id) ?? [])
-          .toSorted(bySortThenName)
+        const variants: CatalogueServiceVariant[] = [...(variantsByService.get(service.id) ?? [])]
+          .sort(bySortThenName)
           .map((variant) => {
-            const variantComponents = (componentsByScope.get(`${service.id}:${variant.id}`) ?? [])
-              .toSorted(byComponentLabel)
+            const variantComponents = [...(componentsByScope.get(`${service.id}:${variant.id}`) ?? [])]
+              .sort(byComponentLabel)
               .map(toComponent);
 
             return {

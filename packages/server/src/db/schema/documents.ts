@@ -1,4 +1,4 @@
-import { index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { idColumn, timestamps } from "./_helpers.js";
 import { users } from "./auth.js";
 
@@ -42,7 +42,7 @@ export const secureAccessTokens = pgTable("secure_access_tokens", {
   resourceId: uuid("resource_id").notNull(),
   action: text("action").notNull(),
   recipientHintHash: text("recipient_hint_hash"),
-  requiresOtp: text("requires_otp").notNull().default("false"),
+  requiresOtp: boolean("requires_otp").notNull().default(false),
   deviceBindingHash: text("device_binding_hash"),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),

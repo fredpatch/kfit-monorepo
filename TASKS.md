@@ -39,6 +39,12 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
   - OTP crypto helpers
   - session/fresh-OTP policy helpers
   - Node test coverage for pure primitives
+- [x] Implement and locally validate AuditService foundation.
+- [x] Implement and locally validate session/token service.
+- [x] Implement and locally validate OTP challenge service.
+- [x] Implement and locally validate Drizzle auth repository adapters.
+- [x] Implement and locally validate server auth controllers/routes/middleware foundation.
+- [x] Refactor auth module into responsibility folders and locally validate the structure.
 
 ### Current execution order
 
@@ -54,8 +60,8 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 10. [x] Locally validate server auth HTTP foundation tests.
 11. [x] Refactor auth module into responsibility folders.
 12. [x] Locally validate auth module structure refactor.
-13. [ ] Add shared auth contracts.
-4. Implement controllers/routes and middleware after service validation.
-5. Add shared auth contracts/types.
-6. Add client session restoration/login flows only after server behavior is tested.
-7. Validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.
+13. [x] Add shared auth contracts.
+14. [ ] Locally validate shared auth contracts.
+15. [ ] Bind the server HTTP foundation to the concrete app/router after shared-contract validation.
+16. [ ] Add client session restoration/login flows only after server behavior is tested.
+17. [ ] Validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.

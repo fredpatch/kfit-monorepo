@@ -1,15 +1,17 @@
+import "dotenv/config";
 import assert from "node:assert/strict";
-import { seedInitialCatalogue } from "../../dist/db/seeds/catalogue.seed.js";
-import { db, pool } from "../../dist/db/client.js";
-import { DrizzleCatalogueRepository, CatalogueService } from "../../dist/index.js";
+
+const { seedInitialCatalogue } = await import("../../dist/db/seeds/catalogue.seed.js");
+const { db, pool } = await import("../../dist/db/client.js");
+const { DrizzleCatalogueRepository, CatalogueService } = await import("../../dist/index.js");
 
 function ok(message) {
   console.log(`✓ ${message}`);
 }
 
 try {
-  const first = await seedInitialCatalogue();
-  const second = await seedInitialCatalogue();
+  const first = await seedInitialCatalogue(db);
+  const second = await seedInitialCatalogue(db);
 
   assert.deepEqual(first, { services: 3, variants: 3, components: 5, policies: 3 });
   assert.deepEqual(second, first);

@@ -28,15 +28,25 @@ Structure refactor validation included:
 
 ## Current implementation task
 
-Add shared auth contracts.
+Locally validate shared auth contracts.
+
+## Shared contracts implementation state
+
+- Added `packages/shared/src/auth/contracts.ts`.
+- Added stable route constants for the currently validated HTTP auth boundary.
+- Added stable auth transport error codes and OTP rejection reasons.
+- Added DTO types for current-session response and sensitive-action OTP request/verify.
+- Exported contracts from `@kfit/shared`.
+- Added focused shared contract tests.
+- Kept server consumption deferred until the concrete app/router binding slice to avoid premature workspace build-order coupling.
 
 ## Acceptance criteria for current task
 
-- [ ] Add shared auth DTO/error contracts for the validated server HTTP boundary.
-- [ ] Align contracts with current route manifest and stable server error codes.
-- [ ] Keep French UI wording out of transport errors unless they are user-facing.
-- [ ] Export contracts from `@kfit/shared`.
-- [ ] Add shared typecheck/test coverage if needed.
+- [x] Add shared auth DTO/error contracts for the validated server HTTP boundary.
+- [x] Align contracts with current route manifest and stable server error codes.
+- [x] Keep French UI wording out of transport errors unless they are user-facing.
+- [x] Export contracts from `@kfit/shared`.
+- [x] Add shared typecheck/test coverage.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints

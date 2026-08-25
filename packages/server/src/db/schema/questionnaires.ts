@@ -1,4 +1,4 @@
-import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { idColumn } from "./_helpers.js";
 import { users } from "./auth.js";
 import { services, serviceVariants } from "./catalogue.js";
@@ -23,7 +23,7 @@ export const questionnaireQuestions = pgTable("questionnaire_questions", {
   questionKey: text("question_key").notNull(),
   label: text("label").notNull(),
   questionType: text("question_type").notNull(),
-  required: text("required").notNull().default("false"),
+  required: boolean("required").notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),
   optionsJson: jsonb("options_json"),
   validationJson: jsonb("validation_json"),

@@ -39,17 +39,24 @@ Implemented files:
 
 ## Current implementation task
 
-Implement session/token service foundation.
+Validate session/token service foundation locally.
+
+## Implemented for current task
+
+- `packages/server/src/modules/auth/session.service.ts`
+- `packages/server/src/modules/auth/session.service.test.ts`
+- `AUTH_REFRESH_TOKEN_PEPPER` documented in `.env.example`
+- `loadAuthConfig` exposes `refreshTokenPepper` with fallback to `AUTH_OTP_PEPPER`
 
 ## Acceptance criteria for current task
 
-- [ ] Session service can create session records with inactivity and absolute expiry.
-- [ ] Refresh token digests are stored hash-only.
-- [ ] Refresh rotation increments `rotationCounter` and replaces the stored refresh hash.
-- [ ] Reuse detection can mark a session/token family compromised.
-- [ ] Session validation uses existing inactivity/absolute/revoked/compromised policy.
-- [ ] AuditService is called for session lifecycle security events.
-- [ ] Unit tests are added.
+- [x] Session service can create session records with inactivity and absolute expiry.
+- [x] Refresh token digests are stored hash-only.
+- [x] Refresh rotation increments `rotationCounter` and replaces the stored refresh hash.
+- [x] Reuse detection can mark a session/token family compromised.
+- [x] Session validation uses existing inactivity/absolute/revoked/compromised policy.
+- [x] AuditService is called for session lifecycle security events.
+- [x] Unit tests are added.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints

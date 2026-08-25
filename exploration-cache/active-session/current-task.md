@@ -31,17 +31,29 @@ Express binding validation included:
 
 ## Current implementation task
 
-Implement real JWT/cookie session resolution plus login/logout/refresh route behavior.
+Locally validate JWT/cookie session resolution plus login/logout/refresh route behavior.
+
+## JWT/cookie route implementation state
+
+- Added HS256 access JWT signing/verification helpers.
+- Added access-token cookie session resolver backed by server-side session state.
+- Added AuthRouteService for login, refresh rotation and logout cookie clearing.
+- Added auth user repository and session lookup/revoke repository methods.
+- Expanded auth route manifest with login, refresh and logout.
+- Expanded controller/Express adapter to dispatch login, refresh and logout.
+- Expanded shared auth contracts with login/refresh/logout DTOs and errors.
+- Added focused tests for JWT crypto/session resolution, route service and Express behavior.
+- Kept password verification injectable; bootstrap/password hash policy remains a separate server-first slice.
 
 ## Acceptance criteria for current task
 
-- [ ] Inspect current auth services, repositories, schema and Express binding before changing code.
-- [ ] Define the minimal login/logout/refresh/session route contracts for this slice.
-- [ ] Resolve sessions from secure HttpOnly auth cookies at the Express boundary.
-- [ ] Keep refresh-token storage hash-only and rotate refresh tokens through the validated SessionService.
-- [ ] Apply CSRF requirements to mutating cookie-auth routes.
-- [ ] Add server-first tests for login/logout/refresh/session behavior.
-- [ ] Do not implement client auth UI/session restore yet.
+- [x] Inspect current auth services, repositories, schema and Express binding before changing code.
+- [x] Define the minimal login/logout/refresh/session route contracts for this slice.
+- [x] Resolve sessions from secure HttpOnly auth cookies at the Express boundary.
+- [x] Keep refresh-token storage hash-only and rotate refresh tokens through the validated SessionService.
+- [x] Apply CSRF requirements to mutating cookie-auth routes.
+- [x] Add server-first tests for login/logout/refresh/session behavior.
+- [x] Do not implement client auth UI/session restore yet.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints

@@ -19,6 +19,7 @@ Build K'FIT authentication, sessions, OTP and security foundation server-first o
 - Express app/router binding — locally validated.
 - JWT/cookie session resolution plus login/logout/refresh route behavior — locally validated.
 - Bootstrap/password hashing policy — locally validated.
+- Client auth foundation/session restore/login flows — locally validated.
 
 JWT/cookie route validation included:
 
@@ -33,7 +34,7 @@ JWT/cookie route validation included:
 
 ## Current implementation task
 
-Locally validate the client auth foundation: session restoration and login flows.
+Prepare staging-style cookies/CSRF/session validation before Sprint 1 closure.
 
 ## Bootstrap/password validation
 
@@ -57,24 +58,33 @@ Validated command set:
 
 No schema migration was required.
 
-## Client auth foundation implementation state
+## Client auth foundation validation
 
-- Added real Vite/React client entry point and app shell.
-- Added TanStack Query provider for auth data fetching.
-- Added auth API adapter using shared auth contracts and cookie credentials.
-- Added CSRF forwarding from the readable `kfit_csrf` cookie to `x-csrf-token` for mutating auth requests.
-- Added French bootstrap/login/session UI components.
-- Added shared cookie names and CSRF header constants to `@kfit/shared`.
-- No business dashboard or unrelated feature screens were added.
+The project owner confirmed the client auth foundation is locally validated and the Vite app launches.
+
+Validated command set:
+
+- `git pull`
+- `npm install`
+- `rm -rf packages/client/dist packages/shared/dist packages/server/dist`
+- `npm run build --workspace @kfit/shared`
+- `npm run typecheck`
+- `node --test packages/shared/dist/auth/contracts.test.js`
+- `npm run build --workspace @kfit/client`
+- `npm run build --workspace @kfit/server`
+- `npm run db:check`
+- `npm run dev --workspace @kfit/client`
+
+No schema migration was required.
 
 ## Acceptance criteria for current task
 
-- [x] Inspect client package structure, app entry points, existing HTTP/API utilities and shared auth contracts before changing code.
-- [x] Define the minimal client auth boundary for V1: bootstrap status, login, current session, refresh, logout and CSRF header forwarding.
-- [x] Implement session restoration and login/logout flows in French UI, i18n-ready.
-- [x] Keep authorization server-authoritative; the client only adapts UX to current session state.
-- [ ] The project owner validates locally before the task is marked complete.
-- [ ] Do not move to staging cookie validation until this slice is locally validated.
+- [x] Client auth foundation was locally validated by the project owner.
+- [ ] Inspect Docker/Nginx/staging compose configuration and auth cookie settings before changing code.
+- [ ] Define the staging-style validation path for cookies, credentials, CSRF and session restore.
+- [ ] Implement only the minimal configuration/test harness changes needed for staging-style auth validation.
+- [ ] Provide exact local Windows/Git Bash commands.
+- [ ] Do not close Sprint 1 until the project owner confirms local staging-style validation is green.
 
 ## Constraints
 

@@ -49,18 +49,23 @@ Implemented files:
 
 ## Current implementation task
 
-Implement OTP challenge service foundation.
+Validate OTP challenge service foundation locally.
+
+## Implemented for current task
+
+- `packages/server/src/modules/auth/otp-challenge.service.ts`
+- `packages/server/src/modules/auth/otp-challenge.service.test.ts`
 
 ## Acceptance criteria for current task
 
-- [ ] OTP service can create hash-only OTP challenges.
-- [ ] Existing active challenges for the same user/session/purpose are superseded before resend.
-- [ ] Verification rejects expired, consumed, superseded or max-attempt challenges.
-- [ ] Verification increments attempts on wrong code.
-- [ ] Verification consumes challenge on valid code.
-- [ ] Fresh-OTP use case supports `sensitive_action` and session binding.
-- [ ] AuditService is called for OTP issue/verify/block events.
-- [ ] Unit tests are added.
+- [x] OTP service can create hash-only OTP challenges.
+- [x] Existing active challenges for the same user/session/purpose are superseded before resend.
+- [x] Verification rejects expired, consumed, superseded or max-attempt challenges.
+- [x] Verification increments attempts on wrong code.
+- [x] Verification consumes challenge on valid code.
+- [x] Fresh-OTP use case supports `sensitive_action` and session binding.
+- [x] AuditService is called for OTP issue/verify/block events.
+- [x] Unit tests are added.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints

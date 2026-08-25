@@ -29,16 +29,25 @@ Implemented repository files:
 
 ## Current implementation task
 
-Implement server auth controllers/routes/middleware foundation.
+Validate server auth controllers/routes/middleware foundation locally.
+
+## Implemented for current task
+
+- `packages/server/src/modules/auth/auth.http.types.ts`
+- `packages/server/src/modules/auth/auth.cookies.ts`
+- `packages/server/src/modules/auth/auth.middleware.ts`
+- `packages/server/src/modules/auth/auth.controller.ts`
+- `packages/server/src/modules/auth/auth.routes.ts`
+- `packages/server/src/modules/auth/auth.http.test.ts`
 
 ## Acceptance criteria for current task
 
-- [ ] Inspect existing server HTTP/app structure before implementation.
-- [ ] Add minimal auth route/controller boundary without client work.
-- [ ] Add middleware foundation for request context and protected-route session checks.
-- [ ] Add cookie/CSRF contract scaffolding aligned with Cookie JWT Authentication blueprint.
-- [ ] Wire validated services/repositories through a server-side composition point.
-- [ ] Add focused tests for controller/middleware behavior without requiring browser/client.
+- [x] Existing server HTTP/app structure inspected; no Express app existed yet.
+- [x] Added minimal auth route/controller boundary without client work.
+- [x] Added middleware foundation for protected-route session checks.
+- [x] Added cookie/CSRF contract scaffolding aligned with Cookie JWT Authentication blueprint.
+- [x] Added route manifest for future Express binding.
+- [x] Added focused tests for controller/middleware behavior without requiring browser/client.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints

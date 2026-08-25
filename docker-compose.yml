@@ -32,8 +32,20 @@ services:
     networks:
       - kfit_backend
 
+  clamav:
+    image: clamav/clamav:stable
+    container_name: kfit-clamav-dev
+    restart: unless-stopped
+    ports:
+      - "${CLAMAV_PORT:-3310}:3310"
+    volumes:
+      - kfit_clamav_dev_data:/var/lib/clamav
+    networks:
+      - kfit_backend
+
 volumes:
   kfit_postgres_dev_data:
+  kfit_clamav_dev_data:
 
 networks:
   kfit_backend:

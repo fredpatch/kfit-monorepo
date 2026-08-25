@@ -17,43 +17,32 @@ Build K'FIT authentication, sessions, OTP and security foundation server-first o
 - Auth module structure refactor — locally validated.
 - Shared auth contracts — locally validated.
 - Express app/router binding — locally validated.
+- JWT/cookie session resolution plus login/logout/refresh route behavior — locally validated.
 
-Express binding validation included:
+JWT/cookie route validation included:
 
 - `git pull`
-- `npm install`
-- `rm -rf packages/server/dist`
+- `rm -rf packages/server/dist packages/shared/dist`
 - `npm run typecheck`
+- `npm run build --workspace @kfit/shared`
+- `node --test packages/shared/dist/auth/contracts.test.js`
 - `npm run build --workspace @kfit/server`
-- `node --test packages/server/dist/modules/auth/tests/auth.express.test.js`
-- `node --test packages/server/dist/modules/auth/tests/auth.http.test.js`
+- auth foundation/session/auth-route/access-token-session/http/express/repository tests
 - `npm run db:check`
 
 ## Current implementation task
 
-Locally validate JWT/cookie session resolution plus login/logout/refresh route behavior.
-
-## JWT/cookie route implementation state
-
-- Added HS256 access JWT signing/verification helpers.
-- Added access-token cookie session resolver backed by server-side session state.
-- Added AuthRouteService for login, refresh rotation and logout cookie clearing.
-- Added auth user repository and session lookup/revoke repository methods.
-- Expanded auth route manifest with login, refresh and logout.
-- Expanded controller/Express adapter to dispatch login, refresh and logout.
-- Expanded shared auth contracts with login/refresh/logout DTOs and errors.
-- Added focused tests for JWT crypto/session resolution, route service and Express behavior.
-- Kept password verification injectable; bootstrap/password hash policy remains a separate server-first slice.
+Implement bootstrap/password hashing policy before client auth.
 
 ## Acceptance criteria for current task
 
-- [x] Inspect current auth services, repositories, schema and Express binding before changing code.
-- [x] Define the minimal login/logout/refresh/session route contracts for this slice.
-- [x] Resolve sessions from secure HttpOnly auth cookies at the Express boundary.
-- [x] Keep refresh-token storage hash-only and rotate refresh tokens through the validated SessionService.
-- [x] Apply CSRF requirements to mutating cookie-auth routes.
-- [x] Add server-first tests for login/logout/refresh/session behavior.
-- [x] Do not implement client auth UI/session restore yet.
+- [ ] Inspect current user schema, auth route service, Notion Sprint 1 contract and pattern decisions before changing code.
+- [ ] Define minimal password hashing/verifier policy for V1.
+- [ ] Define one-time bootstrap contract without default credentials.
+- [ ] Implement server-first bootstrap/password services, controllers/routes if in scope.
+- [ ] Keep login route using the validated injectable password verifier boundary.
+- [ ] Add focused tests for password digesting/verification and bootstrap once-only behavior.
+- [ ] Do not implement client auth UI/session restore yet.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints

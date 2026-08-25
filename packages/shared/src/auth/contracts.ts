@@ -26,6 +26,14 @@ export const authOtpRejectReasons = [
 
 export type AuthOtpRejectReason = (typeof authOtpRejectReasons)[number];
 
+export const authCookieNames = {
+  accessToken: "kfit_access",
+  refreshToken: "kfit_refresh",
+  csrfToken: "kfit_csrf",
+} as const;
+
+export const authCsrfHeaderName = "x-csrf-token";
+
 export const authApiRoutes = {
   bootstrapStatus: "/auth/bootstrap/status",
   bootstrap: "/auth/bootstrap",

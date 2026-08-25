@@ -18,6 +18,7 @@ Build K'FIT authentication, sessions, OTP and security foundation server-first o
 - Shared auth contracts — locally validated.
 - Express app/router binding — locally validated.
 - JWT/cookie session resolution plus login/logout/refresh route behavior — locally validated.
+- Bootstrap/password hashing policy — locally validated.
 
 JWT/cookie route validation included:
 
@@ -32,29 +33,38 @@ JWT/cookie route validation included:
 
 ## Current implementation task
 
-Locally validate bootstrap/password hashing policy.
+Prepare the client auth foundation: session restoration and login flows.
 
-## Bootstrap/password implementation state
+## Bootstrap/password validation
 
-- Added adaptive Node `scrypt` password hashing and verification.
-- Added password strength policy: minimum length, at least one letter, at least one number.
-- Added BootstrapService for `required` status and first-user creation.
-- Added `/auth/bootstrap/status` and `/auth/bootstrap`.
-- Added shared contracts and stable bootstrap/password errors.
-- Added Drizzle bootstrap repository with PostgreSQL advisory transaction lock for first-user serialization.
-- Added focused password/bootstrap/controller/Express tests.
-- No schema migration was required.
+The project owner confirmed the bootstrap/password hashing policy is locally validated after the typed `scrypt` wrapper fix.
+
+Validated command set:
+
+- `git pull`
+- `rm -rf packages/server/dist packages/shared/dist`
+- `npm run typecheck`
+- `npm run build --workspace @kfit/shared`
+- `node --test packages/shared/dist/auth/contracts.test.js`
+- `npm run build --workspace @kfit/server`
+- `node --test packages/server/dist/modules/auth/tests/password.service.test.js`
+- `node --test packages/server/dist/modules/auth/tests/bootstrap.service.test.js`
+- `node --test packages/server/dist/modules/auth/tests/auth.http.test.js`
+- `node --test packages/server/dist/modules/auth/tests/auth.express.test.js`
+- `node --test packages/server/dist/modules/auth/tests/auth-route.service.test.js`
+- `node --test packages/server/dist/modules/auth/tests/auth.repositories.integration.js`
+- `npm run db:check`
+
+No schema migration was required.
 
 ## Acceptance criteria for current task
 
-- [x] Inspect current user schema, auth route service, Notion Sprint 1 contract and pattern decisions before changing code.
-- [x] Define minimal password hashing/verifier policy for V1.
-- [x] Define one-time bootstrap contract without default credentials.
-- [x] Implement server-first bootstrap/password services, controllers/routes.
-- [x] Keep login route using the validated injectable password verifier boundary.
-- [x] Add focused tests for password digesting/verification and bootstrap once-only behavior.
-- [x] Do not implement client auth UI/session restore yet.
-- [ ] The project owner validates locally before the task is marked complete.
+- [ ] Inspect client package structure, app entry points, existing HTTP/API utilities and shared auth contracts before changing code.
+- [ ] Define the minimal client auth boundary for V1: bootstrap status, login, current session, refresh, logout and CSRF header forwarding.
+- [ ] Implement session restoration and login/logout flows in French UI, i18n-ready.
+- [ ] Keep authorization server-authoritative; the client only adapts UX to current session state.
+- [ ] Add focused client tests where the existing client stack supports them.
+- [ ] Do not implement unrelated feature screens or move to staging cookie validation until this slice is locally validated.
 
 ## Constraints
 

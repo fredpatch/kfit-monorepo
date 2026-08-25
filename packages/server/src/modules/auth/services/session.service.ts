@@ -199,7 +199,7 @@ export class SessionService {
     });
 
     await this.audit.record({
-      actorType: input.actorUserId ? "user" : "system",
+      actorType: input.actorUserId || session?.userId ? "user" : "system",
       actorUserId: input.actorUserId ?? session?.userId ?? null,
       eventType: "auth.session.revoked",
       entityType: "auth_session",

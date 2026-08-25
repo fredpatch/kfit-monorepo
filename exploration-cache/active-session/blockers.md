@@ -15,6 +15,10 @@
 
 - **Reusable-pattern source** — resolved for Sprint 1 continuation. The reusable implementation patterns are recorded as Notion project/pattern pages, not a local Markdown folder.
 
-## Not blockers for current Sprint 1 auth foundation slice
+## Not blockers for closed Sprint 1 auth foundation
 
-The governance/production items above do not block auth foundation implementation, but they remain gates before scope-dependent business modules or production readiness.
+The governance/production items above did not block Sprint 1 auth foundation implementation. They remain gates before scope-dependent business modules or production readiness.
+
+## Deferred technical work
+
+- **Password reset/recovery HTTP flow** — intentionally deferred from Sprint 1 closure. The validated OTP/password/session/audit foundations support it, but the full flow should be implemented as its own auth slice.

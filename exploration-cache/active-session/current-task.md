@@ -13,6 +13,7 @@ Build K'FIT authentication, sessions, OTP and security foundation server-first o
 - Session/token service foundation — locally validated.
 - OTP challenge service foundation — locally validated.
 - Drizzle auth repository adapters — locally validated.
+- Server auth controllers/routes/middleware foundation — locally validated.
 
 Repository adapter validation included:
 
@@ -29,7 +30,7 @@ Implemented repository files:
 
 ## Current implementation task
 
-Validate server auth controllers/routes/middleware foundation locally.
+Add shared auth contracts.
 
 ## Implemented for current task
 
@@ -48,6 +49,13 @@ Validate server auth controllers/routes/middleware foundation locally.
 - [x] Added cookie/CSRF contract scaffolding aligned with Cookie JWT Authentication blueprint.
 - [x] Added route manifest for future Express binding.
 - [x] Added focused tests for controller/middleware behavior without requiring browser/client.
+- [x] The project owner validates locally before the task is marked complete.
+
+## Next implementation acceptance criteria
+
+- [ ] Add shared auth DTO/error contracts for the validated server HTTP boundary.
+- [ ] Keep French UI wording out of transport errors unless they are user-facing.
+- [ ] Add shared typecheck coverage.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints

@@ -62,6 +62,13 @@ test("Drizzle auth repositories persist session, OTP and audit lifecycle data", 
   assert.equal(rotated.status, "rotated");
   assert.equal(rotated.status === "rotated" ? rotated.session.rotationCounter : null, 1);
 
+  const revoked = await sessionService.revokeSession({
+    sessionId: created.session.id,
+    requestId,
+    now: new Date("2026-08-25T08:00:45Z"),
+  });
+  assert.equal(revoked?.revokedAt?.toISOString(), "2026-08-25T08:00:45.000Z");
+
   const otpService = new OtpChallengeService(new DrizzleOtpChallengeRepository(db), audit, {
     otpPepper: pepper,
     otpTtlMs: 5 * 60_000,

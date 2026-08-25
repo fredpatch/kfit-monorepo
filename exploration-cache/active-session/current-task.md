@@ -1,35 +1,44 @@
 # Current Task
 
-> Sprint: Sprint 0 | Date: 2026-08-25 | Status: Complete
+> Sprint: Sprint 1 | Date: 2026-08-25 | Status: In progress
 
 ## Task
 
-Close Sprint 0 by synchronizing execution memory, technical gotchas, TASKS.md, session notes, blockers, and Notion with the infrastructure that has been locally validated.
+Build K'FIT authentication, sessions, OTP and security foundation server-first on branch `sprint-1/auth-foundation`.
 
-## Acceptance criteria
+## Validated slice
 
-- [x] Dedicated monorepo and package boundaries initialized
-- [x] Exploration cache initialized
-- [x] Complete relational model and Drizzle schema implemented
-- [x] Initial PostgreSQL migration validated on native and Docker PostgreSQL
-- [x] Docker dev database foundation validated
-- [x] SMTP/Mailpit and OTP pre-flight validated
-- [x] Private storage/file-signature/ClamAV pre-flight validated
-- [x] Puppeteer PDF pre-flight validated
-- [x] node-cron/idempotency/advisory-lock job pre-flight validated
-- [x] Encrypted PostgreSQL + private-file backup and isolated restore validated
-- [x] TASKS.md synchronized
-- [x] technical/gotchas.md synchronized
-- [x] active-session next actions, blockers and Sprint 0 session log synchronized
-- [x] Notion Sprint 0 dashboard and backlog reconciled
+The Sprint 1 schema/primitives slice is validated from the project owner's local Windows/Git Bash execution.
 
-## Remaining gates before later work
+Validated commands/output:
 
-- Record the local filesystem path of the reusable implementation-pattern Markdown library before covered Sprint 1 capabilities are implemented.
-- Obtain sponsor validation of the V1 Core / V1.1 scope before scope-dependent business modules proceed.
-- Complete legal validation before production.
-- Configure a true off-server production backup destination before production readiness.
+- `npm run typecheck` — passed for client, server and shared workspaces.
+- `npm run db:check` — Drizzle check returned "Everything's fine".
+- `npm run build --workspace @kfit/server` — passed.
+- `node --test packages/server/dist/modules/auth/auth-foundation.test.js` — 4 tests passed.
+- `npm run db:migrate` — migration applied and repeat run completed without pending migration errors.
+- PostgreSQL inspection confirmed expected columns/indexes/FKs in:
+  - `auth_sessions`
+  - `otp_challenges`
+  - `trusted_devices`
+  - `audit_events`
 
-## Next task
+## Current implementation task
 
-Sprint 1 — Authentication, sessions, OTP and security foundation, implemented server-first using the validated Administrative Foundation, Cookie JWT Authentication and OTP patterns.
+Implement AuditService foundation.
+
+## Acceptance criteria for current task
+
+- [ ] Audit service can write stable auth/security audit events.
+- [ ] Actor, entity, result, request ID and metadata are stored consistently.
+- [ ] IP and user-agent values are hashed before storage.
+- [ ] Service API is reusable by auth/session/OTP services.
+- [ ] Unit/integration tests are added.
+- [ ] The project owner validates locally before the task is marked complete.
+
+## Constraints
+
+- Do not run npm, Docker, PostgreSQL, migrations, pre-flight scripts or tests from ChatGPT/Codex runtime.
+- Provide exact Windows/Git Bash commands when execution is needed.
+- Do not implement controllers/routes/client until service-level validation passes.
+- Do not implement unrelated business modules.

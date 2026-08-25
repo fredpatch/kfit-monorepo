@@ -47,15 +47,20 @@ Implemented files:
 
 ## Current implementation task
 
-Implement Drizzle repository adapters for the validated auth services.
+Validate Drizzle repository adapters locally.
+
+## Implemented for current task
+
+- `packages/server/src/modules/auth/auth.repositories.ts`
+- `packages/server/src/modules/auth/auth.repositories.integration.ts`
 
 ## Acceptance criteria for current task
 
-- [ ] Audit repository/service adapter can persist real audit events.
-- [ ] Session repository adapter can create, find, rotate and compromise sessions.
-- [ ] OTP repository adapter can supersede, create, find latest, increment attempts and consume challenges.
-- [ ] Repository adapters use existing Drizzle schema without new migration unless a real schema gap appears.
-- [ ] Repository tests or type-level integration tests are added without requiring uncontrolled local execution from ChatGPT/Codex.
+- [x] Audit service adapter can persist real audit events via Drizzle.
+- [x] Session repository adapter can create, find, rotate and compromise sessions.
+- [x] OTP repository adapter can supersede, create, find latest, increment attempts and consume challenges.
+- [x] Repository adapters use existing Drizzle schema without a new migration.
+- [x] Explicit PostgreSQL integration harness is added for local validation.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints

@@ -29,10 +29,10 @@ npm run dev:auth-staging-smoke --workspace @kfit/server
 Terminal 2:
 
 ```bash
-docker compose -f docker-compose.staging.yml up -d auth_proxy
-npm run preflight:auth-staging
-docker compose -f docker-compose.staging.yml stop auth_proxy
-docker compose -f docker-compose.staging.yml rm -f auth_proxy
+STAGING_AUTH_PROXY_PORT=18080 docker compose -f docker-compose.staging.yml up -d --force-recreate auth_proxy
+AUTH_STAGING_PROXY_URL=http://127.0.0.1:18080 npm run preflight:auth-staging
+STAGING_AUTH_PROXY_PORT=18080 docker compose -f docker-compose.staging.yml stop auth_proxy
+STAGING_AUTH_PROXY_PORT=18080 docker compose -f docker-compose.staging.yml rm -f auth_proxy
 ```
 
 Optional browser check with the client:

@@ -31,7 +31,8 @@ Terminal 2:
 ```bash
 docker compose -f docker-compose.staging.yml up -d auth_proxy
 npm run preflight:auth-staging
-docker compose -f docker-compose.staging.yml down auth_proxy
+docker compose -f docker-compose.staging.yml stop auth_proxy
+docker compose -f docker-compose.staging.yml rm -f auth_proxy
 ```
 
 Optional browser check with the client:

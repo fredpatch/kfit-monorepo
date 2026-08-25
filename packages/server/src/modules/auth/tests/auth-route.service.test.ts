@@ -113,7 +113,7 @@ test("AuthRouteService login rejects invalid credentials with stable non-enumera
 
   assert.deepEqual(result, { status: "rejected", reason: "invalid_credentials" });
   assert.equal(auditEvents[0]?.actorType, "anonymous");
-  assert.equal(auditEvents[0]?.metadata?.reason, "invalid_credentials");
+  assert.equal((auditEvents[0]?.metadata as { reason?: string } | undefined)?.reason, "invalid_credentials");
 });
 
 test("AuthRouteService refresh rotates the refresh token and returns a new access token", async () => {

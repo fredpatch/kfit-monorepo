@@ -51,3 +51,8 @@ Never restore a backup directly over the active database as the first recovery t
 ## Staging-style auth proxy is transport validation
 
 The Sprint 1 staging auth proxy uses a local smoke server behind Nginx to validate cookie and CSRF transport behavior before full app containers exist. This proves proxy/cookie/CSRF/session mechanics, not real database persistence. The real staging deployment must replace the smoke server with the concrete application container.
+
+
+## Docker Compose service-specific validation and env files
+
+Compose can still parse service-level `env_file` declarations for unrelated services when running commands against a single service. The Sprint 1 auth proxy harness therefore treats `.env.staging` as optional in `docker-compose.staging.yml` so Nginx-only auth validation does not require staging DB secrets.

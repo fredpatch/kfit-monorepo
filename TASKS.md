@@ -45,6 +45,7 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 - [x] Implement and locally validate Drizzle auth repository adapters.
 - [x] Implement and locally validate server auth controllers/routes/middleware foundation.
 - [x] Refactor auth module into responsibility folders and locally validate the structure.
+- [x] Implement and locally validate shared auth contracts.
 
 ### Current execution order
 
@@ -61,7 +62,7 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 11. [x] Refactor auth module into responsibility folders.
 12. [x] Locally validate auth module structure refactor.
 13. [x] Add shared auth contracts.
-14. [ ] Locally validate shared auth contracts.
+14. [x] Locally validate shared auth contracts.
 15. [ ] Bind the server HTTP foundation to the concrete app/router after shared-contract validation.
 16. [ ] Add client session restoration/login flows only after server behavior is tested.
 17. [ ] Validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.

@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, type SQL } from "drizzle-orm";
+import { and, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { db as appDb } from "../../../db/client.js";
 import { authSessions, otpChallenges, users } from "../../../db/schema/auth.js";
@@ -227,20 +227,25 @@ export class DrizzleBootstrapRepository implements BootstrapRepository {
   }
 
   async createFirstUser(input: { email: string; passwordHash: string; role: "admin" | "coach" }): Promise<AuthUserRecord> {
-    if (await this.countUsers() > 0) {
-      throw new Error("BOOTSTRAP_ALREADY_COMPLETED");
-    }
+    return this.database.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(540118001)`);
 
-    const [user] = await this.database
-      .insert(users)
-      .values({
-        email: input.email,
-        passwordHash: input.passwordHash,
-        role: input.role,
-        status: "active",
-      })
-      .returning();
+      const existingUsers = await tx.select({ id: users.id }).from(users).limit(1);
+      if (existingUsers.length > 0) {
+        throw new Error("BOOTSTRAP_ALREADY_COMPLETED");
+      }
 
-    return mapAuthUser(requireRow(user, "Bootstrap user insert did not return a row"));
+      const [user] = await tx
+        .insert(users)
+        .values({
+          email: input.email,
+          passwordHash: input.passwordHash,
+          role: input.role,
+          status: "active",
+        })
+        .returning();
+
+      return mapAuthUser(requireRow(user, "Bootstrap user insert did not return a row"));
+    });
   }
 }

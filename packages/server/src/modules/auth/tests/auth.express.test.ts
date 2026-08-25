@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import test from "node:test";
 import { AuthController } from "../controllers/auth.controller.js";
 import { authCookieNames } from "../middleware/auth.cookies.js";
@@ -55,15 +56,18 @@ async function withTestServer<T>(resolveSession: () => AuthenticatedSessionConte
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
 
-  const address = server.address();
-  assert.equal(typeof address, "object");
+  const address = server.address() as AddressInfo | null;
   assert.notEqual(address, null);
 
   try {
-    return await run(`http://127.0.0.1:${address?.port}`);
+    return await run(`http://127.0.0.1:${address.port}`);
   } finally {
-    server.close();
-    await once(server, "close");
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
   }
 }
 

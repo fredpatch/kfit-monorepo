@@ -127,7 +127,7 @@ test("SessionService rotates a valid refresh token and increments the rotation c
     auditHashPepper,
     refreshTokenTtlMs: 60_000,
     absoluteSessionTtlMs: 120_000,
-    inactivityTimeoutMs: 30_000,
+    inactivityTimeoutMs: 10 * 60_000,
   });
 
   const result = await service.rotateRefreshToken("current-refresh-token", { now: baseNow });

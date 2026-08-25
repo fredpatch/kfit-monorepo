@@ -18,7 +18,6 @@
     "preflight:backup": "node ./scripts/preflight/backup-restore.mjs"
   },
   "dependencies": {
-    "@kfit/shared": "file:../shared",
     "dotenv": "^16.6.1",
     "drizzle-orm": "^0.44.5",
     "node-cron": "^4.2.1",

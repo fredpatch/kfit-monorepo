@@ -61,8 +61,6 @@ export type AuthenticatedSessionResponse = {
   };
 };
 
-export type CurrentSessionResponse = AuthenticatedSessionResponse;
-
 export type LoginResponse = AuthenticatedSessionResponse;
 
 export type RefreshResponse = AuthenticatedSessionResponse;
@@ -70,6 +68,8 @@ export type RefreshResponse = AuthenticatedSessionResponse;
 export type LogoutResponse = {
   loggedOut: true;
 };
+
+export type CurrentSessionResponse = AuthenticatedSessionResponse;
 
 export type SensitiveActionOtpRequestResponse = {
   challengeId: string;

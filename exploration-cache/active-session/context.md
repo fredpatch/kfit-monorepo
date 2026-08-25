@@ -43,8 +43,8 @@ The project owner locally validated the auth schema/primitives slice:
 - Express app/router binding has been implemented and locally validated.
 - No frontend/client auth flows are validated yet.
 - JWT/cookie session resolution plus login/logout/refresh route behavior has been implemented and locally validated.
-- Bootstrap/password hashing policy has been implemented and is awaiting local validation.
-- Next work remains server-first: validate bootstrap/password behavior before client auth work.
+- Bootstrap/password hashing policy has been implemented and locally validated.
+- Next work: client auth foundation for session restoration and login flows, followed later by staging-style cookie/CSRF/session validation before Sprint 1 closure.
 
 ## Active constraints
 

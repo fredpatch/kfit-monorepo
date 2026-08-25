@@ -49,7 +49,7 @@ function applyJsonResponse(response: Response, result: HttpJsonResponse): void {
       secure: cookie.options.secure,
       sameSite: cookie.options.sameSite,
       path: cookie.options.path,
-      maxAge: cookie.options.maxAgeSeconds ? cookie.options.maxAgeSeconds * 1000 : undefined,
+      maxAge: cookie.options.maxAgeSeconds === undefined ? undefined : cookie.options.maxAgeSeconds * 1000,
     });
   }
 

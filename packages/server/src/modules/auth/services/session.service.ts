@@ -43,6 +43,10 @@ export type SessionRepository = {
     compromisedAt: Date;
     reason: string;
   }): Promise<number>;
+  revokeSession(input: {
+    sessionId: string;
+    revokedAt: Date;
+  }): Promise<AuthSessionRecord | null>;
 };
 
 export type SessionAuditRecorder = {
@@ -178,6 +182,36 @@ export class SessionService {
     });
 
     return { status: "rotated", session: rotated, refreshToken: nextRefreshToken };
+  }
+
+  async revokeSession(input: {
+    sessionId: string;
+    actorUserId?: string | null;
+    requestId?: string | null;
+    ipAddress?: string | null;
+    userAgent?: string | null;
+    now?: Date;
+  }) {
+    const revokedAt = input.now ?? new Date();
+    const session = await this.repository.revokeSession({
+      sessionId: input.sessionId,
+      revokedAt,
+    });
+
+    await this.audit.record({
+      actorType: input.actorUserId ? "user" : "system",
+      actorUserId: input.actorUserId ?? session?.userId ?? null,
+      eventType: "auth.session.revoked",
+      entityType: "auth_session",
+      entityId: input.sessionId,
+      result: "success",
+      requestId: input.requestId ?? null,
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
+      metadata: { reason: "logout" },
+    });
+
+    return session;
   }
 
   async markTokenFamilyCompromised(input: {

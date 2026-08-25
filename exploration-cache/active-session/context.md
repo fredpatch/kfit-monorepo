@@ -41,10 +41,10 @@ The project owner locally validated the auth schema/primitives slice:
 - Auth module folder structure has been refactored and locally validated.
 - Shared auth contracts have been implemented in `@kfit/shared` and locally validated.
 - Express app/router binding has been implemented and locally validated.
-- No frontend/client auth flows are validated yet.
+- Client auth foundation for session restoration and login flows has been implemented and is awaiting project-owner local validation.
 - JWT/cookie session resolution plus login/logout/refresh route behavior has been implemented and locally validated.
 - Bootstrap/password hashing policy has been implemented and locally validated.
-- Next work: client auth foundation for session restoration and login flows, followed later by staging-style cookie/CSRF/session validation before Sprint 1 closure.
+- Next work after validation: staging-style cookie/CSRF/session validation before Sprint 1 closure.
 
 ## Active constraints
 

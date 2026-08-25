@@ -68,6 +68,12 @@ async function dispatchAuthRoute(
   }
 
   switch (route.handler) {
+    case "login":
+      return controller.login(context, typeof body === "object" && body !== null ? body : {});
+    case "refresh":
+      return controller.refresh(context);
+    case "logout":
+      return controller.logout(context);
     case "currentSession":
       return controller.currentSession(context);
     case "requestSensitiveActionOtp":

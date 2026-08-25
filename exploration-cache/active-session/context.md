@@ -34,8 +34,9 @@ The project owner locally validated the auth schema/primitives slice:
 - Auth schema adaptation is implemented and locally validated.
 - Pure auth config/crypto/session policy primitives are implemented and locally validated.
 - AuditService foundation is implemented and locally validated.
+- Session/token service foundation is implemented and locally validated.
 - No functional auth HTTP routes/controllers/client flows are validated yet.
-- Next work remains server-first: session/token service.
+- Next work remains server-first: OTP challenge service.
 
 ## Active constraints
 

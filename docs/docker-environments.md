@@ -88,7 +88,7 @@ Sprint 1 includes a local staging-style auth proxy for cookie/CSRF/session valid
 - Nginx listens on `${STAGING_AUTH_PROXY_PORT:-8080}`.
 - `/auth/*` and `/health` proxy to the local auth smoke server on `${AUTH_STAGING_SMOKE_PORT:-3001}`.
 - Other paths proxy to the local Vite client on `5173`.
-- The proxy uses `host.docker.internal`, which is supported by Docker Desktop on Windows.
+- The proxy uses Docker Desktop's native `host.docker.internal` name on Windows.
 
 Validation flow:
 
@@ -101,3 +101,15 @@ npm run preflight:auth-staging
 ```
 
 Run the long-lived smoke server and Vite client in separate terminals when doing manual browser checks.
+
+
+### Auth proxy troubleshooting
+
+If the proxy returns Apache responses, host port 8080 is already used. Recreate the proxy with another host port:
+
+```bash
+STAGING_AUTH_PROXY_PORT=18080 docker compose -f docker-compose.staging.yml up -d --force-recreate auth_proxy
+AUTH_STAGING_PROXY_URL=http://127.0.0.1:18080 npm run preflight:auth-staging
+```
+
+The `auth_proxy` validation path does not require real staging DB secrets; `.env.staging` is optional for this smoke harness.

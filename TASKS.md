@@ -49,7 +49,8 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 5. [x] Implement OTP challenge service.
 6. [x] Locally validate OTP challenge service tests.
 7. [x] Implement auth Drizzle repository adapters.
-8. [ ] Locally validate auth repository adapter integration.
+8. [x] Locally validate auth repository adapter integration.
+9. [ ] Implement server auth controllers/routes/middleware foundation.
 4. Implement controllers/routes and middleware after service validation.
 5. Add shared auth contracts/types.
 6. Add client session restoration/login flows only after server behavior is tested.

@@ -21,7 +21,8 @@
     "preflight:files": "npm run preflight:files --workspace @kfit/server",
     "preflight:pdf": "npm run preflight:pdf --workspace @kfit/server",
     "preflight:jobs": "npm run preflight:jobs --workspace @kfit/server",
-    "preflight:backup": "npm run preflight:backup --workspace @kfit/server"
+    "preflight:backup": "npm run preflight:backup --workspace @kfit/server",
+    "preflight:auth-staging": "npm run preflight:auth-staging --workspace @kfit/server"
   },
   "engines": {
     "node": ">=20"

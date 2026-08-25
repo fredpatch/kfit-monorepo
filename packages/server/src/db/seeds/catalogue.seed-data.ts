@@ -177,4 +177,4 @@ export const kfitInitialCatalogueSeed = {
       medicalClearancePolicy: "not_required",
     },
   ],
-} as const;
+};

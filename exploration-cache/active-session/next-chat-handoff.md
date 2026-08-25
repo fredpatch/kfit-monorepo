@@ -37,6 +37,7 @@ Implemented:
   - `npm run seed:catalogue`
   - `npm run preflight:catalogue-seed`
 - Preflight validates idempotency and public read model through the real Drizzle repository/service.
+- Validation fix `8905d4a`: seed CLI and preflight now load `.env` before importing `db/client`, resolving the reported `DATABASE_URL is required` failure path.
 
 ## Validation commands to request from Fred
 

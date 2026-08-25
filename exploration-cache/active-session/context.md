@@ -44,7 +44,9 @@ The project owner locally validated the auth schema/primitives slice:
 - Client auth foundation for session restoration and login flows has been implemented and locally validated; the Vite app launches.
 - JWT/cookie session resolution plus login/logout/refresh route behavior has been implemented and locally validated.
 - Bootstrap/password hashing policy has been implemented and locally validated.
-- Staging-style cookie/CSRF/session validation behind Nginx has been implemented and locally validated. Next work is Sprint 1 closure review before moving to another sprint boundary.
+- Staging-style cookie/CSRF/session validation behind Nginx has been implemented and locally validated.
+- Sprint 1 closure review is complete: auth foundation is closed, and password reset/recovery is deferred to a later auth slice.
+- Next boundary depends on sponsor validation: Sprint 2 catalogue/service offers if sponsor scope is confirmed; otherwise deferred password reset/recovery is the safe next technical slice.
 
 ## Active constraints
 

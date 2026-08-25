@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
+import express from "express";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
@@ -8,7 +9,8 @@ import { createExpressCatalogueRouter } from "../routes/express-catalogue.router
 import { CatalogueController } from "../controllers/catalogue.controller.js";
 
 async function withTestServer<T>(controller: CatalogueController, run: (baseUrl: string) => Promise<T>): Promise<T> {
-  const app = createExpressCatalogueRouter({ controller });
+  const app = express();
+  app.use(createExpressCatalogueRouter({ controller }));
   const server = createServer(app);
   server.listen(0, "127.0.0.1");
   await once(server, "listening");

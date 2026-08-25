@@ -30,33 +30,37 @@ Validated by project-owner confirmation after running:
 - `node --test packages/server/dist/modules/auth/audit.service.test.js`
 - `npm run db:check`
 
+### Session/token service foundation
+
+Validated by project-owner confirmation after running:
+
+- `git pull`
+- `npm run typecheck`
+- `npm run build --workspace @kfit/server`
+- `node --test packages/server/dist/modules/auth/session.service.test.js`
+- `npm run db:check`
+
 Implemented files:
-
-- `packages/server/src/modules/auth/audit.service.ts`
-- `packages/server/src/modules/auth/audit.service.test.ts`
-- `AUTH_AUDIT_HASH_PEPPER` documented in `.env.example`
-- `loadAuthConfig` exposes `auditHashPepper` with fallback to `AUTH_OTP_PEPPER`
-
-## Current implementation task
-
-Validate session/token service foundation locally.
-
-## Implemented for current task
 
 - `packages/server/src/modules/auth/session.service.ts`
 - `packages/server/src/modules/auth/session.service.test.ts`
 - `AUTH_REFRESH_TOKEN_PEPPER` documented in `.env.example`
 - `loadAuthConfig` exposes `refreshTokenPepper` with fallback to `AUTH_OTP_PEPPER`
 
+## Current implementation task
+
+Implement OTP challenge service foundation.
+
 ## Acceptance criteria for current task
 
-- [x] Session service can create session records with inactivity and absolute expiry.
-- [x] Refresh token digests are stored hash-only.
-- [x] Refresh rotation increments `rotationCounter` and replaces the stored refresh hash.
-- [x] Reuse detection can mark a session/token family compromised.
-- [x] Session validation uses existing inactivity/absolute/revoked/compromised policy.
-- [x] AuditService is called for session lifecycle security events.
-- [x] Unit tests are added.
+- [ ] OTP service can create hash-only OTP challenges.
+- [ ] Existing active challenges for the same user/session/purpose are superseded before resend.
+- [ ] Verification rejects expired, consumed, superseded or max-attempt challenges.
+- [ ] Verification increments attempts on wrong code.
+- [ ] Verification consumes challenge on valid code.
+- [ ] Fresh-OTP use case supports `sensitive_action` and session binding.
+- [ ] AuditService is called for OTP issue/verify/block events.
+- [ ] Unit tests are added.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints

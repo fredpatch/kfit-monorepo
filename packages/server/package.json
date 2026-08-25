@@ -7,6 +7,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc",
     "test": "npm run build && node --test 'dist/**/*.test.js'",
+    "dev:auth-staging-smoke": "node ./scripts/dev/auth-staging-smoke-server.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:check": "drizzle-kit check",
@@ -15,7 +16,8 @@
     "preflight:files": "node ./scripts/preflight/files.mjs",
     "preflight:pdf": "node ./scripts/preflight/pdf.mjs",
     "preflight:jobs": "node ./scripts/preflight/jobs.mjs",
-    "preflight:backup": "node ./scripts/preflight/backup-restore.mjs"
+    "preflight:backup": "node ./scripts/preflight/backup-restore.mjs",
+    "preflight:auth-staging": "node ./scripts/preflight/auth-staging.mjs"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

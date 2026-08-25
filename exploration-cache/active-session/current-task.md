@@ -1,10 +1,26 @@
 # Current Task
 
-> Slice: Deferred auth — password reset/recovery | Date: 2026-08-25 | Status: Server validated; Mailpit preflight pending
+> Slice: Deferred auth — password reset/recovery | Date: 2026-08-25 | Status: Completed and locally validated
 
 ## Task
 
-Validate the real SMTP/Mailpit recovery path on branch `sprint-1/auth-foundation`.
+Implement and validate the password reset/recovery HTTP flow that was deferred from Sprint 1 closure.
+
+## Completed implementation
+
+The recovery slice provides:
+
+- Neutral account-enumeration-safe recovery request responses.
+- Real OTP email delivery through the auth mail delivery abstraction.
+- Hash-only OTP verification.
+- Short-lived signed reset grants.
+- One-time reset grant redemption.
+- Password policy enforcement.
+- Atomic password update with session and trusted-device revocation.
+- Delivery and completion audit events.
+- Same-origin guard for browser recovery mutations.
+- Process-local V1 rate limiting for abuse reduction.
+- Automated Mailpit-backed HTTP/email preflight.
 
 ## Locally validated by Fred
 
@@ -15,18 +31,27 @@ Validate the real SMTP/Mailpit recovery path on branch `sprint-1/auth-foundation
 - PostgreSQL one-time reset hard commit.
 - Atomic password update with session and trusted-device revocation.
 - Drizzle schema consistency; no migration required.
+- Real SMTP/Mailpit HTTP/email preflight.
 
-## Current implementation
+## Final Mailpit preflight validation
 
-An automated `preflight:auth-recovery` command now:
+Fred ran:
 
-1. Starts an ephemeral Express recovery app.
-2. Sends a real recovery OTP through Nodemailer/SMTP.
-3. Retrieves the message through the Mailpit API.
-4. Verifies the OTP through the HTTP recovery endpoint.
-5. Resets the password through the HTTP reset endpoint.
-6. Rejects replay of the same reset grant.
-7. Confirms neutral unknown-account behavior, OTP non-disclosure and audit events.
+```bash
+npm run preflight:auth-recovery
+```
+
+Confirmed green output:
+
+```text
+✓ unknown recovery request returns the neutral accepted response
+✓ recovery request sends a real OTP email through SMTP to Mailpit
+✓ HTTP responses never expose the OTP
+✓ Mailpit message contains the expected French subject and six-digit code
+✓ emailed OTP produces a short-lived reset grant through HTTP
+✓ password reset succeeds once and replay is rejected
+✓ recovery delivery and completion audit events are recorded
+```
 
 ## Acceptance criteria
 
@@ -39,12 +64,10 @@ An automated `preflight:auth-recovery` command now:
 - [x] Recovery request is neutral for unknown identities.
 - [x] Reset grant can be redeemed once only.
 - [x] Successful reset invalidates all sessions and trusted devices.
-- [ ] Mailpit receives the real recovery OTP email.
-- [ ] HTTP responses never expose the OTP.
-- [ ] The emailed OTP completes verify/reset and replay rejection through HTTP.
+- [x] Mailpit receives the real recovery OTP email.
+- [x] HTTP responses never expose the OTP.
+- [x] The emailed OTP completes verify/reset and replay rejection through HTTP.
 
-## Constraints
+## Next boundary
 
-- Do not mark the deferred auth task complete until Fred validates the Mailpit preflight.
-- Do not open client recovery screens or Sprint 2 while this gate is pending.
-- Sprint 2 remains blocked until sponsor/Konny confirms V1 Core / V1.1 scope.
+Sprint 2 remains blocked until sponsor/Konny confirms V1 Core / V1.1 scope and consolidated business rules.

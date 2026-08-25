@@ -1,3 +1,13 @@
+## 2026-08-25 — Password reset/recovery HTTP slice validated and closed
+
+**Context**: Sprint 1 auth foundation was already closed. The deferred password reset/recovery HTTP flow reused validated OTP, password, session, trusted-device and audit foundations.
+
+**Decision**: Close the deferred recovery HTTP slice as locally validated.
+
+**Rationale**: Fred confirmed green server validation plus real SMTP/Mailpit HTTP/email preflight, including neutral unknown-account response, OTP non-disclosure over HTTP, email OTP verification, one-shot reset grant replay rejection and audit events.
+
+**Impact**: This removes the deferred auth HTTP blocker before production. Sprint 2 still remains blocked by sponsor/Konny validation of V1 Core / V1.1 scope.
+
 ## 2026-08-25 — Password reset/recovery deferred from Sprint 1 closure
 
 **Context**: Sprint 1 validated the auth/security foundation, including OTP, sessions, password hashing, CSRF, audit, client auth shell and Nginx cookie validation.

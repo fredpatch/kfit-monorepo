@@ -4,7 +4,9 @@
 
 Sprint 1 — Authentication, sessions, OTP & security foundation is complete and locally validated.
 
-Next chat should **not restart Sprint 0/Sprint 1 planning**. It should begin from Sprint 1 closure state and choose the next boundary based on sponsor validation status.
+The deferred post-closure auth slice — password reset/recovery HTTP flow — is also complete and locally validated, including the real SMTP/Mailpit HTTP/email preflight.
+
+Next chat should **not restart Sprint 0/Sprint 1 planning**. It should begin from the validated closure state and choose the next boundary based on sponsor validation status.
 
 ## Execution rule still active
 
@@ -56,45 +58,44 @@ Validated slices:
   - French bootstrap/login/session UI
 - Staging-style Nginx cookies/CSRF/session validation.
 
-## Key validated local commands/output
+## Post-closure auth recovery slice status
+
+Password reset/recovery HTTP flow is closed as locally validated.
+
+Validated coverage:
+
+- Neutral account-enumeration-safe recovery request.
+- Real OTP email delivery via SMTP/Mailpit.
+- HTTP responses never expose OTP.
+- French recovery email subject and six-digit code.
+- Emailed OTP verification through HTTP.
+- Short-lived reset grant.
+- One-shot password reset with replay rejection.
+- Atomic password update plus session and trusted-device revocation.
+- Delivery and completion audit events.
+- Drizzle schema check; no migration required.
 
 Fred confirmed green:
 
 ```bash
-npm run typecheck
-npm run build --workspace @kfit/shared
-npm run build --workspace @kfit/client
-npm run build --workspace @kfit/server
-npm run db:check
-node --test packages/shared/dist/auth/contracts.test.js
+npm run preflight:auth-recovery
 ```
-
-Staging-style validation:
-
-```bash
-docker compose -f docker-compose.staging.yml exec auth_proxy getent hosts host.docker.internal
-docker compose -f docker-compose.staging.yml exec auth_proxy wget -S -O- http://host.docker.internal:3001/health
-curl -i http://127.0.0.1:18080/health
-AUTH_STAGING_PROXY_URL=http://127.0.0.1:18080 npm run preflight:auth-staging
-```
-
-Confirmed output:
 
 ```text
-✓ staging proxy health route reachable
-✓ auth cookies keep HttpOnly/Secure/SameSite/Path attributes through Nginx
-✓ readable CSRF cookie is forwarded as x-csrf-token
-✓ refresh/logout reject missing CSRF and accept valid double-submit CSRF
-✓ session restore works through the staging-style Nginx path
+✓ unknown recovery request returns the neutral accepted response
+✓ recovery request sends a real OTP email through SMTP to Mailpit
+✓ HTTP responses never expose the OTP
+✓ Mailpit message contains the expected French subject and six-digit code
+✓ emailed OTP produces a short-lived reset grant through HTTP
+✓ password reset succeeds once and replay is rejected
+✓ recovery delivery and completion audit events are recorded
 ```
 
 ## Important decisions
 
-- Password reset/recovery HTTP flow is intentionally deferred from Sprint 1 closure.
-- The validated OTP/password/session/audit foundations are ready to support it later.
 - Do not start scope-dependent business modules until sponsor validation confirms the V1 Core/V1.1 split with Konny.
-- If sponsor validation is not available, the safest next technical task is the deferred password reset/recovery auth slice.
 - If sponsor validation is available, begin Sprint 2 — catalogue/service offer foundation.
+- If sponsor validation is still unavailable, explicitly choose the next pre-production/non-scope-dependent slice instead of opening Sprint 2 by default.
 
 ## Current blockers
 
@@ -108,17 +109,12 @@ Confirmed output:
 2. `exploration-cache/active-session/current-task.md`
 3. `exploration-cache/active-session/next-actions.md`
 4. `exploration-cache/active-session/blockers.md`
-5. `TASKS.md`
-6. `exploration-cache/project/decisions.md`
-7. `docs/sprint-1-auth-adaptation-contract.md`
-8. `docs/sprint-1-auth-staging-validation.md`
-9. `packages/shared/src/auth/contracts.ts`
-10. `packages/server/src/modules/auth/README.md`
-11. `packages/server/src/modules/auth/routes/auth.routes.ts`
-12. `packages/client/src/auth/api/auth-api.ts`
-13. `packages/client/src/auth/state/auth-context.tsx`
-14. `docker-compose.staging.yml`
-15. `ops/nginx/staging-auth.conf`
+5. `exploration-cache/active-session/next-chat-handoff.md`
+6. `TASKS.md`
+7. `changelog.md`
+8. `exploration-cache/project/decisions.md`
+9. Notion page: K'FIT — Tableau de Bord Projet
+10. Notion page: K'FIT - Sprint 1 · Authentification, sessions, OTP et sécurité
 
 ## Recommended next task
 
@@ -127,31 +123,26 @@ Ask Fred one direct question:
 **Has Konny/sponsor validation confirmed the V1 Core / V1.1 split and business rules?**
 
 - If yes: start Sprint 2 — catalogue/service offer foundation.
-- If no: implement the deferred auth slice — password reset/recovery HTTP flow.
+- If no: keep Sprint 2 blocked and select the next non-scope-dependent pre-production slice explicitly.
 
 ## Ready-to-paste continuation prompt
 
 ```text
-Continue the K'FIT project from Sprint 1 closure.
+Continue the K'FIT project from Sprint 1 auth foundation closure plus validated deferred auth recovery HTTP slice.
 
-Sprint 1 auth foundation is complete and locally validated. Do not restart Sprint 0 or Sprint 1 planning.
+Do not rerun feasibility or Sprint 0/Sprint 1 planning. Sprint 1 auth foundation is locally validated and closed. Password reset/recovery HTTP flow is also locally validated and closed, including Mailpit SMTP + HTTP preflight.
 
 First inspect:
 - exploration-cache/active-session/context.md
 - exploration-cache/active-session/current-task.md
 - exploration-cache/active-session/next-actions.md
 - exploration-cache/active-session/blockers.md
+- exploration-cache/active-session/next-chat-handoff.md
 - TASKS.md
+- changelog.md
 - exploration-cache/project/decisions.md
-- docs/sprint-1-auth-adaptation-contract.md
-- docs/sprint-1-auth-staging-validation.md
-- packages/shared/src/auth/contracts.ts
-- packages/server/src/modules/auth/README.md
-- packages/server/src/modules/auth/routes/auth.routes.ts
-- packages/client/src/auth/api/auth-api.ts
-- packages/client/src/auth/state/auth-context.tsx
-- docker-compose.staging.yml
-- ops/nginx/staging-auth.conf
+- Notion page: K'FIT — Tableau de Bord Projet
+- Notion page: K'FIT - Sprint 1 · Authentification, sessions, OTP et sécurité
 
 Respect the execution rule:
 - Do not run npm, Docker, PostgreSQL, migrations, tests, preflight scripts, git pull/clone, or project commands in your runtime.
@@ -163,7 +154,7 @@ Respect the execution rule:
 Next decision:
 Ask whether sponsor validation for V1 Core / V1.1 is confirmed.
 If yes, start Sprint 2 catalogue/service offer foundation.
-If no, implement the deferred password reset/recovery HTTP flow as a later auth slice.
+If no, keep Sprint 2 blocked and choose the next non-scope-dependent pre-production slice explicitly.
 
 Do not implement unrelated features.
 ```

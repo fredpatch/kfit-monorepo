@@ -14,11 +14,8 @@
 ## Resolved / clarified
 
 - **Reusable-pattern source** — resolved for Sprint 1 continuation. The reusable implementation patterns are recorded as Notion project/pattern pages, not a local Markdown folder.
+- **Password reset/recovery HTTP flow** — resolved and locally validated by Fred, including server tests, PostgreSQL hard commit, session/trusted-device revocation, `db:check`, and real SMTP/Mailpit HTTP/email preflight.
 
 ## Not blockers for closed Sprint 1 auth foundation
 
-The governance/production items above did not block Sprint 1 auth foundation implementation. They remain gates before scope-dependent business modules or production readiness.
-
-## Deferred technical work
-
-- **Password reset/recovery HTTP flow** — server logic locally validated by Fred; automated Mailpit-backed HTTP/email preflight is awaiting local validation.
+The governance/production items above did not block Sprint 1 auth foundation implementation or the post-closure recovery HTTP slice. They remain gates before scope-dependent business modules or production readiness.

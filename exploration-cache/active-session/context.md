@@ -4,7 +4,7 @@
 
 ## Where we left off
 
-Sprint 1 auth foundation is complete and locally validated. Sponsor/Konny scope validation is still pending. Fred locally validated the deferred password reset/recovery server logic on branch `sprint-1/auth-foundation`; the remaining gate is the Mailpit-backed HTTP/email preflight.
+Sprint 1 auth foundation is complete and locally validated. The post-closure deferred auth slice for password reset/recovery HTTP flow is now also complete and locally validated, including the real SMTP/Mailpit HTTP/email preflight. Sponsor/Konny scope validation is still pending, so Sprint 2 remains unopened.
 
 ## Pattern source
 
@@ -45,9 +45,14 @@ The project owner locally validated the auth schema/primitives slice:
 - JWT/cookie session resolution plus login/logout/refresh route behavior has been implemented and locally validated.
 - Bootstrap/password hashing policy has been implemented and locally validated.
 - Staging-style cookie/CSRF/session validation behind Nginx has been implemented and locally validated.
-- Sprint 1 closure review is complete: auth foundation is closed, and password reset/recovery is deferred to a later auth slice.
-- Deferred password reset/recovery server slice is locally validated: shared/server builds, contracts, service/controller/Express tests, PostgreSQL hard-commit integration and `db:check` are green.
-- Automated Mailpit-backed recovery HTTP/email preflight is implemented and awaits Fred's local validation.
+- Sprint 1 closure review is complete: auth foundation is closed.
+- Deferred password reset/recovery HTTP flow is complete and locally validated:
+  - shared/server builds
+  - shared contracts
+  - service/controller/Express tests
+  - PostgreSQL hard-commit integration
+  - `db:check`
+  - real SMTP/Mailpit HTTP/email preflight via `npm run preflight:auth-recovery`
 - Sprint 2 remains unopened while sponsor scope validation is pending.
 
 ## Active constraints

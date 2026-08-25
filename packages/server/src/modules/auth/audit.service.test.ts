@@ -56,6 +56,7 @@ test("AuditService writes normalized audit events with hashed request metadata",
     result: string;
   };
 
+  assert.ok(event);
   assert.equal(event.eventType, "auth.login");
   assert.equal(stored.actorUserId, input.actorUserId);
   assert.equal(stored.result, "success");

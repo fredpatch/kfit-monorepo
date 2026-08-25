@@ -16,42 +16,36 @@ Build K'FIT authentication, sessions, OTP and security foundation server-first o
 - Server auth controllers/routes/middleware foundation — locally validated.
 - Auth module structure refactor — locally validated.
 - Shared auth contracts — locally validated.
+- Express app/router binding — locally validated.
 
-Shared contracts validation included:
+Express binding validation included:
 
 - `git pull`
-- `rm -rf packages/shared/dist packages/server/dist`
+- `npm install`
+- `rm -rf packages/server/dist`
 - `npm run typecheck`
-- `npm run build --workspace @kfit/shared`
-- `node --test packages/shared/dist/auth/contracts.test.js`
 - `npm run build --workspace @kfit/server`
+- `node --test packages/server/dist/modules/auth/tests/auth.express.test.js`
 - `node --test packages/server/dist/modules/auth/tests/auth.http.test.js`
 - `npm run db:check`
 
 ## Current implementation task
 
-Locally validate Express app/router binding.
-
-## Express binding implementation state
-
-- Added Express dependency to `@kfit/server`.
-- Added `createExpressAuthRouter` adapter for the validated auth route manifest.
-- Added `createServerApp` composition factory with JSON parsing, health route and auth router mount.
-- Added index exports for app/router factories.
-- Added focused Express HTTP tests using Node's built-in test runner and fetch.
-- Kept concrete JWT/session resolution injectable for the next server-first slice.
+Implement real JWT/cookie session resolution plus login/logout/refresh route behavior.
 
 ## Acceptance criteria for current task
 
-- [x] Inspect current server entrypoint/app shape before changing code.
-- [x] Create or extend the concrete Express app composition point.
-- [x] Mount auth routes using the validated auth route manifest/controller boundary.
-- [x] Ensure cookie parsing, CSRF extraction and auth middleware assumptions are represented at app level.
-- [x] Keep server-first tests focused on route/app binding; do not add client auth UI yet.
+- [ ] Inspect current auth services, repositories, schema and Express binding before changing code.
+- [ ] Define the minimal login/logout/refresh/session route contracts for this slice.
+- [ ] Resolve sessions from secure HttpOnly auth cookies at the Express boundary.
+- [ ] Keep refresh-token storage hash-only and rotate refresh tokens through the validated SessionService.
+- [ ] Apply CSRF requirements to mutating cookie-auth routes.
+- [ ] Add server-first tests for login/logout/refresh/session behavior.
+- [ ] Do not implement client auth UI/session restore yet.
 - [ ] The project owner validates locally before the task is marked complete.
 
 ## Constraints
 
 - Do not run npm, Docker, PostgreSQL, migrations, pre-flight scripts or tests from ChatGPT/Codex runtime.
 - Provide exact Windows/Git Bash commands when execution is needed.
-- Do not implement login UI/session restore yet.
+- Do not implement unrelated features.

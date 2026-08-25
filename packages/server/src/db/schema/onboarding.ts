@@ -1,4 +1,4 @@
-import { index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { idColumn, timestamps } from "./_helpers.js";
 import { users } from "./auth.js";
 import { customers, subscriptions } from "./customers.js";
@@ -9,7 +9,7 @@ export const onboardingItems = pgTable("onboarding_items", {
   itemType: text("item_type").notNull(),
   label: text("label").notNull(),
   status: text("status").notNull().default("pending"),
-  isBlocking: text("is_blocking").notNull().default("true"),
+  isBlocking: boolean("is_blocking").notNull().default(true),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   waivedAt: timestamp("waived_at", { withTimezone: true }),
   waiverReason: text("waiver_reason"),

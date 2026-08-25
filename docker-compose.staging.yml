@@ -19,6 +19,18 @@ services:
     expose:
       - "5432"
 
+  auth_proxy:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${STAGING_AUTH_PROXY_PORT:-8080}:80"
+    volumes:
+      - ./ops/nginx/staging-auth.conf:/etc/nginx/conf.d/default.conf:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - kfit_edge
+
 volumes:
   kfit_postgres_staging_data:
 
@@ -26,3 +38,5 @@ networks:
   kfit_backend:
     driver: bridge
     internal: true
+  kfit_edge:
+    driver: bridge

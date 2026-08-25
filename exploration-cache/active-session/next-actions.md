@@ -2,10 +2,11 @@
 
 > Updated: 2026-08-25
 
-1. Complete Sprint 0 closure synchronization in Notion.
-2. Record the local filesystem path of the Reusable Implementation Patterns & Blueprints Markdown library.
-3. Obtain sponsor validation of the consolidated V1 Core / V1.1 scope.
-4. Open Sprint 1 only after Sprint 0 is formally closed.
-5. Sprint 1 first implementation task: adapt Administrative Foundation + Cookie JWT Authentication + OTP patterns into K'FIT auth/session design.
-6. Keep implementation server-first: Service → Controller → Route → shared contracts → client.
-7. Before Sprint 1 closure, validate cookies/CSRF/session behavior behind Nginx/staging-style deployment.
+1. Continue on branch `sprint-1/auth-foundation`.
+2. Implement the AuditService foundation only.
+3. Commit AuditService code/tests/docs to GitHub.
+4. Ask the project owner to run the exact local validation commands on Windows/Git Bash.
+5. Diagnose/fix any local validation failures before moving on.
+6. After AuditService validation, implement session/token service.
+7. Keep implementation order: Service → Controller → Route/Middleware → shared contracts → client.
+8. Before Sprint 1 closure, validate cookies/CSRF/session behavior behind Nginx/staging-style deployment.

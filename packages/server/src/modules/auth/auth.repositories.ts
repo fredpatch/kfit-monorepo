@@ -1,4 +1,5 @@
 import { and, desc, eq, isNull, type SQL } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { db as appDb } from "../../db/client.js";
 import { authSessions, otpChallenges } from "../../db/schema/auth.js";
 import type {
@@ -20,7 +21,7 @@ function requireRow<T>(row: T | undefined, message: string): T {
   return row;
 }
 
-function nullableUuidCondition(column: Parameters<typeof eq>[0], value: string | null | undefined): SQL {
+function nullableUuidCondition(column: AnyPgColumn, value: string | null | undefined): SQL<unknown> {
   return value ? eq(column, value) : isNull(column);
 }
 

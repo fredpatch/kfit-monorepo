@@ -75,4 +75,5 @@ Execution rule: implementation happens on `sprint-1/auth-foundation`. Local comm
 20. [x] Locally validate bootstrap/password hashing policy.
 21. [x] Implement client session restoration/login flows after server behavior was tested.
 22. [x] Locally validate client session restoration/login flows.
-23. [ ] Validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.
+23. [x] Implement staging-style Nginx auth proxy validation harness.
+24. [ ] Locally validate cookies/CSRF/session behavior behind the staging-style Nginx path before Sprint 1 closure.

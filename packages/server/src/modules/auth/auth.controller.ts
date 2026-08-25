@@ -37,8 +37,8 @@ export class AuthController {
       sessionId: auth.session.sessionId,
       purpose: "sensitive_action",
       requestId: context.requestId,
-      ipAddress: context.ipAddress,
-      userAgent: context.userAgent,
+      ipAddress: context.ipAddress ?? null,
+      userAgent: context.userAgent ?? null,
     });
 
     return {
@@ -64,8 +64,8 @@ export class AuthController {
       sessionId: auth.session.sessionId,
       purpose: "sensitive_action",
       requestId: context.requestId,
-      ipAddress: context.ipAddress,
-      userAgent: context.userAgent,
+      ipAddress: context.ipAddress ?? null,
+      userAgent: context.userAgent ?? null,
     });
 
     if (result.status === "verified") {

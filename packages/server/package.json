@@ -11,6 +11,7 @@
     "db:check": "drizzle-kit check"
   },
   "dependencies": {
+    "dotenv": "^16.6.1",
     "drizzle-orm": "^0.44.5",
     "pg": "^8.16.3"
   },

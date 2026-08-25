@@ -19,6 +19,14 @@ export const authOtpRejectReasons = [
 
 export type AuthOtpRejectReason = (typeof authOtpRejectReasons)[number];
 
+export const authApiRoutes = {
+  currentSession: "/auth/session",
+  requestSensitiveActionOtp: "/auth/otp/sensitive-action",
+  verifySensitiveActionOtp: "/auth/otp/sensitive-action/verify",
+} as const;
+
+export type AuthApiRoute = (typeof authApiRoutes)[keyof typeof authApiRoutes];
+
 export type AuthRole = "admin" | "coach";
 
 export type AuthErrorResponse = {

@@ -12,7 +12,8 @@
     "preflight:otp": "node ./scripts/preflight/otp.mjs",
     "preflight:smtp": "node ./scripts/preflight/smtp.mjs",
     "preflight:files": "node ./scripts/preflight/files.mjs",
-    "preflight:pdf": "node ./scripts/preflight/pdf.mjs"
+    "preflight:pdf": "node ./scripts/preflight/pdf.mjs",
+    "preflight:jobs": "node ./scripts/preflight/jobs.mjs"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

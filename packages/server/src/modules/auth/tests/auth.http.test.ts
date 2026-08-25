@@ -44,11 +44,14 @@ function makeChallenge(input: Partial<OtpChallengeRecord> = {}): OtpChallengeRec
 
 test("auth routes expose the server-side auth foundation endpoints", () => {
   assert.deepEqual(authRoutes.map((route) => route.path), [
+    "/auth/login",
+    "/auth/refresh",
+    "/auth/logout",
     "/auth/session",
     "/auth/otp/sensitive-action",
     "/auth/otp/sensitive-action/verify",
   ]);
-  assert.equal(authRoutes.filter((route) => route.requiresCsrf).length, 2);
+  assert.equal(authRoutes.filter((route) => route.requiresCsrf).length, 4);
 });
 
 test("auth middleware enforces session, fresh OTP and double-submit CSRF", () => {

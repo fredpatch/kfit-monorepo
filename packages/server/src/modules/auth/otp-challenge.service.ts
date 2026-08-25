@@ -62,9 +62,11 @@ export type IssueOtpInput = OtpChallengeLookup & {
   now?: Date;
 };
 
+export type OtpRejectReason = "not_found" | "expired" | "consumed" | "superseded" | "locked" | "invalid";
+
 export type VerifyOtpResult =
   | { status: "verified"; challenge: OtpChallengeRecord }
-  | { status: "rejected"; reason: "not_found" | "expired" | "consumed" | "superseded" | "locked" | "invalid"; challenge?: OtpChallengeRecord };
+  | { status: "rejected"; reason: OtpRejectReason; challenge?: OtpChallengeRecord };
 
 function addMs(date: Date, durationMs: number): Date {
   return new Date(date.getTime() + durationMs);
@@ -126,7 +128,7 @@ export class OtpChallengeService {
       purpose: input.purpose,
     });
 
-    const rejected = async (reason: VerifyOtpResult extends { reason: infer R } ? R : never, result: "failure" | "blocked", challengeForAudit: OtpChallengeRecord | null = challenge): Promise<VerifyOtpResult> => {
+    const rejected = async (reason: OtpRejectReason, result: "failure" | "blocked", challengeForAudit: OtpChallengeRecord | null = challenge): Promise<VerifyOtpResult> => {
       await this.audit.record({
         actorType: input.userId ? "user" : "anonymous",
         actorUserId: input.userId ?? null,

@@ -5,7 +5,10 @@ import { auditEvents } from "../../db/schema/auth.js";
 export type AuditActorType = "user" | "system" | "anonymous";
 export type AuditResult = "success" | "failure" | "blocked";
 
-export type AuditMetadata = Record<string, string | number | boolean | null | AuditMetadata | AuditMetadata[]>;
+export type AuditMetadataValue = string | number | boolean | null | AuditMetadata | AuditMetadataValue[];
+export interface AuditMetadata {
+  [key: string]: AuditMetadataValue;
+}
 
 export type RecordAuditEventInput = {
   actorType: AuditActorType;
@@ -50,6 +53,10 @@ export class AuditService {
         metadataJson: input.metadata ?? null,
       })
       .returning();
+
+    if (!event) {
+      throw new Error("Audit event insert did not return a row");
+    }
 
     return event;
   }

@@ -22,6 +22,16 @@ services:
     networks:
       - kfit_backend
 
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: kfit-mailpit-dev
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    networks:
+      - kfit_backend
+
 volumes:
   kfit_postgres_dev_data:
 

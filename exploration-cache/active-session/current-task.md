@@ -35,7 +35,7 @@ JWT/cookie route validation included:
 
 ## Current implementation task
 
-Perform Sprint 1 closure review and decide the next sprint boundary.
+Sprint 1 closure review complete. Prepare next task boundary.
 
 ## Bootstrap/password validation
 
@@ -97,12 +97,22 @@ Preflight confirmed:
 - refresh/logout reject missing CSRF and accept valid double-submit CSRF
 - session restore works through the staging-style Nginx path
 
+## Sprint 1 closure decision
+
+Sprint 1 auth foundation is complete and locally validated.
+
+Password reset/recovery HTTP flow is intentionally deferred to a later auth slice. The validated OTP/password/session/audit foundations are ready to support it, but the full recovery flow requires email delivery UX, abuse limits, session invalidation rules, audit lifecycle and client screens. It is not a Sprint 1 closure blocker.
+
 ## Acceptance criteria for current task
 
 - [x] Project owner locally validated the staging-style auth preflight.
-- [ ] Reconcile Sprint 1 checklist, known gaps and Notion/GitHub state before closing the sprint.
-- [ ] Confirm whether password reset/recovery HTTP flow is Sprint 1 closure scope or a later slice.
-- [ ] Do not begin Sprint 2 implementation until Sprint 1 closure review is complete.
+- [x] Reconcile Sprint 1 checklist, known gaps and Notion/GitHub state before closing the sprint.
+- [x] Confirm password reset/recovery HTTP flow is deferred to a later auth slice.
+- [x] Do not begin Sprint 2 implementation until Sprint 1 closure review is complete.
+
+## Next task boundary
+
+Before Sprint 2 implementation, resolve the sponsor validation blocker for V1 Core/V1.1 scope with Konny. If sponsor validation is available, Sprint 2 starts with catalogue/service offer foundation. If not, the next safe technical slice is the deferred password reset/recovery flow.
 
 ## Constraints
 

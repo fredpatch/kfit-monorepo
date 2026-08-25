@@ -1,3 +1,13 @@
+## 2026-08-25 — Password reset/recovery deferred from Sprint 1 closure
+
+**Context**: Sprint 1 validated the auth/security foundation, including OTP, sessions, password hashing, CSRF, audit, client auth shell and Nginx cookie validation.
+
+**Decision**: Defer full password reset/recovery HTTP flow to a later auth slice.
+
+**Rationale**: The recovery flow requires email delivery UX, abuse/rate-limit policy, reset OTP lifecycle, password update, session invalidation, audit lifecycle and client screens. It should not bloat Sprint 1 after the foundation is green.
+
+**Impact**: Sprint 1 can close as auth foundation validated. The deferred slice should reuse the validated OTP/password/session/audit services.
+
 # Architectural Decisions Log
 
 > Append-only — newest at top.

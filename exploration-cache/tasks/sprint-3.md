@@ -10,7 +10,7 @@ Build the M2 acquisition workflow after the validated catalogue foundation: publ
 
 1. [x] S3.1 — Public request/prospect intake contract (server-first).
 2. [x] S3.2 — Public request form (client).
-3. [ ] S3.3 — Admin request queue + contact attempt logging.
+3. [x] S3.3 — Admin request queue + contact attempt logging.
 4. [ ] S3.4 — Qualification review recording.
 5. [ ] S3.5 — Manual waitlist entry management.
 
@@ -59,20 +59,48 @@ Validation evidence:
 - temporarily-closed/waitlist-only/race rejection UX green;
 - required-field, honeypot accessibility, mobile and catalogue-regression checks green.
 
+## S3.3 — validated
+
+Validated by Fred locally on 2026-09-17. Feature commit: `29c435f`.
+
+Scope:
+
+- additive shared admin request routes, DTOs, error codes, service-request status vocabulary, contact-attempt vocabularies and the locked S3.3 transition subset;
+- authenticated admin queue and detail endpoints with prospect/service/variant context and ordered contact history;
+- structured contact-attempt logging using `whatsapp | phone_call | sms | email | other`, `outbound | inbound`, and `reached | no_answer | invalid_contact | callback_requested | not_interested | other`;
+- status-transition enforcement limited to `submitted→contacting`, `contacting→qualification_in_progress`, `contacting→abandoned`, `qualification_in_progress→abandoned`, and `abandoned→qualification_in_progress`;
+- every other S3.4/S3.5-owned target remains rejected;
+- hard audit atomicity for contact-attempt creation and status changes: the primary write and audit event share the exact same Drizzle transaction;
+- PII-free audit metadata;
+- admin-only authentication on all admin request endpoints; same-origin + CSRF on mutations;
+- Catalogue / Demandes admin switcher, status-filterable queue, detail panel, contact history/form and server-shared transition actions;
+- no migration required and no S3.4/S3.5 implementation included.
+
+Validation evidence:
+
+- root typecheck/build green;
+- shared and server unit suites green;
+- `db:check` green;
+- real-PostgreSQL admin request repository integration tests green, including forced audit-failure rollback cases;
+- Fred browser smoke: queue/detail/filter/contact-attempt logging/status progression/forbidden transition behavior all green;
+- DBeaver verification: contact-attempt and audit rows persisted; audit metadata contains no prospect PII/free text;
+- S3.2 public request form regression green.
+
 ## Current slice
 
-S3.3 — Admin request queue + contact attempts.
+S3.4 — Qualification review recording.
 
-Status: not started.
+Status: planning.
 
-Dependencies: validated S3.1 request domain and persisted requests; S3.2 public creation path is closed and must remain regression-free.
+Dependency: validated S3.3 admin request/detail and explicit transition foundation.
 
-Expected order: inspect existing request/contact-attempt schema and state machines → applicable reusable patterns → shared contracts → Service → Controller → Route/Middleware → server validation → admin client integration → Fred validation.
+Expected order: inspect `qualification_reviews`, state-machine rules and relational invariants → applicable reusable patterns → shared contracts → Service → Controller → Route/Middleware → server validation → admin client integration → Fred validation.
 
-Do not implement qualification decisions (S3.4) or waitlist workflows (S3.5) inside S3.3.
+S3.4 must own qualification outcomes only. Do not implement waitlist entry management (S3.5) inside this slice.
 
 ## Production-level notes
 
 - In-memory IP limiting is acceptable for current V1/local single-process behavior but must be revisited if production uses multiple replicas.
 - `trust proxy` must be decided during staging/production wiring before relying on forwarded client IPs.
+- Queue latest-contact lookup is acceptable for V1 single-coach volume; revisit if usage grows materially.
 - Legal review and true off-server encrypted backup remain production blockers outside Sprint 3 functional execution.

@@ -1,45 +1,41 @@
 # Current Task
 
-> Slice: Sprint 2.2 — initial catalogue seed | Date: 2026-08-25 | Status: Closed, locally validated
+> Slice: Sprint 2.3 — admin catalogue editing foundation | Date: 2026-08-25 | Status: Implemented, awaiting local validation
 
 ## Task
 
-Seed initial K'FIT services, variants, components and policies so the validated public catalogue API can return realistic business content.
+Implement the server-first foundation for admin catalogue service editing.
 
 ## Implemented scope
 
-- Deterministic, idempotent catalogue seed data.
-- Three public K'FIT service offers:
-  - Coaching nutrition personnalisé
-  - Programme sportif 12 semaines
-  - Bilan individuel
-- Service variants for Standard/Premium and programme follow-up.
-- Package components for WhatsApp follow-up, individual session, training plan and initial assessment.
-- Service policies for follow-up frequency, late cancellation, missed sessions and medical-clearance behavior.
-- Root/server npm scripts:
-  - `seed:catalogue`
-  - `preflight:catalogue-seed`
-- Seed definition test.
-- DB-backed preflight that runs the seed twice and validates the real Drizzle repository + CatalogueService public response.
-- Validation fix `8905d4a`: seed CLI and preflight load `.env` before importing `db/client`, avoiding `DATABASE_URL is required` when run from npm scripts.
-
-## Validation confirmed by Fred
-
-- [x] `node --test packages/server/dist/db/seeds/catalogue.seed.test.js`
-- [x] `npm run seed:catalogue`
-- [x] `npm run preflight:catalogue-seed`
-- [x] `npm run db:check`
-- [x] Seed is idempotent and does not create duplicate services/variants/components/policies.
-- [x] Public catalogue output includes realistic K'FIT content and hides admin-only fields.
+- Shared catalogue admin route and response contracts.
+- Admin service list endpoint.
+- Admin service create/update endpoints.
+- Admin service publish/archive endpoints.
+- Admin service reorder endpoint.
+- Admin-only access guard using the existing authenticated session context.
+- CSRF and same-origin protection for admin mutations.
+- Drizzle repository commands over the existing Sprint 0 catalogue tables.
+- Service-level validation for slugs, prices, capacity, durations, publication guards and reorder payloads.
+- Tests for shared contracts, catalogue service rules and Express admin route behavior.
 
 ## Explicitly out of scope for this slice
 
-- Landing page UI.
-- Admin catalogue CRUD.
+- Admin UI.
+- Variant/component/policy editors.
+- Public landing page consumption.
 - Capacity computation from active subscriptions.
-- Prospect request form.
-- Waitlist workflow behavior beyond seeded availability flags.
+- Prospect request and waitlist workflow.
 
-## Next boundary
+## Validation pending from Fred
 
-S2.2 is closed. Next decision: S2.3 admin catalogue editing or S2.4 public landing page catalogue consumption.
+- [ ] `npm run build --workspace @kfit/shared`
+- [ ] `npm run build --workspace @kfit/server`
+- [ ] `node --test packages/shared/dist/catalogue/contracts.test.js`
+- [ ] `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js`
+- [ ] `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js`
+- [ ] `npm run db:check`
+
+## Notes
+
+Do not update `changelog.md` or mark the Notion task as `Terminé` until Fred confirms green local output.

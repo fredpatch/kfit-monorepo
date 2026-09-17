@@ -86,6 +86,9 @@ function makeService(overrides: Partial<CatalogueServiceFake> = {}): CatalogueSe
     async archiveAdminService() {
       return { status: "ok", response: { service: { ...adminService, availabilityStatus: "archived", isPublic: false } } };
     },
+    async updateAdminServiceCapacity() {
+      return { status: "ok", response: { service: { ...adminService, availabilityStatus: "waitlist_only", capacityMode: "limited", capacityLimit: 6, waitlistEnabled: true } } };
+    },
     async reorderAdminServices() {
       return { status: "ok", response: { services: [{ ...adminService, sortOrder: 9 }] } };
     },
@@ -208,6 +211,21 @@ test("catalogue admin routes list and mutate services with CSRF", async () => {
     });
     assert.equal(updated.status, 200);
     assert.equal((await updated.json() as { service: { name: string } }).service.name, "Updated");
+
+    const capacity = await fetch(`${baseUrl}/admin/catalogue/services/service-1/capacity`, {
+      method: "PATCH",
+      headers: csrfHeaders(),
+      body: JSON.stringify({
+        availabilityStatus: "waitlist_only",
+        capacityMode: "limited",
+        capacityLimit: 6,
+        waitlistEnabled: true,
+      }),
+    });
+    assert.equal(capacity.status, 200);
+    const capacityBody = await capacity.json() as { service: { availabilityStatus: string; capacityLimit: number } };
+    assert.equal(capacityBody.service.availabilityStatus, "waitlist_only");
+    assert.equal(capacityBody.service.capacityLimit, 6);
 
     const reordered = await fetch(`${baseUrl}${catalogueApiRoutes.adminServiceOrder}`, {
       method: "PATCH",

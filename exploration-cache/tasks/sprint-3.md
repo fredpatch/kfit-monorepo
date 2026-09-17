@@ -1,6 +1,7 @@
 # Sprint 3 — Demandes, prospects, qualification et liste d'attente
 
 > Branch: `sprint-3`
+> Status: CLOSED — Fred validated 2026-09-17
 
 ## Objective
 
@@ -12,7 +13,7 @@ Build the M2 acquisition workflow after the validated catalogue foundation: publ
 2. [x] S3.2 — Public request form (client).
 3. [x] S3.3 — Admin request queue + contact attempt logging.
 4. [x] S3.4 — Qualification review recording.
-5. [ ] S3.5 — Manual waitlist entry management.
+5. [x] S3.5 — Manual waitlist entry management.
 
 ## S3.1 — validated
 
@@ -69,22 +70,19 @@ Scope:
 - authenticated admin queue and detail endpoints with prospect/service/variant context and ordered contact history;
 - structured contact-attempt logging using `whatsapp | phone_call | sms | email | other`, `outbound | inbound`, and `reached | no_answer | invalid_contact | callback_requested | not_interested | other`;
 - status-transition enforcement limited to `submitted→contacting`, `contacting→qualification_in_progress`, `contacting→abandoned`, `qualification_in_progress→abandoned`, and `abandoned→qualification_in_progress`;
-- every other S3.4/S3.5-owned target remains rejected;
-- hard audit atomicity for contact-attempt creation and status changes: the primary write and audit event share the exact same Drizzle transaction;
-- PII-free audit metadata;
-- admin-only authentication on all admin request endpoints; same-origin + CSRF on mutations;
-- Catalogue / Demandes admin switcher, status-filterable queue, detail panel, contact history/form and server-shared transition actions;
-- no migration required and no S3.4/S3.5 implementation included.
+- hard audit atomicity for contact-attempt creation and status changes;
+- admin-only auth, same-origin and CSRF on mutations;
+- Catalogue / Demandes admin navigation and request-management UI;
+- no migration required.
 
 Validation evidence:
 
 - root typecheck/build green;
 - shared and server unit suites green;
 - `db:check` green;
-- real-PostgreSQL admin request repository integration tests green, including forced audit-failure rollback cases;
-- Fred browser smoke: queue/detail/filter/contact-attempt logging/status progression/forbidden transition behavior all green;
-- DBeaver verification: contact-attempt and audit rows persisted; audit metadata contains no prospect PII/free text;
-- S3.2 public request form regression green.
+- real-PostgreSQL repository integration tests green, including audit rollback paths;
+- Fred browser/DBeaver smoke green;
+- S3.2 regression green.
 
 ## S3.4 — validated
 
@@ -92,38 +90,63 @@ Validated by Fred locally on 2026-09-17. Feature commit: `be67a9c`.
 
 Scope:
 
-- added the admin qualification-review command `POST /admin/requests/:requestId/qualification-review`;
-- only requests in `qualification_in_progress` can receive a qualification review;
-- supported outcomes are `qualified`, `qualified_with_conditions`, and `rejected`; `waitlisted` remains S3.5-owned and is not accepted/exposed here;
-- `qualified` and `qualified_with_conditions` require a service-owned final variant and non-negative agreed XAF price; conditions are required for `qualified_with_conditions`;
-- `rejected` forbids final variant, agreed price and target start date while allowing optional blockers/suitability note;
-- successful review creation, request status transition and `request.qualification_review_recorded` audit insert are one atomic PostgreSQL transaction;
-- audit metadata is limited to `version`, `outcome`, `fromStatus`, and `toStatus`, with no prospect PII or free-text qualification content;
-- S3.4 exposes one review from `qualification_in_progress`; reopen/revision/supersession workflow remains future scope, while existing version/superseded schema stays compatible;
-- admin detail UI shows qualification history and the qualification form only when the request is eligible;
-- no database migration required.
+- admin `POST /admin/requests/:requestId/qualification-review` command;
+- source state restricted to `qualification_in_progress`;
+- outcomes restricted to `qualified`, `qualified_with_conditions`, `rejected`;
+- outcome-specific final-variant/price/conditions/rejection validation;
+- review insert + request transition + `request.qualification_review_recorded` audit in one PostgreSQL transaction;
+- PII/free-text excluded from audit metadata;
+- no reopen/revision/supersession workflow exposed;
+- admin qualification history/form UI;
+- no migration required.
 
 Validation evidence:
 
-- typecheck green;
-- production build green;
-- `db:check` green;
-- reviewer pass completed with notes only;
-- real-PostgreSQL integration suite green, confirmed by Fred;
-- browser/DBeaver smoke green for qualified, qualified-with-conditions, rejected, invalid-state/invalid-input handling, second-review rejection and audit metadata;
-- S3.2 public request and S3.3 admin contact/request flows remained regression-free.
+- typecheck/build/db:check green;
+- reviewer pass;
+- real-PostgreSQL integration suite green;
+- Fred browser/DBeaver smoke and S3.2/S3.3 regressions green.
 
-## Current slice
+## S3.5 — validated
 
-S3.5 — Manual waitlist entry management.
+Validated by Fred locally on 2026-09-17. Feature commit: `0775695`.
 
-Status: planning.
+Scope:
 
-Dependencies: validated S3.1 request intake plus validated S3.3/S3.4 admin request lifecycle foundation.
+- named admin commands for manual waitlist creation and withdrawal;
+- create allowed from `submitted`, `contacting`, or `qualification_in_progress` only;
+- service must be non-archived and either `waitlist_only` or `waitlistEnabled = true`; public publication flags are not reapplied to an already-existing request;
+- optional variant must belong to the same service and not be archived;
+- request row is locked with `FOR UPDATE` before active-entry conflict checks, providing V1 concurrency safety without a new uniqueness migration;
+- create transaction atomically inserts active `waitlist_entries`, transitions request to `waitlisted`, and writes `request.waitlist_entered` audit;
+- withdrawal transaction atomically marks the active entry `withdrawn`, sets `leftAt`, transitions request to `abandoned`, and writes `request.waitlist_withdrawn` audit;
+- FIFO semantics use `enteredAt ASC` plus stable id tie-breaker; `priorityNote` is advisory only and does not affect ordering;
+- audit metadata excludes `priorityNote`, prospect PII and other free text;
+- admin detail exposes additive waitlist history and eligible create/withdraw controls;
+- automatic promotion, contacted/promoted/expired commands, subscription conversion, onboarding and queue reordering remain out of scope;
+- no migration required.
 
-Expected order: inspect `waitlist_entries`, request/service availability state machines and relational invariants → applicable reusable patterns → shared contracts → Service → Controller → Route/Middleware → server validation → admin client integration → Fred validation.
+Validation evidence:
 
-S3.5 owns manual waitlist entry management only. Do not implement automatic promotion, subscription conversion or broader onboarding behavior inside this slice.
+- `npm run typecheck` green;
+- `npm run build` green;
+- `npm run db:check` green;
+- Windows-compatible test globs fixed; `npm test` executed server 110/110 and shared 12/12;
+- real PostgreSQL integration suite 15/15 green, including create/withdraw atomicity, duplicate conflict and audit-failure rollback;
+- reviewer passed with notes and QA passed;
+- Fred local browser/DBeaver Gate 2 smoke green.
+
+## Sprint acceptance result
+
+Sprint 3 objective is achieved. K'FIT now supports the validated acquisition flow from public request submission through admin contact management, qualification decision and manual waitlist handling, with explicit server-authoritative transitions and transaction-scoped audit guarantees on critical mutations.
+
+No automatic waitlist promotion, subscription conversion or onboarding behavior was pulled forward from Sprint 4.
+
+## Next sprint
+
+Sprint 4 — Clients, conversion, onboarding, questionnaires et consentements.
+
+First dependency-safe backlog task: **Client table + phone-based search/create-inline** (M4, CRITIQUE, no declared dependency). This customer foundation precedes the later atomic request-conversion transaction, whose backlog dependency explicitly requires the customer model.
 
 ## Production-level notes
 

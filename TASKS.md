@@ -8,10 +8,10 @@
 ```text
 Branch            sprint-3
 Sprint            3 — Demandes, prospects, qualification et liste d'attente
-Active slice      S3.4 — Qualification review recording
+Active slice      S3.5 — Manual waitlist entry management
 Workflow state    PLANNING
-Last validated    S3.3 — 2026-09-17 (feature commit 29c435f)
-Next action       Planner: inspect qualification_reviews + state machine and produce S3.4 plan → Fred approval
+Last validated    S3.4 — 2026-09-17 (feature commit be67a9c)
+Next action       Planner: inspect S3.5 manual waitlist entry management
 ```
 
 ## Sprint 3 slices
@@ -21,7 +21,7 @@ Next action       Planner: inspect qualification_reviews + state machine and pro
 | S3.1  | Public request/prospect intake contract (server-first) | —          | CLOSED — Fred validated 2026-09-17 |
 | S3.2  | Public request form (client)                           | S3.1       | CLOSED — Fred validated 2026-09-17 |
 | S3.3  | Admin request queue + contact attempts                 | S3.1       | CLOSED — Fred validated 2026-09-17 |
-| S3.4  | Qualification review recording                         | S3.3       | PLANNING                           |
+| S3.4  | Qualification review recording                         | S3.3       | CLOSED — Fred validated 2026-09-17 |
 | S3.5  | Manual waitlist entry management                       | S3.1       | NOT STARTED                        |
 
 One slice at a time. Do not open S3.5 while S3.4 is not `CLOSED`, unless Fred changes the order.
@@ -46,7 +46,7 @@ Order: reusable pattern review → contracts → Service → Controller → Rout
 Sprint 0 — Initialisation
 Sprint 1 — Auth, sessions, OTP, security (+ password recovery HTTP flow)
 Sprint 2 — Catalogue, offers, public availability (S2.1–S2.6)
-Sprint 3 — S3.1, S3.2, S3.3
+Sprint 3 — S3.1, S3.2, S3.3, S3.4
 ```
 
 Do not modify closed work unless the active slice explicitly extends it, a regression is confirmed, or Fred approves reopening it.
@@ -106,12 +106,12 @@ Known non-blocking notes:
 
 ```text
 Branch            sprint-3
-Slice             S3.4
+Slice             S3.5
 Workflow state    PLANNING
-✅ Done           S3.1, S3.2, S3.3 closed
-⏳ Pending        S3.4 plan
-Validation done   S3.3 real-DB integration + browser/DBeaver Gate 2 green
-Not validated     S3.4 not started
+✅ Done           S3.1, S3.2, S3.3, S3.4 closed
+⏳ Pending        S3.5 plan
+Validation done   S3.4 typecheck, build, db:check, QA pass; Fred local smoke/checklist green
+Not validated     Agent-run npm test discovered 0 tests under current Windows/glob setup; S3.4 real-DB integration not agent-run
 Risks/blockers    see Blockers
 Next action       Planner
 ```

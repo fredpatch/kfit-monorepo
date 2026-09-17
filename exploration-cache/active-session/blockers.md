@@ -17,4 +17,4 @@
 
 ## Current technical validation pending
 
-- **S2.3 admin catalogue editing foundation** — implemented server-side and awaiting Fred local validation.
+- None for the closed S2.3 slice.

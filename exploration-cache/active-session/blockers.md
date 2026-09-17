@@ -4,7 +4,7 @@
 
 ## Current technical validation pending
 
-- None for S3.1. The slice is locally validated and closed.
+- None for S3.1 or S3.2. Both slices are locally validated and closed.
 
 ## Before production
 
@@ -14,17 +14,17 @@
 ## Resolved / clarified
 
 - Sprint 2.1 through S2.6 locally validated and closed.
-- S3.1 public request/prospect intake locally validated.
-- Migration `0002_rapid_boomerang.sql` applied locally.
-- Concurrent same-token idempotency path validated against real PostgreSQL.
-- Public service gating rule resolved: archived, temporarily closed, waitlist-only and non-public/unpublished services are rejected with stable typed errors.
-- Requested variant rule resolved: nonexistent and cross-service variants collapse to public `REQUEST_VARIANT_INVALID`.
-- Remote Sprint 3 execution branch normalized from the validated `main` S3.1 head without history rewrite.
+- S3.1 public request/prospect intake locally validated, including migration `0002` and real-PostgreSQL concurrent same-token idempotency.
+- S3.2 public request form locally validated, including DB verification of single-row persistence for rapid duplicate submission.
+- Local Vite proxy preserves forwarded browser host for same-origin-protected admin mutations and proxies `/requests` for public intake.
+- Public service gating and requested-variant rules remain server-authoritative.
 
 ## Known non-blocking notes
 
 - Public IP rate limiting is process-local/in-memory and should be revisited for multi-replica production topology.
 - Deployment `trust proxy` behavior remains a production/staging wiring concern.
-- Prospect-reuse race, rate-limiter memory growth, timing clock-skew hardening, audit symmetry and router origin-helper deduplication remain backlog/gotcha-level improvements, not S3.1 blockers.
+- Prospect-reuse race, rate-limiter memory growth, timing clock-skew hardening, audit symmetry and router origin-helper deduplication remain backlog/gotcha-level improvements.
+- Client test framework is still absent; S3.2 followed the existing client validation convention of typecheck/build plus Fred functional validation.
+- S3.2 reviewer noted only cosmetic transient-action styling and non-blocking refetch/double-click edge notes.
 
-Next active implementation boundary is S3.2 public request form.
+Next active implementation boundary is S3.3 admin request queue + contact attempts.

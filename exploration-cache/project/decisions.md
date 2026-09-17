@@ -1,3 +1,13 @@
+## 2026-09-17 — Sprint 2.4 public landing page consumption validated
+
+**Context**: S2.1/S2.2/S2.3 provided the public catalogue API, seeded service data and admin editing foundation. S2.4 consumed the existing public catalogue from the client landing page.
+
+**Decision**: Close S2.4 as locally validated and fast-forward `main` to the validated branch head.
+
+**Rationale**: Fred confirmed green client typecheck and production build, including shared build, TypeScript no-emit check and Vite build. The slice stayed client-only and did not alter server/schema behavior.
+
+**Impact**: The public K'FIT landing page can now display catalogue services from `GET /catalogue/services`. Remaining Sprint 2 work can move to capacity/waitlist controls or later prospect request workflow.
+
 ## 2026-08-25 — Sprint branch transition after validated Sprint 2.1
 
 **Context**: Sprint 2.1 was implemented and validated while still on the Sprint 1 auth branch due to handoff inertia.

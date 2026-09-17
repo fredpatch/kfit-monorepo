@@ -2,6 +2,21 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-09-17 — Sprint 3.1 public request/prospect intake foundation
+
+- Validated the server-first anonymous public request intake slice end-to-end against the local PostgreSQL database.
+- Added shared `POST /requests` route/input/response contracts and stable `REQUEST_*` error codes.
+- Added request module layering with repository, service, controller, Express router and tests.
+- Added `service_requests.submission_token` with a unique constraint via additive migration `0002_rapid_boomerang.sql`; Fred applied the migration locally.
+- Validated concurrency-safe idempotent replay against real PostgreSQL: concurrent submissions with the same token persist one request and return one created + one replayed result referencing the same row.
+- Added prospect reuse by normalized WhatsApp number and enforced request creation in `submitted` state only.
+- Enforced service gating: archived, temporarily closed, waitlist-only and non-public/unpublished services are rejected with typed public errors.
+- Enforced requested-variant ownership while collapsing nonexistent/cross-service failures to `REQUEST_VARIANT_INVALID` publicly.
+- Added layered public-abuse safeguards: origin check, process-local per-IP limiting, honeypot and minimum completion time.
+- Added anonymous/public audit events with no PII in metadata.
+- Kept waitlist entry creation, admin request queue, qualification and client form UI out of S3.1 scope.
+- Confirmed shared build/tests, server typecheck/build/tests, `db:check`, real-PostgreSQL repository integration test, and client typecheck regression green.
+
 ## 2026-09-17 — Sprint 2.6 admin capacity/waitlist workspace
 
 - Validated the authenticated admin catalogue capacity/waitlist UI end-to-end.

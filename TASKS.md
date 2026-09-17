@@ -21,24 +21,18 @@ Execution rule: implementation continues on `sprint-2/catalogue-foundation`. Loc
 2. [x] S2.2 — Initial services/variants/components/policies seed — locally validated.
 3. [x] S2.3 — Admin catalogue editing foundation — locally validated.
 4. [x] S2.4 — Public landing page catalogue consumption — locally validated.
-5. [ ] S2.5 — Capacity/waitlist controls — implemented at `2f13fd66aa6e469b4f302a9591e9f030ce480eb6`; awaiting Fred local validation.
+5. [x] S2.5 — Capacity/waitlist controls — locally validated by Fred on 2026-09-17.
 
-### S2.5 validation gate
+### S2.5 validated scope
 
-Fred must confirm green before S2.5 can be checked complete:
+- Shared `adminServiceCapacity` route contract and `CatalogueServiceCapacityInput`.
+- Server `updateAdminServiceCapacity` service operation.
+- Capacity/waitlist invariants enforced in both dedicated and generic admin mutation paths.
+- Protected `PATCH /admin/catalogue/services/:serviceId/capacity` route.
+- Admin session, CSRF and same-origin enforcement.
+- Shared contract, service and Express regression coverage.
+- `db:check` green; no migration required.
 
-```bash
-git switch sprint-2/catalogue-foundation
-git pull
+### Next decision
 
-npm run build --workspace @kfit/shared
-node --test packages/shared/dist/catalogue/contracts.test.js
-
-npm run build --workspace @kfit/server
-node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js
-node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js
-
-npm run db:check
-```
-
-Expected: shared/server builds green, catalogue contract/service/Express tests green, `db:check` green, no migration expected.
+S2.5 is closed. Before opening another implementation front, choose the next slice explicitly: admin UI for catalogue capacity/waitlist controls or the next prospect/request workflow boundary according to sprint priority.

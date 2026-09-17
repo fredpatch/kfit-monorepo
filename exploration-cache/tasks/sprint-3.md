@@ -9,7 +9,7 @@ Build the M2 acquisition workflow after the validated catalogue foundation: publ
 ## Execution order
 
 1. [x] S3.1 — Public request/prospect intake contract (server-first).
-2. [ ] S3.2 — Public request form (client).
+2. [x] S3.2 — Public request form (client).
 3. [ ] S3.3 — Admin request queue + contact attempt logging.
 4. [ ] S3.4 — Qualification review recording.
 5. [ ] S3.5 — Manual waitlist entry management.
@@ -32,24 +32,44 @@ Scope:
 - anonymous audit events without PII;
 - no automatic waitlist creation.
 
+## S3.2 — validated
+
+Validated by Fred locally on 2026-09-17.
+
+Scope:
+
+- public unauthenticated requests API client consuming `POST /requests`;
+- inline expandable request form integrated into public service cards;
+- required full name + WhatsApp and service-scoped variant selection where applicable;
+- one `crypto.randomUUID()` submission token per request intent, reused for retry/idempotency;
+- S3.1 `website` honeypot and `formRenderedAt` propagation;
+- centralized French localization of typed request errors;
+- success confirmation with persisted request reference;
+- availability-aware UI: open accepts, temporarily closed blocks normal intake, waitlist-only remains informational until S3.5;
+- `/requests` Vite dev proxy route;
+- no new server/shared/schema/migration or dependency changes.
+
 Validation evidence:
 
-- migration `0002_rapid_boomerang.sql` applied locally;
-- concurrent same-token real-PostgreSQL integration test green;
-- shared build/tests green;
-- server typecheck/build/tests green;
-- `db:check` green;
-- client typecheck regression green.
+- shared build green;
+- client typecheck/build green;
+- valid submission and service variant flows green;
+- rapid double-submit persisted one request row, verified directly in PostgreSQL through DBeaver;
+- transient retry reused the same intent and completed without duplication;
+- temporarily-closed/waitlist-only/race rejection UX green;
+- required-field, honeypot accessibility, mobile and catalogue-regression checks green.
 
 ## Current slice
 
-S3.2 — Public request form (name + phone, per service).
+S3.3 — Admin request queue + contact attempts.
 
 Status: not started.
 
-Dependency: validated S3.1 `POST /requests` contract.
+Dependencies: validated S3.1 request domain and persisted requests; S3.2 public creation path is closed and must remain regression-free.
 
-Expected boundary: client integration only unless a confirmed S3.1 regression requires a server fix. The server remains authoritative for availability, publication, variant ownership, abuse protection and idempotency.
+Expected order: inspect existing request/contact-attempt schema and state machines → applicable reusable patterns → shared contracts → Service → Controller → Route/Middleware → server validation → admin client integration → Fred validation.
+
+Do not implement qualification decisions (S3.4) or waitlist workflows (S3.5) inside S3.3.
 
 ## Production-level notes
 

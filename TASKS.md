@@ -9,9 +9,9 @@
 Branch            sprint-3
 Sprint            3 — Demandes, prospects, qualification et liste d'attente
 Active slice      S3.5 — Manual waitlist entry management
-Workflow state    PLANNING
-Last validated    S3.4 — 2026-09-17 (feature commit be67a9c)
-Next action       Planner: inspect S3.5 manual waitlist entry management
+Workflow state    COMMITTED
+Last validated    S3.5 - 2026-09-17
+Next action       Fred: confirm pushed commit, then decide Sprint 3 closure
 ```
 
 ## Sprint 3 slices
@@ -22,7 +22,7 @@ Next action       Planner: inspect S3.5 manual waitlist entry management
 | S3.2  | Public request form (client)                           | S3.1       | CLOSED — Fred validated 2026-09-17 |
 | S3.3  | Admin request queue + contact attempts                 | S3.1       | CLOSED — Fred validated 2026-09-17 |
 | S3.4  | Qualification review recording                         | S3.3       | CLOSED — Fred validated 2026-09-17 |
-| S3.5  | Manual waitlist entry management                       | S3.1       | PLANNING                           |
+| S3.5  | Manual waitlist entry management                       | S3.1       | COMMITTED - Fred validated 2026-09-17 |
 
 One slice at a time. Do not open another implementation front while S3.5 is not testable and locally validated.
 
@@ -118,11 +118,11 @@ Known non-blocking notes:
 ```text
 Branch            sprint-3
 Slice             S3.5
-Workflow state    PLANNING
-✅ Done           S3.1, S3.2, S3.3, S3.4 closed
-⏳ Pending        S3.5 plan
-Validation done   S3.4 typecheck/build/db:check, reviewer pass, real PostgreSQL integration, browser/DBeaver smoke and regressions green
+Workflow state    COMMITTED
+Done              S3.1, S3.2, S3.3, S3.4 closed; S3.5 implemented, reviewed, QA passed and Fred validated locally
+Pending           push confirmation and Sprint 3 closure decision
+Validation done   S3.5 typecheck/build/db:check; npm test server 110/110 and shared 12/12; real PostgreSQL integration 15/15; reviewer pass; QA pass with UI runtime smoke completed by Fred locally
 Not validated     —
 Risks/blockers    see Blockers
-Next action       Planner
+Next action       Fred
 ```

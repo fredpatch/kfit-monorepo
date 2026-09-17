@@ -10,6 +10,8 @@ export const adminRequestsApiRoutes = {
   contactAttempts: "/admin/requests/:requestId/contact-attempts",
   status: "/admin/requests/:requestId/status",
   qualificationReview: "/admin/requests/:requestId/qualification-review",
+  waitlistEntry: "/admin/requests/:requestId/waitlist-entry",
+  waitlistEntryWithdraw: "/admin/requests/:requestId/waitlist-entry/withdraw",
 } as const;
 
 export type AdminRequestsApiRoute = (typeof adminRequestsApiRoutes)[keyof typeof adminRequestsApiRoutes];
@@ -30,6 +32,10 @@ export const requestErrorCodes = [
   "REQUEST_CONTACT_ATTEMPT_INVALID_INPUT",
   "REQUEST_STATUS_INVALID_INPUT",
   "REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT",
+  "REQUEST_WAITLIST_INVALID_INPUT",
+  "REQUEST_WAITLIST_NOT_ELIGIBLE",
+  "REQUEST_WAITLIST_ALREADY_ACTIVE",
+  "REQUEST_WAITLIST_ENTRY_NOT_FOUND",
 ] as const;
 
 export type RequestErrorCode = (typeof requestErrorCodes)[number];
@@ -176,6 +182,7 @@ export type AdminServiceRequestDetail = AdminServiceRequestSummary & {
   contactAttempts: AdminContactAttempt[];
   qualificationAvailableVariants: AdminServiceRequestVariant[];
   qualificationReviews: AdminQualificationReview[];
+  waitlistEntries: AdminWaitlistEntry[];
 };
 
 export type AdminRequestsQueueResponse = {
@@ -246,5 +253,34 @@ export type CreateQualificationReviewInput = {
 
 export type CreateQualificationReviewResponse = {
   qualificationReview: AdminQualificationReview;
+  request: AdminServiceRequestSummary;
+};
+
+export type WaitlistEntryStatus = "active" | "contacted" | "promoted" | "withdrawn" | "expired";
+export const waitlistEntryStatuses: readonly WaitlistEntryStatus[] = ["active", "contacted", "promoted", "withdrawn", "expired"];
+
+export type AdminWaitlistEntry = {
+  id: string;
+  requestId: string;
+  serviceId: string;
+  variantId: string | null;
+  status: WaitlistEntryStatus;
+  priorityNote: string | null;
+  enteredAt: string;
+  leftAt: string | null;
+};
+
+export type CreateWaitlistEntryInput = {
+  variantId?: unknown;
+  priorityNote?: unknown;
+};
+
+export type CreateWaitlistEntryResponse = {
+  waitlistEntry: AdminWaitlistEntry;
+  request: AdminServiceRequestSummary;
+};
+
+export type WithdrawWaitlistEntryResponse = {
+  waitlistEntry: AdminWaitlistEntry;
   request: AdminServiceRequestSummary;
 };

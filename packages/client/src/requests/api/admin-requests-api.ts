@@ -8,8 +8,11 @@ import {
   type CreateContactAttemptResponse,
   type CreateQualificationReviewInput,
   type CreateQualificationReviewResponse,
+  type CreateWaitlistEntryInput,
+  type CreateWaitlistEntryResponse,
   type RequestStatusTransitionResponse,
   type ServiceRequestStatus,
+  type WithdrawWaitlistEntryResponse,
 } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
 
@@ -24,6 +27,8 @@ export type AdminRequestsApiClient = {
   logContactAttempt(requestId: string, input: CreateContactAttemptInput): Promise<CreateContactAttemptResponse>;
   transitionStatus(requestId: string, toStatus: ServiceRequestStatus): Promise<RequestStatusTransitionResponse>;
   recordQualificationReview(requestId: string, input: CreateQualificationReviewInput): Promise<CreateQualificationReviewResponse>;
+  createWaitlistEntry(requestId: string, input: CreateWaitlistEntryInput): Promise<CreateWaitlistEntryResponse>;
+  withdrawWaitlistEntry(requestId: string): Promise<WithdrawWaitlistEntryResponse>;
 };
 
 function resolveBaseUrl(baseUrl: string | undefined): string {
@@ -66,6 +71,14 @@ function qualificationReviewRoute(requestId: string): string {
   return adminRequestsApiRoutes.qualificationReview.replace(":requestId", encodeURIComponent(requestId));
 }
 
+function waitlistEntryRoute(requestId: string): string {
+  return adminRequestsApiRoutes.waitlistEntry.replace(":requestId", encodeURIComponent(requestId));
+}
+
+function waitlistEntryWithdrawRoute(requestId: string): string {
+  return adminRequestsApiRoutes.waitlistEntryWithdraw.replace(":requestId", encodeURIComponent(requestId));
+}
+
 export function createAdminRequestsApiClient(options: AdminRequestsApiClientOptions = {}): AdminRequestsApiClient {
   const http = options.http ?? createDefaultHttpClient(options.baseUrl);
 
@@ -90,6 +103,14 @@ export function createAdminRequestsApiClient(options: AdminRequestsApiClientOpti
     },
     async recordQualificationReview(requestId, input) {
       const response = await http.post<CreateQualificationReviewResponse>(qualificationReviewRoute(requestId), input);
+      return response.data;
+    },
+    async createWaitlistEntry(requestId, input) {
+      const response = await http.post<CreateWaitlistEntryResponse>(waitlistEntryRoute(requestId), input);
+      return response.data;
+    },
+    async withdrawWaitlistEntry(requestId) {
+      const response = await http.post<WithdrawWaitlistEntryResponse>(waitlistEntryWithdrawRoute(requestId), {});
       return response.data;
     },
   };

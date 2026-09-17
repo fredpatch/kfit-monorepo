@@ -4,6 +4,7 @@ import type { AdminServiceRequestDetail, AdminServiceRequestSummary } from "@kfi
 import {
   AdminRequestsService,
   type AdminRequestsRepository,
+  type NormalizedCreateWaitlistEntryInput,
   type NormalizedContactAttemptInput,
   type NormalizedQualificationReviewInput,
 } from "../services/admin-requests.service.js";
@@ -36,12 +37,17 @@ class FakeAdminRequestsRepository implements AdminRequestsRepository {
     contactAttempts: [],
     qualificationAvailableVariants: [],
     qualificationReviews: [],
+    waitlistEntries: [],
   };
   transitionOutcome: "not_found" | "invalid_transition" | "ok" = "ok";
   reviewOutcome: "not_found" | "invalid_transition" | "variant_invalid" | "ok" = "ok";
+  waitlistCreateOutcome: "not_found" | "invalid_transition" | "not_eligible" | "already_active" | "variant_invalid" | "ok" = "ok";
+  waitlistWithdrawOutcome: "not_found" | "invalid_transition" | "entry_not_found" | "ok" = "ok";
   loggedAttempts: Array<{ requestId: string; input: NormalizedContactAttemptInput }> = [];
   transitions: Array<{ requestId: string; toStatus: string }> = [];
   reviews: Array<{ requestId: string; input: NormalizedQualificationReviewInput }> = [];
+  waitlistCreates: Array<{ requestId: string; input: NormalizedCreateWaitlistEntryInput }> = [];
+  waitlistWithdrawals: string[] = [];
 
   async listQueue() {
     return [summary()];
@@ -98,6 +104,48 @@ class FakeAdminRequestsRepository implements AdminRequestsRepository {
         supersededAt: null,
       },
       request: summary({ status: input.outcome }),
+    };
+  }
+
+  async createWaitlistEntry(id: string, input: NormalizedCreateWaitlistEntryInput) {
+    this.waitlistCreates.push({ requestId: id, input });
+    if (this.waitlistCreateOutcome === "not_found") return "not_found" as const;
+    if (this.waitlistCreateOutcome === "invalid_transition") return "invalid_transition" as const;
+    if (this.waitlistCreateOutcome === "not_eligible") return "not_eligible" as const;
+    if (this.waitlistCreateOutcome === "already_active") return "already_active" as const;
+    if (this.waitlistCreateOutcome === "variant_invalid") return "variant_invalid" as const;
+    return {
+      waitlistEntry: {
+        id: "waitlist-1",
+        requestId: id,
+        serviceId: "service-1",
+        variantId: input.variantId,
+        status: "active" as const,
+        priorityNote: input.priorityNote,
+        enteredAt: "2026-09-17T11:00:00.000Z",
+        leftAt: null,
+      },
+      request: summary({ status: "waitlisted" }),
+    };
+  }
+
+  async withdrawWaitlistEntry(id: string) {
+    this.waitlistWithdrawals.push(id);
+    if (this.waitlistWithdrawOutcome === "not_found") return "not_found" as const;
+    if (this.waitlistWithdrawOutcome === "invalid_transition") return "invalid_transition" as const;
+    if (this.waitlistWithdrawOutcome === "entry_not_found") return "entry_not_found" as const;
+    return {
+      waitlistEntry: {
+        id: "waitlist-1",
+        requestId: id,
+        serviceId: "service-1",
+        variantId: null,
+        status: "withdrawn" as const,
+        priorityNote: null,
+        enteredAt: "2026-09-17T11:00:00.000Z",
+        leftAt: "2026-09-17T12:00:00.000Z",
+      },
+      request: summary({ status: "abandoned" }),
     };
   }
 }
@@ -287,4 +335,56 @@ test("AdminRequestsService.recordQualificationReview surfaces invalid_transition
 
   const result = await service.recordQualificationReview(requestId, { outcome: "rejected" }, { userId: "user-1" }, noAuditContext, new Date());
   assert.deepEqual(result, { status: "invalid_transition" });
+});
+
+test("AdminRequestsService.createWaitlistEntry normalizes optional fields and forwards the command", async () => {
+  const repository = new FakeAdminRequestsRepository();
+  const service = new AdminRequestsService(repository);
+  const variantId = "33333333-3333-3333-3333-333333333333";
+
+  const result = await service.createWaitlistEntry(
+    requestId,
+    { variantId, priorityNote: "  FIFO note only  " },
+    { userId: "user-1" },
+    noAuditContext,
+    new Date(),
+  );
+
+  assert.equal(result.status, "ok");
+  assert.deepEqual(repository.waitlistCreates, [{ requestId, input: { variantId, priorityNote: "FIFO note only" } }]);
+});
+
+test("AdminRequestsService.createWaitlistEntry rejects invalid waitlist input before the repository", async () => {
+  const repository = new FakeAdminRequestsRepository();
+  const service = new AdminRequestsService(repository);
+
+  const result = await service.createWaitlistEntry(requestId, { variantId: "not-a-uuid" }, { userId: "user-1" }, noAuditContext, new Date());
+
+  assert.deepEqual(result, { status: "invalid", reason: "variant_id_invalid" });
+  assert.equal(repository.waitlistCreates.length, 0);
+});
+
+test("AdminRequestsService.createWaitlistEntry preserves row-locked waitlist result states", async () => {
+  const repository = new FakeAdminRequestsRepository();
+  const service = new AdminRequestsService(repository);
+
+  repository.waitlistCreateOutcome = "already_active";
+  assert.deepEqual(await service.createWaitlistEntry(requestId, {}, { userId: "user-1" }, noAuditContext, new Date()), { status: "already_active" });
+
+  repository.waitlistCreateOutcome = "not_eligible";
+  assert.deepEqual(await service.createWaitlistEntry(requestId, {}, { userId: "user-1" }, noAuditContext, new Date()), { status: "not_eligible" });
+
+  repository.waitlistCreateOutcome = "invalid_transition";
+  assert.deepEqual(await service.createWaitlistEntry(requestId, {}, { userId: "user-1" }, noAuditContext, new Date()), { status: "invalid_transition" });
+});
+
+test("AdminRequestsService.withdrawWaitlistEntry forwards and preserves withdrawal result states", async () => {
+  const repository = new FakeAdminRequestsRepository();
+  const service = new AdminRequestsService(repository);
+
+  assert.equal((await service.withdrawWaitlistEntry(requestId, { userId: "user-1" }, noAuditContext, new Date())).status, "ok");
+  assert.deepEqual(repository.waitlistWithdrawals, [requestId]);
+
+  repository.waitlistWithdrawOutcome = "entry_not_found";
+  assert.deepEqual(await service.withdrawWaitlistEntry(requestId, { userId: "user-1" }, noAuditContext, new Date()), { status: "entry_not_found" });
 });

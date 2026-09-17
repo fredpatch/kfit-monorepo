@@ -6,8 +6,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "test": "npm run build && node --test 'dist/**/*.test.js'",
-    "test:integration": "npm run build && node --test --test-concurrency=1 'dist/**/*.integration.js'",
+    "test": "npm run build && node --test dist/**/*.test.js",
+    "test:integration": "npm run build && node --test --test-concurrency=1 dist/**/*.integration.js",
     "dev:api": "npm run build && node ./scripts/dev/api-server.mjs",
     "dev:auth-staging-smoke": "node ./scripts/dev/auth-staging-smoke-server.mjs",
     "db:generate": "drizzle-kit generate",

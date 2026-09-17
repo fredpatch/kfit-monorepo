@@ -9,11 +9,13 @@ import {
   serviceRequestStatuses,
   type AdminServiceRequestDetail,
   type AdminServiceRequestSummary,
+  type AdminWaitlistEntry,
   type ContactAttemptChannel,
   type ContactAttemptDirection,
   type ContactAttemptOutcome,
   type QualificationReviewOutcome,
   type ServiceRequestStatus,
+  type WaitlistEntryStatus,
 } from "@kfit/shared";
 import { adminRequestsApiClient } from "../api/admin-requests-api.js";
 import { extractRequestErrorCode, translateRequestError } from "../lib/request-error-messages.js";
@@ -60,6 +62,14 @@ const qualificationOutcomeLabels: Record<QualificationReviewOutcome, string> = {
   qualified: "Qualifiée",
   qualified_with_conditions: "Qualifiée avec conditions",
   rejected: "Rejetée",
+};
+
+const waitlistEntryStatusLabels: Record<WaitlistEntryStatus, string> = {
+  active: "Active",
+  contacted: "Contactée",
+  promoted: "Promue",
+  withdrawn: "Retirée",
+  expired: "Expirée",
 };
 
 function formatDate(value: string | null): string {
@@ -250,6 +260,107 @@ function QualificationReviewForm({ request, onRecorded }: { request: AdminServic
   );
 }
 
+function activeWaitlistEntry(entries: AdminWaitlistEntry[]): AdminWaitlistEntry | null {
+  return entries.find((entry) => entry.status === "active" && entry.leftAt === null) ?? null;
+}
+
+function WaitlistEntryPanel({ request, onChanged }: { request: AdminServiceRequestDetail; onChanged(): void }) {
+  const defaultVariantId = request.requestedVariant?.id ?? "";
+  const [variantId, setVariantId] = useState(defaultVariantId);
+  const [priorityNote, setPriorityNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const activeEntry = activeWaitlistEntry(request.waitlistEntries);
+  const canCreate = ["submitted", "contacting", "qualification_in_progress"].includes(request.status) && !activeEntry;
+
+  const createEntry = useMutation({
+    mutationFn: () =>
+      adminRequestsApiClient.createWaitlistEntry(request.id, {
+        variantId: variantId || undefined,
+        priorityNote: priorityNote || undefined,
+      }),
+  });
+
+  const withdrawEntry = useMutation({
+    mutationFn: () => adminRequestsApiClient.withdrawWaitlistEntry(request.id),
+  });
+
+  return (
+    <div className="admin-request-detail__waitlist">
+      <p className="eyebrow">Liste d'attente</p>
+      {request.waitlistEntries.length === 0 ? <p className="muted">Aucune entrée en liste d'attente.</p> : null}
+      {request.waitlistEntries.length > 0 ? (
+        <ul className="waitlist-entry-list">
+          {request.waitlistEntries.map((entry) => (
+            <li key={entry.id}>
+              <span className="contact-attempt-list__meta">
+                {waitlistEntryStatusLabels[entry.status]} - Entrée le {formatDate(entry.enteredAt)}
+                {entry.leftAt ? ` - Sortie le ${formatDate(entry.leftAt)}` : ""}
+              </span>
+              {entry.priorityNote ? <p>{entry.priorityNote}</p> : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {canCreate ? (
+        <form
+          className="waitlist-entry-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setError(null);
+            createEntry.mutate(undefined, {
+              onSuccess: () => {
+                setPriorityNote("");
+                onChanged();
+              },
+              onError: (mutationError) => setError(translateRequestError(extractRequestErrorCode(mutationError))),
+            });
+          }}
+        >
+          <label>
+            Option (optionnelle)
+            <select value={variantId} onChange={(event) => setVariantId(event.target.value)} disabled={createEntry.isPending}>
+              <option value="">Service entier</option>
+              {request.qualificationAvailableVariants.map((variant) => (
+                <option key={variant.id} value={variant.id}>{variant.name}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Note de priorité (optionnelle)
+            <textarea value={priorityNote} onChange={(event) => setPriorityNote(event.target.value)} disabled={createEntry.isPending} rows={2} />
+          </label>
+
+          {error ? <p className="error">{error}</p> : null}
+
+          <button type="submit" disabled={createEntry.isPending}>
+            {createEntry.isPending ? "Ajout..." : "Ajouter à la liste d'attente"}
+          </button>
+        </form>
+      ) : null}
+
+      {activeEntry && request.status === "waitlisted" ? (
+        <div className="admin-request-detail__transitions">
+          <button
+            type="button"
+            disabled={withdrawEntry.isPending}
+            onClick={() => {
+              setError(null);
+              withdrawEntry.mutate(undefined, {
+                onSuccess: onChanged,
+                onError: (mutationError) => setError(translateRequestError(extractRequestErrorCode(mutationError))),
+              });
+            }}
+          >
+            {withdrawEntry.isPending ? "Retrait..." : "Retirer de la liste"}
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function RequestDetailPanel({ requestId }: { requestId: string }) {
   const queryClient = useQueryClient();
   const detail = useQuery({
@@ -271,7 +382,7 @@ function RequestDetailPanel({ requestId }: { requestId: string }) {
     onError: (error) => setTransitionError(translateRequestError(extractRequestErrorCode(error))),
   });
 
-  async function refreshAfterContactAttempt() {
+  async function refreshRequest() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: detailQueryKey(requestId) }),
       queryClient.invalidateQueries({ queryKey: ["requests", "admin-queue"] }),
@@ -337,9 +448,11 @@ function RequestDetailPanel({ requestId }: { requestId: string }) {
           </ul>
         ) : null}
         {request.status === "qualification_in_progress" && request.qualificationReviews.length === 0 ? (
-          <QualificationReviewForm request={request} onRecorded={() => void refreshAfterContactAttempt()} />
+          <QualificationReviewForm request={request} onRecorded={() => void refreshRequest()} />
         ) : null}
       </div>
+
+      <WaitlistEntryPanel request={request} onChanged={() => void refreshRequest()} />
 
       <div className="admin-request-detail__contact">
         <p className="eyebrow">Historique des contacts</p>
@@ -355,7 +468,7 @@ function RequestDetailPanel({ requestId }: { requestId: string }) {
           ))}
         </ul>
 
-        <ContactAttemptForm requestId={requestId} onLogged={() => void refreshAfterContactAttempt()} />
+        <ContactAttemptForm requestId={requestId} onLogged={() => void refreshRequest()} />
       </div>
     </div>
   );

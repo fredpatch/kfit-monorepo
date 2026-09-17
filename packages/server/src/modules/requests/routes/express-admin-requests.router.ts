@@ -115,5 +115,31 @@ export function createExpressAdminRequestsRouter(deps: ExpressAdminRequestsRoute
     }
   });
 
+  router.post(adminRequestsApiRoutes.waitlistEntry, async (request: Request, response: Response) => {
+    try {
+      const context = await toAuthContext(request, deps.resolveSession);
+      const guard = mutationGuard(context);
+      if (guard) return applyJsonResponse(response, guard);
+      const requestId = routeParam(request.params.requestId);
+      if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
+      applyJsonResponse(response, await deps.controller.createWaitlistEntry(context, requestId, request.body ?? {}));
+    } catch {
+      response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
+    }
+  });
+
+  router.post(adminRequestsApiRoutes.waitlistEntryWithdraw, async (request: Request, response: Response) => {
+    try {
+      const context = await toAuthContext(request, deps.resolveSession);
+      const guard = mutationGuard(context);
+      if (guard) return applyJsonResponse(response, guard);
+      const requestId = routeParam(request.params.requestId);
+      if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
+      applyJsonResponse(response, await deps.controller.withdrawWaitlistEntry(context, requestId));
+    } catch {
+      response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
+    }
+  });
+
   return router;
 }

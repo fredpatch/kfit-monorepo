@@ -13,8 +13,10 @@ import {
   type AdminRequestsQueueResponse,
   type CreateContactAttemptResponse,
   type CreateQualificationReviewResponse,
+  type CreateWaitlistEntryResponse,
   type RequestStatusTransitionResponse,
   type RequestSubmissionResponse,
+  type WithdrawWaitlistEntryResponse,
 } from "./contracts.js";
 
 test("requests shared contracts expose a stable public submission route", () => {
@@ -38,6 +40,10 @@ test("requests shared contracts expose a stable public submission route", () => 
     "REQUEST_CONTACT_ATTEMPT_INVALID_INPUT",
     "REQUEST_STATUS_INVALID_INPUT",
     "REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT",
+    "REQUEST_WAITLIST_INVALID_INPUT",
+    "REQUEST_WAITLIST_NOT_ELIGIBLE",
+    "REQUEST_WAITLIST_ALREADY_ACTIVE",
+    "REQUEST_WAITLIST_ENTRY_NOT_FOUND",
   ]);
 });
 
@@ -48,6 +54,8 @@ test("admin requests shared contracts expose stable routes", () => {
     contactAttempts: "/admin/requests/:requestId/contact-attempts",
     status: "/admin/requests/:requestId/status",
     qualificationReview: "/admin/requests/:requestId/qualification-review",
+    waitlistEntry: "/admin/requests/:requestId/waitlist-entry",
+    waitlistEntryWithdraw: "/admin/requests/:requestId/waitlist-entry/withdraw",
   });
 });
 
@@ -139,9 +147,22 @@ test("admin requests shared contracts type-check queue, detail, contact-attempt 
         },
       ],
       qualificationReviews: [],
+      waitlistEntries: [
+        {
+          id: "77777777-7777-7777-7777-777777777777",
+          requestId: summary.id,
+          serviceId: summary.service.id,
+          variantId: null,
+          status: "active",
+          priorityNote: null,
+          enteredAt: "2026-09-17T10:30:00.000Z",
+          leftAt: null,
+        },
+      ],
     },
   };
   assert.equal(detailResponse.request.contactAttempts[0]?.outcome, "callback_requested");
+  assert.equal(detailResponse.request.waitlistEntries[0]?.status, "active");
 
   const contactAttemptResponse: CreateContactAttemptResponse = {
     contactAttempt: detailResponse.request.contactAttempts[0]!,
@@ -170,4 +191,16 @@ test("admin requests shared contracts type-check queue, detail, contact-attempt 
     request: { ...summary, status: "qualified" },
   };
   assert.equal(qualificationReviewResponse.qualificationReview.version, 1);
+
+  const waitlistResponse: CreateWaitlistEntryResponse = {
+    waitlistEntry: detailResponse.request.waitlistEntries[0]!,
+    request: { ...summary, status: "waitlisted" },
+  };
+  assert.equal(waitlistResponse.request.status, "waitlisted");
+
+  const withdrawResponse: WithdrawWaitlistEntryResponse = {
+    waitlistEntry: { ...detailResponse.request.waitlistEntries[0]!, status: "withdrawn", leftAt: "2026-09-17T11:00:00.000Z" },
+    request: { ...summary, status: "abandoned" },
+  };
+  assert.equal(withdrawResponse.waitlistEntry.status, "withdrawn");
 });

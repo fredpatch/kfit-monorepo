@@ -53,6 +53,7 @@ function makeService(overrides: Partial<AdminRequestsServiceFake> = {}): AdminRe
           contactAttempts: [],
           qualificationAvailableVariants: [],
           qualificationReviews: [],
+          waitlistEntries: [],
         },
       };
     },
@@ -93,6 +94,38 @@ function makeService(overrides: Partial<AdminRequestsServiceFake> = {}): AdminRe
           supersededAt: null,
         },
         request: { ...summary, status: "rejected" },
+      };
+    },
+    async createWaitlistEntry() {
+      return {
+        status: "ok",
+        waitlistEntry: {
+          id: "88888888-8888-8888-8888-888888888888",
+          requestId: summary.id,
+          serviceId: summary.service.id,
+          variantId: null,
+          status: "active",
+          priorityNote: null,
+          enteredAt: "2026-09-17T11:00:00.000Z",
+          leftAt: null,
+        },
+        request: { ...summary, status: "waitlisted" },
+      };
+    },
+    async withdrawWaitlistEntry() {
+      return {
+        status: "ok",
+        waitlistEntry: {
+          id: "88888888-8888-8888-8888-888888888888",
+          requestId: summary.id,
+          serviceId: summary.service.id,
+          variantId: null,
+          status: "withdrawn",
+          priorityNote: null,
+          enteredAt: "2026-09-17T11:00:00.000Z",
+          leftAt: "2026-09-17T12:00:00.000Z",
+        },
+        request: { ...summary, status: "abandoned" },
       };
     },
     ...overrides,
@@ -151,6 +184,14 @@ function qualificationReviewPath(requestId: string): string {
   return adminRequestsApiRoutes.qualificationReview.replace(":requestId", requestId);
 }
 
+function waitlistEntryPath(requestId: string): string {
+  return adminRequestsApiRoutes.waitlistEntry.replace(":requestId", requestId);
+}
+
+function waitlistEntryWithdrawPath(requestId: string): string {
+  return adminRequestsApiRoutes.waitlistEntryWithdraw.replace(":requestId", requestId);
+}
+
 test("admin requests routes require an authenticated admin session", async () => {
   const controller = new AdminRequestsController(makeService());
 
@@ -194,6 +235,14 @@ test("admin requests mutation routes reject an authenticated non-admin coach ses
     });
     assert.equal(reviewResponse.status, 403);
     assert.deepEqual(await reviewResponse.json(), { error: "REQUEST_ADMIN_FORBIDDEN" });
+
+    const waitlistResponse = await fetch(`${baseUrl}${waitlistEntryPath(summary.id)}`, {
+      method: "POST",
+      headers: csrfHeaders(),
+      body: JSON.stringify({}),
+    });
+    assert.equal(waitlistResponse.status, 403);
+    assert.deepEqual(await waitlistResponse.json(), { error: "REQUEST_ADMIN_FORBIDDEN" });
   }, () => coachSession);
 });
 
@@ -294,6 +343,32 @@ test("admin requests qualification-review route records a review for an authenti
   }, () => adminSession);
 });
 
+test("admin requests waitlist routes create and withdraw an entry for an authenticated admin with CSRF", async () => {
+  const controller = new AdminRequestsController(makeService());
+
+  await withTestServer(controller, async (baseUrl) => {
+    const create = await fetch(`${baseUrl}${waitlistEntryPath(summary.id)}`, {
+      method: "POST",
+      headers: csrfHeaders(),
+      body: JSON.stringify({ priorityNote: "FIFO only" }),
+    });
+    assert.equal(create.status, 201);
+    const createBody = await create.json() as { request: AdminServiceRequestSummary; waitlistEntry: { status: string; priorityNote: string | null } };
+    assert.equal(createBody.request.status, "waitlisted");
+    assert.equal(createBody.waitlistEntry.status, "active");
+
+    const withdraw = await fetch(`${baseUrl}${waitlistEntryWithdrawPath(summary.id)}`, {
+      method: "POST",
+      headers: csrfHeaders(),
+      body: JSON.stringify({}),
+    });
+    assert.equal(withdraw.status, 200);
+    const withdrawBody = await withdraw.json() as { request: AdminServiceRequestSummary; waitlistEntry: { status: string } };
+    assert.equal(withdrawBody.request.status, "abandoned");
+    assert.equal(withdrawBody.waitlistEntry.status, "withdrawn");
+  }, () => adminSession);
+});
+
 test("admin requests status route surfaces an invalid transition as a 409", async () => {
   const controller = new AdminRequestsController(makeService({
     async transitionStatus() {
@@ -327,6 +402,35 @@ test("admin requests qualification-review route surfaces an invalid transition a
     });
     assert.equal(response.status, 409);
     assert.deepEqual(await response.json(), { error: "REQUEST_INVALID_TRANSITION" });
+  }, () => adminSession);
+});
+
+test("admin requests waitlist route maps approved waitlist-domain errors", async () => {
+  const controller = new AdminRequestsController(makeService({
+    async createWaitlistEntry() {
+      return { status: "already_active" };
+    },
+    async withdrawWaitlistEntry() {
+      return { status: "entry_not_found" };
+    },
+  }));
+
+  await withTestServer(controller, async (baseUrl) => {
+    const create = await fetch(`${baseUrl}${waitlistEntryPath(summary.id)}`, {
+      method: "POST",
+      headers: csrfHeaders(),
+      body: JSON.stringify({}),
+    });
+    assert.equal(create.status, 409);
+    assert.deepEqual(await create.json(), { error: "REQUEST_WAITLIST_ALREADY_ACTIVE" });
+
+    const withdraw = await fetch(`${baseUrl}${waitlistEntryWithdrawPath(summary.id)}`, {
+      method: "POST",
+      headers: csrfHeaders(),
+      body: JSON.stringify({}),
+    });
+    assert.equal(withdraw.status, 404);
+    assert.deepEqual(await withdraw.json(), { error: "REQUEST_WAITLIST_ENTRY_NOT_FOUND" });
   }, () => adminSession);
 });
 

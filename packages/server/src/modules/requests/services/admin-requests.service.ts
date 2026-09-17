@@ -6,6 +6,7 @@ import {
   qualificationReviewOutcomes,
   type AdminContactAttempt,
   type AdminQualificationReview,
+  type AdminWaitlistEntry,
   type AdminRequestsQueueQuery,
   type AdminServiceRequestDetail,
   type AdminServiceRequestSummary,
@@ -14,6 +15,7 @@ import {
   type ContactAttemptOutcome,
   type CreateContactAttemptInput,
   type CreateQualificationReviewInput,
+  type CreateWaitlistEntryInput,
   type QualificationReviewOutcome,
   type ServiceRequestStatus,
 } from "@kfit/shared";
@@ -45,6 +47,11 @@ export type NormalizedQualificationReviewInput = {
   suitabilityNote: string | null;
   conditions: string[] | null;
   blockers: string[] | null;
+};
+
+export type NormalizedCreateWaitlistEntryInput = {
+  variantId: string | null;
+  priorityNote: string | null;
 };
 
 export type AdminRequestsRepository = {
@@ -82,6 +89,31 @@ export type AdminRequestsRepository = {
     | "invalid_transition"
     | "variant_invalid"
   >;
+  createWaitlistEntry(
+    requestId: string,
+    input: NormalizedCreateWaitlistEntryInput,
+    actor: AdminRequestActor,
+    auditContext: AdminRequestAuditContext,
+    now: Date,
+  ): Promise<
+    | { waitlistEntry: AdminWaitlistEntry; request: AdminServiceRequestSummary }
+    | "not_found"
+    | "invalid_transition"
+    | "not_eligible"
+    | "already_active"
+    | "variant_invalid"
+  >;
+  withdrawWaitlistEntry(
+    requestId: string,
+    actor: AdminRequestActor,
+    auditContext: AdminRequestAuditContext,
+    now: Date,
+  ): Promise<
+    | { waitlistEntry: AdminWaitlistEntry; request: AdminServiceRequestSummary }
+    | "not_found"
+    | "invalid_transition"
+    | "entry_not_found"
+  >;
 };
 
 export type CreateContactAttemptResult =
@@ -100,6 +132,20 @@ export type RecordQualificationReviewResult =
   | { status: "not_found" }
   | { status: "invalid_transition" }
   | { status: "invalid"; reason: string };
+
+export type CreateWaitlistEntryResult =
+  | { status: "ok"; waitlistEntry: AdminWaitlistEntry; request: AdminServiceRequestSummary }
+  | { status: "not_found" }
+  | { status: "invalid_transition" }
+  | { status: "not_eligible" }
+  | { status: "already_active" }
+  | { status: "invalid"; reason: string };
+
+export type WithdrawWaitlistEntryResult =
+  | { status: "ok"; waitlistEntry: AdminWaitlistEntry; request: AdminServiceRequestSummary }
+  | { status: "not_found" }
+  | { status: "invalid_transition" }
+  | { status: "entry_not_found" };
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -214,6 +260,19 @@ function normalizeQualificationReview(input: CreateQualificationReviewInput): No
   };
 }
 
+function normalizeCreateWaitlistEntry(input: CreateWaitlistEntryInput): NormalizedCreateWaitlistEntryInput | { invalid: string } {
+  let variantId: string | null = null;
+  if (input.variantId !== undefined && input.variantId !== null && input.variantId !== "") {
+    if (typeof input.variantId !== "string" || !uuidPattern.test(input.variantId)) return { invalid: "variant_id_invalid" };
+    variantId = input.variantId;
+  }
+
+  const priorityNote = optionalTrimmedString(input.priorityNote, 1000);
+  if (priorityNote === undefined) return { invalid: "priority_note_invalid" };
+
+  return { variantId, priorityNote };
+}
+
 export class AdminRequestsService {
   constructor(private readonly repository: AdminRequestsRepository) {}
 
@@ -280,5 +339,41 @@ export class AdminRequestsService {
     if (result === "invalid_transition") return { status: "invalid_transition" };
     if (result === "variant_invalid") return { status: "invalid", reason: "final_variant_id_invalid" };
     return { status: "ok", qualificationReview: result.qualificationReview, request: result.request };
+  }
+
+  async createWaitlistEntry(
+    requestId: string,
+    input: CreateWaitlistEntryInput,
+    actor: AdminRequestActor,
+    auditContext: AdminRequestAuditContext,
+    now: Date,
+  ): Promise<CreateWaitlistEntryResult> {
+    if (!uuidPattern.test(requestId)) return { status: "invalid", reason: "request_id_invalid" };
+
+    const normalized = normalizeCreateWaitlistEntry(input);
+    if ("invalid" in normalized) return { status: "invalid", reason: normalized.invalid };
+
+    const result = await this.repository.createWaitlistEntry(requestId, normalized, actor, auditContext, now);
+    if (result === "not_found") return { status: "not_found" };
+    if (result === "invalid_transition") return { status: "invalid_transition" };
+    if (result === "not_eligible") return { status: "not_eligible" };
+    if (result === "already_active") return { status: "already_active" };
+    if (result === "variant_invalid") return { status: "invalid", reason: "variant_id_invalid" };
+    return { status: "ok", waitlistEntry: result.waitlistEntry, request: result.request };
+  }
+
+  async withdrawWaitlistEntry(
+    requestId: string,
+    actor: AdminRequestActor,
+    auditContext: AdminRequestAuditContext,
+    now: Date,
+  ): Promise<WithdrawWaitlistEntryResult> {
+    if (!uuidPattern.test(requestId)) return { status: "not_found" };
+
+    const result = await this.repository.withdrawWaitlistEntry(requestId, actor, auditContext, now);
+    if (result === "not_found") return { status: "not_found" };
+    if (result === "invalid_transition") return { status: "invalid_transition" };
+    if (result === "entry_not_found") return { status: "entry_not_found" };
+    return { status: "ok", waitlistEntry: result.waitlistEntry, request: result.request };
   }
 }

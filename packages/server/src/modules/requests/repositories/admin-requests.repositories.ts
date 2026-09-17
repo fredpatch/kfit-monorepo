@@ -1,24 +1,27 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import type {
   AdminContactAttempt,
   AdminQualificationReview,
   AdminServiceRequestDetail,
   AdminServiceRequestVariant,
   AdminServiceRequestSummary,
+  AdminWaitlistEntry,
   QualificationReviewOutcome,
   ServiceRequestStatus,
+  WaitlistEntryStatus,
 } from "@kfit/shared";
 import { adminRequestAllowedTransitions } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
 import { auditEvents } from "../../../db/schema/auth.js";
 import { services, serviceVariants } from "../../../db/schema/catalogue.js";
-import { contactAttempts, prospects, qualificationReviews, serviceRequests } from "../../../db/schema/prospects.js";
+import { contactAttempts, prospects, qualificationReviews, serviceRequests, waitlistEntries } from "../../../db/schema/prospects.js";
 import { hashAuditContext } from "../../auth/services/audit.service.js";
 import type {
   AdminRequestActor,
   AdminRequestAuditContext,
   AdminRequestsRepository,
   NormalizedContactAttemptInput,
+  NormalizedCreateWaitlistEntryInput,
   NormalizedQualificationReviewInput,
 } from "../services/admin-requests.service.js";
 
@@ -143,6 +146,28 @@ function toQualificationReviewDto(review: {
   };
 }
 
+function toWaitlistEntryDto(entry: {
+  id: string;
+  requestId: string;
+  serviceId: string;
+  variantId: string | null;
+  status: string;
+  priorityNote: string | null;
+  enteredAt: Date;
+  leftAt: Date | null;
+}): AdminWaitlistEntry {
+  return {
+    id: entry.id,
+    requestId: entry.requestId,
+    serviceId: entry.serviceId,
+    variantId: entry.variantId,
+    status: entry.status as WaitlistEntryStatus,
+    priorityNote: entry.priorityNote,
+    enteredAt: entry.enteredAt.toISOString(),
+    leftAt: entry.leftAt ? entry.leftAt.toISOString() : null,
+  };
+}
+
 export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
   constructor(
     private readonly database: AdminRequestsDb,
@@ -234,6 +259,21 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
       .where(eq(qualificationReviews.requestId, requestId))
       .orderBy(desc(qualificationReviews.version));
 
+    const waitlistRows = await this.database
+      .select({
+        id: waitlistEntries.id,
+        requestId: waitlistEntries.requestId,
+        serviceId: waitlistEntries.serviceId,
+        variantId: waitlistEntries.variantId,
+        status: waitlistEntries.status,
+        priorityNote: waitlistEntries.priorityNote,
+        enteredAt: waitlistEntries.enteredAt,
+        leftAt: waitlistEntries.leftAt,
+      })
+      .from(waitlistEntries)
+      .where(eq(waitlistEntries.requestId, requestId))
+      .orderBy(asc(waitlistEntries.enteredAt), asc(waitlistEntries.id));
+
     const summary = toSummary(row, attempts[0]?.occurredAt ?? null, attempts[0]?.nextActionAt ?? null);
 
     return {
@@ -245,6 +285,7 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
       contactAttempts: attempts.map(toContactAttemptDto),
       qualificationAvailableVariants: variants,
       qualificationReviews: reviews.map(toQualificationReviewDto),
+      waitlistEntries: waitlistRows.map(toWaitlistEntryDto),
     };
   }
 
@@ -485,6 +526,218 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
 
       return {
         qualificationReview: toQualificationReviewDto(inserted),
+        request: toSummary(detailRow, latestAttempt?.occurredAt ?? null, latestAttempt?.nextActionAt ?? null),
+      };
+    });
+  }
+
+  async createWaitlistEntry(
+    requestId: string,
+    input: NormalizedCreateWaitlistEntryInput,
+    actor: AdminRequestActor,
+    auditContext: AdminRequestAuditContext,
+    now: Date,
+  ): Promise<
+    | { waitlistEntry: AdminWaitlistEntry; request: AdminServiceRequestSummary }
+    | "not_found"
+    | "invalid_transition"
+    | "not_eligible"
+    | "already_active"
+    | "variant_invalid"
+  > {
+    return this.database.transaction(async (tx) => {
+      const [requestRow] = await tx
+        .select({
+          id: serviceRequests.id,
+          status: serviceRequests.status,
+          serviceId: serviceRequests.serviceId,
+          requestedVariantId: serviceRequests.requestedVariantId,
+        })
+        .from(serviceRequests)
+        .where(eq(serviceRequests.id, requestId))
+        .for("update")
+        .limit(1);
+
+      if (!requestRow) return "not_found" as const;
+      if (!["submitted", "contacting", "qualification_in_progress"].includes(requestRow.status)) return "invalid_transition" as const;
+
+      const [serviceRow] = await tx
+        .select({
+          id: services.id,
+          availabilityStatus: services.availabilityStatus,
+          waitlistEnabled: services.waitlistEnabled,
+          archivedAt: services.archivedAt,
+        })
+        .from(services)
+        .where(eq(services.id, requestRow.serviceId))
+        .limit(1);
+
+      if (!serviceRow) return "not_eligible" as const;
+      const serviceCanWaitlist = serviceRow.availabilityStatus === "waitlist_only" || serviceRow.waitlistEnabled;
+      if (serviceRow.archivedAt !== null || serviceRow.availabilityStatus === "archived" || !serviceCanWaitlist) return "not_eligible" as const;
+
+      const activeRows = await tx
+        .select({ id: waitlistEntries.id })
+        .from(waitlistEntries)
+        .where(and(eq(waitlistEntries.requestId, requestId), eq(waitlistEntries.status, "active"), isNull(waitlistEntries.leftAt)))
+        .limit(1);
+      if (activeRows.length > 0) return "already_active" as const;
+
+      const variantId = input.variantId ?? requestRow.requestedVariantId;
+      if (variantId) {
+        const [ownedVariant] = await tx
+          .select({ id: serviceVariants.id, availabilityStatus: serviceVariants.availabilityStatus })
+          .from(serviceVariants)
+          .where(and(eq(serviceVariants.id, variantId), eq(serviceVariants.serviceId, requestRow.serviceId), isNull(serviceVariants.archivedAt)))
+          .limit(1);
+        if (!ownedVariant || ownedVariant.availabilityStatus === "archived") return "variant_invalid" as const;
+      }
+
+      const fromStatus = requestRow.status;
+      const [inserted] = await tx
+        .insert(waitlistEntries)
+        .values({
+          requestId,
+          serviceId: requestRow.serviceId,
+          variantId,
+          status: "active",
+          priorityNote: input.priorityNote,
+          enteredAt: now,
+          leftAt: null,
+        })
+        .returning({
+          id: waitlistEntries.id,
+          requestId: waitlistEntries.requestId,
+          serviceId: waitlistEntries.serviceId,
+          variantId: waitlistEntries.variantId,
+          status: waitlistEntries.status,
+          priorityNote: waitlistEntries.priorityNote,
+          enteredAt: waitlistEntries.enteredAt,
+          leftAt: waitlistEntries.leftAt,
+        });
+
+      if (!inserted) throw new Error("Waitlist entry insert returned no row");
+
+      await tx
+        .update(serviceRequests)
+        .set({ status: "waitlisted", updatedAt: now })
+        .where(eq(serviceRequests.id, requestId));
+
+      await tx.insert(auditEvents).values({
+        actorUserId: actor.userId,
+        actorType: "user",
+        eventType: "request.waitlist_entered",
+        entityType: "service_request",
+        entityId: requestId,
+        result: "success",
+        ipHash: hashAuditContext(auditContext.ipAddress, this.options.auditHashPepper),
+        userAgentHash: hashAuditContext(auditContext.userAgent, this.options.auditHashPepper),
+        metadataJson: { waitlistEntryId: inserted.id, fromStatus, toStatus: "waitlisted", serviceId: requestRow.serviceId, variantId },
+      });
+
+      const [detailRow] = await this.baseQueryTx(tx).where(eq(serviceRequests.id, requestId)).limit(1);
+      if (!detailRow) throw new Error("Service request disappeared inside its own transaction");
+
+      const [latestAttempt] = await tx
+        .select({ occurredAt: contactAttempts.occurredAt, nextActionAt: contactAttempts.nextActionAt })
+        .from(contactAttempts)
+        .where(eq(contactAttempts.requestId, requestId))
+        .orderBy(desc(contactAttempts.occurredAt))
+        .limit(1);
+
+      return {
+        waitlistEntry: toWaitlistEntryDto(inserted),
+        request: toSummary(detailRow, latestAttempt?.occurredAt ?? null, latestAttempt?.nextActionAt ?? null),
+      };
+    });
+  }
+
+  async withdrawWaitlistEntry(
+    requestId: string,
+    actor: AdminRequestActor,
+    auditContext: AdminRequestAuditContext,
+    now: Date,
+  ): Promise<
+    | { waitlistEntry: AdminWaitlistEntry; request: AdminServiceRequestSummary }
+    | "not_found"
+    | "invalid_transition"
+    | "entry_not_found"
+  > {
+    return this.database.transaction(async (tx) => {
+      const [requestRow] = await tx
+        .select({ id: serviceRequests.id, status: serviceRequests.status })
+        .from(serviceRequests)
+        .where(eq(serviceRequests.id, requestId))
+        .for("update")
+        .limit(1);
+
+      if (!requestRow) return "not_found" as const;
+      if (requestRow.status !== "waitlisted") return "invalid_transition" as const;
+
+      const [activeEntry] = await tx
+        .select({
+          id: waitlistEntries.id,
+          requestId: waitlistEntries.requestId,
+          serviceId: waitlistEntries.serviceId,
+          variantId: waitlistEntries.variantId,
+          status: waitlistEntries.status,
+          priorityNote: waitlistEntries.priorityNote,
+          enteredAt: waitlistEntries.enteredAt,
+          leftAt: waitlistEntries.leftAt,
+        })
+        .from(waitlistEntries)
+        .where(and(eq(waitlistEntries.requestId, requestId), eq(waitlistEntries.status, "active"), isNull(waitlistEntries.leftAt)))
+        .orderBy(asc(waitlistEntries.enteredAt), asc(waitlistEntries.id))
+        .limit(1);
+
+      if (!activeEntry) return "entry_not_found" as const;
+
+      const [updatedEntry] = await tx
+        .update(waitlistEntries)
+        .set({ status: "withdrawn", leftAt: now })
+        .where(eq(waitlistEntries.id, activeEntry.id))
+        .returning({
+          id: waitlistEntries.id,
+          requestId: waitlistEntries.requestId,
+          serviceId: waitlistEntries.serviceId,
+          variantId: waitlistEntries.variantId,
+          status: waitlistEntries.status,
+          priorityNote: waitlistEntries.priorityNote,
+          enteredAt: waitlistEntries.enteredAt,
+          leftAt: waitlistEntries.leftAt,
+        });
+
+      if (!updatedEntry) throw new Error("Waitlist entry update returned no row");
+
+      await tx
+        .update(serviceRequests)
+        .set({ status: "abandoned", updatedAt: now })
+        .where(eq(serviceRequests.id, requestId));
+
+      await tx.insert(auditEvents).values({
+        actorUserId: actor.userId,
+        actorType: "user",
+        eventType: "request.waitlist_withdrawn",
+        entityType: "service_request",
+        entityId: requestId,
+        result: "success",
+        ipHash: hashAuditContext(auditContext.ipAddress, this.options.auditHashPepper),
+        userAgentHash: hashAuditContext(auditContext.userAgent, this.options.auditHashPepper),
+        metadataJson: { waitlistEntryId: activeEntry.id, fromStatus: "waitlisted", toStatus: "abandoned" },
+      });
+
+      const [detailRow] = await this.baseQueryTx(tx).where(eq(serviceRequests.id, requestId)).limit(1);
+      if (!detailRow) throw new Error("Service request disappeared inside its own transaction");
+
+      const [latestAttempt] = await tx
+        .select({ occurredAt: contactAttempts.occurredAt, nextActionAt: contactAttempts.nextActionAt })
+        .from(contactAttempts)
+        .where(eq(contactAttempts.requestId, requestId))
+        .orderBy(desc(contactAttempts.occurredAt))
+        .limit(1);
+
+      return {
+        waitlistEntry: toWaitlistEntryDto(updatedEntry),
         request: toSummary(detailRow, latestAttempt?.occurredAt ?? null, latestAttempt?.nextActionAt ?? null),
       };
     });

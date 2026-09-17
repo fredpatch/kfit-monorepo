@@ -6,8 +6,11 @@ import {
   type CreateContactAttemptResponse,
   type CreateQualificationReviewInput,
   type CreateQualificationReviewResponse,
+  type CreateWaitlistEntryInput,
+  type CreateWaitlistEntryResponse,
   type RequestStatusTransitionResponse,
   type ServiceRequestStatus,
+  type WithdrawWaitlistEntryResponse,
 } from "@kfit/shared";
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
 import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js";
@@ -26,7 +29,12 @@ function requireAdminSession(context: AuthHttpRequestContext): HttpJsonResponse<
 }
 
 export class AdminRequestsController {
-  constructor(private readonly service: Pick<AdminRequestsService, "listQueue" | "getDetail" | "logContactAttempt" | "transitionStatus" | "recordQualificationReview">) {}
+  constructor(
+    private readonly service: Pick<
+      AdminRequestsService,
+      "listQueue" | "getDetail" | "logContactAttempt" | "transitionStatus" | "recordQualificationReview" | "createWaitlistEntry" | "withdrawWaitlistEntry"
+    >,
+  ) {}
 
   async listQueue(context: AuthHttpRequestContext, status: string | undefined): Promise<HttpJsonResponse<AdminRequestsQueueResponse | ErrorBody>> {
     const forbidden = requireAdminSession(context);
@@ -140,6 +148,68 @@ export class AdminRequestsController {
         return { status: 409, body: { error: "REQUEST_INVALID_TRANSITION" } };
       case "invalid":
         return { status: 400, body: { error: "REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT", reason: result.reason } };
+    }
+  }
+
+  async createWaitlistEntry(
+    context: AuthHttpRequestContext,
+    requestId: string,
+    body: CreateWaitlistEntryInput,
+  ): Promise<HttpJsonResponse<CreateWaitlistEntryResponse | ErrorBody>> {
+    const forbidden = requireAdminSession(context);
+    if (forbidden) return forbidden;
+
+    const auth = requireAuthenticatedSession(context);
+    if (!auth.ok) return auth.response;
+
+    const result = await this.service.createWaitlistEntry(
+      requestId,
+      body,
+      { userId: auth.session.userId },
+      { ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null },
+      new Date(),
+    );
+    switch (result.status) {
+      case "ok":
+        return { status: 201, body: { waitlistEntry: result.waitlistEntry, request: result.request } };
+      case "not_found":
+        return { status: 404, body: { error: "REQUEST_NOT_FOUND" } };
+      case "invalid_transition":
+        return { status: 409, body: { error: "REQUEST_INVALID_TRANSITION" } };
+      case "not_eligible":
+        return { status: 409, body: { error: "REQUEST_WAITLIST_NOT_ELIGIBLE" } };
+      case "already_active":
+        return { status: 409, body: { error: "REQUEST_WAITLIST_ALREADY_ACTIVE" } };
+      case "invalid":
+        return { status: 400, body: { error: "REQUEST_WAITLIST_INVALID_INPUT", reason: result.reason } };
+    }
+  }
+
+  async withdrawWaitlistEntry(
+    context: AuthHttpRequestContext,
+    requestId: string,
+  ): Promise<HttpJsonResponse<WithdrawWaitlistEntryResponse | ErrorBody>> {
+    const forbidden = requireAdminSession(context);
+    if (forbidden) return forbidden;
+
+    const auth = requireAuthenticatedSession(context);
+    if (!auth.ok) return auth.response;
+
+    const result = await this.service.withdrawWaitlistEntry(
+      requestId,
+      { userId: auth.session.userId },
+      { ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null },
+      new Date(),
+    );
+    switch (result.status) {
+      case "ok":
+        return { status: 200, body: { waitlistEntry: result.waitlistEntry, request: result.request } };
+      case "not_found":
+        return { status: 404, body: { error: "REQUEST_NOT_FOUND" } };
+      case "invalid_transition":
+        return { status: 409, body: { error: "REQUEST_INVALID_TRANSITION" } };
+      case "entry_not_found":
+        return { status: 404, body: { error: "REQUEST_WAITLIST_ENTRY_NOT_FOUND" } };
     }
   }
 }

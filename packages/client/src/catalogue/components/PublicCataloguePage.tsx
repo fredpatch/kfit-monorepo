@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { CatalogueAvailabilityStatus, CataloguePublicService } from "@kfit/shared";
 import { catalogueApiClient } from "../api/catalogue-api.js";
+import { PublicRequestForm } from "../../requests/components/PublicRequestForm.js";
 
 const availabilityLabels: Record<CatalogueAvailabilityStatus, string> = {
   open: "Disponible",
@@ -90,9 +91,7 @@ function ServiceCard({ service }: { service: CataloguePublicService }) {
         </div>
       ) : null}
 
-      <a className="service-cta" href={`mailto:contact@kfit.local?subject=${encodeURIComponent(`Demande K'FIT - ${service.name}`)}`}>
-        Demander un accompagnement
-      </a>
+      <PublicRequestForm service={service} />
     </article>
   );
 }

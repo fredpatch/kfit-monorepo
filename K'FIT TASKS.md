@@ -10,7 +10,7 @@ Sprint 3
 
 ```text
 S3.1 — CLOSED / LOCALLY VALIDATED
-S3.2 — NEXT / NOT STARTED
+S3.2 — EN COURS (IMPLEMENTING)
 ```
 
 Sprint 2 is closed and must not be reopened unless investigating a confirmed regression.

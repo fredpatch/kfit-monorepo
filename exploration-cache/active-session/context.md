@@ -1,10 +1,10 @@
 # Session Context
 
-> Date: 2026-08-25 | Slice: Sprint 2 — catalogue/service offers foundation
+> Date: 2026-09-17 | Slice: Sprint 2.4 — public landing page catalogue consumption
 
 ## Where we left off
 
-Sprint 1 auth foundation is complete and locally validated. The post-closure deferred auth slice for password reset/recovery HTTP flow is also complete and locally validated, including the real SMTP/Mailpit HTTP/email preflight. Sponsor/Konny scope validation is treated as confirmed for execution, so Sprint 2 is active on `sprint-2/catalogue-foundation`.
+Sprint 1 auth foundation is complete and locally validated. The deferred password reset/recovery HTTP flow is complete and locally validated. Sponsor/Konny scope validation is treated as confirmed for execution. Sprint 2 is active on `sprint-2/catalogue-foundation`.
 
 ## Pattern source
 
@@ -23,42 +23,30 @@ The reusable implementation patterns for K'FIT are recorded as Notion pages, not
 - Password reset/recovery HTTP flow is closed and locally validated.
 - Sprint 2.1 catalogue public API foundation is closed and locally validated.
 - Sprint 2.2 initial catalogue seed is closed and locally validated.
+- Sprint 2.3 admin catalogue editing foundation is closed and locally validated.
 
 ## Current Sprint 2 state
 
 Sprint 2 is active on `sprint-2/catalogue-foundation`.
 
-Validated in Sprint 2.1:
+S2.4 public landing page catalogue consumption is implemented and awaiting Fred's local validation.
 
-- Shared catalogue API contracts in `@kfit/shared`.
-- Public catalogue route contract: `GET /catalogue/services`.
-- Server catalogue module folder structure:
-  - `controllers/`
-  - `repositories/`
-  - `routes/`
-  - `services/`
-  - `types/`
-  - `tests/`
-- Catalogue service snapshot assembly for services, variants, components and policies.
-- Drizzle catalogue repository using existing Sprint 0 catalogue tables.
-- Express public catalogue router.
-- Optional `createServerApp` catalogue router binding.
-- Express router test fix in `c81c056`.
+Implemented boundaries:
 
-Validated in Sprint 2.2:
+- client-only slice;
+- public `/` route consumes `GET /catalogue/services`;
+- `/admin` keeps the existing admin auth shell;
+- public page displays French service cards with XAF pricing, availability, duration, capacity, components, variants and demand CTA;
+- loading, empty and error states are present;
+- auth provider/bootstrap checks are scoped to `/admin` only;
+- no server/schema/prospect workflow changes.
 
-- Deterministic seed data for three public K'FIT services.
-- Variants, components and policy snapshots for public catalogue content.
-- `seed:catalogue` script inserts expected counts: 3 services, 3 variants, 5 components, 3 policies.
-- `preflight:catalogue-seed` validates idempotency and public API read model through the real Drizzle repository/service.
-- Seed CLI/preflight environment loading fix ensures `.env` is loaded before `db/client` checks `DATABASE_URL`.
+Pending local validation:
 
-Fred confirmed all green for Sprint 2.2:
-
-- `node --test packages/server/dist/db/seeds/catalogue.seed.test.js`
-- `npm run seed:catalogue`
-- `npm run preflight:catalogue-seed`
-- `npm run db:check`
+```bash
+npm run typecheck --workspace @kfit/client
+npm run build --workspace @kfit/client
+```
 
 ## Active constraints
 
@@ -69,22 +57,6 @@ Fred confirmed all green for Sprint 2.2:
 
 ## Branch hygiene
 
-- `main` was fast-forwarded to validated head `3cf4138` after Sprint 2.1 validation.
-- `sprint-2/catalogue-foundation` was created from `main` for continuing Sprint 2.
-- No further Sprint 2 work should be committed to `sprint-1/auth-foundation`.
-
-## Current Sprint 2 state after S2.3
-
-S2.3 admin catalogue editing foundation is closed and locally validated.
-
-Validated boundaries:
-
-- service-level admin catalogue editing only;
-- `admin` role required for admin catalogue routes;
-- CSRF and same-origin checks for mutations;
-- create/update/publish/archive/reorder over existing catalogue tables;
-- no admin UI and no variant/component/policy editor yet.
-
-## Next decision
-
-Fast-forward `main` to the validated S2.3 head, then start S2.4 public landing page catalogue consumption.
+- `main` and `sprint-2/catalogue-foundation` were identical at validated S2.3 head `98e0a0f` before S2.4 started.
+- `sprint-2/catalogue-foundation` is now ahead with S2.4 implementation and pending-validation docs.
+- After Fred confirms S2.4 green, close S2.4 and fast-forward `main` as requested.

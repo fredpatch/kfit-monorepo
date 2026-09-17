@@ -2,6 +2,17 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-09-17 — Sprint 2.4 public landing page catalogue consumption
+
+- Validated the client-side public catalogue landing page consumption.
+- Confirmed `npm run typecheck --workspace @kfit/client`, including shared build and TypeScript no-emit check.
+- Confirmed `npm run build --workspace @kfit/client` with Vite production build.
+- Added a public `/` landing page that consumes `GET /catalogue/services` through a dedicated catalogue API client.
+- Preserved the existing admin login/session shell under `/admin`.
+- Displayed French public service cards with XAF pricing, availability, duration, capacity, components, variants and a demand CTA.
+- Added loading, empty and error states plus responsive mobile/desktop styling.
+- Kept prospect request workflow, real contact routing, admin UI editors, capacity computation and server/schema changes out of scope.
+
 ## 2026-09-17 — Sprint 2.3 admin catalogue editing foundation
 
 - Validated the server-first admin catalogue editing foundation.

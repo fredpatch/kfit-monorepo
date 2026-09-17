@@ -1,25 +1,38 @@
 import { BootstrapForm } from "../auth/components/BootstrapForm.js";
 import { LoginForm } from "../auth/components/LoginForm.js";
 import { SessionPanel } from "../auth/components/SessionPanel.js";
-import { useAuth } from "../auth/state/auth-context.js";
+import { AuthProvider, useAuth } from "../auth/state/auth-context.js";
+import { PublicCataloguePage } from "../catalogue/components/PublicCataloguePage.js";
 
-export function App() {
+function AdminApp() {
   const auth = useAuth();
 
   return (
     <main className="auth-shell">
       <section className="auth-card">
         <p className="eyebrow">K'FIT Admin</p>
-        <h1>Accès sécurisé</h1>
+        <h1>Acces securise</h1>
         <p className="muted">
-          Connecte-toi pour gérer les abonnements, clients et opérations K'FIT.
+          Connecte-toi pour gerer les abonnements, clients et operations K'FIT.
         </p>
 
-        {auth.isLoading ? <p className="status">Vérification de la session...</p> : null}
+        {auth.isLoading ? <p className="status">Verification de la session...</p> : null}
         {auth.bootstrapRequired ? <BootstrapForm /> : null}
         {!auth.bootstrapRequired && auth.session ? <SessionPanel /> : null}
         {!auth.bootstrapRequired && !auth.session && !auth.isLoading ? <LoginForm /> : null}
       </section>
     </main>
   );
+}
+
+export function App() {
+  if (window.location.pathname.startsWith("/admin")) {
+    return (
+      <AuthProvider>
+        <AdminApp />
+      </AuthProvider>
+    );
+  }
+
+  return <PublicCataloguePage />;
 }

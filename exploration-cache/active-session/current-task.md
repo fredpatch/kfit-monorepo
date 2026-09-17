@@ -1,6 +1,6 @@
 # Current Task
 
-> Slice: Sprint 2.6 — admin UI capacity / waitlist controls | Date: 2026-09-17 | Status: Implemented, local-dev prerequisite fix awaiting Fred validation
+> Slice: Sprint 2.6 — admin UI capacity / waitlist controls | Date: 2026-09-17 | Status: Implemented, bootstrap prerequisite locally validated, catalogue retest pending
 
 ## Task
 
@@ -18,32 +18,31 @@ Validate the S2.6 authenticated admin catalogue capacity/waitlist UI locally bef
 - Loading, empty, fetch error, save pending, save success and save failure states are visible.
 - `/admin` keeps existing bootstrap/login/session behavior; `/` keeps the public catalogue.
 
-## Local-dev prerequisite fix implemented
+## Local-dev prerequisite status
 
-The initial manual test exposed that direct Vite development had no real API process/proxy and that a failed bootstrap-status request silently fell through to the login UI. The prerequisite fix now adds:
+Fred locally confirmed on 2026-09-17 that the real bootstrap/login flow now works and that an admin session can be established through the application.
 
-- a real local development API composition using the existing Drizzle auth/catalogue repositories and services;
-- a `dev:api` launcher that loads the repository-root `.env` explicitly;
-- Vite proxying for `/auth`, `/catalogue` and `/health` to the local API;
-- explicit bootstrap-status failure UI instead of silently treating the failure as `required: false`;
-- first-run local bootstrap creates the privileged V1 identity with role `admin`, without seeded/default credentials.
+Validated prerequisite behavior:
 
-This prerequisite is implemented/static-only until Fred runs it locally.
+- real local API process is reachable by the client;
+- `/admin` first-run bootstrap is usable;
+- first local privileged identity can be created through the bootstrap UI;
+- created credentials can authenticate and restore an active admin session.
+
+The first S2.6 UI smoke then exposed a routing gap: the Vite proxy forwarded `/catalogue` but not the admin route prefix `/admin/catalogue`. Commit `057f091` adds `/admin/catalogue` to the local API proxy.
 
 ## Validation gate
 
 ### Local API/bootstrap prerequisite
-- [ ] Server build passes.
-- [ ] `npm run dev:api` starts against the local PostgreSQL database.
-- [ ] `GET /health` through Vite/local browser routing reaches the real API.
-- [ ] With an empty `users` table, `/admin` shows `Initialisation sécurisée`.
-- [ ] Bootstrap creates the first local admin through the UI.
-- [ ] After bootstrap, `/admin` shows the login form and the created credentials can authenticate.
+- [x] Real local API/client routing works.
+- [x] `/admin` bootstrap flow is reachable when required.
+- [x] Bootstrap creates the first local admin through the UI.
+- [x] Created credentials can authenticate and restore an active admin session.
 
 ### S2.6 client gate
 - [ ] `npm run typecheck --workspace @kfit/client`
 - [ ] `npm run build --workspace @kfit/client`
-- [ ] Admin catalogue services load.
+- [ ] Admin catalogue services load after proxy fix `057f091`.
 - [ ] Open/unlimited save succeeds.
 - [ ] Limited positive integer capacity save succeeds.
 - [ ] Waitlist-enabled + `waitlist_only` save succeeds.
@@ -54,4 +53,4 @@ This prerequisite is implemented/static-only until Fred runs it locally.
 
 ## Closure rule
 
-Do not mark S2.6 complete, update `changelog.md`, or fast-forward `main` to the S2.6 implementation until Fred confirms the complete prerequisite + S2.6 gate green.
+Do not mark S2.6 complete, update `changelog.md`, or fast-forward `main` to the S2.6 implementation until Fred confirms the remaining S2.6 client gate green.

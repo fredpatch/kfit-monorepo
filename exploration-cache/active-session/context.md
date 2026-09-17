@@ -4,34 +4,38 @@
 
 ## Where we left off
 
-Sprint 0, Sprint 1 auth, password recovery, Sprint 2.1 through S2.6, and Sprint 3.1 are closed and locally validated.
+Sprint 0, Sprint 1 auth, password recovery, Sprint 2.1 through S2.6, and Sprint 3.1 through S3.2 are closed and locally validated.
 
 ## Sprint 3 current state
 
 Sprint 3 covers M2: demandes, prospects, qualification et liste d'attente.
 
-S3.1 public request/prospect intake foundation is locally validated by Fred.
+Validated S3.1 foundation:
 
-Validated S3.1 behavior:
+- public `POST /requests` contract and request/prospect persistence;
+- unique client-generated submission token with real-PostgreSQL concurrent idempotency validation;
+- public availability/publication/variant gating;
+- layered public abuse safeguards and anonymous audit behavior;
+- no automatic waitlist entry creation.
 
-- public `POST /requests` shared/server contract;
-- prospect reuse by normalized WhatsApp number;
-- service request creation in `submitted` state only;
-- unique client-generated submission token;
-- concurrent same-token replay validated against real PostgreSQL using nested transaction/SAVEPOINT recovery;
-- archived, temporarily closed, waitlist-only, non-public and unpublished services rejected with typed errors;
-- requested variant must belong to the selected service; nonexistent/cross-service conditions collapse to `REQUEST_VARIANT_INVALID` publicly;
-- public abuse protection uses origin checking, in-memory per-IP limiting, honeypot and minimum completion time;
-- anonymous/public audit actor with no PII in metadata;
-- no automatic or implicit waitlist entry creation.
+Validated S3.2 client integration:
 
-Migration `0002_rapid_boomerang.sql` was applied locally and the real PostgreSQL idempotency integration test passed.
+- inline public request form replaces the mailto placeholder for open services;
+- required full name + WhatsApp and service-scoped variant selection;
+- stable submission token per intent, reused for retry/double-submit defense;
+- S3.1 honeypot/form timing fields sent unchanged;
+- French localized typed-error handling and success reference display;
+- temporarily-closed and waitlist-only states do not expose normal request intake;
+- `/requests` Vite proxy path added;
+- no new server/shared/schema/migration/dependency changes.
+
+Fred validated the complete browser flow and confirmed via DBeaver that rapid duplicate submission persisted exactly one `service_requests` row.
 
 ## Repository state
 
-- `main` received the validated S3.1 feature commit directly.
-- Remote `sprint-3` was then normalized from that exact validated `main` head; no history was rewritten.
-- Sprint 3 execution continues on `sprint-3`.
+- Sprint 3 execution continues on remote/local `sprint-3`.
+- S3.2 feature commit: `882302f296d16ea15a20efcfc152aa9b97875c25`.
+- Closure/state synchronization follows that validated commit on `sprint-3`.
 
 ## Active constraints
 
@@ -43,6 +47,6 @@ Migration `0002_rapid_boomerang.sql` was applied locally and the real PostgreSQL
 
 ## Next boundary
 
-S3.2 — **Public request form (name + phone, per service)**.
+S3.3 — **Admin request queue + contact attempts**.
 
-Reuse the validated S3.1 public request contract; this slice should be client-first integration over authoritative server behavior, with French UI, loading/disabled/success/error states, submission-token generation, honeypot/minimum-time fields, and catalogue-service context.
+Start by inspecting existing request/contact-attempt schema, state machines, admin auth/permissions and reusable patterns. Follow server-first implementation and do not absorb S3.4 qualification or S3.5 waitlist scope.

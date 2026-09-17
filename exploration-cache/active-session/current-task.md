@@ -1,41 +1,45 @@
 # Current Task
 
-> Slice: Sprint 2.3 — admin catalogue editing foundation | Date: 2026-09-17 | Status: Closed, locally validated
+> Slice: Sprint 2.4 — public landing page catalogue consumption | Date: 2026-09-17 | Status: Implemented, awaiting local validation
 
 ## Task
 
-Implement the server-first foundation for admin catalogue service editing.
+Consume the validated public catalogue API from the client landing page.
 
-## Validated scope
+## Implemented scope
 
-- Shared catalogue admin route and response contracts.
-- Admin service list endpoint.
-- Admin service create/update endpoints.
-- Admin service publish/archive endpoints.
-- Admin service reorder endpoint.
-- Admin-only access guard using the existing authenticated session context.
-- CSRF and same-origin protection for admin mutations.
-- Drizzle repository commands over the existing Sprint 0 catalogue tables.
-- Service-level validation for slugs, prices, capacity, durations, publication guards and reorder payloads.
-- Tests for shared contracts, catalogue service rules and Express admin route behavior.
+- Public `/` route renders the K'FIT catalogue landing page.
+- Existing admin login/session shell remains available under `/admin`.
+- Public page uses React Query and a dedicated catalogue API client for `GET /catalogue/services`.
+- Landing page displays service cards with French labels, XAF pricing, availability, duration, capacity, components, variants and a demand CTA.
+- Loading, empty and error states are present.
+- Responsive CSS added for mobile and desktop layouts.
+- Auth bootstrap/session checks are scoped to `/admin`, so public visitors do not trigger admin auth calls.
 
-## Validation confirmed by Fred
+## Awaiting Fred validation
 
-- [x] `npm run build --workspace @kfit/shared`
-- [x] `node --test packages/shared/dist/catalogue/contracts.test.js`
-- [x] `npm run build --workspace @kfit/server`
-- [x] `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js`
-- [x] `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js`
-- [x] `npm run db:check`
+Run locally:
+
+```bash
+git switch sprint-2/catalogue-foundation
+git pull
+npm run typecheck --workspace @kfit/client
+npm run build --workspace @kfit/client
+```
+
+Optional browser smoke check after the build:
+
+```bash
+npm run dev --workspace @kfit/client
+```
+
+Then open `/` and `/admin`.
 
 ## Explicitly out of scope for this slice
 
-- Admin UI.
+- Prospect request workflow.
+- Real WhatsApp/contact routing.
+- Admin UI catalogue editor.
 - Variant/component/policy editors.
-- Public landing page consumption.
 - Capacity computation from active subscriptions.
-- Prospect request and waitlist workflow.
-
-## Next boundary
-
-S2.3 is closed. Next recommended slice: S2.4 public landing page catalogue consumption.
+- Server/API/schema changes.

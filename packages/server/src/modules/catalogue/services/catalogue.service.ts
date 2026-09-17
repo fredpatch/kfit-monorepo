@@ -185,7 +185,7 @@ function optionalString(value: unknown): string | null | undefined {
 function optionalInteger(value: unknown): number | null | undefined {
   if (value === undefined) return undefined;
   if (value === null) return null;
-  if (!Number.isInteger(value)) return undefined;
+  if (typeof value !== "number" || !Number.isInteger(value)) return undefined;
   return value;
 }
 
@@ -395,7 +395,7 @@ export class CatalogueService {
     const normalized = normalizeServiceInput(input, "create");
     if ("invalid" in normalized) return { status: "invalid", reason: normalized.invalid };
 
-    const created = await this.repository.createService(normalized);
+    const created = await this.repository.createService(normalized as CatalogueServiceWriteInput);
     if (created === "slug_conflict") return { status: "slug_conflict" };
     return { status: "ok", response: { service: toAdminService(created) } };
   }
@@ -442,7 +442,9 @@ export class CatalogueService {
       if (typeof item !== "object" || item === null) return { status: "invalid", reason: "item_invalid" };
       const candidate = item as { serviceId?: unknown; sortOrder?: unknown };
       if (typeof candidate.serviceId !== "string" || candidate.serviceId.trim() === "") return { status: "invalid", reason: "service_id_invalid" };
-      if (!Number.isInteger(candidate.sortOrder) || candidate.sortOrder < 0) return { status: "invalid", reason: "sort_order_invalid" };
+      if (typeof candidate.sortOrder !== "number" || !Number.isInteger(candidate.sortOrder) || candidate.sortOrder < 0) {
+        return { status: "invalid", reason: "sort_order_invalid" };
+      }
       if (seen.has(candidate.serviceId)) return { status: "invalid", reason: "duplicate_service" };
       seen.add(candidate.serviceId);
       items.push({ serviceId: candidate.serviceId, sortOrder: candidate.sortOrder });

@@ -1,0 +1,40 @@
+{
+  // K'FIT agent terminal policy — mirrors PROJECT.md §Commands tiers.
+  // true  = auto tier (runs without prompting)
+  // false = ask / never tiers (always prompts Fred)
+  // Unlisted commands prompt by default.
+  "chat.tools.terminal.autoApprove": {
+    "git status": true,
+    "git diff": true,
+    "git log": true,
+    "git show": true,
+    "git branch --show-current": true,
+    "npm run typecheck": true,
+    "npm run build": true,
+    "npm test": true,
+    "npm run db:check": true,
+
+    "npm run db:reset": false,
+    "npm run db:migrate": false,
+    "npm run db:generate": false,
+    "npm run db:up": false,
+    "npm run db:down": false,
+    "npm run test:integration": false,
+    "npm run dev:api": false,
+    "npm run dev:client": false,
+    "/^npm run (seed|preflight):/": false,
+
+    "/^(npm|pnpm|yarn) (install|i|ci|add|remove|uninstall|update|upgrade)\\b/": false,
+    "/^docker\\b/": false,
+    "/^git (add|commit|push|pull|merge|rebase|reset|restore|checkout|switch|clean|stash|tag|cherry-pick|revert)\\b/": false,
+    "/^git branch -[dDmM]\\b/": false,
+    "/--no-verify|--force\\b/": false,
+    "/\\b(psql|drizzle-kit)\\b/": false,
+    "/\\b(DROP|TRUNCATE)\\b/i": false,
+    "/\\brm\\s+-[rf]/": false,
+    "/Remove-Item\\b.*-Recurse/i": false,
+    "/\\.env/": false
+  },
+
+  "workbench.browser.enableChatTools": true
+}

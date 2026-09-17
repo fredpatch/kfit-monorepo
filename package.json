@@ -8,6 +8,7 @@
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "test:integration": "npm run test:integration --workspace @kfit/server",
     "build": "npm run build --workspaces --if-present",
     "dev:api": "npm run dev:api --workspace @kfit/server",
     "dev:client": "npm run dev --workspace @kfit/client",
@@ -30,7 +31,7 @@
     "preflight:catalogue-seed": "npm run preflight:catalogue-seed --workspace @kfit/server"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "devDependencies": {
     "@types/node": "^26.3.0"

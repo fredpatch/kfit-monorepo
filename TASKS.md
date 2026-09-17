@@ -1,80 +1,106 @@
-# K'FIT — Executable Tasks
+# K'FIT — Active Execution State
 
-> Source of truth: Notion backlog. This file is the local executable summary.
+> Single source of active state for agents. Backlog/roadmap: Notion. Sprint specs: `exploration-cache/tasks/`. History: `changelog.md`, `exploration-cache/sessions/`, Git.
+> Update rules: WORKFLOW §12 and §14.
 
-## Sprint 0 — Initialisation
+## Now
 
-- [x] Sprint 0 initialization closed and locally validated.
+```text
+Branch            sprint-3
+Sprint            3 — Demandes, prospects, qualification et liste d'attente
+Active slice      S3.3 — Admin request queue + contact attempts
+Workflow state    PLANNING
+Last validated    S3.2 — 2026-09-17 (feature commit 882302f)
+Next action       Planner: produce S3.3 plan → Fred approval
+```
 
-## Sprint 1 — Authentication, sessions, OTP and security
+## Sprint 3 slices
 
-- [x] Sprint 1 auth foundation closed and locally validated.
-- [x] Deferred password reset/recovery HTTP flow closed and locally validated.
+| Slice | Scope                                                  | Depends on | State                              |
+| ----- | ------------------------------------------------------ | ---------- | ---------------------------------- |
+| S3.1  | Public request/prospect intake contract (server-first) | —          | CLOSED — Fred validated 2026-09-17 |
+| S3.2  | Public request form (client)                           | S3.1       | CLOSED — Fred validated 2026-09-17 |
+| S3.3  | Admin request queue + contact attempts                 | S3.1       | PLANNING                           |
+| S3.4  | Qualification review recording                         | S3.3       | NOT STARTED                        |
+| S3.5  | Manual waitlist entry management                       | S3.1       | NOT STARTED                        |
 
-## Sprint 2 — Catalogue, service offers and public availability
+One slice at a time. Do not open S3.4/S3.5 while S3.3 is not `CLOSED`, unless Fred changes the order.
 
-Execution rule: local command execution is performed by Fred; ChatGPT/Codex updates GitHub/Notion and only marks validation after Fred confirms successful local execution.
+## S3.3 — brief
 
-- [x] S2.1 — Catalogue public API foundation — locally validated.
-- [x] S2.2 — Initial services/variants/components/policies seed — locally validated.
-- [x] S2.3 — Admin catalogue editing foundation — locally validated.
-- [x] S2.4 — Public landing page catalogue consumption — locally validated.
-- [x] S2.5 — Capacity/waitlist controls — locally validated by Fred on 2026-09-17.
-- [x] S2.6 — Admin UI capacity/waitlist controls — locally validated by Fred on 2026-09-17.
+Goal: expose submitted public requests to the authorized admin and support explicit contact-attempt logging and status progression, with server-authoritative state rules.
 
-Sprint 2 is closed and locally validated.
+Planner must:
 
-## Sprint 3 — Demandes, prospects, qualification et liste d'attente
+- inspect `service_requests`, `contact_attempts` and their state machines (`exploration-cache/project/state-machines.md`, `database-schema.md`, `relational-contract.md`);
+- inspect existing admin routing, auth and permission middleware;
+- consult patterns: Shared API Contracts, Explicit State Transitions, Audit Event System, Domain Error Taxonomy;
+- define server-first read and command contracts;
+- keep S3.1/S3.2 behavior unchanged.
 
-Execution branch: `sprint-3`.
+Order: shared contracts → service → controller → route/middleware → server tests → admin client (French UI) → Fred validation.
 
-### Current execution order
+Out of scope: qualification decisions (S3.4), waitlist workflows (S3.5).
 
-1. [x] S3.1 — Public request/prospect intake contract (server-first) — locally validated by Fred on 2026-09-17.
-2. [x] S3.2 — Public request form (client) — locally validated by Fred on 2026-09-17.
-3. [ ] S3.3 — Admin request queue + contact attempts — next selected slice; depends on S3.1.
-4. [ ] S3.4 — Qualification review recording — not started; depends on S3.3.
-5. [ ] S3.5 — Manual waitlist entry management — not started; depends on S3.1.
+## Closed
 
-### S3.1 validated scope
+```text
+Sprint 0 — Initialisation
+Sprint 1 — Auth, sessions, OTP, security (+ password recovery HTTP flow)
+Sprint 2 — Catalogue, offers, public availability (S2.1–S2.6)
+Sprint 3 — S3.1, S3.2
+```
+
+Do not modify closed work unless the active slice explicitly extends it, a regression is confirmed, or Fred approves reopening it.
+
+### S3.1 — validated scope (reference)
 
 - Shared `POST /requests` contract with stable `REQUEST_*` error codes.
-- Public request intake creates/reuses a prospect and creates one submitted service request.
-- `service_requests.submission_token` is unique/not-null and migration `0002_rapid_boomerang.sql` was applied locally.
-- Idempotent replay is concurrency-safe through a nested Drizzle transaction/SAVEPOINT and was validated against real PostgreSQL.
-- Public service rules and requested-variant ownership are server-authoritative and return typed errors.
-- Public abuse protection includes origin check, in-memory per-IP limiting, honeypot and minimum completion time.
-- Audit events use anonymous/public actor semantics and avoid PII in metadata.
+- Creates/reuses a prospect and creates one submitted service request.
+- `service_requests.submission_token` unique + not null (migration `0002_rapid_boomerang.sql`).
+- Concurrency-safe idempotent replay (nested Drizzle transaction/SAVEPOINT), validated on real PostgreSQL.
+- Server-authoritative gating: archived, temporarily closed, waitlist-only, non-public/unpublished services rejected; variant must belong to the service (`REQUEST_VARIANT_INVALID`, no condition disclosure).
+- Abuse controls: origin check, in-memory per-IP limit, honeypot, minimum completion time.
+- Anonymous audit events without PII. No waitlist entry created. `duplicate_of_request_id` untouched.
 
-### S3.2 validated scope
+### S3.2 — validated scope (reference)
 
-- Replaced the public catalogue mailto CTA with an inline request form for open services.
-- Captures required full name + WhatsApp and service-scoped variant selection when variants exist.
-- Uses the validated S3.1 `POST /requests` contract through a dedicated public requests API client.
-- Generates one client `submissionToken` per request intent and reuses it for transient retries/double-submit defense.
-- Sends `website` honeypot and `formRenderedAt` exactly as required by S3.1.
-- Localizes typed `REQUEST_*` failures into French without exposing raw codes/reasons.
-- `temporarily_closed` and `waitlist_only` services do not expose a normal request form; waitlist enrollment remains S3.5.
-- Success state displays the server request reference.
-- Vite dev proxy includes `/requests`; the earlier forwarded-host proxy fix remains validated.
-- No shared/server/schema/migration changes and no new client dependencies.
+- Inline request form replaces the mailto CTA for open services; full name + WhatsApp; service-scoped variant selector.
+- One client `submissionToken` per intent, reused on retry/double submit; sends `website` honeypot and `formRenderedAt`.
+- French-localized typed errors; success shows server reference.
+- Closed/waitlist-only services expose no normal form. Vite proxy includes `/requests`.
+- No server/shared/schema/dependency changes.
 
-### S3.2 validation evidence
+## Blockers
 
-Fred confirmed locally on 2026-09-17:
+Before production:
 
-- shared build green;
-- client typecheck green;
-- client production build green;
-- valid request submission green;
-- service-scoped variant submission green;
-- rapid double-submit persisted exactly one `service_requests` row, verified in DBeaver;
-- transient retry with stable token green;
-- temporarily-closed and waitlist-only UI behavior green;
-- stale/archive race displays localized error only;
-- required-field validation, honeypot accessibility behavior and mobile layout green;
-- public catalogue regression green.
+- Legal validation for the applicable Gabon context (privacy, consent, retention, health notice, terms/refunds, image/testimonials).
+- True encrypted off-server backup destination.
 
-### Next slice
+Known non-blocking notes:
 
-S3.3 — **Admin request queue + contact attempts**. Follow server-first order: inspect existing request/contact schema/state machine and applicable patterns before implementation. Do not start S3.4+ until S3.3 is testable and locally validated.
+- Per-IP rate limiting is process-local — revisit for multi-replica production.
+- `trust proxy` must be decided in staging/production wiring.
+- Prospect-reuse race, rate-limiter memory growth, timing clock-skew, audit symmetry, origin-helper deduplication.
+- No client test framework; client acceptance = typecheck + build + Fred browser check.
+- `requests.repository.integration.ts` cleanup deletes prospects by fixed WhatsApp `+24100000000` — run only against a disposable local DB.
+
+## Environment constraints
+
+- See `PROJECT.md §Data` and `§Gotchas` (Docker PostgreSQL 5433, native 5432).
+- Chat/cloud runtimes do not run project commands; only Fred's local execution closes a gate (PROJECT.md §Runtime).
+
+## Handoff
+
+```text
+Branch            sprint-3
+Slice             S3.3
+Workflow state    PLANNING
+✅ Done           S3.1, S3.2 closed
+⏳ Pending        S3.3 plan
+Validation done   —
+Not validated     —
+Risks/blockers    see Blockers
+Next action       Planner
+```

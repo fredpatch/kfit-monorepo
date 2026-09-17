@@ -1,3 +1,13 @@
+## 2026-09-17 — Agent workflow consolidation
+
+**Context**: Three of four custom agents had no valid YAML frontmatter (tools, handoffs and read-only limits were not applied). Repository facts, task state and execution rules were split across `K'FIT AGENTS.md`, `K'FIT TASKS.md`, `TASKS.md` and five `active-session` files, with drift (wrong package paths, stale sprint/branch, stale handoff).
+
+**Decision**: Adopt the portable Agent Kit (AGENTS.md, WORKFLOW.md, agents, skills unchanged across projects) and move all K'FIT facts into `PROJECT.md`; make `TASKS.md` the single active-state file with an explicit workflow state; repair agents with built-in tool sets and exact-name handoffs; split skills into core `SKILL.md` + `references/guide.md`; enforce terminal approvals via `.vscode/settings.json`; run full CI (typecheck, build, unit, schema drift, migrations, integration) on `main`, `sprint-*` and PRs.
+
+**Rationale**: Agent guarantees must come from configuration, not prose. One state file prevents drift. CI must execute the concurrency test that S3.1 relies on.
+
+**Impact**: Commits happen only after Fred's functional validation (WORKFLOW Gate 3). Chat/cloud runtimes never run commands; local agents run only allowlisted checks as supporting evidence.
+
 ## 2026-09-17 — Sprint 2.4 public landing page consumption validated
 
 **Context**: S2.1/S2.2/S2.3 provided the public catalogue API, seeded service data and admin editing foundation. S2.4 consumed the existing public catalogue from the client landing page.

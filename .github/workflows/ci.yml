@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'sprint-*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: kfit
+          POSTGRES_PASSWORD: kfit
+          POSTGRES_DB: kfit_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U kfit -d kfit_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      # CI-only disposable database. Never a real environment.
+      DATABASE_URL: postgresql://kfit:kfit@localhost:5432/kfit_test
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install (lockfile must be in sync)
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Drizzle schema check
+        run: npm run db:check
+
+      - name: Fail on uncommitted schema drift
+        run: |
+          npm run db:generate
+          git diff --exit-code -- packages/server
+          test -z "$(git status --porcelain -- packages/server)"
+
+      - name: Apply migrations
+        run: npm run db:migrate
+
+      - name: Integration tests (real PostgreSQL)
+        run: npm run test:integration

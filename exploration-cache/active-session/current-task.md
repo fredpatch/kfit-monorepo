@@ -1,12 +1,12 @@
 # Current Task
 
-> Slice: Sprint 2.5 — capacity/waitlist controls | Date: 2026-09-17 | Status: Implemented, awaiting Fred validation
+> Slice: Sprint 2.5 — capacity/waitlist controls | Date: 2026-09-17 | Status: Closed, locally validated
 
 ## Task
 
-Validate the S2.5 server-side capacity/waitlist control slice locally before closure.
+S2.5 capacity/waitlist controls are complete and locally validated.
 
-## Implemented scope
+## Validated scope
 
 - Shared `adminServiceCapacity` endpoint contract.
 - `CatalogueServiceCapacityInput`.
@@ -15,32 +15,16 @@ Validate the S2.5 server-side capacity/waitlist control slice locally before clo
 - Controller method and protected PATCH route.
 - Service + Express tests.
 
-## Acceptance criteria
+## Validation confirmed by Fred
 
-- [ ] Shared build passes.
-- [ ] Shared catalogue contract test passes.
-- [ ] Server build passes.
-- [ ] Catalogue service tests pass.
-- [ ] Catalogue Express tests pass.
-- [ ] `db:check` passes.
-- [ ] Confirm no migration is required.
+- [x] Shared build passes.
+- [x] Shared catalogue contract test passes.
+- [x] Server build passes.
+- [x] Catalogue service tests pass.
+- [x] Catalogue Express tests pass.
+- [x] `db:check` passes.
+- [x] No migration required.
 
-## Validation commands
+## Next boundary
 
-```bash
-git switch sprint-2/catalogue-foundation
-git pull
-
-npm run build --workspace @kfit/shared
-node --test packages/shared/dist/catalogue/contracts.test.js
-
-npm run build --workspace @kfit/server
-node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js
-node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js
-
-npm run db:check
-```
-
-## Closure rule
-
-Do not mark S2.5 complete or update `changelog.md` until Fred confirms the full gate green.
+S2.5 is closed. Select the next slice before implementation begins.

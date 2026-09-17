@@ -11,7 +11,7 @@ Build the M2 acquisition workflow after the validated catalogue foundation: publ
 1. [x] S3.1 — Public request/prospect intake contract (server-first).
 2. [x] S3.2 — Public request form (client).
 3. [x] S3.3 — Admin request queue + contact attempt logging.
-4. [ ] S3.4 — Qualification review recording.
+4. [x] S3.4 — Qualification review recording.
 5. [ ] S3.5 — Manual waitlist entry management.
 
 ## S3.1 — validated
@@ -86,17 +86,44 @@ Validation evidence:
 - DBeaver verification: contact-attempt and audit rows persisted; audit metadata contains no prospect PII/free text;
 - S3.2 public request form regression green.
 
+## S3.4 — validated
+
+Validated by Fred locally on 2026-09-17. Feature commit: `be67a9c`.
+
+Scope:
+
+- added the admin qualification-review command `POST /admin/requests/:requestId/qualification-review`;
+- only requests in `qualification_in_progress` can receive a qualification review;
+- supported outcomes are `qualified`, `qualified_with_conditions`, and `rejected`; `waitlisted` remains S3.5-owned and is not accepted/exposed here;
+- `qualified` and `qualified_with_conditions` require a service-owned final variant and non-negative agreed XAF price; conditions are required for `qualified_with_conditions`;
+- `rejected` forbids final variant, agreed price and target start date while allowing optional blockers/suitability note;
+- successful review creation, request status transition and `request.qualification_review_recorded` audit insert are one atomic PostgreSQL transaction;
+- audit metadata is limited to `version`, `outcome`, `fromStatus`, and `toStatus`, with no prospect PII or free-text qualification content;
+- S3.4 exposes one review from `qualification_in_progress`; reopen/revision/supersession workflow remains future scope, while existing version/superseded schema stays compatible;
+- admin detail UI shows qualification history and the qualification form only when the request is eligible;
+- no database migration required.
+
+Validation evidence:
+
+- typecheck green;
+- production build green;
+- `db:check` green;
+- reviewer pass completed with notes only;
+- real-PostgreSQL integration suite green, confirmed by Fred;
+- browser/DBeaver smoke green for qualified, qualified-with-conditions, rejected, invalid-state/invalid-input handling, second-review rejection and audit metadata;
+- S3.2 public request and S3.3 admin contact/request flows remained regression-free.
+
 ## Current slice
 
-S3.4 — Qualification review recording.
+S3.5 — Manual waitlist entry management.
 
 Status: planning.
 
-Dependency: validated S3.3 admin request/detail and explicit transition foundation.
+Dependencies: validated S3.1 request intake plus validated S3.3/S3.4 admin request lifecycle foundation.
 
-Expected order: inspect `qualification_reviews`, state-machine rules and relational invariants → applicable reusable patterns → shared contracts → Service → Controller → Route/Middleware → server validation → admin client integration → Fred validation.
+Expected order: inspect `waitlist_entries`, request/service availability state machines and relational invariants → applicable reusable patterns → shared contracts → Service → Controller → Route/Middleware → server validation → admin client integration → Fred validation.
 
-S3.4 must own qualification outcomes only. Do not implement waitlist entry management (S3.5) inside this slice.
+S3.5 owns manual waitlist entry management only. Do not implement automatic promotion, subscription conversion or broader onboarding behavior inside this slice.
 
 ## Production-level notes
 

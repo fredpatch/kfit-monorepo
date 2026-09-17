@@ -9,7 +9,7 @@
 
 ## Current technical validation pending
 
-- **S2.4 public landing page catalogue consumption** — implemented on `sprint-2/catalogue-foundation`, awaiting Fred's local client validation: `npm run typecheck --workspace @kfit/client` and `npm run build --workspace @kfit/client`.
+- None for the closed S2.4 slice.
 
 ## Resolved / clarified
 
@@ -19,3 +19,4 @@
 - **Sprint 2.1 catalogue foundation** — resolved and locally validated by Fred.
 - **Sprint 2.2 initial catalogue seed** — resolved and locally validated by Fred.
 - **Sprint 2.3 admin catalogue editing foundation** — resolved and locally validated by Fred.
+- **Sprint 2.4 public landing page catalogue consumption** — resolved and locally validated by Fred.

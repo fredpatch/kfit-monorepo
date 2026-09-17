@@ -192,6 +192,15 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
     return rows.map(mapAdminService);
   }
 
+  async getAdminService(serviceId: string) {
+    const [row] = await this.database
+      .select()
+      .from(services)
+      .where(eq(services.id, serviceId))
+      .limit(1);
+    return row ? mapAdminService(row) : null;
+  }
+
   async createService(input: CatalogueServiceWriteInput) {
     try {
       const [created] = await this.database

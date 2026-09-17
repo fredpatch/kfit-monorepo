@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         "/auth": apiTarget,
         "/catalogue": apiTarget,
+        "/admin/catalogue": apiTarget,
         "/health": apiTarget,
       },
     },

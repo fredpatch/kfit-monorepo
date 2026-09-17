@@ -145,6 +145,10 @@ class FakeCatalogueRepository implements CatalogueRepository {
     return this.services;
   }
 
+  async getAdminService(serviceId: string) {
+    return this.services.find((service) => service.id === serviceId) ?? null;
+  }
+
   async createService(input: CatalogueServiceWriteInput) {
     this.createdInput = input;
     const service = adminRecord({
@@ -204,6 +208,9 @@ test("CatalogueService returns public services with variants, components and pol
     },
     async listAdminServices() {
       return [];
+    },
+    async getAdminService() {
+      return null;
     },
     async createService() {
       throw new Error("not used");

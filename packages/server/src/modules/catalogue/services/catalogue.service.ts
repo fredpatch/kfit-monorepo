@@ -279,7 +279,7 @@ function normalizeServiceInput(input: CatalogueServiceMutationInput, mode: "crea
   }
 
   if (mode === "create") {
-    return {
+    const created: CatalogueServiceWriteInput = {
       name: output.name!,
       slug: output.slug!,
       description: output.description ?? null,
@@ -295,6 +295,19 @@ function normalizeServiceInput(input: CatalogueServiceMutationInput, mode: "crea
       isPublic: output.isPublic ?? false,
       sortOrder: output.sortOrder ?? 0,
     };
+    const invalid = validateCapacityState(created);
+    return invalid ? { invalid } : created;
+  }
+
+  const touchesCapacityControl =
+    output.availabilityStatus !== undefined ||
+    output.capacityMode !== undefined ||
+    output.capacityLimit !== undefined ||
+    output.waitlistEnabled !== undefined;
+  if (touchesCapacityControl) {
+    const normalized = normalizeCapacityControlInput(output);
+    if ("invalid" in normalized) return normalized;
+    Object.assign(output, normalized);
   }
 
   return output;
@@ -310,17 +323,16 @@ function normalizeCapacityControlInput(input: CatalogueServiceCapacityInput): Ca
 
   const capacityLimit = optionalInteger(input.capacityLimit);
   if (capacityLimit === undefined) return { invalid: "capacity_limit_invalid" };
-  if (capacityMode === "limited" && (capacityLimit === null || capacityLimit <= 0)) {
-    return { invalid: "capacity_limit_required" };
-  }
-  if (capacityMode === "unlimited" && capacityLimit !== null) {
-    return { invalid: "capacity_limit_must_be_null" };
-  }
 
   if (typeof input.waitlistEnabled !== "boolean") return { invalid: "waitlist_invalid" };
-  if (availabilityStatus === "waitlist_only" && !input.waitlistEnabled) {
-    return { invalid: "waitlist_required" };
-  }
+
+  const invalid = validateCapacityState({
+    availabilityStatus,
+    capacityMode,
+    capacityLimit,
+    waitlistEnabled: input.waitlistEnabled,
+  });
+  if (invalid) return { invalid };
 
   return {
     availabilityStatus,
@@ -328,6 +340,19 @@ function normalizeCapacityControlInput(input: CatalogueServiceCapacityInput): Ca
     capacityLimit,
     waitlistEnabled: input.waitlistEnabled,
   };
+}
+
+function validateCapacityState(input: Pick<CatalogueServiceWriteInput, "availabilityStatus" | "capacityMode" | "capacityLimit" | "waitlistEnabled">): string | null {
+  if (input.capacityMode === "limited" && (input.capacityLimit === null || input.capacityLimit <= 0)) {
+    return "capacity_limit_required";
+  }
+  if (input.capacityMode === "unlimited" && input.capacityLimit !== null) {
+    return "capacity_limit_must_be_null";
+  }
+  if (input.availabilityStatus === "waitlist_only" && !input.waitlistEnabled) {
+    return "waitlist_required";
+  }
+  return null;
 }
 
 function validatePublishable(service: CatalogueAdminServiceRecord): string | null {

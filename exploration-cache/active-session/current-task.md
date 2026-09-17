@@ -1,12 +1,12 @@
 # Current Task
 
-> Slice: Sprint 2.3 — admin catalogue editing foundation | Date: 2026-08-25 | Status: Implemented, awaiting local validation
+> Slice: Sprint 2.3 — admin catalogue editing foundation | Date: 2026-09-17 | Status: Closed, locally validated
 
 ## Task
 
 Implement the server-first foundation for admin catalogue service editing.
 
-## Implemented scope
+## Validated scope
 
 - Shared catalogue admin route and response contracts.
 - Admin service list endpoint.
@@ -19,6 +19,15 @@ Implement the server-first foundation for admin catalogue service editing.
 - Service-level validation for slugs, prices, capacity, durations, publication guards and reorder payloads.
 - Tests for shared contracts, catalogue service rules and Express admin route behavior.
 
+## Validation confirmed by Fred
+
+- [x] `npm run build --workspace @kfit/shared`
+- [x] `node --test packages/shared/dist/catalogue/contracts.test.js`
+- [x] `npm run build --workspace @kfit/server`
+- [x] `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js`
+- [x] `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js`
+- [x] `npm run db:check`
+
 ## Explicitly out of scope for this slice
 
 - Admin UI.
@@ -27,25 +36,6 @@ Implement the server-first foundation for admin catalogue service editing.
 - Capacity computation from active subscriptions.
 - Prospect request and waitlist workflow.
 
-## Validation pending from Fred
+## Next boundary
 
-- [ ] `npm run build --workspace @kfit/shared`
-- [ ] `npm run build --workspace @kfit/server`
-- [ ] `node --test packages/shared/dist/catalogue/contracts.test.js`
-- [ ] `node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js`
-- [ ] `node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js`
-- [ ] `npm run db:check`
-
-## Notes
-
-Do not update `changelog.md` or mark the Notion task as `Terminé` until Fred confirms green local output.
-
-## Validation fix applied
-
-Fred's first S2.3 validation run confirmed `@kfit/shared` build green and exposed TypeScript narrowing errors in the server build. Fixed in commits:
-
-- `73026f2` — admin service validation/reorder narrowing.
-- `d25932c` — controller reorder response narrowing.
-- `5ab187b` — route param normalization for service IDs.
-
-S2.3 still awaits local validation after these fixes.
+S2.3 is closed. Next recommended slice: S2.4 public landing page catalogue consumption.

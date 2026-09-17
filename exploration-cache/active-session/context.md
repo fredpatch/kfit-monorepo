@@ -1,50 +1,42 @@
 # Session Context
 
-> Date: 2026-09-17 | Slice: Sprint 2.6 — admin UI capacity / waitlist controls
+> Date: 2026-09-17 | Sprint 2 closure
 
 ## Where we left off
 
-Sprint 0, Sprint 1 auth, password recovery, and Sprint 2.1 through S2.5 are closed and locally validated. Sprint 2 remains active on `sprint-2/catalogue-foundation`.
+Sprint 0, Sprint 1 auth, password recovery, and Sprint 2.1 through S2.6 are closed and locally validated.
 
-## Current Sprint 2 state
+## Sprint 2 result
 
-S2.6 admin UI capacity/waitlist controls are implemented and statically inspected but are NOT locally validated yet.
+The catalogue foundation is complete for the planned V1 Core boundary:
 
-Implementation head before project-state sync commits: `87010ce5d0ca44716fae71748b9ab289add11f2b`.
+- public catalogue API;
+- seeded services/variants/components/policies;
+- admin catalogue editing foundation;
+- public landing page catalogue consumption;
+- authoritative server capacity/waitlist controls;
+- authenticated admin capacity/waitlist UI;
+- local PostgreSQL-backed API/bootstrap/login development path;
+- local Vite proxy for public/auth/admin catalogue routes.
 
-Implemented scope:
+Fred confirmed the S2.6 client typecheck/build and complete manual admin/public smoke green on 2026-09-17.
 
-- client-only integration over validated S2.5 server capacity behavior;
-- admin API client lists admin catalogue services and calls the validated capacity PATCH endpoint;
-- existing cookie session and CSRF helper are reused;
-- authenticated admin workspace mounts after existing bootstrap/login/session gates;
-- French per-service controls for availability, capacity mode, capacity limit and waitlist enablement;
-- archived services are read-only;
-- React Query invalidates admin and public catalogue caches after successful saves;
-- loading, empty, fetch-error, save-pending, success and failure feedback are present;
-- existing public `/` catalogue route remains separate and unchanged in behavior;
-- no server/schema/migration change.
+## Repository state
 
-Relevant commits:
-
-- `e157728` admin capacity API client;
-- `7126805` admin capacity controls UI;
-- `7e4b441` authenticated workspace mount;
-- `b146c05` workspace styles;
-- `87010ce` save feedback hardening.
-
-## Validation pending
-
-Fred must run client typecheck/build and manually smoke the authenticated admin capacity flow plus public catalogue regression.
+- Sprint 2 branch: `sprint-2/catalogue-foundation`.
+- S2.6 locally validated.
+- Sprint 2 closure/state synchronization is being completed before `main` is fast-forwarded.
+- User-pushed agent documentation files are retained; unrelated dependency-lock churn was neutralized before merge.
 
 ## Active constraints
 
 - Do not run project commands from ChatGPT/Codex runtime.
-- Only mark S2.6 validated after Fred provides successful local output and manual smoke confirmation.
-- Do not update `changelog.md` for S2.6 until that validation is confirmed.
-- Legal validation is required before production.
-- Keep native PostgreSQL on host 5432 and K'FIT Docker PostgreSQL on host 5433 unless explicitly changed.
+- Legal validation is still required before production.
+- A true off-server encrypted backup destination is still required before production.
+- Native PostgreSQL remains on host 5432 and K'FIT Docker PostgreSQL on host 5433 unless explicitly changed.
 
 ## Next boundary
 
-Stay on S2.6 until Fred validates the client build and the admin mutation flow locally. Do not start prospect/request workflow yet.
+Sprint 3 covers M2: demandes, prospects, qualification et liste d'attente.
+
+First selected backlog task: **Public request form (name + phone, per service)**. It is not started yet. At Sprint 3 start, inspect the applicable reusable patterns, establish Sprint 3 execution state/branch, then proceed server-first before client integration.

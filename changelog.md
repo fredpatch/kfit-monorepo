@@ -2,6 +2,22 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-09-17 — Sprint 3.2 public request form
+
+- Validated the public client request form end-to-end against the real local API and PostgreSQL database.
+- Replaced the public catalogue `mailto:` CTA with an inline expandable request form for open services.
+- Added required full-name and WhatsApp fields plus service-scoped variant selection when variants exist.
+- Added a dedicated public requests API client consuming the validated S3.1 `POST /requests` contract.
+- Added stable client `submissionToken` lifecycle: one token per request intent, reused across transient retries and accidental duplicate submits.
+- Sent S3.1 anti-abuse fields (`website` honeypot and `formRenderedAt`) without exposing bot-specific feedback.
+- Added centralized French localization for typed `REQUEST_*` errors and success confirmation with the persisted request reference.
+- Kept temporarily-closed services non-submittable and waitlist-only services informational; actual waitlist enrollment remains S3.5.
+- Added `/requests` to the Vite dev proxy and retained the validated forwarded-host behavior for same-origin-protected admin mutations.
+- Confirmed no server/shared/schema/migration changes and no new client dependencies.
+- Confirmed shared build, client typecheck and client production build green.
+- Fred validated valid submission, variant selection, transient retry, unavailable/waitlist/race states, required-field handling, honeypot accessibility, mobile behavior and catalogue regression.
+- Fred verified through DBeaver that a rapid double-submit persisted exactly one `service_requests` row.
+
 ## 2026-09-17 — Sprint 3.1 public request/prospect intake foundation
 
 - Validated the server-first anonymous public request intake slice end-to-end against the local PostgreSQL database.

@@ -73,11 +73,11 @@ Fred confirmed all green for Sprint 2.2:
 - `sprint-2/catalogue-foundation` was created from `main` for continuing Sprint 2.
 - No further Sprint 2 work should be committed to `sprint-1/auth-foundation`.
 
-## Current Sprint 2.3 state
+## Current Sprint 2 state after S2.3
 
-S2.3 admin catalogue editing foundation is implemented and awaits Fred local validation.
+S2.3 admin catalogue editing foundation is closed and locally validated.
 
-Implemented boundaries:
+Validated boundaries:
 
 - service-level admin catalogue editing only;
 - `admin` role required for admin catalogue routes;
@@ -85,6 +85,6 @@ Implemented boundaries:
 - create/update/publish/archive/reorder over existing catalogue tables;
 - no admin UI and no variant/component/policy editor yet.
 
-## Next decision after validation
+## Next decision
 
-If S2.3 is green, close it and decide whether to fast-forward `main` before S2.4 public landing page catalogue consumption.
+Fast-forward `main` to the validated S2.3 head, then start S2.4 public landing page catalogue consumption.

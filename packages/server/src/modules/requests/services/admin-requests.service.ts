@@ -3,7 +3,9 @@ import {
   contactAttemptChannels,
   contactAttemptDirections,
   contactAttemptOutcomes,
+  qualificationReviewOutcomes,
   type AdminContactAttempt,
+  type AdminQualificationReview,
   type AdminRequestsQueueQuery,
   type AdminServiceRequestDetail,
   type AdminServiceRequestSummary,
@@ -11,6 +13,8 @@ import {
   type ContactAttemptDirection,
   type ContactAttemptOutcome,
   type CreateContactAttemptInput,
+  type CreateQualificationReviewInput,
+  type QualificationReviewOutcome,
   type ServiceRequestStatus,
 } from "@kfit/shared";
 
@@ -31,6 +35,16 @@ export type NormalizedContactAttemptInput = {
   note: string | null;
   occurredAt: Date;
   nextActionAt: Date | null;
+};
+
+export type NormalizedQualificationReviewInput = {
+  outcome: QualificationReviewOutcome;
+  finalVariantId: string | null;
+  agreedPriceXaf: number | null;
+  targetStartDate: Date | null;
+  suitabilityNote: string | null;
+  conditions: string[] | null;
+  blockers: string[] | null;
 };
 
 export type AdminRequestsRepository = {
@@ -56,6 +70,18 @@ export type AdminRequestsRepository = {
     auditContext: AdminRequestAuditContext,
     now: Date,
   ): Promise<{ request: AdminServiceRequestSummary } | "not_found" | "invalid_transition">;
+  recordQualificationReview(
+    requestId: string,
+    input: NormalizedQualificationReviewInput,
+    actor: AdminRequestActor,
+    auditContext: AdminRequestAuditContext,
+    now: Date,
+  ): Promise<
+    | { qualificationReview: AdminQualificationReview; request: AdminServiceRequestSummary }
+    | "not_found"
+    | "invalid_transition"
+    | "variant_invalid"
+  >;
 };
 
 export type CreateContactAttemptResult =
@@ -65,6 +91,12 @@ export type CreateContactAttemptResult =
 
 export type TransitionStatusResult =
   | { status: "ok"; request: AdminServiceRequestSummary }
+  | { status: "not_found" }
+  | { status: "invalid_transition" }
+  | { status: "invalid"; reason: string };
+
+export type RecordQualificationReviewResult =
+  | { status: "ok"; qualificationReview: AdminQualificationReview; request: AdminServiceRequestSummary }
   | { status: "not_found" }
   | { status: "invalid_transition" }
   | { status: "invalid"; reason: string };
@@ -89,6 +121,20 @@ function parseOptionalDate(value: unknown): Date | null | undefined {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return undefined;
   return parsed;
+}
+
+function normalizeStringList(value: unknown, maxItems: number, maxItemLength: number): string[] | null | undefined {
+  if (value === undefined || value === null) return null;
+  if (!Array.isArray(value) || value.length > maxItems) return undefined;
+
+  const items: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") return undefined;
+    const trimmed = item.trim();
+    if (trimmed === "" || trimmed.length > maxItemLength) return undefined;
+    items.push(trimmed);
+  }
+  return items;
 }
 
 function normalizeContactAttempt(input: CreateContactAttemptInput, now: Date): NormalizedContactAttemptInput | { invalid: string } {
@@ -122,6 +168,49 @@ function normalizeContactAttempt(input: CreateContactAttemptInput, now: Date): N
     note,
     occurredAt,
     nextActionAt,
+  };
+}
+
+function normalizeQualificationReview(input: CreateQualificationReviewInput): NormalizedQualificationReviewInput | { invalid: string } {
+  if (typeof input.outcome !== "string" || !qualificationReviewOutcomes.includes(input.outcome as QualificationReviewOutcome)) {
+    return { invalid: "outcome_invalid" };
+  }
+
+  const outcome = input.outcome as QualificationReviewOutcome;
+  const suitabilityNote = optionalTrimmedString(input.suitabilityNote, 2000);
+  if (suitabilityNote === undefined) return { invalid: "suitability_note_invalid" };
+
+  const targetStartDate = parseOptionalDate(input.targetStartDate);
+  if (targetStartDate === undefined) return { invalid: "target_start_date_invalid" };
+
+  const conditions = normalizeStringList(input.conditions, 20, 240);
+  if (conditions === undefined) return { invalid: "conditions_invalid" };
+
+  const blockers = normalizeStringList(input.blockers, 20, 240);
+  if (blockers === undefined) return { invalid: "blockers_invalid" };
+
+  if (outcome === "rejected") {
+    if (input.finalVariantId !== undefined && input.finalVariantId !== null && input.finalVariantId !== "") return { invalid: "final_variant_forbidden" };
+    if (input.agreedPriceXaf !== undefined && input.agreedPriceXaf !== null && input.agreedPriceXaf !== "") return { invalid: "agreed_price_forbidden" };
+    if (input.targetStartDate !== undefined && input.targetStartDate !== null && input.targetStartDate !== "") return { invalid: "target_start_date_forbidden" };
+    return { outcome, finalVariantId: null, agreedPriceXaf: null, targetStartDate: null, suitabilityNote, conditions: null, blockers };
+  }
+
+  if (typeof input.finalVariantId !== "string" || !uuidPattern.test(input.finalVariantId)) return { invalid: "final_variant_id_invalid" };
+  if (typeof input.agreedPriceXaf !== "number" || !Number.isInteger(input.agreedPriceXaf) || input.agreedPriceXaf < 0) {
+    return { invalid: "agreed_price_invalid" };
+  }
+  const agreedPriceXaf = input.agreedPriceXaf;
+  if (outcome === "qualified_with_conditions" && (!conditions || conditions.length === 0)) return { invalid: "conditions_required" };
+
+  return {
+    outcome,
+    finalVariantId: input.finalVariantId,
+    agreedPriceXaf,
+    targetStartDate,
+    suitabilityNote,
+    conditions: outcome === "qualified_with_conditions" ? conditions : null,
+    blockers,
   };
 }
 
@@ -172,5 +261,24 @@ export class AdminRequestsService {
     if (result === "not_found") return { status: "not_found" };
     if (result === "invalid_transition") return { status: "invalid_transition" };
     return { status: "ok", request: result.request };
+  }
+
+  async recordQualificationReview(
+    requestId: string,
+    input: CreateQualificationReviewInput,
+    actor: AdminRequestActor,
+    auditContext: AdminRequestAuditContext,
+    now: Date,
+  ): Promise<RecordQualificationReviewResult> {
+    if (!uuidPattern.test(requestId)) return { status: "invalid", reason: "request_id_invalid" };
+
+    const normalized = normalizeQualificationReview(input);
+    if ("invalid" in normalized) return { status: "invalid", reason: normalized.invalid };
+
+    const result = await this.repository.recordQualificationReview(requestId, normalized, actor, auditContext, now);
+    if (result === "not_found") return { status: "not_found" };
+    if (result === "invalid_transition") return { status: "invalid_transition" };
+    if (result === "variant_invalid") return { status: "invalid", reason: "final_variant_id_invalid" };
+    return { status: "ok", qualificationReview: result.qualificationReview, request: result.request };
   }
 }

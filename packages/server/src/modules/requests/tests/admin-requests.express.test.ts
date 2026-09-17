@@ -42,7 +42,19 @@ function makeService(overrides: Partial<AdminRequestsServiceFake> = {}): AdminRe
     },
     async getDetail(requestId: string) {
       if (requestId !== summary.id) return { status: "not_found" };
-      return { status: "ok", detail: { ...summary, objective: null, preferredStartDate: null, message: null, duplicateOfRequestId: null, contactAttempts: [] } };
+      return {
+        status: "ok",
+        detail: {
+          ...summary,
+          objective: null,
+          preferredStartDate: null,
+          message: null,
+          duplicateOfRequestId: null,
+          contactAttempts: [],
+          qualificationAvailableVariants: [],
+          qualificationReviews: [],
+        },
+      };
     },
     async logContactAttempt() {
       return {
@@ -62,6 +74,26 @@ function makeService(overrides: Partial<AdminRequestsServiceFake> = {}): AdminRe
     },
     async transitionStatus() {
       return { status: "ok", request: { ...summary, status: "contacting" } };
+    },
+    async recordQualificationReview() {
+      return {
+        status: "ok",
+        qualificationReview: {
+          id: "77777777-7777-7777-7777-777777777777",
+          version: 1,
+          outcome: "rejected",
+          finalVariantId: null,
+          agreedPriceXaf: null,
+          targetStartDate: null,
+          suitabilityNote: null,
+          conditions: null,
+          blockers: null,
+          createdByUserId: adminSession.userId,
+          createdAt: "2026-09-17T10:00:00.000Z",
+          supersededAt: null,
+        },
+        request: { ...summary, status: "rejected" },
+      };
     },
     ...overrides,
   };
@@ -115,6 +147,10 @@ function statusPath(requestId: string): string {
   return adminRequestsApiRoutes.status.replace(":requestId", requestId);
 }
 
+function qualificationReviewPath(requestId: string): string {
+  return adminRequestsApiRoutes.qualificationReview.replace(":requestId", requestId);
+}
+
 test("admin requests routes require an authenticated admin session", async () => {
   const controller = new AdminRequestsController(makeService());
 
@@ -150,6 +186,14 @@ test("admin requests mutation routes reject an authenticated non-admin coach ses
     });
     assert.equal(statusResponse.status, 403);
     assert.deepEqual(await statusResponse.json(), { error: "REQUEST_ADMIN_FORBIDDEN" });
+
+    const reviewResponse = await fetch(`${baseUrl}${qualificationReviewPath(summary.id)}`, {
+      method: "POST",
+      headers: csrfHeaders(),
+      body: JSON.stringify({ outcome: "rejected" }),
+    });
+    assert.equal(reviewResponse.status, 403);
+    assert.deepEqual(await reviewResponse.json(), { error: "REQUEST_ADMIN_FORBIDDEN" });
   }, () => coachSession);
 });
 
@@ -234,6 +278,22 @@ test("admin requests status route transitions status for an authenticated admin 
   }, () => adminSession);
 });
 
+test("admin requests qualification-review route records a review for an authenticated admin with CSRF", async () => {
+  const controller = new AdminRequestsController(makeService());
+
+  await withTestServer(controller, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}${qualificationReviewPath(summary.id)}`, {
+      method: "POST",
+      headers: csrfHeaders(),
+      body: JSON.stringify({ outcome: "rejected" }),
+    });
+    assert.equal(response.status, 201);
+    const body = await response.json() as { request: AdminServiceRequestSummary; qualificationReview: { version: number } };
+    assert.equal(body.request.status, "rejected");
+    assert.equal(body.qualificationReview.version, 1);
+  }, () => adminSession);
+});
+
 test("admin requests status route surfaces an invalid transition as a 409", async () => {
   const controller = new AdminRequestsController(makeService({
     async transitionStatus() {
@@ -246,6 +306,24 @@ test("admin requests status route surfaces an invalid transition as a 409", asyn
       method: "POST",
       headers: csrfHeaders(),
       body: JSON.stringify({ toStatus: "qualified" }),
+    });
+    assert.equal(response.status, 409);
+    assert.deepEqual(await response.json(), { error: "REQUEST_INVALID_TRANSITION" });
+  }, () => adminSession);
+});
+
+test("admin requests qualification-review route surfaces an invalid transition as a 409", async () => {
+  const controller = new AdminRequestsController(makeService({
+    async recordQualificationReview() {
+      return { status: "invalid_transition" };
+    },
+  }));
+
+  await withTestServer(controller, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}${qualificationReviewPath(summary.id)}`, {
+      method: "POST",
+      headers: csrfHeaders(),
+      body: JSON.stringify({ outcome: "rejected" }),
     });
     assert.equal(response.status, 409);
     assert.deepEqual(await response.json(), { error: "REQUEST_INVALID_TRANSITION" });

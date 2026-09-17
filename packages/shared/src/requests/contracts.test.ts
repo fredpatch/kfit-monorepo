@@ -12,6 +12,7 @@ import {
   type AdminRequestDetailResponse,
   type AdminRequestsQueueResponse,
   type CreateContactAttemptResponse,
+  type CreateQualificationReviewResponse,
   type RequestStatusTransitionResponse,
   type RequestSubmissionResponse,
 } from "./contracts.js";
@@ -36,6 +37,7 @@ test("requests shared contracts expose a stable public submission route", () => 
     "REQUEST_INVALID_TRANSITION",
     "REQUEST_CONTACT_ATTEMPT_INVALID_INPUT",
     "REQUEST_STATUS_INVALID_INPUT",
+    "REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT",
   ]);
 });
 
@@ -45,6 +47,7 @@ test("admin requests shared contracts expose stable routes", () => {
     detail: "/admin/requests/:requestId",
     contactAttempts: "/admin/requests/:requestId/contact-attempts",
     status: "/admin/requests/:requestId/status",
+    qualificationReview: "/admin/requests/:requestId/qualification-review",
   });
 });
 
@@ -122,6 +125,7 @@ test("admin requests shared contracts type-check queue, detail, contact-attempt 
       preferredStartDate: null,
       message: null,
       duplicateOfRequestId: null,
+      qualificationAvailableVariants: [{ id: "55555555-5555-5555-5555-555555555555", name: "Starter" }],
       contactAttempts: [
         {
           id: "44444444-4444-4444-4444-444444444444",
@@ -134,6 +138,7 @@ test("admin requests shared contracts type-check queue, detail, contact-attempt 
           createdByUserId: null,
         },
       ],
+      qualificationReviews: [],
     },
   };
   assert.equal(detailResponse.request.contactAttempts[0]?.outcome, "callback_requested");
@@ -146,4 +151,23 @@ test("admin requests shared contracts type-check queue, detail, contact-attempt 
 
   const statusResponse: RequestStatusTransitionResponse = { request: { ...summary, status: "qualification_in_progress" } };
   assert.equal(statusResponse.request.status, "qualification_in_progress");
+
+  const qualificationReviewResponse: CreateQualificationReviewResponse = {
+    qualificationReview: {
+      id: "66666666-6666-6666-6666-666666666666",
+      version: 1,
+      outcome: "qualified",
+      finalVariantId: "55555555-5555-5555-5555-555555555555",
+      agreedPriceXaf: 50000,
+      targetStartDate: null,
+      suitabilityNote: null,
+      conditions: null,
+      blockers: null,
+      createdByUserId: null,
+      createdAt: "2026-09-17T10:00:00.000Z",
+      supersededAt: null,
+    },
+    request: { ...summary, status: "qualified" },
+  };
+  assert.equal(qualificationReviewResponse.qualificationReview.version, 1);
 });

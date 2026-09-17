@@ -631,7 +631,16 @@ button {
   padding: 0;
 }
 
-.contact-attempt-list li {
+.qualification-review-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.contact-attempt-list li,
+.qualification-review-list li {
   background: #f7faf4;
   border-radius: 10px;
   padding: 12px;
@@ -647,19 +656,24 @@ button {
   margin: 6px 0 0;
 }
 
-.contact-attempt-form {
+.contact-attempt-form,
+.qualification-review-form {
   display: grid;
   gap: 12px;
 }
 
-.contact-attempt-form label {
+.contact-attempt-form label,
+.qualification-review-form label {
   display: grid;
   font-weight: 700;
   gap: 7px;
 }
 
 .contact-attempt-form select,
-.contact-attempt-form textarea {
+.contact-attempt-form textarea,
+.qualification-review-form input,
+.qualification-review-form select,
+.qualification-review-form textarea {
   border: 1px solid #cdd8c5;
   border-radius: 12px;
   box-sizing: border-box;

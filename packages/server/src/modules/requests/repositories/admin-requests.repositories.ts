@@ -1,21 +1,25 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type {
   AdminContactAttempt,
+  AdminQualificationReview,
   AdminServiceRequestDetail,
+  AdminServiceRequestVariant,
   AdminServiceRequestSummary,
+  QualificationReviewOutcome,
   ServiceRequestStatus,
 } from "@kfit/shared";
 import { adminRequestAllowedTransitions } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
 import { auditEvents } from "../../../db/schema/auth.js";
 import { services, serviceVariants } from "../../../db/schema/catalogue.js";
-import { contactAttempts, prospects, serviceRequests } from "../../../db/schema/prospects.js";
+import { contactAttempts, prospects, qualificationReviews, serviceRequests } from "../../../db/schema/prospects.js";
 import { hashAuditContext } from "../../auth/services/audit.service.js";
 import type {
   AdminRequestActor,
   AdminRequestAuditContext,
   AdminRequestsRepository,
   NormalizedContactAttemptInput,
+  NormalizedQualificationReviewInput,
 } from "../services/admin-requests.service.js";
 
 type AdminRequestsDb = typeof appDb;
@@ -103,6 +107,42 @@ function toContactAttemptDto(attempt: {
   };
 }
 
+function jsonStringList(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  const strings = value.filter((item): item is string => typeof item === "string");
+  return strings.length === value.length ? strings : null;
+}
+
+function toQualificationReviewDto(review: {
+  id: string;
+  version: number;
+  outcome: string;
+  finalVariantId: string | null;
+  agreedPriceXaf: number | null;
+  targetStartDate: Date | null;
+  suitabilityNote: string | null;
+  conditionsJson: unknown;
+  blockersJson: unknown;
+  createdByUserId: string | null;
+  createdAt: Date;
+  supersededAt: Date | null;
+}): AdminQualificationReview {
+  return {
+    id: review.id,
+    version: review.version,
+    outcome: review.outcome as QualificationReviewOutcome,
+    finalVariantId: review.finalVariantId,
+    agreedPriceXaf: review.agreedPriceXaf,
+    targetStartDate: review.targetStartDate ? review.targetStartDate.toISOString() : null,
+    suitabilityNote: review.suitabilityNote,
+    conditions: jsonStringList(review.conditionsJson),
+    blockers: jsonStringList(review.blockersJson),
+    createdByUserId: review.createdByUserId,
+    createdAt: review.createdAt.toISOString(),
+    supersededAt: review.supersededAt ? review.supersededAt.toISOString() : null,
+  };
+}
+
 export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
   constructor(
     private readonly database: AdminRequestsDb,
@@ -173,6 +213,27 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
       .where(eq(contactAttempts.requestId, requestId))
       .orderBy(desc(contactAttempts.occurredAt));
 
+    const variants = await this.variantsForService(row.serviceId);
+
+    const reviews = await this.database
+      .select({
+        id: qualificationReviews.id,
+        version: qualificationReviews.version,
+        outcome: qualificationReviews.outcome,
+        finalVariantId: qualificationReviews.finalVariantId,
+        agreedPriceXaf: qualificationReviews.agreedPriceXaf,
+        targetStartDate: qualificationReviews.targetStartDate,
+        suitabilityNote: qualificationReviews.suitabilityNote,
+        conditionsJson: qualificationReviews.conditionsJson,
+        blockersJson: qualificationReviews.blockersJson,
+        createdByUserId: qualificationReviews.createdByUserId,
+        createdAt: qualificationReviews.createdAt,
+        supersededAt: qualificationReviews.supersededAt,
+      })
+      .from(qualificationReviews)
+      .where(eq(qualificationReviews.requestId, requestId))
+      .orderBy(desc(qualificationReviews.version));
+
     const summary = toSummary(row, attempts[0]?.occurredAt ?? null, attempts[0]?.nextActionAt ?? null);
 
     return {
@@ -182,6 +243,8 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
       message: row.message,
       duplicateOfRequestId: row.duplicateOfRequestId,
       contactAttempts: attempts.map(toContactAttemptDto),
+      qualificationAvailableVariants: variants,
+      qualificationReviews: reviews.map(toQualificationReviewDto),
     };
   }
 
@@ -315,6 +378,126 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
 
       return { request: toSummary(detailRow, lastAttempts[0]?.occurredAt ?? null, lastAttempts[0]?.nextActionAt ?? null) };
     });
+  }
+
+  async recordQualificationReview(
+    requestId: string,
+    input: NormalizedQualificationReviewInput,
+    actor: AdminRequestActor,
+    auditContext: AdminRequestAuditContext,
+    now: Date,
+  ): Promise<
+    | { qualificationReview: AdminQualificationReview; request: AdminServiceRequestSummary }
+    | "not_found"
+    | "invalid_transition"
+    | "variant_invalid"
+  > {
+    return this.database.transaction(async (tx) => {
+      const [requestRow] = await tx
+        .select({ id: serviceRequests.id, status: serviceRequests.status, serviceId: serviceRequests.serviceId })
+        .from(serviceRequests)
+        .where(eq(serviceRequests.id, requestId))
+        .for("update")
+        .limit(1);
+
+      if (!requestRow) return "not_found" as const;
+      if (requestRow.status !== "qualification_in_progress") return "invalid_transition" as const;
+
+      if (input.finalVariantId) {
+        const [ownedVariant] = await tx
+          .select({ id: serviceVariants.id })
+          .from(serviceVariants)
+          .where(and(eq(serviceVariants.id, input.finalVariantId), eq(serviceVariants.serviceId, requestRow.serviceId)))
+          .limit(1);
+        if (!ownedVariant) return "variant_invalid" as const;
+      }
+
+      const existingReviews = await tx
+        .select({ version: qualificationReviews.version, supersededAt: qualificationReviews.supersededAt })
+        .from(qualificationReviews)
+        .where(eq(qualificationReviews.requestId, requestId))
+        .orderBy(desc(qualificationReviews.version));
+
+      if (existingReviews.some((review) => review.supersededAt === null)) return "invalid_transition" as const;
+
+      const version = (existingReviews[0]?.version ?? 0) + 1;
+      const toStatus = input.outcome;
+
+      const [inserted] = await tx
+        .insert(qualificationReviews)
+        .values({
+          requestId,
+          version,
+          outcome: input.outcome,
+          finalVariantId: input.finalVariantId,
+          agreedPriceXaf: input.agreedPriceXaf,
+          targetStartDate: input.targetStartDate,
+          suitabilityNote: input.suitabilityNote,
+          conditionsJson: input.conditions,
+          blockersJson: input.blockers,
+          createdByUserId: actor.userId,
+          createdAt: now,
+          supersededAt: null,
+        })
+        .returning({
+          id: qualificationReviews.id,
+          version: qualificationReviews.version,
+          outcome: qualificationReviews.outcome,
+          finalVariantId: qualificationReviews.finalVariantId,
+          agreedPriceXaf: qualificationReviews.agreedPriceXaf,
+          targetStartDate: qualificationReviews.targetStartDate,
+          suitabilityNote: qualificationReviews.suitabilityNote,
+          conditionsJson: qualificationReviews.conditionsJson,
+          blockersJson: qualificationReviews.blockersJson,
+          createdByUserId: qualificationReviews.createdByUserId,
+          createdAt: qualificationReviews.createdAt,
+          supersededAt: qualificationReviews.supersededAt,
+        });
+
+      if (!inserted) throw new Error("Qualification review insert returned no row");
+
+      await tx
+        .update(serviceRequests)
+        .set({ status: toStatus, updatedAt: now })
+        .where(eq(serviceRequests.id, requestId));
+
+      await tx.insert(auditEvents).values({
+        actorUserId: actor.userId,
+        actorType: "user",
+        eventType: "request.qualification_review_recorded",
+        entityType: "service_request",
+        entityId: requestId,
+        result: "success",
+        ipHash: hashAuditContext(auditContext.ipAddress, this.options.auditHashPepper),
+        userAgentHash: hashAuditContext(auditContext.userAgent, this.options.auditHashPepper),
+        metadataJson: { version, outcome: input.outcome, fromStatus: "qualification_in_progress", toStatus },
+      });
+
+      const [detailRow] = await this.baseQueryTx(tx).where(eq(serviceRequests.id, requestId)).limit(1);
+      if (!detailRow) throw new Error("Service request disappeared inside its own transaction");
+
+      const [latestAttempt] = await tx
+        .select({ occurredAt: contactAttempts.occurredAt, nextActionAt: contactAttempts.nextActionAt })
+        .from(contactAttempts)
+        .where(eq(contactAttempts.requestId, requestId))
+        .orderBy(desc(contactAttempts.occurredAt))
+        .limit(1);
+
+      return {
+        qualificationReview: toQualificationReviewDto(inserted),
+        request: toSummary(detailRow, latestAttempt?.occurredAt ?? null, latestAttempt?.nextActionAt ?? null),
+      };
+    });
+  }
+
+  private async variantsForService(serviceId: string): Promise<AdminServiceRequestVariant[]> {
+    const rows = await this.database
+      .select({ id: serviceVariants.id, name: serviceVariants.name })
+      .from(serviceVariants)
+      .where(eq(serviceVariants.serviceId, serviceId))
+      .orderBy(serviceVariants.sortOrder, serviceVariants.name);
+
+    return rows.map((row) => ({ id: row.id, name: row.name }));
   }
 
   private baseQueryTx(tx: Parameters<AdminRequestsDb["transaction"]>[0] extends (tx: infer T) => unknown ? T : never) {

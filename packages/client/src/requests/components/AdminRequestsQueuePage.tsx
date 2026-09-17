@@ -5,11 +5,14 @@ import {
   contactAttemptChannels,
   contactAttemptDirections,
   contactAttemptOutcomes,
+  qualificationReviewOutcomes,
   serviceRequestStatuses,
+  type AdminServiceRequestDetail,
   type AdminServiceRequestSummary,
   type ContactAttemptChannel,
   type ContactAttemptDirection,
   type ContactAttemptOutcome,
+  type QualificationReviewOutcome,
   type ServiceRequestStatus,
 } from "@kfit/shared";
 import { adminRequestsApiClient } from "../api/admin-requests-api.js";
@@ -51,6 +54,12 @@ const outcomeLabels: Record<ContactAttemptOutcome, string> = {
   callback_requested: "Rappel demandé",
   not_interested: "Pas intéressé",
   other: "Autre",
+};
+
+const qualificationOutcomeLabels: Record<QualificationReviewOutcome, string> = {
+  qualified: "Qualifiée",
+  qualified_with_conditions: "Qualifiée avec conditions",
+  rejected: "Rejetée",
 };
 
 function formatDate(value: string | null): string {
@@ -125,6 +134,122 @@ function ContactAttemptForm({ requestId, onLogged }: { requestId: string; onLogg
   );
 }
 
+function splitTextareaList(value: string): string[] | undefined {
+  const items = value
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return items.length ? items : undefined;
+}
+
+function QualificationReviewForm({ request, onRecorded }: { request: AdminServiceRequestDetail; onRecorded(): void }) {
+  const defaultVariantId = request.requestedVariant?.id ?? request.qualificationAvailableVariants[0]?.id ?? "";
+  const [outcome, setOutcome] = useState<QualificationReviewOutcome>("qualified");
+  const [finalVariantId, setFinalVariantId] = useState(defaultVariantId);
+  const [agreedPriceXaf, setAgreedPriceXaf] = useState("");
+  const [targetStartDate, setTargetStartDate] = useState("");
+  const [suitabilityNote, setSuitabilityNote] = useState("");
+  const [conditions, setConditions] = useState("");
+  const [blockers, setBlockers] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const recordReview = useMutation({
+    mutationFn: () =>
+      adminRequestsApiClient.recordQualificationReview(request.id, {
+        outcome,
+        finalVariantId: outcome === "rejected" ? undefined : finalVariantId,
+        agreedPriceXaf: outcome === "rejected" || agreedPriceXaf === "" ? undefined : Number(agreedPriceXaf),
+        targetStartDate: outcome === "rejected" || targetStartDate === "" ? undefined : new Date(targetStartDate).toISOString(),
+        suitabilityNote: suitabilityNote || undefined,
+        conditions: outcome === "qualified_with_conditions" ? splitTextareaList(conditions) : undefined,
+        blockers: splitTextareaList(blockers),
+      }),
+  });
+
+  const requiresDecisionFields = outcome !== "rejected";
+
+  return (
+    <form
+      className="qualification-review-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        setError(null);
+        recordReview.mutate(undefined, {
+          onSuccess: () => {
+            setSuitabilityNote("");
+            setConditions("");
+            setBlockers("");
+            onRecorded();
+          },
+          onError: (mutationError) => setError(translateRequestError(extractRequestErrorCode(mutationError))),
+        });
+      }}
+    >
+      <label>
+        Décision
+        <select value={outcome} onChange={(event) => setOutcome(event.target.value as QualificationReviewOutcome)} disabled={recordReview.isPending}>
+          {qualificationReviewOutcomes.map((value) => (
+            <option key={value} value={value}>{qualificationOutcomeLabels[value]}</option>
+          ))}
+        </select>
+      </label>
+
+      {requiresDecisionFields ? (
+        <>
+          <label>
+            Option finale
+            <select value={finalVariantId} onChange={(event) => setFinalVariantId(event.target.value)} disabled={recordReview.isPending}>
+              <option value="">Choisir une option</option>
+              {request.qualificationAvailableVariants.map((variant) => (
+                <option key={variant.id} value={variant.id}>{variant.name}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Prix validé (XAF)
+            <input
+              type="number"
+              min="0"
+              value={agreedPriceXaf}
+              onChange={(event) => setAgreedPriceXaf(event.target.value)}
+              disabled={recordReview.isPending}
+            />
+          </label>
+
+          <label>
+            Date cible (optionnelle)
+            <input type="date" value={targetStartDate} onChange={(event) => setTargetStartDate(event.target.value)} disabled={recordReview.isPending} />
+          </label>
+        </>
+      ) : null}
+
+      {outcome === "qualified_with_conditions" ? (
+        <label>
+          Conditions
+          <textarea value={conditions} onChange={(event) => setConditions(event.target.value)} disabled={recordReview.isPending} rows={3} />
+        </label>
+      ) : null}
+
+      <label>
+        Note d'aptitude (optionnelle)
+        <textarea value={suitabilityNote} onChange={(event) => setSuitabilityNote(event.target.value)} disabled={recordReview.isPending} rows={3} />
+      </label>
+
+      <label>
+        Blocages (optionnel)
+        <textarea value={blockers} onChange={(event) => setBlockers(event.target.value)} disabled={recordReview.isPending} rows={2} />
+      </label>
+
+      {error ? <p className="error">{error}</p> : null}
+
+      <button type="submit" disabled={recordReview.isPending}>
+        {recordReview.isPending ? "Enregistrement..." : "Enregistrer la qualification"}
+      </button>
+    </form>
+  );
+}
+
 function RequestDetailPanel({ requestId }: { requestId: string }) {
   const queryClient = useQueryClient();
   const detail = useQuery({
@@ -193,6 +318,27 @@ function RequestDetailPanel({ requestId }: { requestId: string }) {
           ))}
         </div>
         {transitionError ? <p className="error">{transitionError}</p> : null}
+      </div>
+
+      <div className="admin-request-detail__qualification">
+        <p className="eyebrow">Qualification</p>
+        {request.qualificationReviews.length === 0 ? <p className="muted">Aucune revue de qualification enregistrée.</p> : null}
+        {request.qualificationReviews.length > 0 ? (
+          <ul className="qualification-review-list">
+            {request.qualificationReviews.map((review) => (
+              <li key={review.id}>
+                <span className="contact-attempt-list__meta">
+                  v{review.version} · {qualificationOutcomeLabels[review.outcome]} · {formatDate(review.createdAt)}
+                </span>
+                {review.agreedPriceXaf !== null ? <p>{review.agreedPriceXaf.toLocaleString("fr-FR")} XAF</p> : null}
+                {review.suitabilityNote ? <p>{review.suitabilityNote}</p> : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {request.status === "qualification_in_progress" && request.qualificationReviews.length === 0 ? (
+          <QualificationReviewForm request={request} onRecorded={() => void refreshAfterContactAttempt()} />
+        ) : null}
       </div>
 
       <div className="admin-request-detail__contact">

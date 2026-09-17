@@ -9,6 +9,7 @@ export const adminRequestsApiRoutes = {
   detail: "/admin/requests/:requestId",
   contactAttempts: "/admin/requests/:requestId/contact-attempts",
   status: "/admin/requests/:requestId/status",
+  qualificationReview: "/admin/requests/:requestId/qualification-review",
 } as const;
 
 export type AdminRequestsApiRoute = (typeof adminRequestsApiRoutes)[keyof typeof adminRequestsApiRoutes];
@@ -28,6 +29,7 @@ export const requestErrorCodes = [
   "REQUEST_INVALID_TRANSITION",
   "REQUEST_CONTACT_ATTEMPT_INVALID_INPUT",
   "REQUEST_STATUS_INVALID_INPUT",
+  "REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT",
 ] as const;
 
 export type RequestErrorCode = (typeof requestErrorCodes)[number];
@@ -172,6 +174,8 @@ export type AdminServiceRequestDetail = AdminServiceRequestSummary & {
   message: string | null;
   duplicateOfRequestId: string | null;
   contactAttempts: AdminContactAttempt[];
+  qualificationAvailableVariants: AdminServiceRequestVariant[];
+  qualificationReviews: AdminQualificationReview[];
 };
 
 export type AdminRequestsQueueResponse = {
@@ -205,5 +209,42 @@ export type RequestStatusTransitionInput = {
 };
 
 export type RequestStatusTransitionResponse = {
+  request: AdminServiceRequestSummary;
+};
+
+export type QualificationReviewOutcome = "qualified" | "qualified_with_conditions" | "rejected";
+export const qualificationReviewOutcomes: readonly QualificationReviewOutcome[] = [
+  "qualified",
+  "qualified_with_conditions",
+  "rejected",
+];
+
+export type AdminQualificationReview = {
+  id: string;
+  version: number;
+  outcome: QualificationReviewOutcome;
+  finalVariantId: string | null;
+  agreedPriceXaf: number | null;
+  targetStartDate: string | null;
+  suitabilityNote: string | null;
+  conditions: string[] | null;
+  blockers: string[] | null;
+  createdByUserId: string | null;
+  createdAt: string;
+  supersededAt: string | null;
+};
+
+export type CreateQualificationReviewInput = {
+  outcome?: unknown;
+  finalVariantId?: unknown;
+  agreedPriceXaf?: unknown;
+  targetStartDate?: unknown;
+  suitabilityNote?: unknown;
+  conditions?: unknown;
+  blockers?: unknown;
+};
+
+export type CreateQualificationReviewResponse = {
+  qualificationReview: AdminQualificationReview;
   request: AdminServiceRequestSummary;
 };

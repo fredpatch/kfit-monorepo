@@ -1,33 +1,62 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
-import { after, test } from "node:test";
+import { after, before, test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db, pool } from "../../../db/client.js";
 import { auditEvents, users } from "../../../db/schema/auth.js";
-import { services } from "../../../db/schema/catalogue.js";
-import { contactAttempts, prospects, serviceRequests } from "../../../db/schema/prospects.js";
+import { services, serviceVariants } from "../../../db/schema/catalogue.js";
+import { contactAttempts, prospects, qualificationReviews, serviceRequests } from "../../../db/schema/prospects.js";
 import { DrizzleAdminRequestsRepository } from "../repositories/admin-requests.repositories.js";
 
 const pepper = "a-secure-integration-pepper-that-is-longer-than-32-characters";
 const serviceId = randomUUID();
+const variantId = randomUUID();
 const userId = randomUUID();
 const prospectWhatsapp = `+241${Math.floor(10_000_000 + Math.random() * 89_999_999)}`;
+
+before(async () => {
+  await db.insert(services).values({
+    id: serviceId,
+    name: "Admin Requests Integration Service",
+    slug: `admin-requests-integration-${serviceId}`,
+    pricingMode: "quote",
+    deliveryType: "one_time",
+    availabilityStatus: "open",
+    capacityMode: "unlimited",
+    isPublic: true,
+  });
+  await db.insert(serviceVariants).values({
+    id: variantId,
+    serviceId,
+    name: "Qualification Integration Variant",
+    slug: `qualification-integration-${variantId}`,
+    priceXaf: 50000,
+    availabilityStatus: "open",
+    sortOrder: 1,
+  });
+  await db.insert(users).values({ id: userId, email: `admin-requests-${userId}@kfit.local`, passwordHash: "test-hash", status: "active", role: "coach" });
+});
 
 after(async () => {
   await db.delete(auditEvents).where(eq(auditEvents.actorUserId, userId));
   await db.delete(contactAttempts).where(eq(contactAttempts.createdByUserId, userId));
-  const [prospect] = await db.select({ id: prospects.id }).from(prospects).where(eq(prospects.whatsapp, prospectWhatsapp)).limit(1);
-  if (prospect) {
+  const prospectRows = await db.select({ id: prospects.id }).from(prospects).where(eq(prospects.whatsapp, prospectWhatsapp));
+  for (const prospect of prospectRows) {
+    const requestRows = await db.select({ id: serviceRequests.id }).from(serviceRequests).where(eq(serviceRequests.prospectId, prospect.id));
+    for (const request of requestRows) {
+      await db.delete(qualificationReviews).where(eq(qualificationReviews.requestId, request.id));
+    }
     await db.delete(serviceRequests).where(eq(serviceRequests.prospectId, prospect.id));
     await db.delete(prospects).where(eq(prospects.id, prospect.id));
   }
   await db.delete(users).where(eq(users.id, userId));
+  await db.delete(serviceVariants).where(eq(serviceVariants.id, variantId));
   await db.delete(services).where(eq(services.id, serviceId));
   await pool.end();
 });
 
-async function seedRequest(): Promise<string> {
+async function seedRequest(status = "submitted"): Promise<string> {
   const [prospect] = await db
     .insert(prospects)
     .values({ fullName: "Admin Requests Integration", whatsapp: prospectWhatsapp, source: "integration-test" })
@@ -41,7 +70,7 @@ async function seedRequest(): Promise<string> {
       submissionToken: `admin-integration-${randomUUID()}`,
       prospectId: prospect.id,
       serviceId,
-      status: "submitted",
+      status,
     })
     .returning({ id: serviceRequests.id });
   if (!request) throw new Error("service request insert returned no row");
@@ -49,18 +78,6 @@ async function seedRequest(): Promise<string> {
 }
 
 test("Drizzle admin requests repository transitions status and writes an audit event in the same transaction", async () => {
-  await db.insert(services).values({
-    id: serviceId,
-    name: "Admin Requests Integration Service",
-    slug: `admin-requests-integration-${serviceId}`,
-    pricingMode: "quote",
-    deliveryType: "one_time",
-    availabilityStatus: "open",
-    capacityMode: "unlimited",
-    isPublic: true,
-  });
-  await db.insert(users).values({ id: userId, email: `admin-requests-${userId}@kfit.local`, passwordHash: "test-hash", status: "active", role: "coach" });
-
   const repository = new DrizzleAdminRequestsRepository(db, { auditHashPepper: pepper });
   const requestId = await seedRequest();
 
@@ -92,6 +109,114 @@ test("Drizzle admin requests repository transitions status and writes an audit e
   const metadataString = JSON.stringify(audit?.metadataJson ?? {});
   assert.ok(!metadataString.includes("Admin Requests Integration"), "audit metadata must not contain the prospect's name");
   assert.ok(!metadataString.includes(prospectWhatsapp), "audit metadata must not contain the prospect's WhatsApp number");
+});
+
+test("Drizzle admin requests repository records one qualification review, transitions status and writes safe audit metadata", async () => {
+  const repository = new DrizzleAdminRequestsRepository(db, { auditHashPepper: pepper });
+  const requestId = await seedRequest("qualification_in_progress");
+  const now = new Date();
+
+  const result = await repository.recordQualificationReview(
+    requestId,
+    {
+      outcome: "qualified",
+      finalVariantId: variantId,
+      agreedPriceXaf: 50000,
+      targetStartDate: null,
+      suitabilityNote: "OK to start",
+      conditions: null,
+      blockers: null,
+    },
+    { userId },
+    { ipAddress: "203.0.113.11", userAgent: "KFIT integration" },
+    now,
+  );
+
+  assert.notEqual(result, "not_found");
+  assert.notEqual(result, "invalid_transition");
+  assert.notEqual(result, "variant_invalid");
+  if (result === "not_found" || result === "invalid_transition" || result === "variant_invalid") return;
+  assert.equal(result.request.status, "qualified");
+  assert.equal(result.qualificationReview.version, 1);
+
+  const [row] = await db.select({ status: serviceRequests.status }).from(serviceRequests).where(eq(serviceRequests.id, requestId)).limit(1);
+  assert.equal(row?.status, "qualified");
+
+  const reviewRows = await db.select().from(qualificationReviews).where(eq(qualificationReviews.requestId, requestId));
+  assert.equal(reviewRows.length, 1);
+  assert.equal(reviewRows[0]?.version, 1);
+  assert.equal(reviewRows[0]?.supersededAt, null);
+
+  const [audit] = await db.select().from(auditEvents).where(eq(auditEvents.entityId, requestId));
+  assert.equal(audit?.eventType, "request.qualification_review_recorded");
+  assert.deepEqual(audit?.metadataJson, {
+    version: 1,
+    outcome: "qualified",
+    fromStatus: "qualification_in_progress",
+    toStatus: "qualified",
+  });
+
+  const metadataString = JSON.stringify(audit?.metadataJson ?? {});
+  assert.ok(!metadataString.includes("OK to start"), "audit metadata must not contain suitability notes");
+  assert.ok(!metadataString.includes(prospectWhatsapp), "audit metadata must not contain the prospect's WhatsApp number");
+});
+
+test("Drizzle admin requests repository rejects a second qualification review after the request transitions", async () => {
+  const repository = new DrizzleAdminRequestsRepository(db, { auditHashPepper: pepper });
+  const requestId = await seedRequest("qualification_in_progress");
+  const now = new Date();
+
+  const first = await repository.recordQualificationReview(
+    requestId,
+    { outcome: "rejected", finalVariantId: null, agreedPriceXaf: null, targetStartDate: null, suitabilityNote: null, conditions: null, blockers: ["Hors périmètre"] },
+    { userId },
+    { ipAddress: null, userAgent: null },
+    now,
+  );
+  assert.notEqual(first, "not_found");
+  assert.notEqual(first, "invalid_transition");
+  assert.notEqual(first, "variant_invalid");
+
+  const second = await repository.recordQualificationReview(
+    requestId,
+    { outcome: "rejected", finalVariantId: null, agreedPriceXaf: null, targetStartDate: null, suitabilityNote: null, conditions: null, blockers: null },
+    { userId },
+    { ipAddress: null, userAgent: null },
+    now,
+  );
+  assert.equal(second, "invalid_transition");
+
+  const reviewRows = await db.select().from(qualificationReviews).where(eq(qualificationReviews.requestId, requestId));
+  assert.equal(reviewRows.length, 1);
+});
+
+test("Drizzle admin requests repository rolls back the qualification review when the audit insert fails", async () => {
+  const repository = new DrizzleAdminRequestsRepository(db, { auditHashPepper: pepper });
+  const requestId = await seedRequest("qualification_in_progress");
+  const nonExistentActorId = randomUUID();
+
+  await assert.rejects(() =>
+    repository.recordQualificationReview(
+      requestId,
+      {
+        outcome: "qualified",
+        finalVariantId: variantId,
+        agreedPriceXaf: 50000,
+        targetStartDate: null,
+        suitabilityNote: null,
+        conditions: null,
+        blockers: null,
+      },
+      { userId: nonExistentActorId },
+      { ipAddress: null, userAgent: null },
+      new Date(),
+    ),
+  );
+
+  const [row] = await db.select({ status: serviceRequests.status }).from(serviceRequests).where(eq(serviceRequests.id, requestId)).limit(1);
+  assert.equal(row?.status, "qualification_in_progress");
+  const reviewRows = await db.select().from(qualificationReviews).where(eq(qualificationReviews.requestId, requestId));
+  assert.equal(reviewRows.length, 0);
 });
 
 test("Drizzle admin requests repository rejects a disallowed transition and writes no audit event", async () => {

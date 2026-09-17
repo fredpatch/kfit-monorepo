@@ -16,6 +16,7 @@ const requestErrorMessages: Record<RequestErrorCode, string> = {
   REQUEST_INVALID_TRANSITION: "Ce changement de statut n'est pas autorisé depuis l'état actuel.",
   REQUEST_CONTACT_ATTEMPT_INVALID_INPUT: "Vérifie les informations du contact (canal, sens, résultat) puis réessaie.",
   REQUEST_STATUS_INVALID_INPUT: "Le statut demandé n'est pas valide.",
+  REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT: "Vérifie la décision de qualification puis réessaie.",
 };
 
 const fallbackMessage = "Une erreur est survenue. Réessaie dans un instant.";

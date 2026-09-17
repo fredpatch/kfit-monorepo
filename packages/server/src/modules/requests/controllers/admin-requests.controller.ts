@@ -4,6 +4,8 @@ import {
   type AdminRequestsQueueResponse,
   type CreateContactAttemptInput,
   type CreateContactAttemptResponse,
+  type CreateQualificationReviewInput,
+  type CreateQualificationReviewResponse,
   type RequestStatusTransitionResponse,
   type ServiceRequestStatus,
 } from "@kfit/shared";
@@ -24,7 +26,7 @@ function requireAdminSession(context: AuthHttpRequestContext): HttpJsonResponse<
 }
 
 export class AdminRequestsController {
-  constructor(private readonly service: Pick<AdminRequestsService, "listQueue" | "getDetail" | "logContactAttempt" | "transitionStatus">) {}
+  constructor(private readonly service: Pick<AdminRequestsService, "listQueue" | "getDetail" | "logContactAttempt" | "transitionStatus" | "recordQualificationReview">) {}
 
   async listQueue(context: AuthHttpRequestContext, status: string | undefined): Promise<HttpJsonResponse<AdminRequestsQueueResponse | ErrorBody>> {
     const forbidden = requireAdminSession(context);
@@ -108,6 +110,36 @@ export class AdminRequestsController {
         return { status: 409, body: { error: "REQUEST_INVALID_TRANSITION" } };
       case "invalid":
         return { status: 400, body: { error: "REQUEST_STATUS_INVALID_INPUT", reason: result.reason } };
+    }
+  }
+
+  async recordQualificationReview(
+    context: AuthHttpRequestContext,
+    requestId: string,
+    body: CreateQualificationReviewInput,
+  ): Promise<HttpJsonResponse<CreateQualificationReviewResponse | ErrorBody>> {
+    const forbidden = requireAdminSession(context);
+    if (forbidden) return forbidden;
+
+    const auth = requireAuthenticatedSession(context);
+    if (!auth.ok) return auth.response;
+
+    const result = await this.service.recordQualificationReview(
+      requestId,
+      body,
+      { userId: auth.session.userId },
+      { ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null },
+      new Date(),
+    );
+    switch (result.status) {
+      case "ok":
+        return { status: 201, body: { qualificationReview: result.qualificationReview, request: result.request } };
+      case "not_found":
+        return { status: 404, body: { error: "REQUEST_NOT_FOUND" } };
+      case "invalid_transition":
+        return { status: 409, body: { error: "REQUEST_INVALID_TRANSITION" } };
+      case "invalid":
+        return { status: 400, body: { error: "REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT", reason: result.reason } };
     }
   }
 }

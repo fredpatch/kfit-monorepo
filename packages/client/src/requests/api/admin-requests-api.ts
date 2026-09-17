@@ -6,6 +6,8 @@ import {
   type AdminRequestsQueueResponse,
   type CreateContactAttemptInput,
   type CreateContactAttemptResponse,
+  type CreateQualificationReviewInput,
+  type CreateQualificationReviewResponse,
   type RequestStatusTransitionResponse,
   type ServiceRequestStatus,
 } from "@kfit/shared";
@@ -21,6 +23,7 @@ export type AdminRequestsApiClient = {
   getDetail(requestId: string): Promise<AdminRequestDetailResponse>;
   logContactAttempt(requestId: string, input: CreateContactAttemptInput): Promise<CreateContactAttemptResponse>;
   transitionStatus(requestId: string, toStatus: ServiceRequestStatus): Promise<RequestStatusTransitionResponse>;
+  recordQualificationReview(requestId: string, input: CreateQualificationReviewInput): Promise<CreateQualificationReviewResponse>;
 };
 
 function resolveBaseUrl(baseUrl: string | undefined): string {
@@ -59,6 +62,10 @@ function statusRoute(requestId: string): string {
   return adminRequestsApiRoutes.status.replace(":requestId", encodeURIComponent(requestId));
 }
 
+function qualificationReviewRoute(requestId: string): string {
+  return adminRequestsApiRoutes.qualificationReview.replace(":requestId", encodeURIComponent(requestId));
+}
+
 export function createAdminRequestsApiClient(options: AdminRequestsApiClientOptions = {}): AdminRequestsApiClient {
   const http = options.http ?? createDefaultHttpClient(options.baseUrl);
 
@@ -79,6 +86,10 @@ export function createAdminRequestsApiClient(options: AdminRequestsApiClientOpti
     },
     async transitionStatus(requestId, toStatus) {
       const response = await http.post<RequestStatusTransitionResponse>(statusRoute(requestId), { toStatus });
+      return response.data;
+    },
+    async recordQualificationReview(requestId, input) {
+      const response = await http.post<CreateQualificationReviewResponse>(qualificationReviewRoute(requestId), input);
       return response.data;
     },
   };

@@ -22,21 +22,22 @@ Next action       Planner: inspect S3.5 manual waitlist entry management
 | S3.2  | Public request form (client)                           | S3.1       | CLOSED — Fred validated 2026-09-17 |
 | S3.3  | Admin request queue + contact attempts                 | S3.1       | CLOSED — Fred validated 2026-09-17 |
 | S3.4  | Qualification review recording                         | S3.3       | CLOSED — Fred validated 2026-09-17 |
-| S3.5  | Manual waitlist entry management                       | S3.1       | NOT STARTED                        |
+| S3.5  | Manual waitlist entry management                       | S3.1       | PLANNING                           |
 
-One slice at a time. Do not open S3.5 while S3.4 is not `CLOSED`, unless Fred changes the order.
+One slice at a time. Do not open another implementation front while S3.5 is not testable and locally validated.
 
-## S3.4 — brief
+## S3.5 — brief
 
-Goal: record qualification reviews and apply the approved qualification outcomes through server-authoritative, explicit transitions without opening waitlist management.
+Goal: add manual waitlist entry management for eligible requests/services while preserving the explicit request lifecycle and avoiding automatic promotion or subscription/onboarding behavior.
 
 Planner must:
 
-- inspect `qualification_reviews`, request status vocabulary, state-machine rules and relational invariants;
-- inspect the validated S3.3 admin request detail/transition architecture and transactional audit pattern;
-- consult patterns: Shared API Contracts, Explicit State Transitions, Atomic Business Operation, Audit Event System, Domain Error Taxonomy;
-- define the review versioning/recording rules and exact transition ownership for `qualified`, `qualified_with_conditions`, and `rejected`;
-- preserve S3.1–S3.3 behavior and keep S3.5 waitlist workflows out of scope.
+- inspect `waitlist_entries`, request/service availability state machines and relational invariants;
+- inspect the validated S3.3/S3.4 admin request architecture and transaction-scoped audit pattern;
+- consult applicable patterns: Shared API Contracts, Explicit State Transitions, Atomic Business Operation, Audit Event System, Domain Error Taxonomy;
+- define exact eligibility for manual waitlisting, ordering/priority rules, removal/cancellation behavior, and whether request status transition to `waitlisted` is part of the same atomic command;
+- preserve S3.1–S3.4 behavior;
+- keep automatic promotion, subscription conversion and broader onboarding out of scope.
 
 Order: reusable pattern review → contracts → Service → Controller → Route/Middleware → server validation → admin client integration → Fred validation.
 
@@ -80,6 +81,16 @@ Do not modify closed work unless the active slice explicitly extends it, a regre
 - Admin UI adds Catalogue / Demandes navigation, queue filtering, detail, contact-attempt logging and only allowed transition actions.
 - Real PostgreSQL integration tests, rollback/atomicity paths, browser smoke and S3.2 regression all passed locally.
 
+### S3.4 — validated scope (reference)
+
+- Admin-only `POST /admin/requests/:requestId/qualification-review` records one qualification review from `qualification_in_progress`.
+- Outcomes are limited to `qualified`, `qualified_with_conditions`, and `rejected`; `waitlisted` stays S3.5-owned.
+- Outcome-specific validation enforces service-owned final variant/price/conditions and rejected-field restrictions.
+- Review insert + request transition + `request.qualification_review_recorded` audit share one PostgreSQL transaction.
+- Audit metadata contains only version/outcome/fromStatus/toStatus; no prospect PII or qualification free text.
+- No reopen/revision/supersession workflow is exposed in S3.4; existing schema remains future-compatible.
+- Typecheck/build/db:check, reviewer pass, real PostgreSQL integration suite, browser/DBeaver smoke and S3.2/S3.3 regressions passed locally.
+
 ## Blockers
 
 Before production:
@@ -110,8 +121,8 @@ Slice             S3.5
 Workflow state    PLANNING
 ✅ Done           S3.1, S3.2, S3.3, S3.4 closed
 ⏳ Pending        S3.5 plan
-Validation done   S3.4 typecheck, build, db:check, QA pass; Fred local smoke/checklist green
-Not validated     Agent-run npm test discovered 0 tests under current Windows/glob setup; S3.4 real-DB integration not agent-run
+Validation done   S3.4 typecheck/build/db:check, reviewer pass, real PostgreSQL integration, browser/DBeaver smoke and regressions green
+Not validated     —
 Risks/blockers    see Blockers
 Next action       Planner
 ```

@@ -162,7 +162,16 @@ Cite the source of every business rule used (file + section, spec id, decision i
 
 Never rewrite business docs to match code. Code and docs disagree → report.
 
-Reusable pattern libraries are engineering reference only: reuse mechanisms and invariants, never another project's names, roles or routes. Project rules win; report deviations.
+Reusable pattern libraries are engineering reference only.
+
+When `PROJECT.md §Docs` defines an external reusable-pattern library:
+
+- access it through the project-defined mechanism when relevant;
+- never claim to have inspected a pattern that was unavailable;
+- report unavailable references explicitly;
+- reuse mechanisms, safeguards and invariants rather than historical vocabulary;
+- approved project business rules and architecture always win;
+- report meaningful adaptations or deviations.
 
 ---
 

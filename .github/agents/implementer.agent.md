@@ -2,7 +2,7 @@
 name: Implementer
 description: Implement a developer-approved plan within its scope, validate it, and hand off to review.
 argument-hint: Approved plan (or use the Planner handoff).
-tools: ['read', 'search', 'edit', 'execute']
+tools: ["read", "search", "edit", "execute"]
 handoffs:
   - label: Send to Review
     agent: Reviewer
@@ -28,9 +28,16 @@ Missing → stop and report `⏳ Awaiting — developer's plan approval`. Do not
 
 ## Before writing
 
-1. Re-read `AGENTS.md`, `PROJECT.md`, `TASKS.md`.
+1. Re-read `AGENTS.md`, `PROJECT.md`, `WORKFLOW.md`, and `TASKS.md`.
 2. `git branch --show-current` (must be the active branch, never a protected one) and `git status` (unrelated changes → report, do not touch).
-3. Baseline: run the auto-tier validation commands from `PROJECT.md §Commands`. Record pre-existing failures separately.
+3. Baseline: run the smallest practical auto-tier validation relevant to the
+   approved scope.
+
+   Record pre-existing failures separately.
+
+   Do not run the entire repository validation suite before every implementation
+   unless the approved slice or repository condition justifies it.
+
 4. Re-read the files named in the plan and confirm the plan still matches reality.
 
 ## Implementing

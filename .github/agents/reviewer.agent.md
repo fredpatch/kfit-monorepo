@@ -2,7 +2,7 @@
 name: Reviewer
 description: Independently review an implementation against the approved plan, business rules, security and regressions. Does not modify files.
 argument-hint: Slice id or the implementation report to review.
-tools: ['read', 'search', 'execute/runInTerminal', 'execute/getTerminalOutput']
+tools: ["read", "search", "execute/runInTerminal", "execute/getTerminalOutput"]
 handoffs:
   - label: Send Back for Fixes
     agent: Implementer
@@ -27,7 +27,14 @@ Follow `AGENTS.md` and `WORKFLOW.md`. Project facts: `PROJECT.md`.
 
 ## Procedure
 
-1. Read `AGENTS.md`, `PROJECT.md`, `TASKS.md`, the approved plan and the implementation report.
+When the approved plan references a reusable pattern or blueprint:
+
+- verify that the implementation preserved the intended mechanism/invariant;
+- verify K'FIT-specific adaptations were intentional;
+- do not treat deviation from the historical implementation as a defect by itself;
+- project business rules and architecture always take precedence.
+
+1. Read `AGENTS.md`, `PROJECT.md`, `WORKFLOW.md`, `TASKS.md`, the approved plan and the implementation report.
 2. `git status`, `git diff` (and `git diff <base>...HEAD -- <paths>` when useful). Review the real diff, not the report.
 3. Load `security-review` for auth, permission, public-endpoint or data-exposure changes; `database-safety` for schema/transactions; `api-contract-design` for contract changes; `frontend-design` for UI.
 4. Check:

@@ -102,16 +102,57 @@ Who closes validation    Fred's local execution only
 
 ```text
 Active state          TASKS.md
+
 Specs                 exploration-cache/tasks/sprint-N.md
-Business rules        exploration-cache/project/ (relational-contract.md, state-machines.md) + sprint specs
-Schema / data model   exploration-cache/project/database-schema.md, drizzle-layout.md
+
+Business rules        exploration-cache/project/
+                      - relational-contract.md
+                      - state-machines.md
+                      + sprint specs
+
+Schema / data model   exploration-cache/project/database-schema.md
+                      exploration-cache/project/drizzle-layout.md
+
 State machines        exploration-cache/project/state-machines.md
-Decisions log         exploration-cache/project/decisions.md (newest first)
+
+Decisions log         exploration-cache/project/decisions.md
+                      newest first
+
 Gotchas               exploration-cache/technical/gotchas.md
-Environment docs      docs/ (preflight, docker environments, auth contracts)
-Tracker               Notion (backlog, sprint history)
-Pattern library       Notion — "AI Project Kickoff — Reusable Implementation Patterns & Blueprints"
+
+Environment docs      docs/
+                      preflight, Docker environments, auth contracts
+
+Project tracker       Notion
+                      "K'FIT — Tableau de Bord Projet"
+                      authoritative for roadmap, backlog, sprint history,
+                      project-management state and acceptance notes
+
+Pattern library       Notion
+                      "AI Project Kickoff — Reusable Implementation Patterns & Blueprints"
+                      engineering reference only — never authoritative
+                      for K'FIT business rules
+
+Pattern access        Preferred:
+                      use the configured Notion connector/MCP when available
+
+                      Fallback:
+                      use pattern content explicitly supplied by Fred
+                      or by the project discussion/handoff
+
+                      If a referenced pattern cannot be accessed:
+                      report PATTERN REFERENCE NOT AVAILABLE
+                      and continue only if the implementation plan can
+                      be produced safely without pretending the pattern
+                      was inspected
+
+Pattern usage         Reuse mechanisms, safeguards and invariants.
+                      Never copy historical project names, roles,
+                      routes, database names or domain vocabulary
+                      without confirming they belong in K'FIT.
+
 Changelog             changelog.md
+
 Session history       exploration-cache/sessions/
 ```
 

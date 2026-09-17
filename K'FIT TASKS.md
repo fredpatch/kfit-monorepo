@@ -1,222 +1,167 @@
 # K'FIT Development State
 
-## Current Branch
-
-```text
-sprint-2/catalogue-foundation
-```
-
 ## Current Sprint
 
 ```text
-Sprint 2 — Catalogue Foundation
+Sprint 3
 ```
 
-## Current Objective
-
-Finish:
+## Status
 
 ```text
-S2.5 — Capacity / Waitlist Controls
+SPRINT PLANNING
+NO IMPLEMENTATION STARTED
 ```
 
-Do not start the next Sprint 2 slice until S2.5 receives local functional validation.
+Sprint 2 is closed and must not be reopened unless investigating a confirmed regression.
 
 ---
 
-# ✅ Validated
+# ✅ Closed
 
-The following work is already complete and developer-validated:
+The following milestones are complete and developer-validated:
 
 ```text
 Sprint 0
 Sprint 1 — Authentication Foundation
 Password Recovery
-S2.1 — Public Catalogue API
-S2.2 — Catalogue Seed
-S2.3 — Admin Catalogue Editing
-S2.4 — Public Landing Page Catalogue Consumption
+Sprint 2 — Catalogue Foundation
 ```
 
-Validated S2.4 head was already fast-forwarded to `main`:
+Do not modify completed sprint functionality unless:
 
-```text
-6b2fe6d...
-```
-
-Do not redo these items unless investigating a regression.
+- Sprint 3 explicitly depends on extending it
+- a regression is confirmed
+- the developer explicitly approves reopening the affected area
 
 ---
 
 # ⏳ Current
 
-## S2.5 — Capacity / Waitlist Controls
+## Sprint 3
 
-Status:
+Sprint 3 has not started implementation yet.
+
+Before any code changes:
+
+1. inspect the Sprint 3 specification / roadmap
+2. identify its goals
+3. break the sprint into coherent implementation slices
+4. identify dependencies on previous sprints
+5. identify business rules
+6. identify architecture impact
+7. define validation requirements
+8. prepare the first implementation plan
+9. stop for developer approval
+
+The Planner agent owns this analysis.
+
+The Implementer must not begin until an explicit plan is approved.
+
+---
+
+# Sprint 3 Planning Output
+
+The Planner should establish:
+
+## Sprint Goal
+
+What user/business capability Sprint 3 introduces.
+
+## Dependencies
+
+Identify dependencies on:
+
+```text
+Sprint 0
+Sprint 1
+Sprint 2
+shared contracts
+server architecture
+client architecture
+database/schema
+```
+
+## Proposed Slices
+
+Break the sprint into independently reviewable units:
+
+```text
+S3.1
+S3.2
+S3.3
+...
+```
+
+Each slice should have:
+
+- goal
+- business rules
+- affected layers
+- expected files
+- dependencies
+- acceptance criteria
+- validation requirements
+- known risks
+
+Prefer slices that can be implemented and validated independently.
+
+---
+
+# Implementation State
+
+No Sprint 3 item may initially be marked:
 
 ```text
 IMPLEMENTATION IN PROGRESS
-NOT FUNCTIONALLY ACCEPTED
 ```
 
-### Goal
-
-Add explicit administrative controls for service capacity and waitlist behavior.
+until its plan has received explicit developer approval.
 
 ---
 
-## Already Implemented
+# Validation Policy
 
-### Shared contract
-
-Added admin capacity route:
+Every Sprint 3 slice must distinguish:
 
 ```text
-adminServiceCapacity:
-"/admin/catalogue/services/:serviceId/capacity"
-```
-
-Added:
-
-```text
-CatalogueServiceCapacityInput
-```
-
-Because this touches the shared package, all known consumers must be validated.
-
----
-
-### Server
-
-Added service logic:
-
-```text
-updateAdminServiceCapacity
-```
-
-Capacity and waitlist validation/business rules have been introduced.
-
-Do not assume this slice is complete merely because these changes exist.
-
----
-
-## Required Before S2.5 Can Close
-
-Confirm remaining implementation state by inspecting the repository.
-
-At minimum verify:
-
-- [ ] shared contract usage is complete
-- [ ] server route/controller wiring exists
-- [ ] authorization is enforced server-side
-- [ ] capacity validation rules are correct
-- [ ] waitlist rules are correct
-- [ ] client/admin UI is implemented if required by the approved slice
-- [ ] loading/error/success states are handled
-- [ ] invalid capacity values are rejected
-- [ ] relevant automated tests exist or are updated
-- [ ] `@kfit/shared` validates
-- [ ] `@kfit/server` typechecks
-- [ ] `@kfit/client` typechecks
-- [ ] client production build succeeds
-- [ ] Git diff reviewed
-- [ ] Fred performs local functional validation
-
-The final checkbox may only be completed by Fred.
-
----
-
-# Business Rules
-
-Do not invent capacity/waitlist behavior.
-
-Before completing S2.5, inspect the existing implementation and active specification for rules covering areas such as:
-
-```text
-capacity bounds
-capacity disabled/unlimited behavior
-waitlist enabled/disabled behavior
-existing booking implications
-invalid transitions
-admin authorization
-```
-
-If expected behavior is not defined, stop and report the missing rule.
-
----
-
-# Validation
-
-Before additional changes, establish the current baseline when practical.
-
-Known relevant checks include:
-
-```bash
-npm run typecheck
-npm run build
-```
-
-Inspect root and workspace `package.json` files for the exact test/lint scripts.
-
-Because S2.5 modifies the shared contract, validate:
-
-```text
-packages/shared
-apps/server
-apps/client
-```
-
-Do not report any check as passed unless it actually executed successfully.
-
----
-
-# Change Budget
-
-Expected remaining work should stay narrowly scoped to S2.5.
-
-Likely layers:
-
-```text
-shared contract
-server API / service
-admin client UI
-tests
-```
-
-If completing S2.5 unexpectedly requires a broad architectural refactor or large unrelated change set, stop and report the reason before continuing.
-
----
-
-# 🔜 Next
-
-The next Sprint 2 item must be read from the current project roadmap/task documentation.
-
-Do not infer or begin it until:
-
-```text
-S2.5 implementation complete
-+
+implementation complete
 automated validation complete
-+
-Fred local validation complete
+developer functional validation complete
 ```
+
+These are separate states.
+
+Only the developer may mark functional validation complete.
 
 ---
 
 # Handoff State
 
-When stopping mid-task, update or report:
+When a Sprint 3 work session stops, preserve:
 
 ```text
 Branch
-Current task
+
+Sprint item
+
+✅ Completed
+
+⏳ Pending
+
 Files changed
-Implemented
+
 Validation completed
+
 Not validated
-Known issues
-Pending developer validation
+
+Business rules referenced
+
+Assumptions
+
+Risks / blockers
+
 Next concrete step
 ```
 
-Do not mark S2.5 complete during an interrupted session.
+Do not rely on chat history as the only source of project state.

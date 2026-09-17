@@ -860,4 +860,102 @@ maintainability > short-term speed
 safe failure > silent guessing
 ```
 
+---
+
+# 30. ## Project Knowledge and Reusable Patterns
+
+When the project uses Notion and the Reusable Implementation Patterns & Blueprints Library, treat sources according to the following responsibilities.
+
+### Project planning sources
+
+The project's Notion dashboard, sprint pages, backlog, and approved project documents define:
+
+- roadmap
+- sprint scope
+- backlog state
+- project-management history
+- approved project decisions
+
+They must not be replaced by assumptions derived from reusable patterns.
+
+### Repository sources
+
+The repository defines:
+
+- current implementation
+- executable behavior
+- tests
+- migrations
+- technical integration state
+
+`TASKS.md` contains the active execution snapshot required by agents. It should not duplicate the complete Notion project history.
+
+### Reusable Patterns & Blueprints Library
+
+The reusable library is engineering reference material.
+
+Agents should use it to discover:
+
+- proven implementation patterns
+- reusable invariants
+- transaction strategies
+- concurrency safeguards
+- security practices
+- API/client conventions
+- end-to-end implementation blueprints
+
+The library is not authoritative for project-specific business rules.
+
+Never copy:
+
+- project-specific role names
+- organization names
+- domain labels
+- database names
+- route names
+- implementation details
+
+without verifying that they belong in the current project.
+
+Reuse the mechanism and invariant, not the historical project's vocabulary.
+
+### Planning workflow
+
+For non-trivial capabilities, the Planner should:
+
+1. inspect the target repository
+2. read the active project/sprint state
+3. identify the relevant reusable blueprint or patterns
+4. compare them against the target architecture
+5. identify what already exists
+6. identify what can be reused conceptually
+7. identify required adaptations
+8. identify deviations from the reusable reference
+9. produce the implementation plan
+10. stop for developer approval
+
+### Conflict handling
+
+When reusable library guidance conflicts with an approved project business rule:
+
+**the project business rule wins.**
+
+Report the deviation explicitly.
+
+When Notion planning state and repository state disagree:
+
+**STOP and report the inconsistency.**
+
+Do not silently choose one.
+
+### Reporting
+
+When reusable material influenced implementation, report:
+
+- blueprint(s) referenced
+- pattern(s) referenced
+- adaptations made
+- deviations from the reference
+- project-specific safeguards added
+
 AI should reduce repetitive engineering work without reducing engineering discipline.

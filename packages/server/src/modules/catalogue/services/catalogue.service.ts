@@ -9,6 +9,7 @@ import type {
   CataloguePricingMode,
   CataloguePublicService,
   CataloguePublicServicesResponse,
+  CatalogueServiceCapacityInput,
   CatalogueServiceComponent,
   CatalogueServiceMutationInput,
   CatalogueServiceOrderInput,
@@ -299,6 +300,36 @@ function normalizeServiceInput(input: CatalogueServiceMutationInput, mode: "crea
   return output;
 }
 
+function normalizeCapacityControlInput(input: CatalogueServiceCapacityInput): CatalogueServicePatchInput | { invalid: string } {
+  const availabilityStatus = enumValue(input.availabilityStatus, availabilityStatuses);
+  if (!availabilityStatus) return { invalid: "availability_invalid" };
+  if (availabilityStatus === "archived") return { invalid: "availability_archived_forbidden" };
+
+  const capacityMode = enumValue(input.capacityMode, capacityModes);
+  if (!capacityMode) return { invalid: "capacity_mode_invalid" };
+
+  const capacityLimit = optionalInteger(input.capacityLimit);
+  if (capacityLimit === undefined) return { invalid: "capacity_limit_invalid" };
+  if (capacityMode === "limited" && (capacityLimit === null || capacityLimit <= 0)) {
+    return { invalid: "capacity_limit_required" };
+  }
+  if (capacityMode === "unlimited" && capacityLimit !== null) {
+    return { invalid: "capacity_limit_must_be_null" };
+  }
+
+  if (typeof input.waitlistEnabled !== "boolean") return { invalid: "waitlist_invalid" };
+  if (availabilityStatus === "waitlist_only" && !input.waitlistEnabled) {
+    return { invalid: "waitlist_required" };
+  }
+
+  return {
+    availabilityStatus,
+    capacityMode,
+    capacityLimit,
+    waitlistEnabled: input.waitlistEnabled,
+  };
+}
+
 function validatePublishable(service: CatalogueAdminServiceRecord): string | null {
   if (service.archivedAt || service.availabilityStatus === "archived") return "archived";
   if (!service.name.trim()) return "name_required";
@@ -429,6 +460,17 @@ export class CatalogueService {
     const result = await this.repository.archiveService(serviceId, now);
     if (result === "not_found") return { status: "not_found" };
     return { status: "ok", response: { service: toAdminService(result) } };
+  }
+
+  async updateAdminServiceCapacity(serviceId: string, input: CatalogueServiceCapacityInput): Promise<MutationResult> {
+    const normalized = normalizeCapacityControlInput(input);
+    if ("invalid" in normalized) return { status: "invalid", reason: normalized.invalid };
+
+    const updated = await this.repository.updateService(serviceId, normalized);
+    if (updated === "not_found") return { status: "not_found" };
+    if (updated === "slug_conflict") return { status: "slug_conflict" };
+    if (updated.archivedAt || updated.availabilityStatus === "archived") return { status: "archived" };
+    return { status: "ok", response: { service: toAdminService(updated) } };
   }
 
   async reorderAdminServices(input: CatalogueServiceOrderInput): Promise<MutationResult | { status: "ok"; response: CatalogueAdminServicesResponse }> {

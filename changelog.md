@@ -2,6 +2,20 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-09-17 — Sprint 2.6 admin capacity/waitlist workspace
+
+- Validated the authenticated admin catalogue capacity/waitlist UI end-to-end.
+- Confirmed client typecheck and production build green.
+- Confirmed real local PostgreSQL-backed bootstrap/login flow and active admin session restoration.
+- Added authenticated admin catalogue reads and capacity mutation through the existing S2.5 server contracts.
+- Added French controls for availability, unlimited/limited capacity, positive-integer capacity limit and waitlist enablement.
+- Confirmed open/unlimited, limited-capacity and waitlist-only saves persist after refresh.
+- Confirmed invalid combinations are blocked and archived services remain read-only.
+- Confirmed public `/` catalogue regression and updated availability reflection after refresh.
+- Added the real local dev API launcher and Vite proxy routing for `/auth`, `/catalogue`, `/admin/catalogue` and `/health`.
+- Changed bootstrap-status failure handling so local API failures are surfaced explicitly instead of falling through to login.
+- Reused existing catalogue/auth schema and business rules; no S2.6 migration required.
+
 ## 2026-09-17 — Sprint 2.5 capacity/waitlist controls
 
 - Validated the server-side catalogue capacity/waitlist control slice.

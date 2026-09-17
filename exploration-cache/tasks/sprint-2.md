@@ -4,7 +4,7 @@
 
 ## Objective
 
-Build the K'FIT catalogue foundation before prospects/client workflows: public services, admin editing, seeded offers, and public landing page consumption.
+Build the K'FIT catalogue foundation before prospects/client workflows: public services, admin editing, seeded offers, public landing page consumption, and catalogue-level capacity/waitlist controls.
 
 ## Validated slices
 
@@ -15,27 +15,38 @@ Build the K'FIT catalogue foundation before prospects/client workflows: public s
 
 ## Current slice
 
-S2.4 is closed and locally validated by Fred.
+- [ ] S2.5 — Capacity/waitlist controls.
 
-Validation commands:
+Status: implemented, statically committed, awaiting Fred local validation.
+Implementation head before state-sync commits: `2f13fd66aa6e469b4f302a9591e9f030ce480eb6`.
+
+Implemented boundary:
+
+- shared `adminServiceCapacity` route contract and `CatalogueServiceCapacityInput`;
+- service-level capacity/waitlist mutation rules;
+- controller + authenticated/CSRF/same-origin protected PATCH route;
+- service and Express coverage;
+- generic admin create/update paths hardened so they cannot bypass the same capacity/waitlist invariants.
+
+## Validation gate
 
 ```bash
-npm run typecheck --workspace @kfit/client
-npm run build --workspace @kfit/client
+git switch sprint-2/catalogue-foundation
+git pull
+
+npm run build --workspace @kfit/shared
+node --test packages/shared/dist/catalogue/contracts.test.js
+
+npm run build --workspace @kfit/server
+node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js
+node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js
+
+npm run db:check
 ```
 
-Confirmed output:
-
-- shared build completed through client typecheck;
-- TypeScript no-emit check completed;
-- Vite production build completed successfully.
-
-## Remaining Sprint 2 slices
-
-- [ ] S2.5 — Capacity/waitlist controls.
+Expected: all green; no migration expected.
 
 ## Notes
 
-- `changelog.md` records validated work only.
-- Current S2.4 scope consumes the existing public catalogue API only; no server/schema changes and no prospect workflow.
-- After S2.4 closure, `main` should be fast-forwarded to the validated Sprint 2 branch head.
+- `changelog.md` records validated work only and must not be updated before Fred confirms this gate.
+- Do not mark S2.5 complete before local validation.

@@ -2,6 +2,21 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-09-17 — Sprint 3.4 qualification review recording
+
+- Validated the admin qualification-review workflow end-to-end against the real local PostgreSQL database and browser UI.
+- Added `POST /admin/requests/:requestId/qualification-review` and corresponding shared request contracts/client API support.
+- Restricted review creation to requests in `qualification_in_progress`; second-review attempts after a terminal qualification outcome are rejected.
+- Added qualification outcomes `qualified`, `qualified_with_conditions`, and `rejected`; `waitlisted` remains owned by S3.5 and is not accepted or exposed by S3.4.
+- Enforced outcome-specific rules: service-owned final variant + non-negative agreed XAF price for qualified outcomes, required conditions for `qualified_with_conditions`, and forbidden variant/price/start date for rejected outcomes.
+- Persisted qualification review creation, matching request-status transition, and `request.qualification_review_recorded` audit event in one atomic PostgreSQL transaction.
+- Kept audit metadata limited to version/outcome/fromStatus/toStatus with no prospect PII, suitability note, conditions, blockers, or other free text.
+- Kept the existing review version/supersession schema future-compatible without exposing reopen/revision behavior in S3.4.
+- Added admin UI qualification history and review form only for eligible requests.
+- Confirmed no database migration was required.
+- Confirmed typecheck, production build, `db:check`, reviewer pass, and real-PostgreSQL integration suite green.
+- Fred validated browser/DBeaver smoke for all three outcomes, invalid-state/input handling, second-review rejection, audit persistence/metadata hygiene, and S3.2/S3.3 regression behavior.
+
 ## 2026-09-17 — Sprint 3.3 admin request queue + contact attempts
 
 - Validated the authenticated admin request-management slice end-to-end against the real local PostgreSQL database and browser UI.

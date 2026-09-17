@@ -11,12 +11,11 @@ Build the K'FIT catalogue foundation before prospects/client workflows: public s
 - [x] S2.1 — Catalogue public API foundation.
 - [x] S2.2 — Initial services/variants/components/policies seed.
 - [x] S2.3 — Admin catalogue editing foundation.
+- [x] S2.4 — Public landing page catalogue consumption.
 
 ## Current slice
 
-- [ ] S2.4 — Public landing page catalogue consumption.
-
-Status: implemented and awaiting Fred's local client validation.
+S2.4 is closed and locally validated by Fred.
 
 Validation commands:
 
@@ -25,13 +24,11 @@ npm run typecheck --workspace @kfit/client
 npm run build --workspace @kfit/client
 ```
 
-Optional browser smoke check:
+Confirmed output:
 
-```bash
-npm run dev --workspace @kfit/client
-```
-
-Open `/` for the public catalogue landing page and `/admin` for the existing admin shell.
+- shared build completed through client typecheck;
+- TypeScript no-emit check completed;
+- Vite production build completed successfully.
 
 ## Remaining Sprint 2 slices
 
@@ -40,5 +37,5 @@ Open `/` for the public catalogue landing page and `/admin` for the existing adm
 ## Notes
 
 - `changelog.md` records validated work only.
-- S2.4 must not be marked complete until Fred confirms green local output.
 - Current S2.4 scope consumes the existing public catalogue API only; no server/schema changes and no prospect workflow.
+- After S2.4 closure, `main` should be fast-forwarded to the validated Sprint 2 branch head.

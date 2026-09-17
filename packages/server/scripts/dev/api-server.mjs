@@ -1,4 +1,7 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+import { fileURLToPath } from "node:url";
+
+loadEnv({ path: fileURLToPath(new URL("../../../../.env", import.meta.url)) });
 
 const port = Number(process.env.KFIT_API_PORT || 3000);
 if (!Number.isSafeInteger(port) || port <= 0 || port > 65535) {

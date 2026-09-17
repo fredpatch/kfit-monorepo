@@ -2,6 +2,23 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-09-17 — Sprint 3 closed after validated S3.5 manual waitlist management
+
+- Closed Sprint 3 after Fred locally validated S3.1 through S3.5.
+- Added named admin commands for manual waitlist creation and withdrawal; no generic `waitlisted` status patch was introduced.
+- Restricted waitlist creation to requests in `submitted`, `contacting`, or `qualification_in_progress` and to non-archived services that are `waitlist_only` or have waitlisting enabled.
+- Added optional same-service, non-archived variant selection and advisory `priorityNote` without allowing it to affect FIFO ordering.
+- Serialized waitlist creation with `FOR UPDATE` on the request row and active-entry conflict checks, avoiding a new uniqueness migration for the V1 command path.
+- Persisted waitlist entry creation + request transition to `waitlisted` + `request.waitlist_entered` audit in one PostgreSQL transaction.
+- Persisted withdrawal (`withdrawn` + `leftAt`) + request transition to `abandoned` + `request.waitlist_withdrawn` audit in one PostgreSQL transaction.
+- Kept audit metadata free of `priorityNote`, prospect PII and other free text.
+- Added additive waitlist history plus eligible create/withdraw controls to the admin request detail UI.
+- Kept automatic promotion, contacted/promoted/expired commands, subscription conversion, onboarding and queue reordering out of Sprint 3.
+- Fixed shared/server test globs so `npm test` discovers real tests on Windows instead of succeeding with zero tests.
+- Confirmed typecheck, build and `db:check` green; `npm test` executed server 110/110 and shared 12/12; real PostgreSQL integration suite executed 15/15 green.
+- Reviewer and QA passes completed; Fred validated the browser/DBeaver Gate 2 flow for waitlist creation, duplicate prevention, withdrawal, request-state synchronization and safe audit metadata.
+- Sprint 3 now delivers the validated acquisition path from public request intake through contact management, qualification decision and manual waitlist handling.
+
 ## 2026-09-17 — Sprint 3.4 qualification review recording
 
 - Validated the admin qualification-review workflow end-to-end against the real local PostgreSQL database and browser UI.
@@ -107,7 +124,7 @@
 - Added admin catalogue routes under `/admin/catalogue/services` for service-level list, create, update, publish, archive and reorder.
 - Enforced admin-only access using the existing authenticated session context.
 - Protected admin mutations with CSRF and same-origin checks.
-- Reused existing Sprint 0 catalogue tables; no migration required.
+- Reused existing Sprint 0 catalogue tables; no S2.6 migration required.
 - Kept admin UI, variant/component/policy editing, capacity computation and landing page consumption out of scope for later Sprint 2 slices.
 
 ## 2026-08-25 — Sprint 2.2 catalogue seed foundation

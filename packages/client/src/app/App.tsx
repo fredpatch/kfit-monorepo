@@ -20,6 +20,23 @@ function AdminApp() {
     );
   }
 
+  if (auth.bootstrapStatusError) {
+    return (
+      <main className="auth-shell">
+        <section className="auth-card">
+          <p className="eyebrow">K'FIT Admin</p>
+          <h1>API locale indisponible</h1>
+          <p className="error">
+            Impossible de vérifier si l’initialisation K'FIT est requise. Vérifie que l’API locale et PostgreSQL sont démarrés.
+          </p>
+          <button type="button" onClick={() => void auth.retryBootstrapStatus()}>
+            Réessayer
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   if (auth.bootstrapRequired) {
     return (
       <main className="auth-shell">

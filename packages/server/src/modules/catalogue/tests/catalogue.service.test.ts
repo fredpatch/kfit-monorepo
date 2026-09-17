@@ -259,6 +259,18 @@ test("CatalogueService validates and creates admin service drafts", async () => 
   const invalid = await service.createAdminService({ name: "", slug: "bad slug" });
   assert.equal(invalid.status, "invalid");
 
+  const invalidWaitlistDraft = await service.createAdminService({
+    name: "Liste attente",
+    slug: "liste-attente",
+    pricingMode: "quote",
+    deliveryType: "one_time",
+    availabilityStatus: "waitlist_only",
+    capacityMode: "limited",
+    capacityLimit: 3,
+    waitlistEnabled: false,
+  });
+  assert.deepEqual(invalidWaitlistDraft, { status: "invalid", reason: "waitlist_required" });
+
   const created = await service.createAdminService({
     name: "Suivi express",
     slug: "suivi-express",
@@ -282,6 +294,23 @@ test("CatalogueService updates, publishes, archives and reorders admin services"
   const updated = await service.updateAdminService("service-admin", { name: "Bilan complet", sortOrder: 1 });
   assert.equal(updated.status, "ok");
   assert.deepEqual(repository.updatedInput, { name: "Bilan complet", sortOrder: 1 });
+
+  const incompleteCapacityPatch = await service.updateAdminService("service-admin", { availabilityStatus: "waitlist_only" });
+  assert.deepEqual(incompleteCapacityPatch, { status: "invalid", reason: "capacity_mode_invalid" });
+
+  const genericCapacityPatch = await service.updateAdminService("service-admin", {
+    availabilityStatus: "open",
+    capacityMode: "unlimited",
+    capacityLimit: null,
+    waitlistEnabled: false,
+  });
+  assert.equal(genericCapacityPatch.status, "ok");
+  assert.deepEqual(repository.updatedInput, {
+    availabilityStatus: "open",
+    capacityMode: "unlimited",
+    capacityLimit: null,
+    waitlistEnabled: false,
+  });
 
   const published = await service.publishAdminService("service-admin", new Date("2026-08-25T09:00:00Z"));
   assert.equal(published.status, "ok");

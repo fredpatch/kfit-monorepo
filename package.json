@@ -9,6 +9,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
+    "dev:api": "npm run dev:api --workspace @kfit/server",
+    "dev:client": "npm run dev --workspace @kfit/client",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",

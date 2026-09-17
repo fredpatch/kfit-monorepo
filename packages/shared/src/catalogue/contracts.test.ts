@@ -14,6 +14,7 @@ test("catalogue shared contracts expose stable public and admin routes", () => {
     adminService: "/admin/catalogue/services/:serviceId",
     adminServicePublish: "/admin/catalogue/services/:serviceId/publish",
     adminServiceArchive: "/admin/catalogue/services/:serviceId/archive",
+    adminServiceCapacity: "/admin/catalogue/services/:serviceId/capacity",
     adminServiceOrder: "/admin/catalogue/services/order",
   });
 

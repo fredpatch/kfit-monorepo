@@ -6,11 +6,13 @@ import { authApiClient, type AuthApiClient } from "../api/auth-api.js";
 type AuthContextValue = {
   session: CurrentSessionResponse | null;
   bootstrapRequired: boolean;
+  bootstrapStatusError: boolean;
   isLoading: boolean;
   login(input: LoginRequest): Promise<void>;
   bootstrap(input: BootstrapRequest): Promise<void>;
   logout(): Promise<void>;
   refreshSession(): Promise<void>;
+  retryBootstrapStatus(): Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -29,7 +31,7 @@ export function AuthProvider({ children, api = authApiClient }: { children: Reac
   const session = useQuery({
     queryKey: sessionQueryKey,
     queryFn: () => api.currentSession(),
-    enabled: bootstrapStatus.data?.required === false,
+    enabled: bootstrapStatus.data?.required === false && !bootstrapStatus.isError,
   });
 
   const login = useMutation({
@@ -52,6 +54,7 @@ export function AuthProvider({ children, api = authApiClient }: { children: Reac
   const value = useMemo<AuthContextValue>(() => ({
     session: session.data ?? null,
     bootstrapRequired: bootstrapStatus.data?.required ?? false,
+    bootstrapStatusError: bootstrapStatus.isError,
     isLoading: bootstrapStatus.isLoading || session.isLoading || login.isPending || bootstrap.isPending || logout.isPending,
     async login(input) {
       await login.mutateAsync(input);
@@ -66,7 +69,10 @@ export function AuthProvider({ children, api = authApiClient }: { children: Reac
       const refreshed = await api.refresh();
       queryClient.setQueryData(sessionQueryKey, refreshed);
     },
-  }), [api, bootstrap, bootstrapStatus.data?.required, bootstrapStatus.isLoading, login, logout, queryClient, session.data, session.isLoading]);
+    async retryBootstrapStatus() {
+      await bootstrapStatus.refetch();
+    },
+  }), [api, bootstrap, bootstrapStatus.data?.required, bootstrapStatus.isError, bootstrapStatus.isLoading, bootstrapStatus.refetch, login, logout, queryClient, session.data, session.isLoading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

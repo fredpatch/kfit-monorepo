@@ -35,6 +35,7 @@ function CapacityEditor({
   const [capacityLimit, setCapacityLimit] = useState(service.capacityLimit?.toString() ?? "");
   const [waitlistEnabled, setWaitlistEnabled] = useState(service.waitlistEnabled);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     setAvailabilityStatus(service.availabilityStatus);
@@ -42,6 +43,7 @@ function CapacityEditor({
     setCapacityLimit(service.capacityLimit?.toString() ?? "");
     setWaitlistEnabled(service.waitlistEnabled);
     setError(null);
+    setSuccess(null);
   }, [service]);
 
   const archived = service.archivedAt !== null || service.availabilityStatus === "archived";
@@ -49,6 +51,7 @@ function CapacityEditor({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setSuccess(null);
 
     if (archived) return;
 
@@ -74,6 +77,7 @@ function CapacityEditor({
         capacityLimit: normalizedLimit,
         waitlistEnabled,
       });
+      setSuccess("Capacité et disponibilité mises à jour.");
     } catch {
       setError("La mise à jour a échoué. Vérifie les valeurs puis réessaie.");
     }
@@ -155,6 +159,7 @@ function CapacityEditor({
 
         {archived ? <p className="catalogue-state catalogue-state--error">Ce service est archivé et ne peut plus être modifié.</p> : null}
         {error ? <p className="error">{error}</p> : null}
+        {success ? <p className="status">{success}</p> : null}
 
         <button type="submit" disabled={archived || saving}>
           {saving ? "Enregistrement..." : "Enregistrer la capacité"}

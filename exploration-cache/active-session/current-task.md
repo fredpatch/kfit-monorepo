@@ -39,3 +39,13 @@ Implement the server-first foundation for admin catalogue service editing.
 ## Notes
 
 Do not update `changelog.md` or mark the Notion task as `Terminé` until Fred confirms green local output.
+
+## Validation fix applied
+
+Fred's first S2.3 validation run confirmed `@kfit/shared` build green and exposed TypeScript narrowing errors in the server build. Fixed in commits:
+
+- `73026f2` — admin service validation/reorder narrowing.
+- `d25932c` — controller reorder response narrowing.
+- `5ab187b` — route param normalization for service IDs.
+
+S2.3 still awaits local validation after these fixes.

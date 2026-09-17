@@ -4,7 +4,7 @@
 
 ## Current technical validation pending
 
-- **S2.5 local validation** — Owner: Fred. Unblock condition: shared build + contract test, server build + catalogue service/Express tests, and `db:check` all green. No migration expected.
+- None for S2.5. Fred confirmed the full validation gate green.
 
 ## Before production
 
@@ -16,6 +16,4 @@
 - Reusable-pattern source resolved: Notion project/pattern pages.
 - Password reset/recovery HTTP flow locally validated.
 - Sponsor validation treated as confirmed for execution.
-- Sprint 2.1 through S2.4 locally validated.
-
-S2.5 is implemented but intentionally remains open until Fred completes the current validation gate.
+- Sprint 2.1 through S2.5 locally validated.

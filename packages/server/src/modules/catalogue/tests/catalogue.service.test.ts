@@ -287,6 +287,36 @@ test("CatalogueService updates, publishes, archives and reorders admin services"
   assert.equal(published.status, "ok");
   assert.equal(published.status === "ok" ? published.response.service.isPublic : null, true);
 
+  const invalidCapacity = await service.updateAdminServiceCapacity("service-admin", {
+    availabilityStatus: "waitlist_only",
+    capacityMode: "limited",
+    capacityLimit: 6,
+    waitlistEnabled: false,
+  });
+  assert.deepEqual(invalidCapacity, { status: "invalid", reason: "waitlist_required" });
+
+  const capacity = await service.updateAdminServiceCapacity("service-admin", {
+    availabilityStatus: "waitlist_only",
+    capacityMode: "limited",
+    capacityLimit: 6,
+    waitlistEnabled: true,
+  });
+  assert.equal(capacity.status, "ok");
+  assert.deepEqual(repository.updatedInput, {
+    availabilityStatus: "waitlist_only",
+    capacityMode: "limited",
+    capacityLimit: 6,
+    waitlistEnabled: true,
+  });
+
+  const unlimitedCapacity = await service.updateAdminServiceCapacity("service-admin", {
+    availabilityStatus: "open",
+    capacityMode: "unlimited",
+    capacityLimit: 6,
+    waitlistEnabled: false,
+  });
+  assert.deepEqual(unlimitedCapacity, { status: "invalid", reason: "capacity_limit_must_be_null" });
+
   const reordered = await service.reorderAdminServices({ items: [{ serviceId: "service-admin", sortOrder: 5 }] });
   assert.equal(reordered.status, "ok");
   assert.deepEqual(repository.reorderedItems, [{ serviceId: "service-admin", sortOrder: 5 }]);

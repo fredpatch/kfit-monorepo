@@ -108,7 +108,9 @@ export class CatalogueController {
     const result = await this.catalogueService.reorderAdminServices(body);
     switch (result.status) {
       case "ok":
-        return { status: 200, body: result.response };
+        return "services" in result.response
+          ? { status: 200, body: result.response }
+          : { status: 500, body: { error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" } };
       case "invalid":
         return { status: 400, body: { error: "CATALOGUE_SERVICE_INVALID_INPUT", reason: result.reason } };
       case "not_found":

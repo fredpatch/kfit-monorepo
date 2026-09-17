@@ -2,6 +2,7 @@ import type {
   CatalogueAdminServiceResponse,
   CatalogueAdminServicesResponse,
   CataloguePublicServicesResponse,
+  CatalogueServiceCapacityInput,
   CatalogueServiceMutationInput,
   CatalogueServiceOrderInput,
 } from "@kfit/shared";
@@ -45,6 +46,7 @@ export class CatalogueController {
     | "updateAdminService"
     | "publishAdminService"
     | "archiveAdminService"
+    | "updateAdminServiceCapacity"
     | "reorderAdminServices"
   >) {}
 
@@ -97,6 +99,16 @@ export class CatalogueController {
     const forbidden = requireAdminSession(context);
     if (forbidden) return forbidden;
     return toMutationResponse(await this.catalogueService.archiveAdminService(serviceId));
+  }
+
+  async updateAdminServiceCapacity(
+    context: AuthHttpRequestContext,
+    serviceId: string,
+    body: CatalogueServiceCapacityInput,
+  ): Promise<HttpJsonResponse<CatalogueAdminServiceResponse | { error: string; reason?: string }>> {
+    const forbidden = requireAdminSession(context);
+    if (forbidden) return forbidden;
+    return toMutationResponse(await this.catalogueService.updateAdminServiceCapacity(serviceId, body));
   }
 
   async reorderAdminServices(

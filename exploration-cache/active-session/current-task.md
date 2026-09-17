@@ -1,37 +1,46 @@
 # Current Task
 
-> Slice: Sprint 2.4 — public landing page catalogue consumption | Date: 2026-09-17 | Status: Closed, locally validated
+> Slice: Sprint 2.5 — capacity/waitlist controls | Date: 2026-09-17 | Status: Implemented, awaiting Fred validation
 
 ## Task
 
-Consume the validated public catalogue API from the client landing page.
+Validate the S2.5 server-side capacity/waitlist control slice locally before closure.
 
-## Validated scope
+## Implemented scope
 
-- Public `/` route renders the K'FIT catalogue landing page.
-- Existing admin login/session shell remains available under `/admin`.
-- Public page uses React Query and a dedicated catalogue API client for `GET /catalogue/services`.
-- Landing page displays service cards with French labels, XAF pricing, availability, duration, capacity, components, variants and a demand CTA.
-- Loading, empty and error states are present.
-- Responsive CSS added for mobile and desktop layouts.
-- Auth bootstrap/session checks are scoped to `/admin`, so public visitors do not trigger admin auth calls.
+- Shared `adminServiceCapacity` endpoint contract.
+- `CatalogueServiceCapacityInput`.
+- Server `updateAdminServiceCapacity` service operation.
+- Capacity/waitlist business invariants enforced in dedicated and generic admin mutations.
+- Controller method and protected PATCH route.
+- Service + Express tests.
 
-## Validation confirmed by Fred
+## Acceptance criteria
 
-- [x] `npm run typecheck --workspace @kfit/client`
-- [x] `npm run build --workspace @kfit/client`
+- [ ] Shared build passes.
+- [ ] Shared catalogue contract test passes.
+- [ ] Server build passes.
+- [ ] Catalogue service tests pass.
+- [ ] Catalogue Express tests pass.
+- [ ] `db:check` passes.
+- [ ] Confirm no migration is required.
 
-The pasted output confirmed shared build, TypeScript no-emit check and Vite production build.
+## Validation commands
 
-## Explicitly out of scope for this slice
+```bash
+git switch sprint-2/catalogue-foundation
+git pull
 
-- Prospect request workflow.
-- Real WhatsApp/contact routing.
-- Admin UI catalogue editor.
-- Variant/component/policy editors.
-- Capacity computation from active subscriptions.
-- Server/API/schema changes.
+npm run build --workspace @kfit/shared
+node --test packages/shared/dist/catalogue/contracts.test.js
 
-## Next boundary
+npm run build --workspace @kfit/server
+node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js
+node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js
 
-Fast-forward `main` to the validated S2.4 head, then start S2.5 capacity/waitlist controls unless business priority changes.
+npm run db:check
+```
+
+## Closure rule
+
+Do not mark S2.5 complete or update `changelog.md` until Fred confirms the full gate green.

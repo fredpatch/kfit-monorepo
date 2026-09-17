@@ -1,42 +1,48 @@
 # Session Context
 
-> Date: 2026-09-17 | Sprint 2 closure
+> Date: 2026-09-17 | Sprint 3 active
 
 ## Where we left off
 
-Sprint 0, Sprint 1 auth, password recovery, and Sprint 2.1 through S2.6 are closed and locally validated.
+Sprint 0, Sprint 1 auth, password recovery, Sprint 2.1 through S2.6, and Sprint 3.1 are closed and locally validated.
 
-## Sprint 2 result
+## Sprint 3 current state
 
-The catalogue foundation is complete for the planned V1 Core boundary:
+Sprint 3 covers M2: demandes, prospects, qualification et liste d'attente.
 
-- public catalogue API;
-- seeded services/variants/components/policies;
-- admin catalogue editing foundation;
-- public landing page catalogue consumption;
-- authoritative server capacity/waitlist controls;
-- authenticated admin capacity/waitlist UI;
-- local PostgreSQL-backed API/bootstrap/login development path;
-- local Vite proxy for public/auth/admin catalogue routes.
+S3.1 public request/prospect intake foundation is locally validated by Fred.
 
-Fred confirmed the S2.6 client typecheck/build and complete manual admin/public smoke green on 2026-09-17.
+Validated S3.1 behavior:
+
+- public `POST /requests` shared/server contract;
+- prospect reuse by normalized WhatsApp number;
+- service request creation in `submitted` state only;
+- unique client-generated submission token;
+- concurrent same-token replay validated against real PostgreSQL using nested transaction/SAVEPOINT recovery;
+- archived, temporarily closed, waitlist-only, non-public and unpublished services rejected with typed errors;
+- requested variant must belong to the selected service; nonexistent/cross-service conditions collapse to `REQUEST_VARIANT_INVALID` publicly;
+- public abuse protection uses origin checking, in-memory per-IP limiting, honeypot and minimum completion time;
+- anonymous/public audit actor with no PII in metadata;
+- no automatic or implicit waitlist entry creation.
+
+Migration `0002_rapid_boomerang.sql` was applied locally and the real PostgreSQL idempotency integration test passed.
 
 ## Repository state
 
-- Sprint 2 branch: `sprint-2/catalogue-foundation`.
-- S2.6 locally validated.
-- Sprint 2 closure/state synchronization is being completed before `main` is fast-forwarded.
-- User-pushed agent documentation files are retained; unrelated dependency-lock churn was neutralized before merge.
+- `main` received the validated S3.1 feature commit directly.
+- Remote `sprint-3` was then normalized from that exact validated `main` head; no history was rewritten.
+- Sprint 3 execution continues on `sprint-3`.
 
 ## Active constraints
 
 - Do not run project commands from ChatGPT/Codex runtime.
-- Legal validation is still required before production.
-- A true off-server encrypted backup destination is still required before production.
+- Only Fred's successful local execution marks validation.
+- Legal validation remains required before production.
+- A true off-server encrypted backup destination remains required before production.
 - Native PostgreSQL remains on host 5432 and K'FIT Docker PostgreSQL on host 5433 unless explicitly changed.
 
 ## Next boundary
 
-Sprint 3 covers M2: demandes, prospects, qualification et liste d'attente.
+S3.2 — **Public request form (name + phone, per service)**.
 
-First selected backlog task: **Public request form (name + phone, per service)**. It is not started yet. At Sprint 3 start, inspect the applicable reusable patterns, establish Sprint 3 execution state/branch, then proceed server-first before client integration.
+Reuse the validated S3.1 public request contract; this slice should be client-first integration over authoritative server behavior, with French UI, loading/disabled/success/error states, submission-token generation, honeypot/minimum-time fields, and catalogue-service context.

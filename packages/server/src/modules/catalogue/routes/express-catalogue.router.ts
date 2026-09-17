@@ -47,6 +47,11 @@ function mutationGuard(context: AuthHttpRequestContext): HttpJsonResponse<{ erro
   return requireCsrf(context);
 }
 
+function routeParam(value: string | string[] | undefined): string | null {
+  if (typeof value === "string" && value !== "") return value;
+  return null;
+}
+
 export function createExpressCatalogueRouter(deps: ExpressCatalogueRouterDeps): Router {
   const router = createRouter();
 
@@ -94,7 +99,9 @@ export function createExpressCatalogueRouter(deps: ExpressCatalogueRouterDeps): 
       const context = await toAuthContext(request, deps.resolveSession);
       const guard = mutationGuard(context);
       if (guard) return applyJsonResponse(response, guard);
-      applyJsonResponse(response, await deps.controller.updateAdminService(context, request.params.serviceId, request.body ?? {}));
+      const serviceId = routeParam(request.params.serviceId);
+      if (!serviceId) return applyJsonResponse(response, { status: 404, body: { error: "CATALOGUE_SERVICE_NOT_FOUND" } });
+      applyJsonResponse(response, await deps.controller.updateAdminService(context, serviceId, request.body ?? {}));
     } catch {
       response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
     }
@@ -105,7 +112,9 @@ export function createExpressCatalogueRouter(deps: ExpressCatalogueRouterDeps): 
       const context = await toAuthContext(request, deps.resolveSession);
       const guard = mutationGuard(context);
       if (guard) return applyJsonResponse(response, guard);
-      applyJsonResponse(response, await deps.controller.publishAdminService(context, request.params.serviceId));
+      const serviceId = routeParam(request.params.serviceId);
+      if (!serviceId) return applyJsonResponse(response, { status: 404, body: { error: "CATALOGUE_SERVICE_NOT_FOUND" } });
+      applyJsonResponse(response, await deps.controller.publishAdminService(context, serviceId));
     } catch {
       response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
     }
@@ -116,7 +125,9 @@ export function createExpressCatalogueRouter(deps: ExpressCatalogueRouterDeps): 
       const context = await toAuthContext(request, deps.resolveSession);
       const guard = mutationGuard(context);
       if (guard) return applyJsonResponse(response, guard);
-      applyJsonResponse(response, await deps.controller.archiveAdminService(context, request.params.serviceId));
+      const serviceId = routeParam(request.params.serviceId);
+      if (!serviceId) return applyJsonResponse(response, { status: 404, body: { error: "CATALOGUE_SERVICE_NOT_FOUND" } });
+      applyJsonResponse(response, await deps.controller.archiveAdminService(context, serviceId));
     } catch {
       response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
     }

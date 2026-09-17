@@ -4,9 +4,9 @@ import { catalogueApiClient } from "../api/catalogue-api.js";
 
 const availabilityLabels: Record<CatalogueAvailabilityStatus, string> = {
   open: "Disponible",
-  temporarily_closed: "Temporairement ferme",
+  temporarily_closed: "Temporairement fermé",
   waitlist_only: "Liste d'attente",
-  archived: "Archive",
+  archived: "Archivé",
 };
 
 const durationUnitLabels = {
@@ -28,7 +28,7 @@ function formatPrice(service: CataloguePublicService): string {
 }
 
 function formatDuration(value: number | null, unit: CataloguePublicService["defaultDurationUnit"]): string {
-  if (!value || !unit) return "Duree ajustee au besoin";
+  if (!value || !unit) return "Durée ajustée au besoin";
 
   const [singular, plural] = durationUnitLabels[unit];
   return `${value} ${value > 1 ? plural : singular}`;
@@ -62,11 +62,11 @@ function ServiceCard({ service }: { service: CataloguePublicService }) {
 
       <dl className="service-facts">
         <div>
-          <dt>Duree</dt>
+          <dt>Durée</dt>
           <dd>{formatDuration(service.defaultDurationValue, service.defaultDurationUnit)}</dd>
         </div>
         <div>
-          <dt>Capacite</dt>
+          <dt>Capacité</dt>
           <dd>{formatCapacity(service)}</dd>
         </div>
       </dl>
@@ -108,13 +108,13 @@ export function PublicCataloguePage() {
       <section className="public-hero" aria-labelledby="public-hero-title">
         <div>
           <p className="eyebrow">K'FIT Coaching</p>
-          <h1 id="public-hero-title">Choisis ton accompagnement bien-etre.</h1>
+          <h1 id="public-hero-title">Choisis ton accompagnement bien-être.</h1>
           <p>
-            Des offres claires pour demarrer avec un bilan, suivre un programme sportif
-            ou construire un accompagnement nutritionnel adapte.
+            Des offres claires pour démarrer avec un bilan, suivre un programme sportif
+            ou construire un accompagnement nutritionnel adapté.
           </p>
         </div>
-        <a className="hero-admin-link" href="/admin">Acces admin</a>
+        <a className="hero-admin-link" href="/admin">Accès admin</a>
       </section>
 
       <section className="catalogue-section" aria-labelledby="catalogue-title">

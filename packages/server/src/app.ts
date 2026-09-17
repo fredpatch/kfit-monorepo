@@ -26,7 +26,10 @@ export function createServerApp(deps: ServerAppDeps): Express {
   }));
 
   if (deps.catalogueController) {
-    app.use(createExpressCatalogueRouter({ controller: deps.catalogueController }));
+    app.use(createExpressCatalogueRouter({
+      controller: deps.catalogueController,
+      resolveSession: deps.resolveAuthSession,
+    }));
   }
 
   return app;

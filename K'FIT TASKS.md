@@ -10,14 +10,15 @@ Sprint 3
 
 ```text
 S3.1 — CLOSED / LOCALLY VALIDATED
-S3.2 — EN COURS (IMPLEMENTING)
+S3.2 — CLOSED / LOCALLY VALIDATED
+S3.3 — NEXT / NOT STARTED
 ```
 
 Sprint 2 is closed and must not be reopened unless investigating a confirmed regression.
 
 Execution branch: `sprint-3`.
 
-S3.1 public request/prospect intake was locally validated by Fred on 2026-09-17, including migration `0002_rapid_boomerang.sql`, the real-PostgreSQL concurrent same-token idempotency test, shared/server automated validation, `db:check`, and client typecheck regression.
+S3.1 public request/prospect intake and S3.2 public request form are locally validated by Fred on 2026-09-17.
 
 ---
 
@@ -29,6 +30,7 @@ Sprint 1 — Authentication Foundation
 Password Recovery
 Sprint 2 — Catalogue Foundation
 Sprint 3.1 — Public request/prospect intake contract
+Sprint 3.2 — Public request form
 ```
 
 Do not modify completed functionality unless:
@@ -41,31 +43,25 @@ Do not modify completed functionality unless:
 
 # ⏳ Current
 
-## S3.2 — Public request form
+## S3.3 — Admin request queue + contact attempts
 
-Goal: expose the validated S3.1 request intake through the public catalogue experience.
+Goal: expose submitted public requests to authorized admin users and support explicit contact-attempt logging/status progression without bypassing server-authoritative state rules.
 
-Dependency: S3.1 `POST /requests` contract is authoritative and must not be redefined client-side.
+Before implementation:
 
-Expected client boundary:
+- inspect existing request/contact tables and state-machine definitions;
+- consult Shared API Contracts, Explicit State Transitions, Audit Event System and Domain Error Taxonomy patterns;
+- define server-first read/command contracts;
+- keep Service → Controller → Route layering;
+- preserve S3.1/S3.2 behavior as validated.
 
-- name + phone per service;
-- optional approved variant context;
-- client-generated submission token;
-- honeypot and minimum-completion-time support;
-- loading/disabled/success/error states;
-- French-first responsive UI;
-- typed server-error handling;
-- public catalogue regression protection.
-
-Before implementation, the Planner/Reviewer workflow must confirm the smallest coherent S3.2 plan. The Implementer must not open S3.3 concurrently.
+No S3.4 qualification or S3.5 waitlist implementation may be opened concurrently.
 
 ---
 
 # Remaining Sprint 3 order
 
 ```text
-S3.2 — Public request form
 S3.3 — Admin request queue + contact attempts
 S3.4 — Qualification review recording
 S3.5 — Manual waitlist entry management

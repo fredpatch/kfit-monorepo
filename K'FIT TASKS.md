@@ -9,11 +9,13 @@ Sprint 3
 ## Status
 
 ```text
-SPRINT PLANNING
-NO IMPLEMENTATION STARTED
+S3.1 — IMPLEMENTING (En cours)
+AWAITING_REVIEW
 ```
 
 Sprint 2 is closed and must not be reopened unless investigating a confirmed regression.
+
+Branch: `sprint-3` (fast-forwarded from `main`). S3.1 (public request/prospect intake, server-first) is implemented and locally validated by the assistant (typecheck/build/tests/db:check green). See `TASKS.md` for the full S3.1 scope and validation gate. Awaiting Reviewer/QA pass and Fred's local functional validation before S3.1 can close.
 
 ---
 

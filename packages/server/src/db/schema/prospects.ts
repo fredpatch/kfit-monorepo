@@ -20,6 +20,7 @@ export const prospects = pgTable("prospects", {
 export const serviceRequests = pgTable("service_requests", {
   id: idColumn(),
   reference: text("reference").notNull(),
+  submissionToken: text("submission_token").notNull(),
   prospectId: uuid("prospect_id").notNull().references(() => prospects.id, { onDelete: "restrict" }),
   serviceId: uuid("service_id").notNull().references(() => services.id, { onDelete: "restrict" }),
   requestedVariantId: uuid("requested_variant_id").references(() => serviceVariants.id, { onDelete: "restrict" }),
@@ -34,6 +35,7 @@ export const serviceRequests = pgTable("service_requests", {
   ...timestamps,
 }, (t) => [
   uniqueIndex("service_requests_reference_uq").on(t.reference),
+  uniqueIndex("service_requests_submission_token_uq").on(t.submissionToken),
   uniqueIndex("service_requests_converted_subscription_uq").on(t.convertedSubscriptionId),
   index("service_requests_queue_idx").on(t.status, t.submittedAt),
   index("service_requests_prospect_idx").on(t.prospectId),

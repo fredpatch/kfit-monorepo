@@ -18,6 +18,9 @@ import { loadAuthConfig } from "./modules/auth/config/auth.config.js";
 import { CatalogueController } from "./modules/catalogue/controllers/catalogue.controller.js";
 import { DrizzleCatalogueRepository } from "./modules/catalogue/repositories/catalogue.repositories.js";
 import { CatalogueService } from "./modules/catalogue/services/catalogue.service.js";
+import { RequestsController } from "./modules/requests/controllers/requests.controller.js";
+import { DrizzleRequestsRepository } from "./modules/requests/repositories/requests.repositories.js";
+import { RequestsService } from "./modules/requests/services/requests.service.js";
 
 export function createDevelopmentApp() {
   const authConfig = loadAuthConfig(process.env);
@@ -79,9 +82,14 @@ export function createDevelopmentApp() {
     new CatalogueService(new DrizzleCatalogueRepository(db)),
   );
 
+  const requestsController = new RequestsController(
+    new RequestsService(new DrizzleRequestsRepository(db), audit),
+  );
+
   return createServerApp({
     authController,
     resolveAuthSession: (request) => resolver.resolveFromRequest(request),
     catalogueController,
+    requestsController,
   });
 }

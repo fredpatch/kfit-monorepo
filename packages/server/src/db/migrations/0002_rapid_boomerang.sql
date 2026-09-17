@@ -1,0 +1,2 @@
+ALTER TABLE "service_requests" ADD COLUMN "submission_token" text NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "service_requests_submission_token_uq" ON "service_requests" USING btree ("submission_token");

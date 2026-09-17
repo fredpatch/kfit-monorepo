@@ -78,6 +78,17 @@ export function createExpressCatalogueRouter(deps: ExpressCatalogueRouterDeps): 
     }
   });
 
+  router.patch(catalogueApiRoutes.adminServiceOrder, async (request: Request, response: Response) => {
+    try {
+      const context = await toAuthContext(request, deps.resolveSession);
+      const guard = mutationGuard(context);
+      if (guard) return applyJsonResponse(response, guard);
+      applyJsonResponse(response, await deps.controller.reorderAdminServices(context, request.body ?? {}));
+    } catch {
+      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+    }
+  });
+
   router.patch(catalogueApiRoutes.adminService, async (request: Request, response: Response) => {
     try {
       const context = await toAuthContext(request, deps.resolveSession);
@@ -106,17 +117,6 @@ export function createExpressCatalogueRouter(deps: ExpressCatalogueRouterDeps): 
       const guard = mutationGuard(context);
       if (guard) return applyJsonResponse(response, guard);
       applyJsonResponse(response, await deps.controller.archiveAdminService(context, request.params.serviceId));
-    } catch {
-      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
-
-  router.patch(catalogueApiRoutes.adminServiceOrder, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const guard = mutationGuard(context);
-      if (guard) return applyJsonResponse(response, guard);
-      applyJsonResponse(response, await deps.controller.reorderAdminServices(context, request.body ?? {}));
     } catch {
       response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
     }

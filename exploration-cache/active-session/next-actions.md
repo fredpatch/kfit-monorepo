@@ -2,11 +2,10 @@
 
 > Updated: 2026-09-17
 
-1. Fred validates S2.5 locally on `sprint-2/catalogue-foundation` using the recorded shared/server/db gate.
-2. If any command fails: diagnose exact output, apply the smallest fix, commit, and retest only the affected gate plus required regression checks.
-3. If all commands are green:
-   - mark S2.5 validated/closed in repo state;
-   - update `changelog.md` with validated S2.5 changes;
-   - set the S2.5 Notion backlog task to `Terminé` and update Sprint 2/dashboard notes;
-   - fast-forward `main` to the validated Sprint 2 branch head.
-4. After S2.5 closure, decide the next slice: admin capacity/waitlist UI or prospect request/contact workflow, according to Sprint 2 dependency/business priority.
+1. S2.5 is closed and locally validated.
+2. Synchronize closure state in Notion and `changelog.md`.
+3. Fast-forward `main` to the final validated S2.5 closure head.
+4. Select the next Sprint 2 slice before implementation begins:
+   - admin UI for capacity/waitlist controls; or
+   - prospect request/contact workflow, if business priority now shifts to Sprint 3-style intake work.
+5. Keep the next slice server-first if it introduces new authoritative business behavior.

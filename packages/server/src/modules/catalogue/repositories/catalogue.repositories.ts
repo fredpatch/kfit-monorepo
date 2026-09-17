@@ -259,6 +259,14 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
   }
 
   async reorderServices(items: Array<{ serviceId: string; sortOrder: number }>) {
+    const ids = items.map((item) => item.serviceId);
+    const existing = await this.database
+      .select({ id: services.id })
+      .from(services)
+      .where(inArray(services.id, ids));
+
+    if (existing.length !== ids.length) return "not_found";
+
     const rows = await this.database.transaction(async (tx) => {
       const updatedRows: Array<typeof services.$inferSelect> = [];
       for (const item of items) {
@@ -267,13 +275,14 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
           .set({ sortOrder: item.sortOrder, updatedAt: sql`now()` })
           .where(eq(services.id, item.serviceId))
           .returning();
-        if (!updated) return null;
+        if (!updated) {
+          throw new Error("Catalogue reorder precheck failed");
+        }
         updatedRows.push(updated);
       }
       return updatedRows;
     });
 
-    if (!rows) return "not_found";
     return rows.map(mapAdminService);
   }
 }

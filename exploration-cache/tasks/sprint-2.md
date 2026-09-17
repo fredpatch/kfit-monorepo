@@ -12,41 +12,32 @@ Build the K'FIT catalogue foundation before prospects/client workflows: public s
 - [x] S2.2 — Initial services/variants/components/policies seed.
 - [x] S2.3 — Admin catalogue editing foundation.
 - [x] S2.4 — Public landing page catalogue consumption.
+- [x] S2.5 — Capacity/waitlist controls.
 
-## Current slice
+## S2.5 closure
 
-- [ ] S2.5 — Capacity/waitlist controls.
+Fred confirmed the full local validation gate green on 2026-09-17.
 
-Status: implemented, statically committed, awaiting Fred local validation.
-Implementation head before state-sync commits: `2f13fd66aa6e469b4f302a9591e9f030ce480eb6`.
+Validated commands:
 
-Implemented boundary:
+```bash
+npm run build --workspace @kfit/shared
+node --test packages/shared/dist/catalogue/contracts.test.js
+npm run build --workspace @kfit/server
+node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js
+node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js
+npm run db:check
+```
+
+Validated boundary:
 
 - shared `adminServiceCapacity` route contract and `CatalogueServiceCapacityInput`;
 - service-level capacity/waitlist mutation rules;
 - controller + authenticated/CSRF/same-origin protected PATCH route;
 - service and Express coverage;
-- generic admin create/update paths hardened so they cannot bypass the same capacity/waitlist invariants.
+- generic admin create/update paths hardened so they cannot bypass the same capacity/waitlist invariants;
+- no migration required.
 
-## Validation gate
+## Next decision
 
-```bash
-git switch sprint-2/catalogue-foundation
-git pull
-
-npm run build --workspace @kfit/shared
-node --test packages/shared/dist/catalogue/contracts.test.js
-
-npm run build --workspace @kfit/server
-node --test packages/server/dist/modules/catalogue/tests/catalogue.service.test.js
-node --test packages/server/dist/modules/catalogue/tests/catalogue.express.test.js
-
-npm run db:check
-```
-
-Expected: all green; no migration expected.
-
-## Notes
-
-- `changelog.md` records validated work only and must not be updated before Fred confirms this gate.
-- Do not mark S2.5 complete before local validation.
+Do not open the next implementation front until the next slice is explicitly selected. Candidate continuation: admin UI for capacity/waitlist controls or prospect request/contact workflow according to business priority.

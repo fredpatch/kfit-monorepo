@@ -93,6 +93,7 @@ export type CatalogueServicePatchInput = Partial<CatalogueServiceWriteInput>;
 export type CatalogueRepository = {
   listPublicServices(): Promise<CatalogueSnapshot>;
   listAdminServices(): Promise<CatalogueAdminServiceRecord[]>;
+  getAdminService(serviceId: string): Promise<CatalogueAdminServiceRecord | null>;
   createService(input: CatalogueServiceWriteInput): Promise<CatalogueAdminServiceRecord | "slug_conflict">;
   updateService(serviceId: string, input: CatalogueServicePatchInput): Promise<CatalogueAdminServiceRecord | "not_found" | "slug_conflict">;
   publishService(serviceId: string, now: Date): Promise<CatalogueAdminServiceRecord | "not_found" | "archived">;
@@ -411,11 +412,16 @@ export class CatalogueService {
   }
 
   async publishAdminService(serviceId: string, now = new Date()): Promise<MutationResult> {
+    const existing = await this.repository.getAdminService(serviceId);
+    if (!existing) return { status: "not_found" };
+
+    const invalid = validatePublishable(existing);
+    if (invalid === "archived") return { status: "archived" };
+    if (invalid) return { status: "publish_invalid", reason: invalid };
+
     const result = await this.repository.publishService(serviceId, now);
     if (result === "not_found") return { status: "not_found" };
     if (result === "archived") return { status: "archived" };
-    const invalid = validatePublishable(result);
-    if (invalid) return { status: "publish_invalid", reason: invalid };
     return { status: "ok", response: { service: toAdminService(result) } };
   }
 

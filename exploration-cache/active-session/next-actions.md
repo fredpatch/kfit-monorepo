@@ -2,16 +2,11 @@
 
 > Updated: 2026-09-17
 
-1. Fast-forward `main` to the validated S2.4 head.
-2. Fred runs local sync:
-   - `git fetch`
-   - `git switch main`
-   - `git pull`
-   - `git switch sprint-2/catalogue-foundation`
-   - `git pull`
-3. Start next Sprint 2 slice:
-   - S2.5 capacity/waitlist controls.
-4. Keep out of scope until later work:
-   - real prospect request/contact workflow;
-   - variant/component/policy admin editor;
-   - payment/subscription-driven capacity computation beyond the S2.5 catalogue-level controls.
+1. Fred validates S2.5 locally on `sprint-2/catalogue-foundation` using the recorded shared/server/db gate.
+2. If any command fails: diagnose exact output, apply the smallest fix, commit, and retest only the affected gate plus required regression checks.
+3. If all commands are green:
+   - mark S2.5 validated/closed in repo state;
+   - update `changelog.md` with validated S2.5 changes;
+   - set the S2.5 Notion backlog task to `Terminé` and update Sprint 2/dashboard notes;
+   - fast-forward `main` to the validated Sprint 2 branch head.
+4. After S2.5 closure, decide the next slice: admin capacity/waitlist UI or prospect request/contact workflow, according to Sprint 2 dependency/business priority.

@@ -958,4 +958,23 @@ When reusable material influenced implementation, report:
 - deviations from the reference
 - project-specific safeguards added
 
+# 31. ## Agent Skills
+
+Agents may load relevant skills from `.github/skills/`.
+
+Skills provide specialized engineering guidance only.
+
+Priority remains:
+
+developer instruction
+→ approved business rules
+→ AGENTS.md
+→ WORKFLOW.md
+→ project architecture
+→ skill guidance
+
+A skill must never override project-specific rules or expand approved scope.
+
+Use the smallest relevant set of skills for the current task.
+
 AI should reduce repetitive engineering work without reducing engineering discipline.

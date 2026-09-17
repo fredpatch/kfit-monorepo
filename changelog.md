@@ -2,6 +2,17 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-09-17 — Sprint 2.5 capacity/waitlist controls
+
+- Validated the server-side catalogue capacity/waitlist control slice.
+- Confirmed shared build, shared catalogue contract test, server build, catalogue service tests, catalogue Express tests and `db:check`.
+- Added shared `adminServiceCapacity` route contract and `CatalogueServiceCapacityInput`.
+- Added `updateAdminServiceCapacity` service logic with explicit capacity/waitlist invariants.
+- Added protected `PATCH /admin/catalogue/services/:serviceId/capacity` with admin session, CSRF and same-origin enforcement.
+- Hardened generic admin create/update mutations so they cannot bypass the same capacity/waitlist rules.
+- Added service and Express regression coverage.
+- Reused the existing catalogue schema; no migration required.
+
 ## 2026-09-17 — Sprint 2.4 public landing page catalogue consumption
 
 - Validated the client-side public catalogue landing page consumption.

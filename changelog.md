@@ -2,6 +2,16 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-09-17 — Sprint 2.3 admin catalogue editing foundation
+
+- Validated the server-first admin catalogue editing foundation.
+- Confirmed shared build, server build, shared catalogue contracts, catalogue service tests, catalogue Express route tests and `db:check`.
+- Added admin catalogue routes under `/admin/catalogue/services` for service-level list, create, update, publish, archive and reorder.
+- Enforced admin-only access using the existing authenticated session context.
+- Protected admin mutations with CSRF and same-origin checks.
+- Reused existing Sprint 0 catalogue tables; no migration required.
+- Kept admin UI, variant/component/policy editing, capacity computation and landing page consumption out of scope for later Sprint 2 slices.
+
 ## 2026-08-25 — Sprint 2.2 catalogue seed foundation
 
 - Validated the initial catalogue seed for public service offers.

@@ -8,10 +8,10 @@
 ```text
 Branch            sprint-3
 Sprint            3 — Demandes, prospects, qualification et liste d'attente
-Active slice      S3.5 — Manual waitlist entry management
-Workflow state    COMMITTED
-Last validated    S3.5 - 2026-09-17
-Next action       Fred: confirm pushed commit, then decide Sprint 3 closure
+Active slice      —
+Workflow state    SPRINT_CLOSED
+Last validated    S3.5 — 2026-09-17 (feature commit 0775695)
+Next action       Fred: fast-forward/merge sprint-3 into main, then open Sprint 4 from updated main
 ```
 
 ## Sprint 3 slices
@@ -22,24 +22,28 @@ Next action       Fred: confirm pushed commit, then decide Sprint 3 closure
 | S3.2  | Public request form (client)                           | S3.1       | CLOSED — Fred validated 2026-09-17 |
 | S3.3  | Admin request queue + contact attempts                 | S3.1       | CLOSED — Fred validated 2026-09-17 |
 | S3.4  | Qualification review recording                         | S3.3       | CLOSED — Fred validated 2026-09-17 |
-| S3.5  | Manual waitlist entry management                       | S3.1       | COMMITTED - Fred validated 2026-09-17 |
+| S3.5  | Manual waitlist entry management                       | S3.1       | CLOSED — Fred validated 2026-09-17 |
 
-One slice at a time. Do not open another implementation front while S3.5 is not testable and locally validated.
+Sprint 3 is closed. Do not open Sprint 4 implementation until `main` is updated from the validated `sprint-3` head and the Sprint 4 branch/state is initialized.
 
-## S3.5 — brief
+## Sprint 3 closure
 
-Goal: add manual waitlist entry management for eligible requests/services while preserving the explicit request lifecycle and avoiding automatic promotion or subscription/onboarding behavior.
+Validated acquisition workflow delivered:
 
-Planner must:
+- public prospect/request intake with concurrency-safe idempotency and abuse controls;
+- public request form with stable request-intent token handling;
+- authenticated admin queue, detail, contact attempts and explicit contact-stage transitions;
+- qualification review command with outcome-specific validation and hard transactional audit;
+- manual waitlist entry/withdrawal with FIFO semantics, concurrency-safe request locking and hard transactional audit;
+- no automatic waitlist promotion, subscription conversion or onboarding implemented inside Sprint 3.
 
-- inspect `waitlist_entries`, request/service availability state machines and relational invariants;
-- inspect the validated S3.3/S3.4 admin request architecture and transaction-scoped audit pattern;
-- consult applicable patterns: Shared API Contracts, Explicit State Transitions, Atomic Business Operation, Audit Event System, Domain Error Taxonomy;
-- define exact eligibility for manual waitlisting, ordering/priority rules, removal/cancellation behavior, and whether request status transition to `waitlisted` is part of the same atomic command;
-- preserve S3.1–S3.4 behavior;
-- keep automatic promotion, subscription conversion and broader onboarding out of scope.
+Final S3.5 validation:
 
-Order: reusable pattern review → contracts → Service → Controller → Route/Middleware → server validation → admin client integration → Fred validation.
+- typecheck/build/db:check green;
+- `npm test` executes real Windows-compatible globs: server 110/110, shared 12/12;
+- real PostgreSQL integration suite 15/15;
+- reviewer pass and QA pass;
+- Fred local browser/DBeaver smoke green for waitlist creation, duplicate prevention, withdrawal, request-state synchronization and safe audit metadata.
 
 ## Closed
 
@@ -47,49 +51,16 @@ Order: reusable pattern review → contracts → Service → Controller → Rout
 Sprint 0 — Initialisation
 Sprint 1 — Auth, sessions, OTP, security (+ password recovery HTTP flow)
 Sprint 2 — Catalogue, offers, public availability (S2.1–S2.6)
-Sprint 3 — S3.1, S3.2, S3.3, S3.4
+Sprint 3 — Demandes, prospects, qualification et liste d'attente (S3.1–S3.5)
 ```
 
-Do not modify closed work unless the active slice explicitly extends it, a regression is confirmed, or Fred approves reopening it.
+## Next sprint
 
-### S3.1 — validated scope (reference)
+Sprint 4 — Clients, conversion, onboarding, questionnaires et consentements.
 
-- Shared `POST /requests` contract with stable `REQUEST_*` error codes.
-- Creates/reuses a prospect and creates one submitted service request.
-- `service_requests.submission_token` unique + not null (migration `0002_rapid_boomerang.sql`).
-- Concurrency-safe idempotent replay (nested Drizzle transaction/SAVEPOINT), validated on real PostgreSQL.
-- Server-authoritative gating: archived, temporarily closed, waitlist-only, non-public/unpublished services rejected; variant must belong to the service (`REQUEST_VARIANT_INVALID`, no condition disclosure).
-- Abuse controls: origin check, in-memory per-IP limit, honeypot, minimum completion time.
-- Anonymous audit events without PII. No waitlist entry created. `duplicate_of_request_id` untouched.
+First dependency-safe backlog task: **Client table + phone-based search/create-inline**. It is a CRITIQUE M4 server task with no declared dependency and provides the customer foundation required by the later atomic request-conversion transaction.
 
-### S3.2 — validated scope (reference)
-
-- Inline request form replaces the mailto CTA for open services; full name + WhatsApp; service-scoped variant selector.
-- One client `submissionToken` per intent, reused on retry/double submit; sends `website` honeypot and `formRenderedAt`.
-- French-localized typed errors; success shows server reference.
-- Closed/waitlist-only services expose no normal form. Vite proxy includes `/requests`.
-- No server/shared/schema/dependency changes.
-
-### S3.3 — validated scope (reference)
-
-- Admin-only request queue and detail endpoints expose prospect/service/variant context and ordered contact history.
-- Contact attempts use the approved application vocabulary for channel, direction and outcome; logging never changes request status implicitly.
-- Status transitions are limited to the S3.3 contact-management subset and rejected server-side outside that allow-list.
-- `contact_attempts` insert + `request.contact_attempt_logged` audit and status update + `request.status_changed` audit each share one Drizzle transaction.
-- Audit metadata contains only safe domain fields; Fred verified no name/WhatsApp/email/free text in audit metadata through DBeaver.
-- Admin mutations require authenticated admin session, same-origin and CSRF protection.
-- Admin UI adds Catalogue / Demandes navigation, queue filtering, detail, contact-attempt logging and only allowed transition actions.
-- Real PostgreSQL integration tests, rollback/atomicity paths, browser smoke and S3.2 regression all passed locally.
-
-### S3.4 — validated scope (reference)
-
-- Admin-only `POST /admin/requests/:requestId/qualification-review` records one qualification review from `qualification_in_progress`.
-- Outcomes are limited to `qualified`, `qualified_with_conditions`, and `rejected`; `waitlisted` stays S3.5-owned.
-- Outcome-specific validation enforces service-owned final variant/price/conditions and rejected-field restrictions.
-- Review insert + request transition + `request.qualification_review_recorded` audit share one PostgreSQL transaction.
-- Audit metadata contains only version/outcome/fromStatus/toStatus; no prospect PII or qualification free text.
-- No reopen/revision/supersession workflow is exposed in S3.4; existing schema remains future-compatible.
-- Typecheck/build/db:check, reviewer pass, real PostgreSQL integration suite, browser/DBeaver smoke and S3.2/S3.3 regressions passed locally.
+After `main` is updated, planning starts from the Sprint 4 customer model/client foundation before conversion or onboarding implementation.
 
 ## Blockers
 
@@ -117,12 +88,11 @@ Known non-blocking notes:
 
 ```text
 Branch            sprint-3
-Slice             S3.5
-Workflow state    COMMITTED
-Done              S3.1, S3.2, S3.3, S3.4 closed; S3.5 implemented, reviewed, QA passed and Fred validated locally
-Pending           push confirmation and Sprint 3 closure decision
-Validation done   S3.5 typecheck/build/db:check; npm test server 110/110 and shared 12/12; real PostgreSQL integration 15/15; reviewer pass; QA pass with UI runtime smoke completed by Fred locally
-Not validated     —
-Risks/blockers    see Blockers
-Next action       Fred
+Sprint            3
+Workflow state    SPRINT_CLOSED
+✅ Done           S3.1, S3.2, S3.3, S3.4, S3.5
+Validation done   S3.5 typecheck/build/db:check; server 110/110; shared 12/12; PostgreSQL integration 15/15; reviewer/QA; Fred browser+DBeaver smoke
+Risks/blockers    production-only blockers listed above
+Next action       Merge/fast-forward sprint-3 → main, then initialize Sprint 4
+Sprint 4 first    Client table + phone-based search/create-inline
 ```

@@ -94,6 +94,19 @@ export function createExpressCatalogueRouter(deps: ExpressCatalogueRouterDeps): 
     }
   });
 
+  router.patch(catalogueApiRoutes.adminServiceCapacity, async (request: Request, response: Response) => {
+    try {
+      const context = await toAuthContext(request, deps.resolveSession);
+      const guard = mutationGuard(context);
+      if (guard) return applyJsonResponse(response, guard);
+      const serviceId = routeParam(request.params.serviceId);
+      if (!serviceId) return applyJsonResponse(response, { status: 404, body: { error: "CATALOGUE_SERVICE_NOT_FOUND" } });
+      applyJsonResponse(response, await deps.controller.updateAdminServiceCapacity(context, serviceId, request.body ?? {}));
+    } catch {
+      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+    }
+  });
+
   router.patch(catalogueApiRoutes.adminService, async (request: Request, response: Response) => {
     try {
       const context = await toAuthContext(request, deps.resolveSession);

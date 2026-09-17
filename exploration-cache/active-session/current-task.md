@@ -1,27 +1,38 @@
 # Current Task
 
-> Slice: Sprint 2.6 — admin UI capacity / waitlist controls | Date: 2026-09-17 | Status: Closed and locally validated
+> Slice: Sprint 3.1 — public request/prospect intake contract | Date: 2026-09-17 | Status: Closed and locally validated
 
 ## Result
 
-S2.6 is complete. Fred confirmed the full local validation gate green after the local-development routing/bootstrap prerequisite was fixed.
+S3.1 is complete. Fred confirmed the final local validation gate green, including the real PostgreSQL concurrency/idempotency integration test after applying migration `0002_rapid_boomerang.sql`.
 
 ## Validated scope
 
-- Authenticated admin catalogue workspace loads existing services.
-- Capacity mode, capacity limit, availability state and waitlist enablement are editable in French UI.
-- Open/unlimited, limited positive-integer capacity, and waitlist-only mutations succeed.
-- Invalid combinations are blocked.
-- Archived services are read-only.
-- Saved values persist after refresh.
-- Public catalogue remains functional and reflects saved availability.
-- Client typecheck and production build are green.
-- Real local API/bootstrap/login path works against PostgreSQL/Drizzle.
-- Vite proxies `/auth`, `/catalogue`, `/admin/catalogue` and `/health` to the local API.
-- No S2.6 database migration was required.
+- Shared `POST /requests` contract and stable request error taxonomy.
+- Service → controller → route server structure for anonymous public intake.
+- Prospect creation/reuse by normalized WhatsApp number.
+- `service_requests` creation starts only in `submitted` state.
+- Client-generated `submissionToken` is DB-unique and supports idempotent replay.
+- Concurrent duplicate-token collisions recover through nested Drizzle transaction/SAVEPOINT and return one created + one replayed result referencing the same request.
+- Archived services reject with `REQUEST_SERVICE_ARCHIVED`.
+- Temporarily closed services reject with `REQUEST_SERVICE_UNAVAILABLE`.
+- Waitlist-only services reject with `REQUEST_WAITLIST_REQUIRED`; S3.1 does not create waitlist entries.
+- Non-public/unpublished services reject with `REQUEST_SERVICE_NOT_PUBLIC`.
+- Missing/cross-service requested variants reject with the same public `REQUEST_VARIANT_INVALID` response.
+- Public abuse safeguards: same-origin-or-null check, process-local IP limiter, honeypot and minimum completion time.
+- Audit outcomes use an anonymous actor and do not place PII in metadata.
 
-## Sprint boundary
+## Validation evidence
 
-Sprint 2 is now closed and locally validated.
+Fred confirmed locally on 2026-09-17:
 
-Next selected backlog task for Sprint 3: **Public request form (name + phone, per service)**. It remains not started and must begin on a Sprint 3 execution branch after pattern/backlog inspection.
+- migration `0002` applied;
+- real PostgreSQL concurrent idempotency integration test green;
+- shared build/tests green;
+- server typecheck/build/test suite green;
+- `db:check` green;
+- client typecheck regression green.
+
+## Next slice
+
+S3.2 — Public request form (name + phone, per service). It should consume S3.1 without redefining server business rules.

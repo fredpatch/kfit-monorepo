@@ -2,6 +2,22 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-09-17 — Sprint 3.3 admin request queue + contact attempts
+
+- Validated the authenticated admin request-management slice end-to-end against the real local PostgreSQL database and browser UI.
+- Added shared admin request routes, DTOs, stable `REQUEST_*` error codes, contact-attempt vocabularies, request-status vocabulary and the locked S3.3 transition subset.
+- Added an admin queue with status filtering and request detail including prospect, service/variant and ordered contact history.
+- Added structured contact-attempt logging with approved channel/direction/outcome values and no implicit request-status mutation.
+- Added guarded status progression limited to `submitted→contacting`, `contacting→qualification_in_progress`, `contacting→abandoned`, `qualification_in_progress→abandoned`, and `abandoned→qualification_in_progress`; qualification/waitlist-owned targets remain rejected.
+- Enforced admin authentication on all new endpoints and same-origin + CSRF protection on mutations.
+- Enforced hard audit atomicity for contact-attempt creation and status changes: the domain write and corresponding audit row share the same Drizzle transaction.
+- Reused the existing audit envelope/hash helper while bypassing the long-lived `AuditService` instance for those two transaction-critical writes.
+- Confirmed audit metadata contains only safe domain fields and no prospect name, WhatsApp, email or free-text note content.
+- Added Catalogue / Demandes admin navigation plus queue/detail/contact-attempt/status-transition UI without adding a router dependency.
+- Confirmed no database migration was required.
+- Confirmed root typecheck/build, shared/server unit tests and `db:check` green.
+- Fred validated the real-PostgreSQL integration suite, browser queue/detail/filter/contact-attempt/status flows, forbidden-transition behavior, DBeaver persistence/audit inspection, and S3.2 public-form regression.
+
 ## 2026-09-17 — Sprint 3.2 public request form
 
 - Validated the public client request form end-to-end against the real local API and PostgreSQL database.
@@ -72,7 +88,7 @@
 ## 2026-09-17 — Sprint 2.3 admin catalogue editing foundation
 
 - Validated the server-first admin catalogue editing foundation.
-- Confirmed shared build, server build, shared catalogue contracts, catalogue service tests, catalogue Express route tests and `db:check`.
+- Confirmed shared build, server build, shared catalogue contracts, catalogue service test, catalogue Express route test and `db:check`.
 - Added admin catalogue routes under `/admin/catalogue/services` for service-level list, create, update, publish, archive and reorder.
 - Enforced admin-only access using the existing authenticated session context.
 - Protected admin mutations with CSRF and same-origin checks.

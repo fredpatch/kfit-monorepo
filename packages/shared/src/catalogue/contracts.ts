@@ -4,6 +4,7 @@ export const catalogueApiRoutes = {
   adminService: "/admin/catalogue/services/:serviceId",
   adminServicePublish: "/admin/catalogue/services/:serviceId/publish",
   adminServiceArchive: "/admin/catalogue/services/:serviceId/archive",
+  adminServiceCapacity: "/admin/catalogue/services/:serviceId/capacity",
   adminServiceOrder: "/admin/catalogue/services/order",
 } as const;
 
@@ -131,6 +132,13 @@ export type CatalogueServiceMutationInput = {
 
 export type CatalogueServiceOrderInput = {
   items?: unknown;
+};
+
+export type CatalogueServiceCapacityInput = {
+  availabilityStatus?: unknown;
+  capacityMode?: unknown;
+  capacityLimit?: unknown;
+  waitlistEnabled?: unknown;
 };
 
 export type CatalogueAdminServiceResponse = {

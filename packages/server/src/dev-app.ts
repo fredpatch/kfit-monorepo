@@ -18,8 +18,11 @@ import { loadAuthConfig } from "./modules/auth/config/auth.config.js";
 import { CatalogueController } from "./modules/catalogue/controllers/catalogue.controller.js";
 import { DrizzleCatalogueRepository } from "./modules/catalogue/repositories/catalogue.repositories.js";
 import { CatalogueService } from "./modules/catalogue/services/catalogue.service.js";
+import { AdminRequestsController } from "./modules/requests/controllers/admin-requests.controller.js";
 import { RequestsController } from "./modules/requests/controllers/requests.controller.js";
+import { DrizzleAdminRequestsRepository } from "./modules/requests/repositories/admin-requests.repositories.js";
 import { DrizzleRequestsRepository } from "./modules/requests/repositories/requests.repositories.js";
+import { AdminRequestsService } from "./modules/requests/services/admin-requests.service.js";
 import { RequestsService } from "./modules/requests/services/requests.service.js";
 
 export function createDevelopmentApp() {
@@ -86,10 +89,15 @@ export function createDevelopmentApp() {
     new RequestsService(new DrizzleRequestsRepository(db), audit),
   );
 
+  const adminRequestsController = new AdminRequestsController(
+    new AdminRequestsService(new DrizzleAdminRequestsRepository(db, { auditHashPepper: authConfig.auditHashPepper })),
+  );
+
   return createServerApp({
     authController,
     resolveAuthSession: (request) => resolver.resolveFromRequest(request),
     catalogueController,
     requestsController,
+    adminRequestsController,
   });
 }

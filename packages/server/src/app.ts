@@ -3,7 +3,9 @@ import type { AuthController } from "./modules/auth/controllers/auth.controller.
 import { createExpressAuthRouter, type ExpressAuthSessionResolver } from "./modules/auth/routes/express-auth.router.js";
 import type { CatalogueController } from "./modules/catalogue/controllers/catalogue.controller.js";
 import { createExpressCatalogueRouter } from "./modules/catalogue/routes/express-catalogue.router.js";
+import type { AdminRequestsController } from "./modules/requests/controllers/admin-requests.controller.js";
 import type { RequestsController } from "./modules/requests/controllers/requests.controller.js";
+import { createExpressAdminRequestsRouter } from "./modules/requests/routes/express-admin-requests.router.js";
 import { createExpressRequestsRouter } from "./modules/requests/routes/express-requests.router.js";
 import { IpRateLimiter } from "./modules/requests/services/ip-rate-limiter.js";
 
@@ -12,6 +14,7 @@ export type ServerAppDeps = {
   resolveAuthSession: ExpressAuthSessionResolver;
   catalogueController?: CatalogueController;
   requestsController?: RequestsController;
+  adminRequestsController?: AdminRequestsController;
 };
 
 export function createServerApp(deps: ServerAppDeps): Express {
@@ -40,6 +43,13 @@ export function createServerApp(deps: ServerAppDeps): Express {
     app.use(createExpressRequestsRouter({
       controller: deps.requestsController,
       rateLimiter: new IpRateLimiter({ windowMs: 60_000, maxPerWindow: 5 }),
+    }));
+  }
+
+  if (deps.adminRequestsController) {
+    app.use(createExpressAdminRequestsRouter({
+      controller: deps.adminRequestsController,
+      resolveSession: deps.resolveAuthSession,
     }));
   }
 

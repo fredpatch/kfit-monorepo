@@ -1,0 +1,328 @@
+import { desc, eq, inArray } from "drizzle-orm";
+import type {
+  AdminContactAttempt,
+  AdminServiceRequestDetail,
+  AdminServiceRequestSummary,
+  ServiceRequestStatus,
+} from "@kfit/shared";
+import { adminRequestAllowedTransitions } from "@kfit/shared";
+import type { db as appDb } from "../../../db/client.js";
+import { auditEvents } from "../../../db/schema/auth.js";
+import { services, serviceVariants } from "../../../db/schema/catalogue.js";
+import { contactAttempts, prospects, serviceRequests } from "../../../db/schema/prospects.js";
+import { hashAuditContext } from "../../auth/services/audit.service.js";
+import type {
+  AdminRequestActor,
+  AdminRequestAuditContext,
+  AdminRequestsRepository,
+  NormalizedContactAttemptInput,
+} from "../services/admin-requests.service.js";
+
+type AdminRequestsDb = typeof appDb;
+
+export type AdminRequestsRepositoryOptions = {
+  auditHashPepper: string;
+};
+
+type BaseRow = {
+  id: string;
+  reference: string;
+  status: string;
+  submittedAt: Date;
+  objective: string | null;
+  preferredStartDate: Date | null;
+  message: string | null;
+  duplicateOfRequestId: string | null;
+  prospectId: string;
+  prospectFullName: string;
+  prospectWhatsapp: string;
+  prospectEmail: string | null;
+  serviceId: string;
+  serviceName: string;
+  requestedVariantId: string | null;
+  requestedVariantName: string | null;
+};
+
+const baseSelect = {
+  id: serviceRequests.id,
+  reference: serviceRequests.reference,
+  status: serviceRequests.status,
+  submittedAt: serviceRequests.submittedAt,
+  objective: serviceRequests.objective,
+  preferredStartDate: serviceRequests.preferredStartDate,
+  message: serviceRequests.message,
+  duplicateOfRequestId: serviceRequests.duplicateOfRequestId,
+  prospectId: prospects.id,
+  prospectFullName: prospects.fullName,
+  prospectWhatsapp: prospects.whatsapp,
+  prospectEmail: prospects.email,
+  serviceId: services.id,
+  serviceName: services.name,
+  requestedVariantId: serviceVariants.id,
+  requestedVariantName: serviceVariants.name,
+};
+
+function toSummary(row: BaseRow, lastContactAttemptAt: Date | null, nextActionAt: Date | null): AdminServiceRequestSummary {
+  return {
+    id: row.id,
+    reference: row.reference,
+    status: row.status as ServiceRequestStatus,
+    submittedAt: row.submittedAt.toISOString(),
+    prospect: {
+      id: row.prospectId,
+      fullName: row.prospectFullName,
+      whatsapp: row.prospectWhatsapp,
+      email: row.prospectEmail,
+    },
+    service: { id: row.serviceId, name: row.serviceName },
+    requestedVariant: row.requestedVariantId ? { id: row.requestedVariantId, name: row.requestedVariantName ?? "" } : null,
+    lastContactAttemptAt: lastContactAttemptAt ? lastContactAttemptAt.toISOString() : null,
+    nextActionAt: nextActionAt ? nextActionAt.toISOString() : null,
+  };
+}
+
+function toContactAttemptDto(attempt: {
+  id: string;
+  channel: string;
+  direction: string;
+  outcome: string;
+  note: string | null;
+  occurredAt: Date;
+  nextActionAt: Date | null;
+  createdByUserId: string | null;
+}): AdminContactAttempt {
+  return {
+    id: attempt.id,
+    channel: attempt.channel as AdminContactAttempt["channel"],
+    direction: attempt.direction as AdminContactAttempt["direction"],
+    outcome: attempt.outcome as AdminContactAttempt["outcome"],
+    note: attempt.note,
+    occurredAt: attempt.occurredAt.toISOString(),
+    nextActionAt: attempt.nextActionAt ? attempt.nextActionAt.toISOString() : null,
+    createdByUserId: attempt.createdByUserId,
+  };
+}
+
+export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
+  constructor(
+    private readonly database: AdminRequestsDb,
+    private readonly options: AdminRequestsRepositoryOptions,
+  ) {}
+
+  private baseQuery() {
+    return this.database
+      .select(baseSelect)
+      .from(serviceRequests)
+      .innerJoin(prospects, eq(serviceRequests.prospectId, prospects.id))
+      .innerJoin(services, eq(serviceRequests.serviceId, services.id))
+      .leftJoin(serviceVariants, eq(serviceRequests.requestedVariantId, serviceVariants.id));
+  }
+
+  private async latestContactAttemptByRequest(requestIds: string[]): Promise<Map<string, { occurredAt: Date; nextActionAt: Date | null }>> {
+    if (requestIds.length === 0) return new Map();
+
+    const rows = await this.database
+      .select({
+        requestId: contactAttempts.requestId,
+        occurredAt: contactAttempts.occurredAt,
+        nextActionAt: contactAttempts.nextActionAt,
+      })
+      .from(contactAttempts)
+      .where(inArray(contactAttempts.requestId, requestIds))
+      .orderBy(desc(contactAttempts.occurredAt));
+
+    const latest = new Map<string, { occurredAt: Date; nextActionAt: Date | null }>();
+    for (const row of rows) {
+      if (!row.requestId || latest.has(row.requestId)) continue;
+      latest.set(row.requestId, { occurredAt: row.occurredAt, nextActionAt: row.nextActionAt });
+    }
+    return latest;
+  }
+
+  async listQueue(filter: { status?: ServiceRequestStatus }): Promise<AdminServiceRequestSummary[]> {
+    const query = this.baseQuery();
+    const rows = filter.status
+      ? await query.where(eq(serviceRequests.status, filter.status)).orderBy(desc(serviceRequests.submittedAt))
+      : await query.orderBy(desc(serviceRequests.submittedAt));
+
+    if (rows.length === 0) return [];
+
+    const lastAttempts = await this.latestContactAttemptByRequest(rows.map((row) => row.id));
+    return rows.map((row) => {
+      const last = lastAttempts.get(row.id) ?? null;
+      return toSummary(row, last?.occurredAt ?? null, last?.nextActionAt ?? null);
+    });
+  }
+
+  async getDetail(requestId: string): Promise<AdminServiceRequestDetail | null> {
+    const [row] = await this.baseQuery().where(eq(serviceRequests.id, requestId)).limit(1);
+    if (!row) return null;
+
+    const attempts = await this.database
+      .select({
+        id: contactAttempts.id,
+        channel: contactAttempts.channel,
+        direction: contactAttempts.direction,
+        outcome: contactAttempts.outcome,
+        note: contactAttempts.note,
+        occurredAt: contactAttempts.occurredAt,
+        nextActionAt: contactAttempts.nextActionAt,
+        createdByUserId: contactAttempts.createdByUserId,
+      })
+      .from(contactAttempts)
+      .where(eq(contactAttempts.requestId, requestId))
+      .orderBy(desc(contactAttempts.occurredAt));
+
+    const summary = toSummary(row, attempts[0]?.occurredAt ?? null, attempts[0]?.nextActionAt ?? null);
+
+    return {
+      ...summary,
+      objective: row.objective,
+      preferredStartDate: row.preferredStartDate ? row.preferredStartDate.toISOString() : null,
+      message: row.message,
+      duplicateOfRequestId: row.duplicateOfRequestId,
+      contactAttempts: attempts.map(toContactAttemptDto),
+    };
+  }
+
+  async createContactAttempt(
+    requestId: string,
+    input: NormalizedContactAttemptInput,
+    actor: AdminRequestActor,
+    auditContext: AdminRequestAuditContext,
+    now: Date,
+  ): Promise<{ contactAttempt: AdminContactAttempt; request: AdminServiceRequestSummary } | "not_found"> {
+    return this.database.transaction(async (tx) => {
+      const [requestRow] = await tx
+        .select({ id: serviceRequests.id, prospectId: serviceRequests.prospectId })
+        .from(serviceRequests)
+        .where(eq(serviceRequests.id, requestId))
+        .for("update")
+        .limit(1);
+
+      if (!requestRow) return "not_found" as const;
+
+      const [inserted] = await tx
+        .insert(contactAttempts)
+        .values({
+          prospectId: requestRow.prospectId,
+          requestId: requestRow.id,
+          channel: input.channel,
+          direction: input.direction,
+          outcome: input.outcome,
+          note: input.note,
+          occurredAt: input.occurredAt,
+          nextActionAt: input.nextActionAt,
+          createdByUserId: actor.userId,
+        })
+        .returning({
+          id: contactAttempts.id,
+          channel: contactAttempts.channel,
+          direction: contactAttempts.direction,
+          outcome: contactAttempts.outcome,
+          note: contactAttempts.note,
+          occurredAt: contactAttempts.occurredAt,
+          nextActionAt: contactAttempts.nextActionAt,
+          createdByUserId: contactAttempts.createdByUserId,
+        });
+
+      if (!inserted) throw new Error("Contact attempt insert returned no row");
+
+      // Audit insert MUST use `tx`, not the shared AuditService (which holds the
+      // top-level pooled db handle) — this is what makes the write and its audit
+      // event atomic per S3.3's architecture condition.
+      await tx.insert(auditEvents).values({
+        actorUserId: actor.userId,
+        actorType: "user",
+        eventType: "request.contact_attempt_logged",
+        entityType: "service_request",
+        entityId: requestRow.id,
+        result: "success",
+        ipHash: hashAuditContext(auditContext.ipAddress, this.options.auditHashPepper),
+        userAgentHash: hashAuditContext(auditContext.userAgent, this.options.auditHashPepper),
+        metadataJson: { channel: input.channel, direction: input.direction, outcome: input.outcome },
+      });
+
+      const [detailRow] = await this.baseQueryTx(tx).where(eq(serviceRequests.id, requestId)).limit(1);
+      if (!detailRow) throw new Error("Service request disappeared inside its own transaction");
+
+      // Re-query the true latest attempt rather than assuming the one just inserted
+      // is it — a backdated occurredAt on this insert must not shadow a later attempt.
+      const [latestAttempt] = await tx
+        .select({ occurredAt: contactAttempts.occurredAt, nextActionAt: contactAttempts.nextActionAt })
+        .from(contactAttempts)
+        .where(eq(contactAttempts.requestId, requestId))
+        .orderBy(desc(contactAttempts.occurredAt))
+        .limit(1);
+
+      return {
+        contactAttempt: toContactAttemptDto(inserted),
+        request: toSummary(detailRow, latestAttempt?.occurredAt ?? null, latestAttempt?.nextActionAt ?? null),
+      };
+    });
+  }
+
+  async transitionStatus(
+    requestId: string,
+    toStatus: ServiceRequestStatus,
+    actor: AdminRequestActor,
+    auditContext: AdminRequestAuditContext,
+    now: Date,
+  ): Promise<{ request: AdminServiceRequestSummary } | "not_found" | "invalid_transition"> {
+    return this.database.transaction(async (tx) => {
+      const [requestRow] = await tx
+        .select({ id: serviceRequests.id, status: serviceRequests.status })
+        .from(serviceRequests)
+        .where(eq(serviceRequests.id, requestId))
+        .for("update")
+        .limit(1);
+
+      if (!requestRow) return "not_found" as const;
+
+      const allowedTargets = adminRequestAllowedTransitions[requestRow.status] ?? [];
+      if (!allowedTargets.includes(toStatus)) return "invalid_transition" as const;
+
+      const fromStatus = requestRow.status;
+
+      await tx
+        .update(serviceRequests)
+        .set({ status: toStatus, updatedAt: now })
+        .where(eq(serviceRequests.id, requestId));
+
+      // Same atomicity requirement as createContactAttempt above: write directly
+      // against `tx`, never through the shared AuditService instance.
+      await tx.insert(auditEvents).values({
+        actorUserId: actor.userId,
+        actorType: "user",
+        eventType: "request.status_changed",
+        entityType: "service_request",
+        entityId: requestRow.id,
+        result: "success",
+        ipHash: hashAuditContext(auditContext.ipAddress, this.options.auditHashPepper),
+        userAgentHash: hashAuditContext(auditContext.userAgent, this.options.auditHashPepper),
+        metadataJson: { fromStatus, toStatus },
+      });
+
+      const [detailRow] = await this.baseQueryTx(tx).where(eq(serviceRequests.id, requestId)).limit(1);
+      if (!detailRow) throw new Error("Service request disappeared inside its own transaction");
+
+      const lastAttempts = await tx
+        .select({ occurredAt: contactAttempts.occurredAt, nextActionAt: contactAttempts.nextActionAt })
+        .from(contactAttempts)
+        .where(eq(contactAttempts.requestId, requestId))
+        .orderBy(desc(contactAttempts.occurredAt))
+        .limit(1);
+
+      return { request: toSummary(detailRow, lastAttempts[0]?.occurredAt ?? null, lastAttempts[0]?.nextActionAt ?? null) };
+    });
+  }
+
+  private baseQueryTx(tx: Parameters<AdminRequestsDb["transaction"]>[0] extends (tx: infer T) => unknown ? T : never) {
+    return tx
+      .select(baseSelect)
+      .from(serviceRequests)
+      .innerJoin(prospects, eq(serviceRequests.prospectId, prospects.id))
+      .innerJoin(services, eq(serviceRequests.serviceId, services.id))
+      .leftJoin(serviceVariants, eq(serviceRequests.requestedVariantId, serviceVariants.id));
+  }
+}

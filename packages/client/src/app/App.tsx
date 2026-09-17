@@ -1,12 +1,17 @@
+import { useState } from "react";
 import { BootstrapForm } from "../auth/components/BootstrapForm.js";
 import { LoginForm } from "../auth/components/LoginForm.js";
 import { SessionPanel } from "../auth/components/SessionPanel.js";
 import { AuthProvider, useAuth } from "../auth/state/auth-context.js";
 import { AdminCatalogueCapacityPage } from "../catalogue/components/AdminCatalogueCapacityPage.js";
 import { PublicCataloguePage } from "../catalogue/components/PublicCataloguePage.js";
+import { AdminRequestsQueuePage } from "../requests/components/AdminRequestsQueuePage.js";
+
+type AdminTab = "catalogue" | "requests";
 
 function AdminApp() {
   const auth = useAuth();
+  const [activeTab, setActiveTab] = useState<AdminTab>("catalogue");
 
   if (auth.isLoading) {
     return (
@@ -69,12 +74,34 @@ function AdminApp() {
       <header className="admin-topbar">
         <div>
           <p className="eyebrow">K'FIT Admin</p>
-          <h1>Gestion du catalogue</h1>
-          <p className="muted">Pilote la disponibilité des offres publiques depuis un espace authentifié.</p>
+          <h1>{activeTab === "catalogue" ? "Gestion du catalogue" : "Demandes et contacts"}</h1>
+          <p className="muted">
+            {activeTab === "catalogue"
+              ? "Pilote la disponibilité des offres publiques depuis un espace authentifié."
+              : "Suis les demandes reçues et enregistre les tentatives de contact."}
+          </p>
         </div>
         <SessionPanel />
       </header>
-      <AdminCatalogueCapacityPage />
+
+      <nav className="admin-tabs">
+        <button
+          type="button"
+          className={activeTab === "catalogue" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"}
+          onClick={() => setActiveTab("catalogue")}
+        >
+          Catalogue
+        </button>
+        <button
+          type="button"
+          className={activeTab === "requests" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"}
+          onClick={() => setActiveTab("requests")}
+        >
+          Demandes
+        </button>
+      </nav>
+
+      {activeTab === "catalogue" ? <AdminCatalogueCapacityPage /> : <AdminRequestsQueuePage />}
     </main>
   );
 }

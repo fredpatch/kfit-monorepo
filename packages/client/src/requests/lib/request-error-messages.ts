@@ -11,6 +11,11 @@ const requestErrorMessages: Record<RequestErrorCode, string> = {
   REQUEST_WAITLIST_REQUIRED: "Ce service accepte uniquement les inscriptions sur liste d'attente.",
   REQUEST_VARIANT_INVALID: "L'option sélectionnée n'est plus disponible. Choisis une autre option.",
   REQUEST_RATE_LIMITED: "Trop de tentatives. Réessaie dans quelques minutes.",
+  REQUEST_ADMIN_FORBIDDEN: "Accès réservé à l'administrateur.",
+  REQUEST_NOT_FOUND: "Cette demande est introuvable. Actualise la liste.",
+  REQUEST_INVALID_TRANSITION: "Ce changement de statut n'est pas autorisé depuis l'état actuel.",
+  REQUEST_CONTACT_ATTEMPT_INVALID_INPUT: "Vérifie les informations du contact (canal, sens, résultat) puis réessaie.",
+  REQUEST_STATUS_INVALID_INPUT: "Le statut demandé n'est pas valide.",
 };
 
 const fallbackMessage = "Une erreur est survenue. Réessaie dans un instant.";

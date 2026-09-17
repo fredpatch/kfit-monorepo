@@ -1,38 +1,40 @@
 # Current Task
 
-> Slice: Sprint 3.1 — public request/prospect intake contract | Date: 2026-09-17 | Status: Closed and locally validated
+> Slice: Sprint 3.2 — public request form | Date: 2026-09-17 | Status: Closed and locally validated
 
 ## Result
 
-S3.1 is complete. Fred confirmed the final local validation gate green, including the real PostgreSQL concurrency/idempotency integration test after applying migration `0002_rapid_boomerang.sql`.
+S3.2 is complete. Fred confirmed the full client/manual validation gate green, including direct PostgreSQL inspection through DBeaver for the rapid double-submit/idempotency case.
 
 ## Validated scope
 
-- Shared `POST /requests` contract and stable request error taxonomy.
-- Service → controller → route server structure for anonymous public intake.
-- Prospect creation/reuse by normalized WhatsApp number.
-- `service_requests` creation starts only in `submitted` state.
-- Client-generated `submissionToken` is DB-unique and supports idempotent replay.
-- Concurrent duplicate-token collisions recover through nested Drizzle transaction/SAVEPOINT and return one created + one replayed result referencing the same request.
-- Archived services reject with `REQUEST_SERVICE_ARCHIVED`.
-- Temporarily closed services reject with `REQUEST_SERVICE_UNAVAILABLE`.
-- Waitlist-only services reject with `REQUEST_WAITLIST_REQUIRED`; S3.1 does not create waitlist entries.
-- Non-public/unpublished services reject with `REQUEST_SERVICE_NOT_PUBLIC`.
-- Missing/cross-service requested variants reject with the same public `REQUEST_VARIANT_INVALID` response.
-- Public abuse safeguards: same-origin-or-null check, process-local IP limiter, honeypot and minimum completion time.
-- Audit outcomes use an anonymous actor and do not place PII in metadata.
+- Public catalogue mailto CTA replaced by a real inline request form.
+- Open services allow a request intent; temporarily closed and waitlist-only services do not expose normal submission.
+- Required fields are full name + WhatsApp; a service-scoped variant selector is shown when variants exist.
+- The client consumes the validated S3.1 `POST /requests` contract through a dedicated requests API client.
+- One client-generated `submissionToken` is created per request intent and reused across transient retries and accidental duplicate submits.
+- `website` honeypot and `formRenderedAt` are sent exactly as required by S3.1.
+- Typed request failures are translated to French; raw error codes/reasons are not shown.
+- Success displays the server request reference and resets to a fresh token only for a new intent.
+- Vite dev proxy includes `/requests`; no server/shared/schema/migration changes were required.
+- No new client dependencies were added.
 
 ## Validation evidence
 
 Fred confirmed locally on 2026-09-17:
 
-- migration `0002` applied;
-- real PostgreSQL concurrent idempotency integration test green;
-- shared build/tests green;
-- server typecheck/build/test suite green;
-- `db:check` green;
-- client typecheck regression green.
+- shared build green;
+- client typecheck green;
+- client production build green;
+- valid open-service submission green;
+- service-scoped variant submission green;
+- rapid double-submit persisted exactly one `service_requests` row in PostgreSQL, verified with DBeaver;
+- transient retry path green;
+- temporarily-closed and waitlist-only behavior green;
+- stale/archive race rejection localized correctly;
+- required field validation, honeypot accessibility behavior and mobile layout green;
+- public catalogue regression green.
 
 ## Next slice
 
-S3.2 — Public request form (name + phone, per service). It should consume S3.1 without redefining server business rules.
+S3.3 — Admin request queue + contact attempts. Begin with schema/state-machine/pattern inspection and keep implementation server-first.

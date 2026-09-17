@@ -4,7 +4,7 @@
 
 ## Current technical validation pending
 
-- None for Sprint 2. S2.1 through S2.6 are locally validated and closed.
+- None for S3.1. The slice is locally validated and closed.
 
 ## Before production
 
@@ -13,12 +13,18 @@
 
 ## Resolved / clarified
 
-- Reusable-pattern source resolved: Notion project/pattern pages.
-- Password reset/recovery HTTP flow locally validated.
-- Sponsor validation treated as confirmed for execution.
-- Sprint 2.1 through S2.6 locally validated.
-- Real local API/bootstrap/login path validated.
-- `/admin/catalogue` local proxy gap fixed and validated.
-- Direct `/bootstrap` is not a client route; bootstrap is conditionally rendered inside `/admin` from the server bootstrap-status result.
+- Sprint 2.1 through S2.6 locally validated and closed.
+- S3.1 public request/prospect intake locally validated.
+- Migration `0002_rapid_boomerang.sql` applied locally.
+- Concurrent same-token idempotency path validated against real PostgreSQL.
+- Public service gating rule resolved: archived, temporarily closed, waitlist-only and non-public/unpublished services are rejected with stable typed errors.
+- Requested variant rule resolved: nonexistent and cross-service variants collapse to public `REQUEST_VARIANT_INVALID`.
+- Remote Sprint 3 execution branch normalized from the validated `main` S3.1 head without history rewrite.
 
-Sprint 3 has not started yet; no Sprint 3 implementation blocker is currently recorded.
+## Known non-blocking notes
+
+- Public IP rate limiting is process-local/in-memory and should be revisited for multi-replica production topology.
+- Deployment `trust proxy` behavior remains a production/staging wiring concern.
+- Prospect-reuse race, rate-limiter memory growth, timing clock-skew hardening, audit symmetry and router origin-helper deduplication remain backlog/gotcha-level improvements, not S3.1 blockers.
+
+Next active implementation boundary is S3.2 public request form.

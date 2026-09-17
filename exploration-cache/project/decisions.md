@@ -1,3 +1,13 @@
+## 2026-09-17 — S3.3 transaction-scoped audit for critical request mutations
+
+**Context**: The shared `AuditService` is constructed with the top-level pooled DB handle and cannot participate in an existing Drizzle transaction. S3.3 requires request status changes and contact-attempt creation to be auditable in the same atomic business operation.
+
+**Decision**: For S3.3 `request.status_changed` and `request.contact_attempt_logged`, perform the audit insert directly through the same Drizzle `tx` as the primary write, reusing the existing audit envelope and `hashAuditContext`. Do not call the long-lived `AuditService` instance for these transaction-critical success writes.
+
+**Rationale**: Prevents the domain write and its audit event from committing independently. Real-PostgreSQL integration tests force audit FK failure and confirm the primary write rolls back.
+
+**Impact**: Future critical business operations should use a transaction-aware audit path whenever audit persistence is part of the hard commit invariant. The existing `AuditService` remains unchanged for non-atomic/audit-after-commit use cases.
+
 ## 2026-09-17 — Agent workflow consolidation
 
 **Context**: Three of four custom agents had no valid YAML frontmatter (tools, handoffs and read-only limits were not applied). Repository facts, task state and execution rules were split across `K'FIT AGENTS.md`, `K'FIT TASKS.md`, `TASKS.md` and five `active-session` files, with drift (wrong package paths, stale sprint/branch, stale handoff).

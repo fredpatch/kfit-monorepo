@@ -9,122 +9,73 @@ Sprint 3
 ## Status
 
 ```text
-S3.1 — IMPLEMENTING (En cours)
-AWAITING_REVIEW
+S3.1 — CLOSED / LOCALLY VALIDATED
+S3.2 — NEXT / NOT STARTED
 ```
 
 Sprint 2 is closed and must not be reopened unless investigating a confirmed regression.
 
-Branch: `sprint-3` (fast-forwarded from `main`). S3.1 (public request/prospect intake, server-first) is implemented and locally validated by the assistant (typecheck/build/tests/db:check green). See `TASKS.md` for the full S3.1 scope and validation gate. Awaiting Reviewer/QA pass and Fred's local functional validation before S3.1 can close.
+Execution branch: `sprint-3`.
+
+S3.1 public request/prospect intake was locally validated by Fred on 2026-09-17, including migration `0002_rapid_boomerang.sql`, the real-PostgreSQL concurrent same-token idempotency test, shared/server automated validation, `db:check`, and client typecheck regression.
 
 ---
 
 # ✅ Closed
-
-The following milestones are complete and developer-validated:
 
 ```text
 Sprint 0
 Sprint 1 — Authentication Foundation
 Password Recovery
 Sprint 2 — Catalogue Foundation
+Sprint 3.1 — Public request/prospect intake contract
 ```
 
-Do not modify completed sprint functionality unless:
+Do not modify completed functionality unless:
 
-- Sprint 3 explicitly depends on extending it
-- a regression is confirmed
-- the developer explicitly approves reopening the affected area
+- the active Sprint 3 slice explicitly depends on extending it;
+- a regression is confirmed;
+- the developer explicitly approves reopening the affected area.
 
 ---
 
 # ⏳ Current
 
-## Sprint 3
+## S3.2 — Public request form
 
-Sprint 3 has not started implementation yet.
+Goal: expose the validated S3.1 request intake through the public catalogue experience.
 
-Before any code changes:
+Dependency: S3.1 `POST /requests` contract is authoritative and must not be redefined client-side.
 
-1. inspect the Sprint 3 specification / roadmap
-2. identify its goals
-3. break the sprint into coherent implementation slices
-4. identify dependencies on previous sprints
-5. identify business rules
-6. identify architecture impact
-7. define validation requirements
-8. prepare the first implementation plan
-9. stop for developer approval
+Expected client boundary:
 
-The Planner agent owns this analysis.
+- name + phone per service;
+- optional approved variant context;
+- client-generated submission token;
+- honeypot and minimum-completion-time support;
+- loading/disabled/success/error states;
+- French-first responsive UI;
+- typed server-error handling;
+- public catalogue regression protection.
 
-The Implementer must not begin until an explicit plan is approved.
-
----
-
-# Sprint 3 Planning Output
-
-The Planner should establish:
-
-## Sprint Goal
-
-What user/business capability Sprint 3 introduces.
-
-## Dependencies
-
-Identify dependencies on:
-
-```text
-Sprint 0
-Sprint 1
-Sprint 2
-shared contracts
-server architecture
-client architecture
-database/schema
-```
-
-## Proposed Slices
-
-Break the sprint into independently reviewable units:
-
-```text
-S3.1
-S3.2
-S3.3
-...
-```
-
-Each slice should have:
-
-- goal
-- business rules
-- affected layers
-- expected files
-- dependencies
-- acceptance criteria
-- validation requirements
-- known risks
-
-Prefer slices that can be implemented and validated independently.
+Before implementation, the Planner/Reviewer workflow must confirm the smallest coherent S3.2 plan. The Implementer must not open S3.3 concurrently.
 
 ---
 
-# Implementation State
-
-No Sprint 3 item may initially be marked:
+# Remaining Sprint 3 order
 
 ```text
-IMPLEMENTATION IN PROGRESS
+S3.2 — Public request form
+S3.3 — Admin request queue + contact attempts
+S3.4 — Qualification review recording
+S3.5 — Manual waitlist entry management
 ```
-
-until its plan has received explicit developer approval.
 
 ---
 
 # Validation Policy
 
-Every Sprint 3 slice must distinguish:
+Every Sprint 3 slice distinguishes:
 
 ```text
 implementation complete
@@ -132,38 +83,13 @@ automated validation complete
 developer functional validation complete
 ```
 
-These are separate states.
-
-Only the developer may mark functional validation complete.
+Only Fred's successful local execution closes the functional validation gate.
 
 ---
 
-# Handoff State
+# Active production blockers
 
-When a Sprint 3 work session stops, preserve:
+- Legal validation for applicable Gabon requirements.
+- True encrypted off-server backup destination.
 
-```text
-Branch
-
-Sprint item
-
-✅ Completed
-
-⏳ Pending
-
-Files changed
-
-Validation completed
-
-Not validated
-
-Business rules referenced
-
-Assumptions
-
-Risks / blockers
-
-Next concrete step
-```
-
-Do not rely on chat history as the only source of project state.
+Non-blocking technical notes retained for later hardening: process-local IP rate limiting, production `trust proxy` configuration, prospect-reuse concurrency edge, rate-limiter memory growth, timing clock-skew hardening, audit symmetry, and origin-helper deduplication.

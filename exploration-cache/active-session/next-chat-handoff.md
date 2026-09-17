@@ -2,9 +2,9 @@
 
 ## Current objective
 
-Finish Sprint 2.6 — admin UI capacity / waitlist controls — on `sprint-2/catalogue-foundation`. Do **not** mark it complete yet.
+Sprint 2 is closed and locally validated. Do not reopen catalogue implementation unless a regression is discovered.
 
-## Validated prior work
+## Validated work
 
 - Sprint 0 closed.
 - Sprint 1 auth closed.
@@ -13,68 +13,59 @@ Finish Sprint 2.6 — admin UI capacity / waitlist controls — on `sprint-2/cat
 - Sprint 2.2 catalogue seed closed.
 - Sprint 2.3 admin catalogue editing closed.
 - Sprint 2.4 public landing page catalogue consumption closed.
-- Sprint 2.5 capacity/waitlist controls closed and locally validated.
-- `main` is at validated S2.5 closure head `88f6b9cb1428848411179a1ed1a0733ad49fd3f6`.
+- Sprint 2.5 server capacity/waitlist controls closed.
+- Sprint 2.6 admin capacity/waitlist UI closed and locally validated on 2026-09-17.
 
-## S2.6 implementation state
+## S2.6 validation confirmed
 
-Implementation head before project-state sync commits: `87010ce5d0ca44716fae71748b9ab289add11f2b`.
+- real local API/bootstrap/login path works;
+- admin catalogue services load;
+- open/unlimited save works;
+- limited positive-integer capacity save works;
+- waitlist enabled + waitlist-only save works;
+- invalid combinations are blocked;
+- archived services are read-only;
+- refresh restores persisted values;
+- public `/` catalogue remains functional and reflects saved availability;
+- client typecheck/build are green.
 
-Implemented:
+## Local-development fix included
 
-- `catalogueApiClient.listAdminServices()` using authenticated admin HTTP client;
-- `catalogueApiClient.updateAdminServiceCapacity()` using validated S2.5 PATCH route;
-- existing CSRF helper reused for admin mutations;
-- `AdminCatalogueCapacityPage` with per-service French controls;
-- availability, unlimited/limited capacity, positive integer capacity limit and waitlist enablement;
-- archived services read-only;
-- React Query cache invalidation for admin and public catalogue after save;
-- loading/empty/error/pending/success/failure UI states;
-- authenticated `/admin` workspace mounted behind existing bootstrap/login/session flow;
-- public `/` catalogue preserved;
-- responsive admin workspace styling;
-- no server/schema/migration changes.
+- real PostgreSQL/Drizzle dev API launcher;
+- root `.env` loading;
+- Vite proxy for `/auth`, `/catalogue`, `/admin/catalogue`, `/health`;
+- explicit bootstrap-status error state;
+- no seeded/default admin credentials.
 
-Implementation commits:
+## User-pushed agent files
 
-- `e157728` feat(catalogue): add admin capacity api client
-- `7126805` feat(catalogue): add admin capacity controls ui
-- `7e4b441` feat(catalogue): mount admin capacity workspace
-- `b146c05` style(catalogue): add admin capacity workspace styles
-- `87010ce` fix(catalogue): surface admin capacity save feedback
+Retained on the Sprint 2 branch:
+- `.github/agents/implementer.agent.md`
+- `.github/agents/planner.agent.md`
+- `AGENTS.md`
+- `K'FIT AGENTS.md`
+- `K'FIT TASKS.md`
 
-## Current validation gate
+Unrelated dependency-lock churn from that documentation push was neutralized before Sprint 2 merge.
 
-Fred must run:
+## Next implementation boundary
 
-```bash
-git switch sprint-2/catalogue-foundation
-git pull
+Sprint 3 — M2 demandes, prospects, qualification et liste d'attente.
 
-npm run typecheck --workspace @kfit/client
-npm run build --workspace @kfit/client
-```
+First selected backlog task: **Public request form (name + phone, per service)**.
 
-Then manually confirm:
+Before implementation:
+1. inspect Sprint 3 backlog and reusable patterns;
+2. create Sprint 3 execution page/cache/branch;
+3. define server request/prospect contract and invariants first;
+4. implement Service → Controller → Route and validate server;
+5. only then integrate the public form client.
 
-1. `/admin` login/session works.
-2. Admin catalogue services load.
-3. Open + unlimited save works.
-4. Limited capacity with a positive integer saves.
-5. Waitlist enabled + `Liste d’attente uniquement` saves.
-6. Invalid combinations are blocked.
-7. Archived services are read-only.
-8. Refresh shows persisted values.
-9. Public `/` catalogue still loads and reflects the saved availability after refresh.
+## Remaining production blockers
 
-## After Fred confirms green
-
-1. Close S2.6 in repo state.
-2. Update `changelog.md` with validated S2.6 changes.
-3. Close S2.6 in Notion.
-4. Fast-forward `main` to the validated S2.6 closure head.
-5. Only then inspect/plan the prospect request/contact workflow.
+- legal validation for applicable Gabon requirements;
+- true encrypted off-server backup destination.
 
 ## Execution rule
 
-Do not run project commands in assistant runtime. Fred validates locally. A commit/static inspection is not validation.
+Do not run project commands in assistant runtime. Fred validates locally. Only locally confirmed work is marked validated.

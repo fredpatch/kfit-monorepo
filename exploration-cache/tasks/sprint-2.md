@@ -13,9 +13,9 @@ Build the K'FIT catalogue foundation before prospects/client workflows: public s
 
 ## Current slice
 
-- [ ] S2.3 — Admin catalogue editing foundation.
+- [x] S2.3 — Admin catalogue editing foundation.
 
-Status: implemented server-side, awaiting Fred local validation.
+Status: closed and locally validated by Fred.
 
 Validation commands:
 

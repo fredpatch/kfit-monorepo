@@ -90,5 +90,5 @@ Execution rule: implementation continues on `sprint-2/catalogue-foundation`. Spr
 
 1. [x] Implement and locally validate catalogue public API foundation: shared contracts, service/repository/controller, Express route and tests.
 2. [x] Implement and locally validate initial services/variants/components/policies seed and DB-backed seed preflight.
-3. [ ] Implement admin catalogue editing after seed/public-read behavior is validated.
+3. [ ] Implement admin catalogue editing after seed/public-read behavior is validated. _(Implemented server foundation; awaiting Fred local validation.)_
 4. [ ] Implement public landing page catalogue consumption after backend behavior is validated.

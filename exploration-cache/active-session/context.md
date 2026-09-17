@@ -24,14 +24,13 @@ The reusable implementation patterns for K'FIT are recorded as Notion pages, not
 - Sprint 2.1 catalogue public API foundation is closed and locally validated.
 - Sprint 2.2 initial catalogue seed is closed and locally validated.
 - Sprint 2.3 admin catalogue editing foundation is closed and locally validated.
+- Sprint 2.4 public landing page catalogue consumption is closed and locally validated.
 
 ## Current Sprint 2 state
 
 Sprint 2 is active on `sprint-2/catalogue-foundation`.
 
-S2.4 public landing page catalogue consumption is implemented and awaiting Fred's local validation.
-
-Implemented boundaries:
+S2.4 validated boundaries:
 
 - client-only slice;
 - public `/` route consumes `GET /catalogue/services`;
@@ -41,7 +40,7 @@ Implemented boundaries:
 - auth provider/bootstrap checks are scoped to `/admin` only;
 - no server/schema/prospect workflow changes.
 
-Pending local validation:
+Fred confirmed green:
 
 ```bash
 npm run typecheck --workspace @kfit/client
@@ -58,5 +57,9 @@ npm run build --workspace @kfit/client
 ## Branch hygiene
 
 - `main` and `sprint-2/catalogue-foundation` were identical at validated S2.3 head `98e0a0f` before S2.4 started.
-- `sprint-2/catalogue-foundation` is now ahead with S2.4 implementation and pending-validation docs.
-- After Fred confirms S2.4 green, close S2.4 and fast-forward `main` as requested.
+- After S2.4 closure docs, fast-forward `main` to the validated S2.4 head.
+- Continue Sprint 2 work on `sprint-2/catalogue-foundation` unless a new branch boundary is explicitly chosen.
+
+## Next boundary
+
+Start S2.5 capacity/waitlist controls unless business priority changes.

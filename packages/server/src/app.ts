@@ -8,6 +8,8 @@ import type { RequestsController } from "./modules/requests/controllers/requests
 import { createExpressAdminRequestsRouter } from "./modules/requests/routes/express-admin-requests.router.js";
 import { createExpressRequestsRouter } from "./modules/requests/routes/express-requests.router.js";
 import { IpRateLimiter } from "./modules/requests/services/ip-rate-limiter.js";
+import type { CustomersController } from "./modules/customers/controllers/customers.controller.js";
+import { createExpressCustomersRouter } from "./modules/customers/routes/express-customers.router.js";
 
 export type ServerAppDeps = {
   authController: AuthController;
@@ -15,6 +17,7 @@ export type ServerAppDeps = {
   catalogueController?: CatalogueController;
   requestsController?: RequestsController;
   adminRequestsController?: AdminRequestsController;
+  customersController?: CustomersController;
 };
 
 export function createServerApp(deps: ServerAppDeps): Express {
@@ -53,5 +56,8 @@ export function createServerApp(deps: ServerAppDeps): Express {
     }));
   }
 
+  if (deps.customersController) {
+    app.use(createExpressCustomersRouter({ controller: deps.customersController, resolveSession: deps.resolveAuthSession }));
+  }
   return app;
 }

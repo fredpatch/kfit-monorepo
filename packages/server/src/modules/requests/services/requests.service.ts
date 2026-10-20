@@ -1,4 +1,5 @@
 import type { RequestSubmissionInput, RequestSubmissionResponse } from "@kfit/shared";
+import { normalizeWhatsapp } from "@kfit/shared";
 import type { AuditService } from "../../auth/services/audit.service.js";
 
 export type ServiceAvailabilityStatus = "open" | "temporarily_closed" | "waitlist_only" | "archived";
@@ -87,13 +88,6 @@ function optionalString(value: unknown, maxLength: number): string | null | unde
   if (trimmed === "") return null;
   if (trimmed.length > maxLength) return undefined;
   return trimmed;
-}
-
-function normalizeWhatsapp(value: string): string | null {
-  const stripped = value.replace(/[^\d+]/g, "");
-  const digits = stripped.replace(/^\+/, "");
-  if (digits.length < 6 || digits.length > 20) return null;
-  return stripped;
 }
 
 function parseOptionalDate(value: unknown): Date | null | undefined {

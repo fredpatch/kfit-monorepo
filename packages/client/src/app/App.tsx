@@ -6,8 +6,9 @@ import { AuthProvider, useAuth } from "../auth/state/auth-context.js";
 import { AdminCatalogueCapacityPage } from "../catalogue/components/AdminCatalogueCapacityPage.js";
 import { PublicCataloguePage } from "../catalogue/components/PublicCataloguePage.js";
 import { AdminRequestsQueuePage } from "../requests/components/AdminRequestsQueuePage.js";
+import { AdminCustomersPage } from "../customers/components/AdminCustomersPage.js";
 
-type AdminTab = "catalogue" | "requests";
+type AdminTab = "catalogue" | "requests" | "customers";
 
 function AdminApp() {
   const auth = useAuth();
@@ -74,11 +75,11 @@ function AdminApp() {
       <header className="admin-topbar">
         <div>
           <p className="eyebrow">K'FIT Admin</p>
-          <h1>{activeTab === "catalogue" ? "Gestion du catalogue" : "Demandes et contacts"}</h1>
+          <h1>{activeTab === "catalogue" ? "Gestion du catalogue" : activeTab === "customers" ? "Gestion des clients" : "Demandes et contacts"}</h1>
           <p className="muted">
             {activeTab === "catalogue"
               ? "Pilote la disponibilité des offres publiques depuis un espace authentifié."
-              : "Suis les demandes reçues et enregistre les tentatives de contact."}
+              : activeTab === "customers" ? "Retrouve un client par WhatsApp ou crée sa fiche." : "Suis les demandes reçues et enregistre les tentatives de contact."}
           </p>
         </div>
         <SessionPanel />
@@ -99,9 +100,12 @@ function AdminApp() {
         >
           Demandes
         </button>
+        <button type="button" className={activeTab === "customers" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"} onClick={() => setActiveTab("customers")}>
+          Clients
+        </button>
       </nav>
 
-      {activeTab === "catalogue" ? <AdminCatalogueCapacityPage /> : <AdminRequestsQueuePage />}
+      {activeTab === "catalogue" ? <AdminCatalogueCapacityPage /> : activeTab === "customers" ? <AdminCustomersPage /> : <AdminRequestsQueuePage />}
     </main>
   );
 }

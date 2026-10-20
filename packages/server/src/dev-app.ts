@@ -24,6 +24,9 @@ import { DrizzleAdminRequestsRepository } from "./modules/requests/repositories/
 import { DrizzleRequestsRepository } from "./modules/requests/repositories/requests.repositories.js";
 import { AdminRequestsService } from "./modules/requests/services/admin-requests.service.js";
 import { RequestsService } from "./modules/requests/services/requests.service.js";
+import { CustomersController } from "./modules/customers/controllers/customers.controller.js";
+import { CustomersService } from "./modules/customers/services/customers.service.js";
+import { DrizzleCustomersRepository } from "./modules/customers/repositories/customers.repository.js";
 
 export function createDevelopmentApp() {
   const authConfig = loadAuthConfig(process.env);
@@ -99,5 +102,6 @@ export function createDevelopmentApp() {
     catalogueController,
     requestsController,
     adminRequestsController,
+    customersController: new CustomersController(new CustomersService(new DrizzleCustomersRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
   });
 }

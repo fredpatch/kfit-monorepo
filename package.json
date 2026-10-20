@@ -28,6 +28,7 @@
     "preflight:auth-staging": "npm run preflight:auth-staging --workspace @kfit/server",
     "preflight:auth-recovery": "npm run preflight:auth-recovery --workspace @kfit/server",
     "seed:catalogue": "npm run seed:catalogue --workspace @kfit/server",
+    "seed:demo-admin": "npm run build --workspace @kfit/shared && npm run seed:demo-admin --workspace @kfit/server",
     "preflight:catalogue-seed": "npm run preflight:catalogue-seed --workspace @kfit/server"
   },
   "engines": {

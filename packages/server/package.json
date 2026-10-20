@@ -22,6 +22,7 @@
     "preflight:auth-staging": "node ./scripts/preflight/auth-staging.mjs",
     "preflight:auth-recovery": "node ./scripts/preflight/password-recovery.mjs",
     "seed:catalogue": "node ./dist/db/seeds/catalogue.seed.js",
+    "seed:demo-admin": "npm run build && node ./scripts/dev/seed-demo-admin.mjs",
     "preflight:catalogue-seed": "node ./scripts/preflight/catalogue-seed.mjs"
   },
   "dependencies": {

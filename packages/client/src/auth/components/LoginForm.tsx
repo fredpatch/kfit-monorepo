@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { developmentDemoAccount } from "@kfit/shared";
 import { useAuth } from "../state/auth-context.js";
 
 export function LoginForm() {
@@ -30,6 +31,18 @@ export function LoginForm() {
       </label>
       {error ? <p className="error">{error}</p> : null}
       <button type="submit">Se connecter</button>
+      {import.meta.env.DEV && (
+        <button
+          type="button"
+          onClick={() => {
+            setEmail(developmentDemoAccount.email);
+            setPassword(developmentDemoAccount.password);
+            setError(null);
+          }}
+        >
+          Utiliser le compte démo
+        </button>
+      )}
     </form>
   );
 }

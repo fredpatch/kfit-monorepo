@@ -56,3 +56,15 @@ The Sprint 1 staging auth proxy uses a local smoke server behind Nginx to valida
 ## Docker Compose service-specific validation and env files
 
 Compose can still parse service-level `env_file` declarations for unrelated services when running commands against a single service. The Sprint 1 auth proxy harness therefore treats `.env.staging` as optional in `docker-compose.staging.yml` so Nginx-only auth validation does not require staging DB secrets.
+
+
+## Integration concurrency test flakiness
+
+One unchanged Sprint 3 PostgreSQL concurrency test may fail intermittently and pass on immediate approved retry. During S4.2 validation it failed once, then the full integration suite passed 35/35 on retry.
+
+Handling:
+- do not treat the first failure as automatically acceptable;
+- inspect that the failure is the known unchanged Sprint 3 concurrency case;
+- rerun the integration suite once;
+- any S4.2 failure, repeated Sprint 3 failure, or different failure keeps the validation gate red;
+- harden the test separately rather than weakening concurrency assertions.

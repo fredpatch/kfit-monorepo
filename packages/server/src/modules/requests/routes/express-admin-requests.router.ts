@@ -7,11 +7,13 @@ import { parseCookieHeader } from "../../auth/middleware/auth.cookies.js";
 import { requireCsrf, requireSameOrigin } from "../../auth/middleware/auth.middleware.js";
 import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js";
 import type { AdminRequestsController } from "../controllers/admin-requests.controller.js";
+import type { RequestConversionController } from "../controllers/request-conversion.controller.js";
 import type { HttpJsonResponse } from "../types/requests.http.types.js";
 
 export type ExpressAdminRequestsRouterDeps = {
   controller: AdminRequestsController;
   resolveSession?: ExpressAuthSessionResolver;
+  conversionController?: RequestConversionController;
 };
 
 function firstHeader(value: string | string[] | undefined): string | undefined {
@@ -54,6 +56,22 @@ function routeParam(value: string | string[] | undefined): string | null {
 
 export function createExpressAdminRequestsRouter(deps: ExpressAdminRequestsRouterDeps): Router {
   const router = createRouter();
+
+  if (deps.conversionController) {
+    const controller = deps.conversionController;
+    router.post(adminRequestsApiRoutes.convert, async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        const guard = mutationGuard(context);
+        if (guard) return applyJsonResponse(response, guard);
+        const requestId = routeParam(request.params.requestId);
+        if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
+        applyJsonResponse(response, await controller.convert(context, requestId, request.body ?? {}));
+      } catch {
+        response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    });
+  }
 
   router.get(adminRequestsApiRoutes.queue, async (request: Request, response: Response) => {
     try {

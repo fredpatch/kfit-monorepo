@@ -12,6 +12,7 @@ export const adminRequestsApiRoutes = {
   qualificationReview: "/admin/requests/:requestId/qualification-review",
   waitlistEntry: "/admin/requests/:requestId/waitlist-entry",
   waitlistEntryWithdraw: "/admin/requests/:requestId/waitlist-entry/withdraw",
+  convert: "/admin/requests/:requestId/convert",
 } as const;
 
 export type AdminRequestsApiRoute = (typeof adminRequestsApiRoutes)[keyof typeof adminRequestsApiRoutes];
@@ -36,9 +37,34 @@ export const requestErrorCodes = [
   "REQUEST_WAITLIST_NOT_ELIGIBLE",
   "REQUEST_WAITLIST_ALREADY_ACTIVE",
   "REQUEST_WAITLIST_ENTRY_NOT_FOUND",
+  "REQUEST_ALREADY_CONVERTED",
+  "REQUEST_CONVERSION_NOT_ELIGIBLE",
+  "REQUEST_CONVERSION_QUALIFICATION_INVALID",
+  "REQUEST_CONVERSION_START_DATE_REQUIRED",
 ] as const;
 
 export type RequestErrorCode = (typeof requestErrorCodes)[number];
+
+/** Commercial values and customer selection are exclusively server-owned. */
+export type ConvertRequestInput = { plannedStartDate?: unknown };
+export type RequestConversionResponse = {
+  request: { id: string; status: "converted"; convertedSubscriptionId: string };
+  subscription: {
+    id: string;
+    reference: string;
+    customerId: string;
+    sourceRequestId: string;
+    serviceId: string;
+    variantId: string;
+    status: "onboarding";
+    agreedPriceXaf: number;
+    currency: "XAF";
+    plannedStartDate: string;
+    createdByUserId: string;
+    capacityReservedUntil: null;
+  };
+  customerResolution: "existing" | "created";
+};
 
 export type RequestSubmissionInput = {
   fullName?: unknown;

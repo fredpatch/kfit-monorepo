@@ -19,6 +19,7 @@ import {
 } from "@kfit/shared";
 import { adminRequestsApiClient } from "../api/admin-requests-api.js";
 import { extractRequestErrorCode, translateRequestError } from "../lib/request-error-messages.js";
+import { RequestConversionControl } from "./RequestConversionControl.js";
 
 const queueQueryKey = (status: ServiceRequestStatus | "all") => ["requests", "admin-queue", status] as const;
 const detailQueryKey = (requestId: string) => ["requests", "admin-detail", requestId] as const;
@@ -453,6 +454,7 @@ function RequestDetailPanel({ requestId }: { requestId: string }) {
       </div>
 
       <WaitlistEntryPanel request={request} onChanged={() => void refreshRequest()} />
+      <RequestConversionControl key={request.id} request={request} onConverted={refreshRequest} />
 
       <div className="admin-request-detail__contact">
         <p className="eyebrow">Historique des contacts</p>

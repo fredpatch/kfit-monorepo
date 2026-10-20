@@ -4,6 +4,8 @@ import {
   authCsrfHeaderName,
   type AdminRequestDetailResponse,
   type AdminRequestsQueueResponse,
+  type ConvertRequestInput,
+  type RequestConversionResponse,
   type CreateContactAttemptInput,
   type CreateContactAttemptResponse,
   type CreateQualificationReviewInput,
@@ -29,6 +31,7 @@ export type AdminRequestsApiClient = {
   recordQualificationReview(requestId: string, input: CreateQualificationReviewInput): Promise<CreateQualificationReviewResponse>;
   createWaitlistEntry(requestId: string, input: CreateWaitlistEntryInput): Promise<CreateWaitlistEntryResponse>;
   withdrawWaitlistEntry(requestId: string): Promise<WithdrawWaitlistEntryResponse>;
+  convert(requestId: string, input: ConvertRequestInput): Promise<RequestConversionResponse>;
 };
 
 function resolveBaseUrl(baseUrl: string | undefined): string {
@@ -83,6 +86,10 @@ export function createAdminRequestsApiClient(options: AdminRequestsApiClientOpti
   const http = options.http ?? createDefaultHttpClient(options.baseUrl);
 
   return {
+    async convert(requestId, input) {
+      const path = adminRequestsApiRoutes.convert.replace(":requestId", encodeURIComponent(requestId));
+      return (await http.post<RequestConversionResponse>(path, input)).data;
+    },
     async listQueue(status) {
       const response = await http.get<AdminRequestsQueueResponse>(adminRequestsApiRoutes.queue, {
         params: status ? { status } : undefined,

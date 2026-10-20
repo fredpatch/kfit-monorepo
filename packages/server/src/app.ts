@@ -4,6 +4,7 @@ import { createExpressAuthRouter, type ExpressAuthSessionResolver } from "./modu
 import type { CatalogueController } from "./modules/catalogue/controllers/catalogue.controller.js";
 import { createExpressCatalogueRouter } from "./modules/catalogue/routes/express-catalogue.router.js";
 import type { AdminRequestsController } from "./modules/requests/controllers/admin-requests.controller.js";
+import type { RequestConversionController } from "./modules/requests/controllers/request-conversion.controller.js";
 import type { RequestsController } from "./modules/requests/controllers/requests.controller.js";
 import { createExpressAdminRequestsRouter } from "./modules/requests/routes/express-admin-requests.router.js";
 import { createExpressRequestsRouter } from "./modules/requests/routes/express-requests.router.js";
@@ -17,6 +18,7 @@ export type ServerAppDeps = {
   catalogueController?: CatalogueController;
   requestsController?: RequestsController;
   adminRequestsController?: AdminRequestsController;
+  requestConversionController?: RequestConversionController;
   customersController?: CustomersController;
 };
 
@@ -53,6 +55,7 @@ export function createServerApp(deps: ServerAppDeps): Express {
     app.use(createExpressAdminRequestsRouter({
       controller: deps.adminRequestsController,
       resolveSession: deps.resolveAuthSession,
+      ...(deps.requestConversionController ? { conversionController: deps.requestConversionController } : {}),
     }));
   }
 

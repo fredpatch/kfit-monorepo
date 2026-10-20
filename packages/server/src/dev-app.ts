@@ -19,6 +19,9 @@ import { CatalogueController } from "./modules/catalogue/controllers/catalogue.c
 import { DrizzleCatalogueRepository } from "./modules/catalogue/repositories/catalogue.repositories.js";
 import { CatalogueService } from "./modules/catalogue/services/catalogue.service.js";
 import { AdminRequestsController } from "./modules/requests/controllers/admin-requests.controller.js";
+import { RequestConversionController } from "./modules/requests/controllers/request-conversion.controller.js";
+import { RequestConversionService } from "./modules/requests/services/request-conversion.service.js";
+import { DrizzleRequestConversionRepository } from "./modules/requests/repositories/request-conversion.repository.js";
 import { RequestsController } from "./modules/requests/controllers/requests.controller.js";
 import { DrizzleAdminRequestsRepository } from "./modules/requests/repositories/admin-requests.repositories.js";
 import { DrizzleRequestsRepository } from "./modules/requests/repositories/requests.repositories.js";
@@ -102,6 +105,7 @@ export function createDevelopmentApp() {
     catalogueController,
     requestsController,
     adminRequestsController,
+    requestConversionController: new RequestConversionController(new RequestConversionService(new DrizzleRequestConversionRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     customersController: new CustomersController(new CustomersService(new DrizzleCustomersRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
   });
 }

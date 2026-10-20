@@ -21,6 +21,14 @@ function phoneMatches(whatsapp: string) {
   return eq(sql<string>`regexp_replace(${customers.whatsapp}, '[^0-9+]', '', 'g')`, whatsapp);
 }
 
+export function activeCustomerWhatsappMatches(whatsapp: string) {
+  return and(active, phoneMatches(whatsapp));
+}
+
+export async function lockCustomerWhatsapp(transaction: Pick<typeof appDb, "execute">, whatsapp: string): Promise<void> {
+  await transaction.execute(sql`select pg_advisory_xact_lock(hashtextextended(${'customer-whatsapp:' + whatsapp}, 0))`);
+}
+
 export class DrizzleCustomersRepository implements CustomersRepository {
   constructor(private readonly database: typeof appDb, private readonly options: { auditHashPepper: string }) {}
 
@@ -29,15 +37,15 @@ export class DrizzleCustomersRepository implements CustomersRepository {
   }
 
   async searchActive(whatsapp: string): Promise<AdminCustomer[]> {
-    return (await this.database.select(fields).from(customers).where(and(active, phoneMatches(whatsapp))).orderBy(customers.id)).map(toDto);
+    return (await this.database.select(fields).from(customers).where(activeCustomerWhatsappMatches(whatsapp)).orderBy(customers.id)).map(toDto);
   }
 
   async createManual(input: NormalizedCustomerInput, actor: CustomerActorContext) {
     return this.database.transaction(async (tx) => {
       // Serialize S4.1 creates for this collision key without adding a DB constraint.
       // Future customer writers must participate in the same locking protocol.
-      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${'customer-whatsapp:' + input.whatsapp}, 0))`);
-      const [existing] = await tx.select({ id: customers.id }).from(customers).where(and(active, phoneMatches(input.whatsapp))).limit(1);
+      await lockCustomerWhatsapp(tx, input.whatsapp);
+      const [existing] = await tx.select({ id: customers.id }).from(customers).where(activeCustomerWhatsappMatches(input.whatsapp)).limit(1);
       if (existing) return { status: "duplicate" } as const;
       const [row] = await tx.insert(customers).values({ ...input, prospectId: null }).returning(fields);
       if (!row) throw new Error("Customer insert did not return a row");

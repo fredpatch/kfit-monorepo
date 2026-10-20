@@ -44,6 +44,10 @@ test("requests shared contracts expose a stable public submission route", () => 
     "REQUEST_WAITLIST_NOT_ELIGIBLE",
     "REQUEST_WAITLIST_ALREADY_ACTIVE",
     "REQUEST_WAITLIST_ENTRY_NOT_FOUND",
+    "REQUEST_ALREADY_CONVERTED",
+    "REQUEST_CONVERSION_NOT_ELIGIBLE",
+    "REQUEST_CONVERSION_QUALIFICATION_INVALID",
+    "REQUEST_CONVERSION_START_DATE_REQUIRED",
   ]);
 });
 
@@ -56,6 +60,7 @@ test("admin requests shared contracts expose stable routes", () => {
     qualificationReview: "/admin/requests/:requestId/qualification-review",
     waitlistEntry: "/admin/requests/:requestId/waitlist-entry",
     waitlistEntryWithdraw: "/admin/requests/:requestId/waitlist-entry/withdraw",
+    convert: "/admin/requests/:requestId/convert",
   });
 });
 

@@ -21,6 +21,10 @@ const requestErrorMessages: Record<RequestErrorCode, string> = {
   REQUEST_WAITLIST_NOT_ELIGIBLE: "Cette demande ne peut pas être ajoutée à la liste d'attente.",
   REQUEST_WAITLIST_ALREADY_ACTIVE: "Cette demande est déjà active en liste d'attente.",
   REQUEST_WAITLIST_ENTRY_NOT_FOUND: "Aucune entrée active en liste d'attente n'a été trouvée.",
+  REQUEST_ALREADY_CONVERTED: "Cette demande a déjà été convertie. Actualise sa fiche.",
+  REQUEST_CONVERSION_NOT_ELIGIBLE: "Cette demande doit être qualifiée avant de pouvoir être convertie.",
+  REQUEST_CONVERSION_QUALIFICATION_INVALID: "La qualification actuelle est incomplète ou incohérente. Vérifie la décision avant de convertir.",
+  REQUEST_CONVERSION_START_DATE_REQUIRED: "Renseigne une date de début prévue pour convertir cette demande.",
 };
 
 const fallbackMessage = "Une erreur est survenue. Réessaie dans un instant.";

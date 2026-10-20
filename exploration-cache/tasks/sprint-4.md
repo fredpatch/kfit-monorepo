@@ -21,7 +21,7 @@ Validated customer foundation:
 - atomic `customer.created` audit;
 - Fred Gate 2 green.
 
-## S4.2 — planning
+## S4.2 — approved for implementation
 
 Backlog task: **Request conversion transaction: customer + onboarding subscription + immutable link**.
 

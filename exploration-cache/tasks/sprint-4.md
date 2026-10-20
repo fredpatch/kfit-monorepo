@@ -324,3 +324,172 @@ Validated locally by Fred on 2026-10-20.
 ## S4.4 — next task
 
 Notion dependency review selects **Separate consent records and versioned terms/privacy acceptance** before questionnaires. S4.3 provides the onboarding dependency, while the questionnaire task requires the consent model. Planning only until Fred approves Gate 1.
+
+
+## S4.4 — planning
+
+Backlog task: **Separate consent records and versioned terms/privacy acceptance**.
+
+### Schema foundation
+
+Implement `consent_definitions` and `consent_records` from the conceptual model.
+
+Consent definition:
+- `consentType`
+- `version`
+- `title`
+- versioned text content
+- `contentHash`
+- `status = draft|published|retired`
+- `publishedAt`
+- `retiredAt`
+- timestamps
+- unique `(consentType, version)`
+
+Consent record:
+- `customerId`
+- `subscriptionId`
+- `consentDefinitionId`
+- `decision = granted|refused|revoked`
+- `capturedVia = public_link|coach_assisted`
+- `capturedAt`
+- `capturedByUserId` nullable
+- `secureAccessTokenId` nullable
+- `supersedesConsentRecordId` nullable
+- verification metadata limited to non-PII technical evidence
+
+Records are append-only. No UPDATE-based decision replacement.
+
+### Consent types
+
+V1 Core model supports:
+- `service_terms`
+- `privacy_notice`
+- `health_data`
+- `progress_photo_storage`
+- `marketing`
+- `publication`
+
+Only `service_terms` and `privacy_notice` are part of the S4.4 onboarding-required bundle.
+
+### Definition version rule
+
+Published definitions are immutable.
+A wording change creates a higher version.
+S4.4 does not implement the V1.1 material-change/reacceptance review workflow.
+
+No production legal copy is invented in code.
+Tests use synthetic definitions; any dev helper must be development-only.
+Issuing a real acceptance link requires published definitions for both required onboarding types.
+
+### Capture and current decision
+
+All decision writers lock the subscription before deriving the current decision and appending a record.
+Repeated successful public submission must not create duplicate decision rows.
+
+Allowed decisions:
+- service_terms/privacy_notice: granted or refused; no revocation command in S4.4;
+- health_data/progress_photo_storage/marketing/publication: granted/refused/revoked, with revocation represented by a new append-only record.
+
+### S4.3 integration
+
+After recording decisions, recompute required onboarding acceptance inside the same transaction:
+- latest published service_terms version is granted;
+- latest published privacy_notice version is granted.
+
+Only then may the `service_terms` onboarding item change to `completed`.
+
+Refusal keeps it pending.
+Optional consent decisions never affect the S4.3 service-terms blocker.
+
+Consent writes + checklist completion + audit are one hard commit.
+
+### Public secure link
+
+Reuse existing `secure_access_tokens` / `external_access_events`.
+
+Admin issuance:
+- token scoped to subscription;
+- action dedicated to onboarding consent capture;
+- random bearer token;
+- stored only as hash;
+- explicit expiry supplied/selected by admin; no hidden business duration;
+- revocable;
+- raw secret returned only once.
+
+Public read:
+- validates hash, scope, action, expiry, revocation/consumption;
+- returns customer-safe subscription reference plus exact published service_terms/privacy_notice texts;
+- never exposes unrelated customer data.
+
+Public submit:
+- accepts one decision for each required definition;
+- definition IDs/versions come from the server, not client overrides;
+- on success appends consent records, conditionally completes onboarding service_terms, audits, records external-access success, and consumes the token atomically;
+- replay after success is rejected without duplicate consent rows.
+
+No OTP is added for this terms/privacy-only flow in S4.4.
+
+### Coach-assisted capture
+
+Authenticated admin may capture the same required decisions:
+- source `coach_assisted`;
+- actor user stored;
+- same exact published definition versions;
+- same subscription lock and onboarding recomputation;
+- same append-only/audit guarantees.
+
+### Audit / privacy
+
+Suggested events:
+- `consent.link_created`
+- `consent.decision_recorded`
+- `consent.revoked`
+- existing/compatible onboarding completion event when `service_terms` becomes complete.
+
+Audit metadata may contain:
+- consentType
+- definitionId
+- definitionVersion
+- decision
+- capturedVia
+- subscriptionId/tokenId as structural IDs
+
+Never include:
+- legal text body
+- raw bearer token
+- phone/email/name
+- free-text customer statements.
+
+### Validation target
+
+Shared/unit/Express:
+- type/decision validation;
+- definition publication/immutability rules;
+- token input/error taxonomy;
+- admin auth + CSRF;
+- public link access rules;
+- no client override of definition versions.
+
+PostgreSQL integration:
+- schema uniqueness for definition type/version;
+- append-only grant/refuse/revoke chain;
+- concurrent writers serialize current decision;
+- required grant pair completes exactly one service_terms onboarding item;
+- refusal leaves blocker pending;
+- optional consents do not alter readiness blocker;
+- coach-assisted provenance stored;
+- secure token hash only, expiry/revocation enforced;
+- successful public submit consumes token and replay creates no duplicates;
+- audit failure rolls back consent + checklist + token consumption;
+- expired/invalid token causes zero business writes.
+
+Fred Gate 2:
+- generate secure consent link from onboarding/subscription;
+- open public page without authentication;
+- inspect exact versioned terms/privacy text;
+- refuse one required item and confirm onboarding remains blocked;
+- issue fresh link, grant both and confirm service_terms completes;
+- verify consumed link cannot be replayed;
+- coach-assisted capture on a second subscription;
+- DBeaver verify definitions, append-only records, provenance, token hash/consumption, onboarding item and safe audit metadata.

@@ -2,6 +2,24 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-20 — Sprint 4.2 atomic qualified-request conversion
+
+- Fred locally validated S4.2 end-to-end.
+- Added the named admin conversion command for `qualified` and `qualified_with_conditions` requests.
+- Kept service, final variant, agreed price and XAF currency server-authoritative; the client can supply only a fallback planned start date when qualification has none.
+- Reused the S4.1 normalized-WhatsApp transaction advisory lock to resolve or create customers safely.
+- Reused an active matching customer when present; otherwise created the customer from the exact request prospect and linked `prospect_id`.
+- Created one `onboarding` subscription with immutable `source_request_id`, leaving `capacity_reserved_until` null for the later capacity/onboarding slice.
+- Snapshotted service-level and selected-variant entitlements into `subscription_components` with zero consumed/owed counters.
+- Inserted the initial append-only subscription status history row from null to `onboarding`.
+- Atomically linked `service_requests.converted_subscription_id` and `subscriptions.source_request_id` to the same request/subscription pair and moved the request to `converted`.
+- Persisted `request.converted` audit in the same transaction with structural metadata only and no customer/prospect PII or qualification free text.
+- Enforced exactly-once conversion: repeat/concurrent attempts return a typed conflict and do not create another subscription.
+- Kept onboarding items, medical clearance, questionnaires, consents, payments, notifications and capacity-reservation policy out of S4.2.
+- Confirmed typecheck/build/`db:check`/diff check green; server tests 153/153; shared tests 15/15; PostgreSQL integration 35/35 including 15 S4.2 cases.
+- Reviewer passed with notes; QA passed with limitations; Fred validated browser and DBeaver Gate 2 behavior.
+- Known non-blocking test note: an unchanged Sprint 3 concurrency test failed once and passed on the approved retry; no S4.2 test failed.
+
 ## 2026-10-20 — Sprint 4.1 customer identity/search/manual-create foundation
 
 - Fred locally validated S4.1 end-to-end.

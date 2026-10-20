@@ -9,9 +9,9 @@
 Branch            sprint-4
 Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
 Active slice      S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Last validated    S4.2 — 2026-10-20
-Next action       Implementer: execute approved S4.3 server-first onboarding/capacity plan only
+Workflow state    CLOSED
+Last validated    S4.3 — 2026-10-20
+Next action       Planner: inspect next Sprint 4 task in dependency order
 ```
 
 ## Sprint 4 objective
@@ -22,10 +22,10 @@ Build the customer/conversion/onboarding foundation after the validated Sprint 3
 
 1. S4.1 — Client table + phone-based search/create-inline — CLOSED, Fred validated 2026-10-20.
 2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link — CLOSED, Fred validated 2026-10-20.
-3. S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review — APPROVED_FOR_IMPLEMENTATION.
+3. S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review — CLOSED, Fred validated 2026-10-20.
 4. Questionnaire and consent slices follow after S4.3 in dependency order.
 
-S4.3 Gate 1 is approved. Do not open questionnaire/consent implementation before S4.3 is locally validated.
+S4.3 is locally validated. Do not implement the next slice before its plan is inspected and approved.
 
 ## S4.2 — validated result
 
@@ -84,12 +84,12 @@ Before production:
 Branch            sprint-4
 Sprint            4
 Slice             S4.3
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Done              S4.2 validated; S4.3 planning + Fred Gate 1 approval
-Validation done   none for S4.3 yet
+Workflow state    CLOSED
+Done              S4.3 implementation + review + QA + Fred Gate 2 validation
+Validation done   server 177/177; shared 17/17; PostgreSQL integration 63/63; browser+DBeaver green
 Key rules          explicit capacity deadline for limited services; derived stalled state; strict checklist ownership
 Out of scope      questionnaire/consent/medical/finance workflows, activation, automatic cancellation/waitlist movement
-Next action       Implementer
+Next action       Planner: inspect next Sprint 4 task in dependency order
 ```
 
 
@@ -166,3 +166,8 @@ Locked waiver policy:
 - `medical_clearance` — non-waivable;
 - `questionnaire` — waivable only with mandatory non-empty reason + audit;
 - `payment_condition` — waivable only with mandatory non-empty reason + audit.
+
+
+## S4.3 — validation closure
+
+Validated locally by Fred on 2026-10-20. Server 177/177, shared 17/17, PostgreSQL integration 63/63 including 28 S4.3 cases. Typecheck/build/db:check/diff check green. Uniqueness migration applied after 0 duplicate groups. Browser/DBeaver Gate 2 green, including reservation/extension, stalled-state behavior, payment completion, controlled service_terms fixture and onboarding -> ready_to_start. Questionnaire waiver browser path was N/A for the tested service because no effective questionnaireTemplateId was configured.

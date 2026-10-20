@@ -9,9 +9,9 @@
 Branch            sprint-4
 Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
 Active slice      S4.4 — Separate consent records and versioned terms/privacy acceptance
-Workflow state    PLANNING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    S4.3 — 2026-10-20
-Next action       Fred: review/approve S4.4 consent/terms invariants before implementation
+Next action       Implementer: execute approved S4.4 server-first consent/terms plan only
 ```
 
 ## Sprint 4 objective
@@ -23,7 +23,8 @@ Build the customer/conversion/onboarding foundation after the validated Sprint 3
 1. S4.1 — Client table + phone-based search/create-inline — CLOSED, Fred validated 2026-10-20.
 2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link — CLOSED, Fred validated 2026-10-20.
 3. S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review — CLOSED, Fred validated 2026-10-20.
-4. Questionnaire and consent slices follow after S4.3 in dependency order.
+4. S4.4 — Separate consent records and versioned terms/privacy acceptance — APPROVED_FOR_IMPLEMENTATION.
+5. S4.5 — Versioned assessment and health-questionnaire templates — blocked until S4.4 validation.
 
 S4.3 is locally validated. Do not implement the next slice before its plan is inspected and approved.
 
@@ -83,13 +84,13 @@ Before production:
 ```text
 Branch            sprint-4
 Sprint            4
-Slice             S4.3
-Workflow state    CLOSED
-Done              S4.3 implementation + review + QA + Fred Gate 2 validation
-Validation done   server 177/177; shared 17/17; PostgreSQL integration 63/63; browser+DBeaver green
+Slice             S4.4
+Workflow state    APPROVED_FOR_IMPLEMENTATION
+Done              S4.3 validated; S4.4 planning + Fred Gate 1 approval
+Validation done   none for S4.4 yet
 Key rules          explicit capacity deadline for limited services; derived stalled state; strict checklist ownership
 Out of scope      questionnaire/consent/medical/finance workflows, activation, automatic cancellation/waitlist movement
-Next action       Planner: inspect next Sprint 4 task in dependency order
+Next action       Implementer
 ```
 
 
@@ -268,4 +269,4 @@ Applicable patterns:
 - Secure External Document Sharing
 - explicit append-only history.
 
-Gate 1 pending Fred approval.
+Gate 1 approved by Fred.

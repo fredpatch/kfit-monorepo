@@ -174,3 +174,102 @@ Validated locally by Fred on 2026-10-20.
 - browser conversion flow and DBeaver reciprocal-link/snapshot/history/audit checks green.
 - no onboarding/capacity-policy writes leaked into S4.2.
 - unchanged Sprint 3 concurrency test failed once then passed on the approved retry; classified as flaky and non-blocking for S4.2.
+
+
+## S4.3 — planning
+
+Backlog task: **Onboarding checklist, blockers, capacity reservation and stalled-state review**.
+
+### Scope boundary
+
+S4.3 orchestrates readiness. It does not implement the questionnaire, consent, medical-document or payment subsystems.
+
+### Effective policy
+
+Resolve service policy in this order:
+1. selected-variant policy;
+2. service-level policy fallback.
+
+Use the effective policy for questionnaire and medical-clearance requirements.
+
+### Checklist proposal
+
+- `start_date_confirmed`: blocking; system-completed on initialization because S4.2 has a planned start.
+- `service_terms`: blocking; completion reserved for the later consent/terms workflow.
+- `questionnaire`: blocking only when effective policy references a questionnaire template; completion reserved for the later questionnaire workflow.
+- `payment_condition`: blocking; coach may mark complete in S4.3.
+- `medical_clearance`: for `required_if_risk_flag`, do not create at initialization. The later questionnaire/risk workflow creates/activates this blocker only when triggered. No item for `not_required`.
+
+Checklist initialization must be idempotent and must not duplicate items.
+
+### Capacity reservation
+
+- unlimited service: reservation is not required;
+- limited service: coach explicitly sets `capacityReservedUntil`;
+- no arbitrary default duration is introduced;
+- an expired pre-start reservation derives `stalled`;
+- expiry does not auto-cancel, delete or change lifecycle status;
+- readiness remains blocked until reservation is extended/reconfirmed;
+- setting/extending a reservation and marking ready must transactionally recheck capacity to prevent overbooking.
+
+### Readiness
+
+Derived state:
+- `blocked`: blocking requirements remain;
+- `ready`: blocking requirements satisfied and required capacity hold valid;
+- `stalled`: capacity hold expired while pre-start.
+
+Lifecycle:
+- only `onboarding -> ready_to_start` is owned by S4.3;
+- no `active` transition here;
+- transition + status history + audit must be atomic.
+
+### Admin API proposal
+
+- `GET /admin/subscriptions/:subscriptionId/onboarding`
+- `POST /admin/subscriptions/:subscriptionId/onboarding/initialize`
+- `POST /admin/subscriptions/:subscriptionId/onboarding/items/:itemId/complete`
+- `POST /admin/subscriptions/:subscriptionId/onboarding/items/:itemId/waive`
+- `PUT /admin/subscriptions/:subscriptionId/onboarding/capacity-reservation`
+- `POST /admin/subscriptions/:subscriptionId/onboarding/ready`
+
+### Manual mutation rules
+
+- manual complete: `payment_condition` only;
+- system-owned: `start_date_confirmed`;
+- future-workflow-owned: `service_terms`, `questionnaire`, `medical_clearance`;
+- waiver must include a non-empty reason and audit;
+- no waiver of service terms or medical clearance in S4.3.
+
+### Validation target
+
+Unit/shared/Express:
+- policy resolution;
+- deterministic/idempotent checklist generation;
+- ownership restrictions;
+- derived blocked/ready/stalled state;
+- capacity deadline validation;
+- auth/CSRF;
+- stable error taxonomy.
+
+PostgreSQL integration:
+- initialize checklist once, retry without duplicates;
+- service-policy fallback and variant override;
+- unlimited service readiness without reservation;
+- limited service blocked without reservation;
+- reservation set/extend with capacity recheck;
+- expired reservation derives stalled and blocks ready;
+- payment-condition completion;
+- forbidden completion of future-workflow-owned item;
+- waiver audit + rollback on audit failure;
+- ready transition writes lifecycle history + audit atomically;
+- concurrent reservation/ready attempts cannot overbook configured capacity.
+
+Fred Gate 2:
+- browser onboarding panel;
+- checklist ownership/status display;
+- set/extend reservation;
+- stalled visual state after expired test date;
+- complete manual payment condition;
+- verify ready transition;
+- DBeaver inspect onboarding_items, subscription capacity/status/history and audit.

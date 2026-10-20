@@ -1,3 +1,13 @@
+## 2026-10-20 — Customer collision serialization uses normalized-WhatsApp advisory locks
+
+**Context**: S4.1 intentionally avoided a hard unique constraint on `customers.whatsapp` because archived/anonymized history and future identity rules may require more nuance than permanent global uniqueness, while concurrent active-customer creation still must not produce duplicate active identities.
+
+**Decision**: Customer writers that enforce the V1 active-customer collision rule must acquire the PostgreSQL transaction-scoped advisory lock keyed by the shared normalized WhatsApp value before checking for an active/non-anonymized customer and creating a new one. S4.1 uses `customer-whatsapp:<normalized>` as the lock key namespace.
+
+**Rationale**: This serializes competing writers for the same logical customer identity without prematurely encoding a permanent schema-level uniqueness rule. It also keeps duplicate detection compatible with stored formatted numbers through the shared normalization/matching behavior.
+
+**Impact**: S4.2 request conversion and any later customer-creation path must participate in the same lock protocol. Introducing a different customer writer without this lock can reintroduce a race and is therefore not allowed unless a separately approved DB uniqueness strategy supersedes this decision.
+
 ## 2026-09-17 — S3.3 transaction-scoped audit for critical request mutations
 
 **Context**: The shared `AuditService` is constructed with the top-level pooled DB handle and cannot participate in an existing Drizzle transaction. S3.3 requires request status changes and contact-attempt creation to be auditable in the same atomic business operation.

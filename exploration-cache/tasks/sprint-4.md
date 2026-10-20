@@ -176,7 +176,7 @@ Validated locally by Fred on 2026-10-20.
 - unchanged Sprint 3 concurrency test failed once then passed on the approved retry; classified as flaky and non-blocking for S4.2.
 
 
-## S4.3 — planning
+## S4.3 — approved for implementation
 
 Backlog task: **Onboarding checklist, blockers, capacity reservation and stalled-state review**.
 
@@ -273,3 +273,16 @@ Fred Gate 2:
 - complete manual payment condition;
 - verify ready transition;
 - DBeaver inspect onboarding_items, subscription capacity/status/history and audit.
+
+
+### S4.3 Gate 1 — approved rules
+
+Fred approved the S4.3 plan.
+
+Waiver policy is locked:
+- `service_terms`: non-waivable;
+- `medical_clearance`: non-waivable;
+- `questionnaire`: waivable only with mandatory non-empty reason and audit;
+- `payment_condition`: waivable only with mandatory non-empty reason and audit.
+
+Implementation must remain server-first and must not open questionnaire, consent, medical-document, finance, activation, scheduled stalled-job, automatic cancellation, or waitlist-promotion behavior.

@@ -9,7 +9,7 @@ Build the M4 customer/conversion/onboarding foundation after the validated Sprin
 ## Execution order
 
 1. [x] S4.1 — Client table + phone-based search/create-inline.
-2. [ ] S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link.
+2. [x] S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link.
 3. [ ] Subsequent onboarding/questionnaire/consent slices — finalize from Notion backlog after S4.2 dependencies are validated.
 
 ## S4.1 — validated
@@ -21,7 +21,7 @@ Validated customer foundation:
 - atomic `customer.created` audit;
 - Fred Gate 2 green.
 
-## S4.2 — approved for implementation
+## S4.2 — validated
 
 Backlog task: **Request conversion transaction: customer + onboarding subscription + immutable link**.
 
@@ -161,3 +161,16 @@ Fred Gate 2:
 - verify customer reuse/create;
 - DBeaver inspect customer/subscription/components/status history/request links/audit;
 - verify no onboarding items/consents/questionnaires/payments were created.
+
+
+### S4.2 validation evidence
+
+Validated locally by Fred on 2026-10-20.
+
+- `npm test`: server 153/153; shared 15/15.
+- `npm run test:integration`: 35/35, including 15 S4.2 cases.
+- typecheck/build/`db:check`/diff check green.
+- Reviewer passed with notes; QA passed with limitations.
+- browser conversion flow and DBeaver reciprocal-link/snapshot/history/audit checks green.
+- no onboarding/capacity-policy writes leaked into S4.2.
+- unchanged Sprint 3 concurrency test failed once then passed on the approved retry; classified as flaky and non-blocking for S4.2.

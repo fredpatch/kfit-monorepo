@@ -9,9 +9,9 @@
 Branch            sprint-4
 Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
 Active slice      S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review
-Workflow state    PLANNING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    S4.2 — 2026-10-20
-Next action       Fred: review/approve S4.3 onboarding/capacity invariants
+Next action       Implementer: execute approved S4.3 server-first onboarding/capacity plan only
 ```
 
 ## Sprint 4 objective
@@ -22,10 +22,10 @@ Build the customer/conversion/onboarding foundation after the validated Sprint 3
 
 1. S4.1 — Client table + phone-based search/create-inline — CLOSED, Fred validated 2026-10-20.
 2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link — CLOSED, Fred validated 2026-10-20.
-3. S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review — PLANNING.
+3. S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review — APPROVED_FOR_IMPLEMENTATION.
 4. Questionnaire and consent slices follow after S4.3 in dependency order.
 
-Do not implement the next slice before its plan is inspected and approved.
+S4.3 Gate 1 is approved. Do not open questionnaire/consent implementation before S4.3 is locally validated.
 
 ## S4.2 — validated result
 
@@ -83,13 +83,13 @@ Before production:
 ```text
 Branch            sprint-4
 Sprint            4
-Slice             S4.2
-Workflow state    CLOSED
-Done              implementation + review + QA + Fred Gate 2 validation
-Validation done   server 153/153; shared 15/15; PostgreSQL integration 35/35; browser+DBeaver green
-Known note        unchanged Sprint 3 concurrency test is flaky; passed approved retry
-Out of scope      onboarding checklist, medical clearance, questionnaires, consents, payments, capacity reservation policy
-Next action       Planner: inspect next Sprint 4 onboarding/capacity slice
+Slice             S4.3
+Workflow state    APPROVED_FOR_IMPLEMENTATION
+Done              S4.2 validated; S4.3 planning + Fred Gate 1 approval
+Validation done   none for S4.3 yet
+Key rules          explicit capacity deadline for limited services; derived stalled state; strict checklist ownership
+Out of scope      questionnaire/consent/medical/finance workflows, activation, automatic cancellation/waitlist movement
+Next action       Implementer
 ```
 
 
@@ -159,4 +159,10 @@ Applicable patterns:
 - Hard Commit Point
 - Dynamic Form Schema only as a future integration boundary, not implemented here.
 
-Gate 1 pending Fred approval.
+Gate 1 approved by Fred.
+
+Locked waiver policy:
+- `service_terms` — non-waivable;
+- `medical_clearance` — non-waivable;
+- `questionnaire` — waivable only with mandatory non-empty reason + audit;
+- `payment_condition` — waivable only with mandatory non-empty reason + audit.

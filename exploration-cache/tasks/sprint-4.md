@@ -11,7 +11,8 @@ Build the M4 customer/conversion/onboarding foundation after the validated Sprin
 1. [x] S4.1 — Client table + phone-based search/create-inline.
 2. [x] S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link.
 3. [x] S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review.
-4. [ ] Remaining questionnaire/consent slices — follow dependency order from Notion.
+4. [ ] S4.4 — Separate consent records and versioned terms/privacy acceptance.
+5. [ ] S4.5 — Versioned assessment and health-questionnaire templates.
 
 ## S4.1 — validated
 
@@ -318,3 +319,8 @@ Validated locally by Fred on 2026-10-20.
 - Controlled future-workflow fixture completed `service_terms`; `onboarding -> ready_to_start` succeeded.
 - Questionnaire waiver browser path was N/A because the tested effective policy has no questionnaire template.
 - `stalled` remained derived and did not create lifecycle history.
+
+
+## S4.4 — next task
+
+Notion dependency review selects **Separate consent records and versioned terms/privacy acceptance** before questionnaires. S4.3 provides the onboarding dependency, while the questionnaire task requires the consent model. Planning only until Fred approves Gate 1.

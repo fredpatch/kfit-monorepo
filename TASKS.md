@@ -6,93 +6,90 @@
 ## Now
 
 ```text
-Branch            sprint-3
-Sprint            3 — Demandes, prospects, qualification et liste d'attente
-Active slice      —
-Workflow state    SPRINT_CLOSED
-Last validated    S3.5 — 2026-09-17 (feature commit 0775695)
-Next action       Fred: fast-forward/merge sprint-3 into main, then open Sprint 4 from updated main
+Branch            sprint-4
+Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
+Active slice      S4.1 — Client table + phone-based search/create-inline
+Workflow state    PLANNING
+Last validated    Sprint 3 — closed at 5127e4c
+Next action       Planner: finalize S4.1 customer identity/search/create plan for Fred approval
 ```
 
-## Sprint 3 slices
+## Sprint 4 objective
 
-| Slice | Scope                                                  | Depends on | State                              |
-| ----- | ------------------------------------------------------ | ---------- | ---------------------------------- |
-| S3.1  | Public request/prospect intake contract (server-first) | —          | CLOSED — Fred validated 2026-09-17 |
-| S3.2  | Public request form (client)                           | S3.1       | CLOSED — Fred validated 2026-09-17 |
-| S3.3  | Admin request queue + contact attempts                 | S3.1       | CLOSED — Fred validated 2026-09-17 |
-| S3.4  | Qualification review recording                         | S3.3       | CLOSED — Fred validated 2026-09-17 |
-| S3.5  | Manual waitlist entry management                       | S3.1       | CLOSED — Fred validated 2026-09-17 |
+Build the customer/conversion/onboarding foundation after the validated Sprint 3 acquisition workflow, preserving server-authoritative lifecycle rules and transactional audit guarantees.
 
-Sprint 3 is closed. Do not open Sprint 4 implementation until `main` is updated from the validated `sprint-3` head and the Sprint 4 branch/state is initialized.
+## Sprint 4 execution order
 
-## Sprint 3 closure
+1. S4.1 — Client table + phone-based search/create-inline.
+2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link.
+3. Later Sprint 4 onboarding/questionnaire/consent slices follow dependency order from Notion and the project schema.
 
-Validated acquisition workflow delivered:
+Do not implement S4.2 conversion before S4.1 customer identity/search/create behavior is validated.
 
-- public prospect/request intake with concurrency-safe idempotency and abuse controls;
-- public request form with stable request-intent token handling;
-- authenticated admin queue, detail, contact attempts and explicit contact-stage transitions;
-- qualification review command with outcome-specific validation and hard transactional audit;
-- manual waitlist entry/withdrawal with FIFO semantics, concurrency-safe request locking and hard transactional audit;
-- no automatic waitlist promotion, subscription conversion or onboarding implemented inside Sprint 3.
+## S4.1 — planning brief
 
-Final S3.5 validation:
+Goal: expose an authenticated admin customer foundation over the existing `customers` table, with phone-based lookup and manual inline creation, without creating subscriptions or converting requests.
 
-- typecheck/build/db:check green;
-- `npm test` executes real Windows-compatible globs: server 110/110, shared 12/12;
-- real PostgreSQL integration suite 15/15;
-- reviewer pass and QA pass;
-- Fred local browser/DBeaver smoke green for waitlist creation, duplicate prevention, withdrawal, request-state synchronization and safe audit metadata.
+Current schema already exists:
+- `customers.id`
+- optional `prospect_id`
+- `full_name`
+- `whatsapp`
+- optional `email`, `city`, `country`
+- `preferred_contact_channel`
+- archive/anonymization timestamps
+- indexes on WhatsApp and email
+
+Planner must:
+- reuse the normalized WhatsApp behavior established by Sprint 3 request intake;
+- define customer lookup semantics and manual-create duplicate handling;
+- decide whether S4.1 links an existing prospect during manual creation or leaves `prospect_id` null unless an explicit prospect is selected;
+- keep request conversion, subscription creation, onboarding, questionnaire and consent writes out of scope;
+- use shared DTO/error contracts and authenticated admin routes;
+- preserve PII hygiene in logs/audit metadata.
+
+Applicable patterns:
+- Shared API Contracts
+- Domain Error Taxonomy
+- Audit Event System
+- Atomic Business Operation only where create/linking requires a hard commit boundary
 
 ## Closed
 
 ```text
 Sprint 0 — Initialisation
 Sprint 1 — Auth, sessions, OTP, security (+ password recovery HTTP flow)
-Sprint 2 — Catalogue, offers, public availability (S2.1–S2.6)
-Sprint 3 — Demandes, prospects, qualification et liste d'attente (S3.1–S3.5)
+Sprint 2 — Catalogue, offers, public availability
+Sprint 3 — Demandes, prospects, qualification et liste d'attente
 ```
-
-## Next sprint
-
-Sprint 4 — Clients, conversion, onboarding, questionnaires et consentements.
-
-First dependency-safe backlog task: **Client table + phone-based search/create-inline**. It is a CRITIQUE M4 server task with no declared dependency and provides the customer foundation required by the later atomic request-conversion transaction.
-
-After `main` is updated, planning starts from the Sprint 4 customer model/client foundation before conversion or onboarding implementation.
 
 ## Blockers
 
 Before production:
-
 - Legal validation for the applicable Gabon context (privacy, consent, retention, health notice, terms/refunds, image/testimonials).
 - True encrypted off-server backup destination.
 
 Known non-blocking notes:
-
 - Per-IP rate limiting is process-local — revisit for multi-replica production.
 - `trust proxy` must be decided in staging/production wiring.
-- Prospect-reuse race, rate-limiter memory growth, timing clock-skew, audit symmetry, origin-helper deduplication.
 - No client test framework; client acceptance = typecheck + build + Fred browser check.
-- Request-router boilerplate and UUID regex duplication remain cleanup candidates, not active blockers.
-- Queue latest-contact lookup is acceptable for V1 single-coach volume; revisit if request/contact volume grows materially.
-- `requests.repository.integration.ts` cleanup deletes prospects by fixed WhatsApp `+24100000000` — run only against a disposable local DB.
 
 ## Environment constraints
 
-- See `PROJECT.md §Data` and `§Gotchas` (Docker PostgreSQL 5433, native 5432).
-- Chat/cloud runtimes do not run project commands; only Fred's local execution closes a gate (PROJECT.md §Runtime).
+- Docker PostgreSQL: localhost:5433; native PostgreSQL: 5432.
+- Chat/cloud runtimes do not run project commands; only Fred's local execution closes validation gates.
 
 ## Handoff
 
 ```text
-Branch            sprint-3
-Sprint            3
-Workflow state    SPRINT_CLOSED
-✅ Done           S3.1, S3.2, S3.3, S3.4, S3.5
-Validation done   S3.5 typecheck/build/db:check; server 110/110; shared 12/12; PostgreSQL integration 15/15; reviewer/QA; Fred browser+DBeaver smoke
-Risks/blockers    production-only blockers listed above
-Next action       Merge/fast-forward sprint-3 → main, then initialize Sprint 4
-Sprint 4 first    Client table + phone-based search/create-inline
+Branch            sprint-4
+Sprint            4
+Slice             S4.1
+Workflow state    PLANNING
+Approved goal     — pending Fred approval
+Done              Sprint 3 merged into main; sprint-4 branch created at 5127e4c
+Pending           S4.1 plan approval
+Validation done   none for Sprint 4 yet
+Out of scope      request conversion, subscriptions, onboarding, questionnaires, consents
+Next action       Planner → Fred Gate 1
 ```

@@ -8,10 +8,10 @@
 ```text
 Branch            sprint-4
 Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
-Active slice      S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review
+Active slice      S4.4 — Separate consent records and versioned terms/privacy acceptance
 Workflow state    PLANNING
 Last validated    S4.3 — 2026-10-20
-Next action       Planner: define S4.4 consent/terms foundation; no implementation before Gate 1
+Next action       Fred: review/approve S4.4 consent/terms invariants before implementation
 ```
 
 ## Sprint 4 objective
@@ -176,3 +176,96 @@ Validated locally by Fred on 2026-10-20. Server 177/177, shared 17/17, PostgreSQ
 ## S4.4 — planning entry
 
 Exact next task: **Separate consent records and versioned terms/privacy acceptance** (Sprint 4, M8, CRITIQUE). Dependency order: S4.3 satisfies the onboarding prerequisite; the questionnaire task explicitly depends on the consent model, so consent/terms comes first. The V1.1 Sprint 11 legal-document review task is not a blocker for this V1 Core foundation because it depends on terms-acceptance records rather than providing them.
+
+
+## S4.4 — planning brief
+
+Goal: establish the V1 Core consent/acceptance model that can satisfy the S4.3 `service_terms` blocker without client accounts, while preserving exact definition versions and keeping future questionnaire/health/photo/publication workflows independent.
+
+Planner findings:
+- conceptual `consent_definitions` and `consent_records` exist in project architecture, but no Drizzle consent schema is implemented yet;
+- `secure_access_tokens` and `external_access_events` already exist in Drizzle and can be reused for customer-facing acceptance links;
+- V1 has no customer accounts, so capture must support secure public-link and coach-assisted paths;
+- captured consents are immutable/versioned hard-commit records;
+- service, health, progress-photo storage, marketing and publication decisions remain separate;
+- legal/privacy wording is still a production-review blocker, so S4.4 must not ship invented production legal text.
+
+Proposed definition types:
+- `service_terms` — mandatory onboarding acceptance;
+- `privacy_notice` — mandatory onboarding acknowledgement/acceptance;
+- `health_data` — separate consent, supported by the model but activated by S4.5 when health data is actually required;
+- `progress_photo_storage` — optional separate consent;
+- `marketing` — optional separate consent;
+- `publication` — optional separate consent.
+
+Definition model:
+- versioned by `consentType + version`;
+- stores title, immutable text content, content hash, status `draft|published|retired`, publish/retire timestamps;
+- published definitions are immutable; changes create a new version;
+- no full V1.1 legal-document review/reacceptance workflow in S4.4.
+
+Decision model:
+- append-only `granted|refused|revoked` records;
+- each record links exact customer, subscription and consent definition version;
+- capture provenance is explicit: `public_link|coach_assisted`;
+- public-link records may link the secure-access token; coach-assisted records link the acting admin;
+- revisions/revocations append a new decision record instead of overwriting the prior record;
+- current decision is derived from the latest append-only record under a subscription/type lock.
+
+Onboarding service-terms rule:
+- `service_terms` checklist item becomes completed only when the subscription has current `granted` records for the latest published `service_terms` AND `privacy_notice` definitions;
+- refusal leaves the blocker pending;
+- optional consent decisions never block S4.3 readiness;
+- checklist completion + consent records + audit occur atomically;
+- no manual checklist shortcut is reintroduced.
+
+Secure link:
+- admin issues a subscription-scoped action token;
+- raw bearer secret returned once and never stored/logged; only token hash persists;
+- token is random, expiring, revocable and single-purpose;
+- GET may be repeated before submission without consuming the token;
+- successful decision submission consumes/revokes the token so replay cannot create duplicate records;
+- link initially exposes only the onboarding-required bundle (`service_terms` + `privacy_notice`); health/photo/marketing/publication are not automatically requested;
+- no customer OTP is added in S4.4; the terms/privacy link is token-protected only. Health-sensitive OTP policy is deferred to S4.5/security review.
+
+Coach-assisted capture:
+- authenticated admin may record decisions for the same exact published definitions;
+- provenance must be `coach_assisted` and actor user ID recorded;
+- this path is explicit evidence capture, not a hidden checklist completion.
+
+Definition availability:
+- no invented production legal wording;
+- tests use synthetic definitions;
+- development may have an explicit dev-only seed/fixture;
+- production preflight must reject missing published `service_terms` or `privacy_notice` definitions before acceptance links can be issued.
+
+Proposed APIs:
+- `GET /admin/subscriptions/:subscriptionId/consents`
+- `POST /admin/subscriptions/:subscriptionId/consent-link`
+- `POST /admin/subscriptions/:subscriptionId/consents/coach-capture`
+- `POST /admin/subscriptions/:subscriptionId/consents/:consentType/revoke` for revocable consent types only
+- `GET /public/consents/:token`
+- `POST /public/consents/:token`
+
+S4.4 excludes:
+- questionnaire templates/submissions;
+- health-risk evaluation;
+- medical clearance records;
+- progress-photo upload/storage;
+- publication/testimonial workflow;
+- customer accounts;
+- customer OTP;
+- V1.1 legal-document publishing/reacceptance review;
+- automatic subscription activation.
+
+Applicable patterns:
+- Hard Commit Point
+- Audit Event System
+- Shared API Contracts
+- Domain Error Taxonomy
+- Atomic Business Operation
+- Idempotent Business Command
+- Secure External Document Sharing
+- explicit append-only history.
+
+Gate 1 pending Fred approval.

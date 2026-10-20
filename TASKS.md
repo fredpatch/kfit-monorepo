@@ -9,9 +9,9 @@
 Branch            sprint-4
 Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
 Active slice      S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review
-Workflow state    CLOSED
+Workflow state    PLANNING
 Last validated    S4.3 — 2026-10-20
-Next action       Planner: inspect next Sprint 4 task in dependency order
+Next action       Planner: define S4.4 consent/terms foundation; no implementation before Gate 1
 ```
 
 ## Sprint 4 objective
@@ -171,3 +171,8 @@ Locked waiver policy:
 ## S4.3 — validation closure
 
 Validated locally by Fred on 2026-10-20. Server 177/177, shared 17/17, PostgreSQL integration 63/63 including 28 S4.3 cases. Typecheck/build/db:check/diff check green. Uniqueness migration applied after 0 duplicate groups. Browser/DBeaver Gate 2 green, including reservation/extension, stalled-state behavior, payment completion, controlled service_terms fixture and onboarding -> ready_to_start. Questionnaire waiver browser path was N/A for the tested service because no effective questionnaireTemplateId was configured.
+
+
+## S4.4 — planning entry
+
+Exact next task: **Separate consent records and versioned terms/privacy acceptance** (Sprint 4, M8, CRITIQUE). Dependency order: S4.3 satisfies the onboarding prerequisite; the questionnaire task explicitly depends on the consent model, so consent/terms comes first. The V1.1 Sprint 11 legal-document review task is not a blocker for this V1 Core foundation because it depends on terms-acceptance records rather than providing them.

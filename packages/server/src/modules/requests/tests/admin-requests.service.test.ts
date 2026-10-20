@@ -36,6 +36,7 @@ class FakeAdminRequestsRepository implements AdminRequestsRepository {
     duplicateOfRequestId: null,
     contactAttempts: [],
     qualificationAvailableVariants: [],
+    convertedSubscriptionId: null,
     qualificationReviews: [],
     waitlistEntries: [],
   };

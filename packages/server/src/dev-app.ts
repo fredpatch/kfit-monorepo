@@ -20,6 +20,9 @@ import { DrizzleCatalogueRepository } from "./modules/catalogue/repositories/cat
 import { CatalogueService } from "./modules/catalogue/services/catalogue.service.js";
 import { AdminRequestsController } from "./modules/requests/controllers/admin-requests.controller.js";
 import { RequestConversionController } from "./modules/requests/controllers/request-conversion.controller.js";
+import { OnboardingController } from "./modules/onboarding/controllers/onboarding.controller.js";
+import { OnboardingService } from "./modules/onboarding/services/onboarding.service.js";
+import { DrizzleOnboardingRepository } from "./modules/onboarding/repositories/onboarding.repository.js";
 import { RequestConversionService } from "./modules/requests/services/request-conversion.service.js";
 import { DrizzleRequestConversionRepository } from "./modules/requests/repositories/request-conversion.repository.js";
 import { RequestsController } from "./modules/requests/controllers/requests.controller.js";
@@ -105,6 +108,7 @@ export function createDevelopmentApp() {
     catalogueController,
     requestsController,
     adminRequestsController,
+    onboardingController: new OnboardingController(new OnboardingService(new DrizzleOnboardingRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     requestConversionController: new RequestConversionController(new RequestConversionService(new DrizzleRequestConversionRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     customersController: new CustomersController(new CustomersService(new DrizzleCustomersRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
   });

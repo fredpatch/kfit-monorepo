@@ -139,6 +139,7 @@ test("admin requests shared contracts type-check queue, detail, contact-attempt 
       message: null,
       duplicateOfRequestId: null,
       qualificationAvailableVariants: [{ id: "55555555-5555-5555-5555-555555555555", name: "Starter" }],
+      convertedSubscriptionId: null,
       contactAttempts: [
         {
           id: "44444444-4444-4444-4444-444444444444",

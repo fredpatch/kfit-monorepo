@@ -8,6 +8,11 @@ body {
   margin: 0;
 }
 
+.onboarding-grid { display: grid; gap: 20px; margin-top: 20px; }
+.onboarding-items { list-style: none; padding: 0; display: grid; gap: 12px; }
+.onboarding-items li { border: 1px solid #dce8d4; border-radius: 12px; padding: 16px; overflow-wrap: anywhere; }
+.onboarding-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+
 .customers-page { display: grid; gap: 24px; }
 .customers-panel { background: #ffffff; border: 1px solid #dce8d4; border-radius: 16px; padding: 24px; min-width: 0; }
 .customers-search, .customers-create, .customers-create fieldset { display: grid; gap: 12px; }

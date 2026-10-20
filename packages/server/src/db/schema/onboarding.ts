@@ -14,7 +14,10 @@ export const onboardingItems = pgTable("onboarding_items", {
   waivedAt: timestamp("waived_at", { withTimezone: true }),
   waiverReason: text("waiver_reason"),
   ...timestamps,
-}, (t) => [index("onboarding_items_subscription_idx").on(t.subscriptionId, t.status)]);
+}, (t) => [
+  index("onboarding_items_subscription_idx").on(t.subscriptionId, t.status),
+  uniqueIndex("onboarding_items_subscription_type_uq").on(t.subscriptionId, t.itemType),
+]);
 
 export const medicalClearanceRecords = pgTable("medical_clearance_records", {
   id: idColumn(),

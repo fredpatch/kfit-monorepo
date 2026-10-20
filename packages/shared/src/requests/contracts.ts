@@ -201,6 +201,7 @@ export type AdminServiceRequestSummary = {
 };
 
 export type AdminServiceRequestDetail = AdminServiceRequestSummary & {
+  convertedSubscriptionId: string | null;
   objective: string | null;
   preferredStartDate: string | null;
   message: string | null;

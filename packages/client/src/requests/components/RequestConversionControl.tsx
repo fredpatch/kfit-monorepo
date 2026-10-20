@@ -17,6 +17,7 @@ export function RequestConversionControl({ request, onConverted }: { request: Ad
   const eligible = request.status === "qualified" || request.status === "qualified_with_conditions";
   const consistent = review?.outcome === request.status && !!review?.finalVariantId && review.agreedPriceXaf !== null;
   const locked = request.status === "converted" || alreadyConverted || result !== null;
+  const subscriptionId = result?.subscription.id ?? request.convertedSubscriptionId;
 
   async function refresh() {
     await Promise.all([onConverted(), queryClient.invalidateQueries({ queryKey: ["customers", "admin-list"] })]);
@@ -57,5 +58,6 @@ export function RequestConversionControl({ request, onConverted }: { request: Ad
         <button type="submit" disabled={convert.isPending}>{convert.isPending ? "Conversion…" : "Convertir en abonnement"}</button>
       </form>}
     </>}
+    {locked && subscriptionId && <a href={`/admin/onboarding/${encodeURIComponent(subscriptionId)}`}>Ouvrir l’onboarding de l’abonnement</a>}
   </section>;
 }

@@ -11,6 +11,8 @@ import { createExpressRequestsRouter } from "./modules/requests/routes/express-r
 import { IpRateLimiter } from "./modules/requests/services/ip-rate-limiter.js";
 import type { CustomersController } from "./modules/customers/controllers/customers.controller.js";
 import { createExpressCustomersRouter } from "./modules/customers/routes/express-customers.router.js";
+import type { OnboardingController } from "./modules/onboarding/controllers/onboarding.controller.js";
+import { createExpressOnboardingRouter } from "./modules/onboarding/routes/express-onboarding.router.js";
 
 export type ServerAppDeps = {
   authController: AuthController;
@@ -20,6 +22,7 @@ export type ServerAppDeps = {
   adminRequestsController?: AdminRequestsController;
   requestConversionController?: RequestConversionController;
   customersController?: CustomersController;
+  onboardingController?: OnboardingController;
 };
 
 export function createServerApp(deps: ServerAppDeps): Express {
@@ -62,5 +65,6 @@ export function createServerApp(deps: ServerAppDeps): Express {
   if (deps.customersController) {
     app.use(createExpressCustomersRouter({ controller: deps.customersController, resolveSession: deps.resolveAuthSession }));
   }
+  if (deps.onboardingController) app.use(createExpressOnboardingRouter({ controller: deps.onboardingController, resolveSession: deps.resolveAuthSession }));
   return app;
 }

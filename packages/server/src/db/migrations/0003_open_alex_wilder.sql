@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "onboarding_items_subscription_type_uq" ON "onboarding_items" USING btree ("subscription_id","item_type");

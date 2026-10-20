@@ -52,6 +52,7 @@ function makeService(overrides: Partial<AdminRequestsServiceFake> = {}): AdminRe
           duplicateOfRequestId: null,
           contactAttempts: [],
           qualificationAvailableVariants: [],
+          convertedSubscriptionId: null,
           qualificationReviews: [],
           waitlistEntries: [],
         },

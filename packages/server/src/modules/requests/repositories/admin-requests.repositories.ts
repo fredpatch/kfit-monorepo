@@ -32,6 +32,7 @@ export type AdminRequestsRepositoryOptions = {
 };
 
 type BaseRow = {
+  convertedSubscriptionId: string | null;
   id: string;
   reference: string;
   status: string;
@@ -51,6 +52,7 @@ type BaseRow = {
 };
 
 const baseSelect = {
+  convertedSubscriptionId: serviceRequests.convertedSubscriptionId,
   id: serviceRequests.id,
   reference: serviceRequests.reference,
   status: serviceRequests.status,
@@ -284,6 +286,7 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
       duplicateOfRequestId: row.duplicateOfRequestId,
       contactAttempts: attempts.map(toContactAttemptDto),
       qualificationAvailableVariants: variants,
+      convertedSubscriptionId: row.convertedSubscriptionId,
       qualificationReviews: reviews.map(toQualificationReviewDto),
       waitlistEntries: waitlistRows.map(toWaitlistEntryDto),
     };

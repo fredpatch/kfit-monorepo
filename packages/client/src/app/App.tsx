@@ -7,12 +7,14 @@ import { AdminCatalogueCapacityPage } from "../catalogue/components/AdminCatalog
 import { PublicCataloguePage } from "../catalogue/components/PublicCataloguePage.js";
 import { AdminRequestsQueuePage } from "../requests/components/AdminRequestsQueuePage.js";
 import { AdminCustomersPage } from "../customers/components/AdminCustomersPage.js";
+import { AdminOnboardingPage } from "../onboarding/components/AdminOnboardingPage.js";
 
-type AdminTab = "catalogue" | "requests" | "customers";
+type AdminTab = "catalogue" | "requests" | "customers" | "onboarding";
 
 function AdminApp() {
   const auth = useAuth();
-  const [activeTab, setActiveTab] = useState<AdminTab>("catalogue");
+  const onboardingId = /^\/admin\/onboarding\/([0-9a-f-]{36})$/i.exec(window.location.pathname)?.[1] ?? "";
+  const [activeTab, setActiveTab] = useState<AdminTab>(onboardingId ? "onboarding" : "catalogue");
 
   if (auth.isLoading) {
     return (
@@ -75,11 +77,11 @@ function AdminApp() {
       <header className="admin-topbar">
         <div>
           <p className="eyebrow">K'FIT Admin</p>
-          <h1>{activeTab === "catalogue" ? "Gestion du catalogue" : activeTab === "customers" ? "Gestion des clients" : "Demandes et contacts"}</h1>
+          <h1>{activeTab === "catalogue" ? "Gestion du catalogue" : activeTab === "customers" ? "Gestion des clients" : activeTab === "onboarding" ? "Préparation des abonnements" : "Demandes et contacts"}</h1>
           <p className="muted">
             {activeTab === "catalogue"
               ? "Pilote la disponibilité des offres publiques depuis un espace authentifié."
-              : activeTab === "customers" ? "Retrouve un client par WhatsApp ou crée sa fiche." : "Suis les demandes reçues et enregistre les tentatives de contact."}
+              : activeTab === "customers" ? "Retrouve un client par WhatsApp ou crée sa fiche." : activeTab === "onboarding" ? "Vérifie les exigences et la capacité avant le démarrage." : "Suis les demandes reçues et enregistre les tentatives de contact."}
           </p>
         </div>
         <SessionPanel />
@@ -103,9 +105,10 @@ function AdminApp() {
         <button type="button" className={activeTab === "customers" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"} onClick={() => setActiveTab("customers")}>
           Clients
         </button>
+        <button type="button" className={activeTab === "onboarding" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"} onClick={() => setActiveTab("onboarding")}>Onboarding</button>
       </nav>
 
-      {activeTab === "catalogue" ? <AdminCatalogueCapacityPage /> : activeTab === "customers" ? <AdminCustomersPage /> : <AdminRequestsQueuePage />}
+      {activeTab === "catalogue" ? <AdminCatalogueCapacityPage /> : activeTab === "customers" ? <AdminCustomersPage /> : activeTab === "onboarding" ? <AdminOnboardingPage initialSubscriptionId={onboardingId} /> : <AdminRequestsQueuePage />}
     </main>
   );
 }

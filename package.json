@@ -17,6 +17,7 @@
     "db:logs": "docker compose logs -f postgres",
     "db:reset": "docker compose down -v && docker compose up -d postgres",
     "db:check": "npm run db:check --workspace @kfit/server",
+    "preflight:onboarding-uniqueness": "npm run preflight:onboarding-uniqueness --workspace @kfit/server",
     "db:generate": "npm run db:generate --workspace @kfit/server",
     "db:migrate": "npm run db:migrate --workspace @kfit/server",
     "preflight:otp": "npm run preflight:otp --workspace @kfit/server",

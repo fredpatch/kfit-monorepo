@@ -8,10 +8,10 @@
 ```text
 Branch            sprint-4
 Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
-Active slice      —
-Workflow state    CLOSED
+Active slice      S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review
+Workflow state    PLANNING
 Last validated    S4.2 — 2026-10-20
-Next action       Planner: inspect next Sprint 4 onboarding/capacity slice only
+Next action       Fred: review/approve S4.3 onboarding/capacity invariants
 ```
 
 ## Sprint 4 objective
@@ -22,7 +22,8 @@ Build the customer/conversion/onboarding foundation after the validated Sprint 3
 
 1. S4.1 — Client table + phone-based search/create-inline — CLOSED, Fred validated 2026-10-20.
 2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link — CLOSED, Fred validated 2026-10-20.
-3. Later Sprint 4 onboarding/questionnaire/consent slices follow dependency order from Notion and the project schema.
+3. S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review — PLANNING.
+4. Questionnaire and consent slices follow after S4.3 in dependency order.
 
 Do not implement the next slice before its plan is inspected and approved.
 
@@ -90,3 +91,72 @@ Known note        unchanged Sprint 3 concurrency test is flaky; passed approved 
 Out of scope      onboarding checklist, medical clearance, questionnaires, consents, payments, capacity reservation policy
 Next action       Planner: inspect next Sprint 4 onboarding/capacity slice
 ```
+
+
+## S4.3 — planning brief
+
+Goal: make each onboarding subscription expose an authoritative readiness checklist and an explicit capacity hold, without implementing questionnaire, consent, medical-document or finance workflows prematurely.
+
+Proposed scope:
+- admin onboarding detail/read model for subscriptions in onboarding-related states;
+- deterministic checklist initialization;
+- explicit capacity reservation deadline for limited-capacity services;
+- coach completion/waiver commands only for manually-owned checklist items;
+- derived readiness/stalled state;
+- guarded transition from onboarding to ready_to_start only when all blocking requirements are satisfied and capacity reservation is valid where required;
+- transactional audit for checklist mutations, capacity changes and ready transition.
+
+Proposed checklist item types:
+- `start_date_confirmed` — blocking, system-completed because S4.2 guarantees plannedStartDate;
+- `service_terms` — blocking, future consent workflow owns completion;
+- `questionnaire` — blocking only when effective service policy has questionnaireTemplateId; future questionnaire workflow owns completion;
+- `payment_condition` — blocking manual coach confirmation in S4.3; finance integration may later become authoritative without changing the checklist contract;
+- `medical_clearance` — not created merely for `required_if_risk_flag`; future questionnaire/risk workflow creates or activates it when a risk flag requires clearance. `not_required` creates none.
+
+Policy resolution:
+- effective service policy = variant-specific policy when present; otherwise service-level policy.
+- catalogue policy values are authoritative for questionnaire/medical requirement decisions.
+
+Capacity:
+- `capacityMode = unlimited`: no reservation deadline required.
+- `capacityMode = limited`: S4.3 requires coach to set `capacityReservedUntil`; do not invent a default duration.
+- expired reservation never auto-cancels or auto-releases the subscription; it derives `stalled` and blocks ready_to_start until the coach extends/reconfirms the reservation.
+- capacity limit counting/overbooking guard must count active capacity claims consistently (onboarding reservation not expired + ready/active operational states) and be rechecked transactionally when reservation is set/extended and when ready_to_start is confirmed.
+
+Derived onboarding state:
+- `ready`: every blocking checklist item completed/waived, plannedStartDate present, and required capacity reservation valid.
+- `blocked`: at least one blocking item incomplete and reservation not expired.
+- `stalled`: capacity reservation expired while subscription remains pre-start; no automatic lifecycle transition.
+
+Commands proposed:
+- `GET /admin/subscriptions/:subscriptionId/onboarding`
+- `POST /admin/subscriptions/:subscriptionId/onboarding/initialize`
+- `POST /admin/subscriptions/:subscriptionId/onboarding/items/:itemId/complete`
+- `POST /admin/subscriptions/:subscriptionId/onboarding/items/:itemId/waive`
+- `PUT /admin/subscriptions/:subscriptionId/onboarding/capacity-reservation`
+- `POST /admin/subscriptions/:subscriptionId/onboarding/ready`
+
+Ownership:
+- S4.3 manual completion is allowed for `payment_condition` only.
+- `start_date_confirmed` is system-owned.
+- `service_terms`, `questionnaire`, and medical-clearance completion are reserved for their later authoritative workflows.
+- waiver requires a non-empty reason and is an audited coach override; service terms and medical clearance should not be waivable in S4.3.
+
+Out of scope:
+- questionnaire template/submission implementation;
+- consent capture or legal document versioning;
+- health risk evaluation and medical document handling;
+- payment plans/events/proofs;
+- automatic activation;
+- scheduled stalled-onboarding jobs/notifications.
+
+Applicable patterns:
+- Explicit State Transitions
+- Atomic Business Operation
+- Audit Event System
+- Domain Error Taxonomy
+- Shared API Contracts
+- Hard Commit Point
+- Dynamic Form Schema only as a future integration boundary, not implemented here.
+
+Gate 1 pending Fred approval.

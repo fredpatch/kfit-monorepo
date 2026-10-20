@@ -11,7 +11,7 @@ Build the M4 customer/conversion/onboarding foundation after the validated Sprin
 1. [x] S4.1 — Client table + phone-based search/create-inline.
 2. [x] S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link.
 3. [x] S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review.
-4. [ ] S4.4 — Separate consent records and versioned terms/privacy acceptance.
+4. [ ] S4.4 — Separate consent records and versioned terms/privacy acceptance — APPROVED_FOR_IMPLEMENTATION.
 5. [ ] S4.5 — Versioned assessment and health-questionnaire templates.
 
 ## S4.1 — validated
@@ -326,7 +326,7 @@ Validated locally by Fred on 2026-10-20.
 Notion dependency review selects **Separate consent records and versioned terms/privacy acceptance** before questionnaires. S4.3 provides the onboarding dependency, while the questionnaire task requires the consent model. Planning only until Fred approves Gate 1.
 
 
-## S4.4 — planning
+## S4.4 — approved for implementation
 
 Backlog task: **Separate consent records and versioned terms/privacy acceptance**.
 
@@ -493,3 +493,22 @@ Fred Gate 2:
 - verify consumed link cannot be replayed;
 - coach-assisted capture on a second subscription;
 - DBeaver verify definitions, append-only records, provenance, token hash/consumption, onboarding item and safe audit metadata.
+
+
+### S4.4 Gate 1 — approved rules
+
+Fred approved the S4.4 plan.
+
+Locked:
+- consent definitions are versioned and published versions are immutable;
+- consent decisions are append-only hard-commit records;
+- onboarding-required bundle is service_terms + privacy_notice only;
+- health_data, progress_photo_storage, marketing and publication remain independent;
+- public acceptance reuses hashed, scoped, expiring secure-access tokens;
+- public GET does not consume the token; successful POST consumes it atomically;
+- coach-assisted capture records explicit provenance and actor;
+- service_terms onboarding completion occurs only after current granted decisions for the latest published required definitions;
+- no production legal text is invented by developers;
+- no questionnaire, medical, finance, customer-account, customer-OTP or V1.1 legal-review workflow is opened in S4.4.
+
+Do not start S4.5 until Fred validates S4.4 locally.

@@ -10,7 +10,8 @@ Build the M4 customer/conversion/onboarding foundation after the validated Sprin
 
 1. [x] S4.1 — Client table + phone-based search/create-inline.
 2. [x] S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link.
-3. [ ] Subsequent onboarding/questionnaire/consent slices — finalize from Notion backlog after S4.2 dependencies are validated.
+3. [x] S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review.
+4. [ ] Remaining questionnaire/consent slices — follow dependency order from Notion.
 
 ## S4.1 — validated
 
@@ -176,7 +177,7 @@ Validated locally by Fred on 2026-10-20.
 - unchanged Sprint 3 concurrency test failed once then passed on the approved retry; classified as flaky and non-blocking for S4.2.
 
 
-## S4.3 — approved for implementation
+## S4.3 — validated
 
 Backlog task: **Onboarding checklist, blockers, capacity reservation and stalled-state review**.
 
@@ -286,3 +287,19 @@ Waiver policy is locked:
 - `payment_condition`: waivable only with mandatory non-empty reason and audit.
 
 Implementation must remain server-first and must not open questionnaire, consent, medical-document, finance, activation, scheduled stalled-job, automatic cancellation, or waitlist-promotion behavior.
+
+
+### S4.3 validation evidence
+
+Validated locally by Fred on 2026-10-20.
+
+- `npm test`: server 177/177; shared 17/17.
+- PostgreSQL integration: 63/63, including 28 S4.3 cases.
+- typecheck/build/`db:check`/diff check green.
+- uniqueness migration generated/applied after duplicate preflight found 0 duplicate groups.
+- Reviewer passed with notes; QA passed with limitations.
+- Browser: onboarding detail, reservation creation/extension, stalled behavior and payment completion green.
+- Questionnaire waiver browser path was N/A for the tested service because its effective policy has no questionnaire template.
+- Controlled future-workflow fixture completed `service_terms`; readiness then transitioned successfully to `ready_to_start`.
+- DBeaver checks confirmed one onboarding item per subscription/type, valid capacity hold, append-only `onboarding -> ready_to_start` history and structural/no-PII audit metadata.
+- Derived `stalled` state produced no lifecycle history mutation.

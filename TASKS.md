@@ -8,10 +8,10 @@
 ```text
 Branch            sprint-4
 Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
-Active slice      S4.2 — Request conversion transaction
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Last validated    S4.1 — 2026-10-20
-Next action       Implementer: execute approved S4.2 server-first conversion plan only
+Active slice      —
+Workflow state    CLOSED
+Last validated    S4.2 — 2026-10-20
+Next action       Planner: inspect next Sprint 4 onboarding/capacity slice only
 ```
 
 ## Sprint 4 objective
@@ -21,66 +21,39 @@ Build the customer/conversion/onboarding foundation after the validated Sprint 3
 ## Sprint 4 execution order
 
 1. S4.1 — Client table + phone-based search/create-inline — CLOSED, Fred validated 2026-10-20.
-2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link — APPROVED_FOR_IMPLEMENTATION.
+2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link — CLOSED, Fred validated 2026-10-20.
 3. Later Sprint 4 onboarding/questionnaire/consent slices follow dependency order from Notion and the project schema.
 
-S4.2 Gate 1 is approved. Do not open the onboarding/capacity slice before S4.2 is locally validated.
+Do not implement the next slice before its plan is inspected and approved.
 
-## S4.2 — planning brief
+## S4.2 — validated result
 
-Goal: convert one eligible qualified request exactly once into a stable customer + `onboarding` subscription while preserving immutable request↔subscription linkage and all hard-commit invariants.
+Delivered:
+- named admin conversion command at `POST /admin/requests/:requestId/convert`;
+- conversion only from `qualified` or `qualified_with_conditions`;
+- server-authoritative service/variant/price/currency values;
+- planned start resolved from qualification target date or required conversion fallback input;
+- request row locking and exactly-once conflict semantics;
+- S4.1 normalized-WhatsApp advisory-lock reuse for customer resolution;
+- existing active customer reuse or exact-prospect customer creation;
+- onboarding subscription creation with `capacityReservedUntil = null`;
+- service-level + selected-variant component snapshots;
+- initial append-only status history null → `onboarding`;
+- reciprocal request↔subscription links;
+- transaction-scoped `request.converted` audit with structural metadata only;
+- French admin conversion controls.
 
-Planner findings:
-- eligible request states are `qualified` and `qualified_with_conditions`; `converted` is terminal for the request path;
-- conversion backlog note says conversion occurs only once; incorrect conversion is corrected by subscription cancellation, never deletion;
-- the authoritative commercial decision is the current non-superseded qualification review;
-- qualified reviews already require final variant + agreed XAF price; `targetStartDate` is optional in S3.4, while the request state machine requires a target start before conversion;
-- S4.1 customer writers use a transaction-scoped advisory lock keyed by normalized WhatsApp, and S4.2 must reuse it;
-- `subscriptions.source_request_id` and `service_requests.converted_subscription_id` are unique and must resolve to the same pair;
-- subscriptions use independent lifecycle/payment axes and conversion should create lifecycle state `onboarding`;
-- conversion is a documented single-transaction boundary including customer/subscription creation, source links, component snapshots, initial status history and audit;
-- detailed onboarding checklist/blockers and operational capacity-reservation review remain a later Sprint 4 task.
+Validation:
+- typecheck/build/db:check/diff check green;
+- server tests 153/153;
+- shared tests 15/15;
+- PostgreSQL integration 35/35, including 15 S4.2 cases;
+- Reviewer passed with notes;
+- QA passed with limitations;
+- Fred Gate 2 browser/DBeaver acceptance green on 2026-10-20.
 
-Proposed locked behavior:
-- command route: `POST /admin/requests/:requestId/convert`;
-- request must be `qualified` or `qualified_with_conditions`;
-- request row is locked `FOR UPDATE`;
-- reject any existing converted link / existing source subscription;
-- load the current non-superseded qualification review and require outcome to match request status;
-- serviceId comes from the request;
-- variantId and agreedPriceXaf come only from the qualification review;
-- plannedStartDate uses qualification `targetStartDate` when present; otherwise conversion input must provide it;
-- currency is server-fixed to `XAF`;
-- initial subscription status is `onboarding`;
-- customer resolution uses normalized prospect WhatsApp under the S4.1 advisory-lock key:
-  - reuse existing active/non-anonymized customer if present;
-  - otherwise create a customer from the request prospect and set `prospect_id = request.prospect_id`;
-  - never overwrite an existing customer's profile from prospect data during conversion;
-- component snapshot includes service-level components plus components scoped to the chosen variant; snapshot fields are source component id/type/label/quantity with counters initialized to zero;
-- initial `subscription_status_history` row is append-only: null → `onboarding`;
-- write both links atomically: subscription.sourceRequestId + request.convertedSubscriptionId, then request status `converted`;
-- write one transaction-scoped `request.converted` audit event with safe IDs/state metadata only;
-- no onboarding-item generation, questionnaire/consent generation, payment plan, automatic activation, or notification in S4.2.
-
-Capacity note:
-- the schema contains `capacityReservedUntil`, but no approved reservation duration/value exists in the project sources;
-- the later backlog task explicitly owns “capacity reservation and stalled-state review”;
-- S4.2 therefore does not invent a reservation deadline. It leaves `capacityReservedUntil = null` and defers reservation policy/write to that task unless Fred explicitly approves another rule.
-
-Idempotency:
-- S4.2 is “exactly once”, not replay-as-success;
-- a repeated or concurrent conversion attempt must resolve to a stable typed “already converted” conflict and must not create a second subscription/customer/component/history/audit set;
-- request row lock + existing DB unique constraints on source-request/converted-subscription links are the final concurrency guards.
-
-Applicable patterns:
-- Explicit State Transitions
-- Atomic Business Operation
-- Idempotent Business Command
-- Hard Commit Point
-- Historical Business Snapshot
-- Audit Event System
-- Domain Error Taxonomy
-- Shared API Contracts
+Known test note:
+- unchanged Sprint 3 concurrency test failed once and passed on the approved retry; keep classified as flaky until separately hardened. No S4.2 test failed.
 
 ## Closed
 
@@ -90,6 +63,7 @@ Sprint 1 — Auth, sessions, OTP, security (+ password recovery HTTP flow)
 Sprint 2 — Catalogue, offers, public availability
 Sprint 3 — Demandes, prospects, qualification et liste d'attente
 Sprint 4 / S4.1 — Customer identity/search/manual-create foundation
+Sprint 4 / S4.2 — Atomic qualified-request conversion foundation
 ```
 
 ## Blockers
@@ -109,11 +83,10 @@ Before production:
 Branch            sprint-4
 Sprint            4
 Slice             S4.2
-Workflow state    PLANNING
-Done              S4.1 validated and closed
-Pending           implementation → review → QA → Fred local Gate 2
-Validation done   none for S4.2
-Key risk          targetStartDate optional in S3.4; conversion requires planned start
-Capacity          reservation policy deferred; do not invent capacityReservedUntil
-Next action       Implementer
+Workflow state    CLOSED
+Done              implementation + review + QA + Fred Gate 2 validation
+Validation done   server 153/153; shared 15/15; PostgreSQL integration 35/35; browser+DBeaver green
+Known note        unchanged Sprint 3 concurrency test is flaky; passed approved retry
+Out of scope      onboarding checklist, medical clearance, questionnaires, consents, payments, capacity reservation policy
+Next action       Planner: inspect next Sprint 4 onboarding/capacity slice
 ```

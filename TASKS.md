@@ -9,9 +9,9 @@
 Branch            sprint-4
 Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
 Active slice      S4.2 — Request conversion transaction
-Workflow state    PLANNING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    S4.1 — 2026-10-20
-Next action       Fred: review/approve S4.2 conversion invariants before implementation
+Next action       Implementer: execute approved S4.2 server-first conversion plan only
 ```
 
 ## Sprint 4 objective
@@ -21,10 +21,10 @@ Build the customer/conversion/onboarding foundation after the validated Sprint 3
 ## Sprint 4 execution order
 
 1. S4.1 — Client table + phone-based search/create-inline — CLOSED, Fred validated 2026-10-20.
-2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link — PLANNING.
+2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link — APPROVED_FOR_IMPLEMENTATION.
 3. Later Sprint 4 onboarding/questionnaire/consent slices follow dependency order from Notion and the project schema.
 
-Do not implement S4.2 before Fred approves the plan.
+S4.2 Gate 1 is approved. Do not open the onboarding/capacity slice before S4.2 is locally validated.
 
 ## S4.2 — planning brief
 
@@ -111,9 +111,9 @@ Sprint            4
 Slice             S4.2
 Workflow state    PLANNING
 Done              S4.1 validated and closed
-Pending           Fred approval of S4.2 plan
+Pending           implementation → review → QA → Fred local Gate 2
 Validation done   none for S4.2
 Key risk          targetStartDate optional in S3.4; conversion requires planned start
 Capacity          reservation policy deferred; do not invent capacityReservedUntil
-Next action       Fred Gate 1 review
+Next action       Implementer
 ```

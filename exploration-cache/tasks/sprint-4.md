@@ -303,3 +303,18 @@ Validated locally by Fred on 2026-10-20.
 - Controlled future-workflow fixture completed `service_terms`; readiness then transitioned successfully to `ready_to_start`.
 - DBeaver checks confirmed one onboarding item per subscription/type, valid capacity hold, append-only `onboarding -> ready_to_start` history and structural/no-PII audit metadata.
 - Derived `stalled` state produced no lifecycle history mutation.
+
+
+### S4.3 validation evidence
+
+Validated locally by Fred on 2026-10-20.
+
+- `npm test`: server 177/177; shared 17/17.
+- PostgreSQL integration: 63/63, including 28 S4.3 cases.
+- typecheck/build/`db:check`/diff check green.
+- uniqueness migration generated/applied after 0 duplicate groups.
+- Reviewer passed with notes; QA passed with limitations.
+- Browser/DBeaver Gate 2 green for reservation/extension, stalled state, payment completion and ready transition.
+- Controlled future-workflow fixture completed `service_terms`; `onboarding -> ready_to_start` succeeded.
+- Questionnaire waiver browser path was N/A because the tested effective policy has no questionnaire template.
+- `stalled` remained derived and did not create lifecycle history.

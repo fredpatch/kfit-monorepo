@@ -1,4 +1,4 @@
-import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { idColumn, timestamps } from "./_helpers.js";
 import { users } from "./auth.js";
 
@@ -41,6 +41,7 @@ export const secureAccessTokens = pgTable("secure_access_tokens", {
   resourceType: text("resource_type").notNull(),
   resourceId: uuid("resource_id").notNull(),
   action: text("action").notNull(),
+  contextJson: jsonb("context_json"),
   recipientHintHash: text("recipient_hint_hash"),
   requiresOtp: boolean("requires_otp").notNull().default(false),
   deviceBindingHash: text("device_binding_hash"),
@@ -54,7 +55,7 @@ export const secureAccessTokens = pgTable("secure_access_tokens", {
 
 export const externalAccessEvents = pgTable("external_access_events", {
   id: idColumn(),
-  secureAccessTokenId: uuid("secure_access_token_id").notNull().references(() => secureAccessTokens.id, { onDelete: "restrict" }),
+  secureAccessTokenId: uuid("secure_access_token_id").references(() => secureAccessTokens.id, { onDelete: "restrict" }),
   eventType: text("event_type").notNull(),
   result: text("result").notNull(),
   ipHash: text("ip_hash"),

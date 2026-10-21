@@ -7,7 +7,8 @@ import { db, pool } from "../../../db/client.js";
 import { auditEvents, users } from "../../../db/schema/auth.js";
 import { servicePolicies, services, serviceVariants } from "../../../db/schema/catalogue.js";
 import { customers, subscriptions, subscriptionStatusHistory } from "../../../db/schema/customers.js";
-import { onboardingItems } from "../../../db/schema/onboarding.js";
+import { onboardingItems, consentDefinitions, consentRecords } from "../../../db/schema/onboarding.js";
+import { DrizzleConsentRepository } from "../../consents/repositories/consent.repository.js";
 import { DrizzleOnboardingRepository } from "../repositories/onboarding.repository.js";
 import type { OnboardingCommand } from "../services/onboarding.service.js";
 
@@ -16,6 +17,8 @@ const serviceIds: string[] = []; const subscriptionIds: string[] = [];
 const options = { auditHashPepper: "synthetic-onboarding-integration-pepper-at-least-32-characters" };
 const actor = { userId, requestId: randomUUID(), ipAddress: "192.0.2.1", userAgent: "synthetic-onboarding" };
 const repository = new DrizzleOnboardingRepository(db, options);
+const consents = new DrizzleConsentRepository(db, options);
+const definitionIds: string[] = [];
 const future = () => new Date(Date.now() + 86400000);
 let safeTarget = false;
 before(async () => {
@@ -24,12 +27,19 @@ before(async () => {
   safeTarget = true;
   await db.insert(users).values({ id: userId, email: `onboarding-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
   await db.insert(customers).values({ id: customerId, fullName: "Synthetic Onboarding Customer", whatsapp: "+241" + String(BigInt("0x" + customerId.replaceAll("-", "").slice(0,12)) % 1000000000000n).padStart(12,"0") });
+  const existing = await db.select().from(consentDefinitions);
+  for (const consentType of ["service_terms", "privacy_notice"] as const) {
+    const version = (existing.filter(d => d.consentType === consentType).reduce((max, row) => BigInt(row.version) > max ? BigInt(row.version) : max, 0n) + 1n).toString();
+    const result = await consents.saveDefinition({ consentType, version, title: "Synthetic onboarding test definition", content: "SYNTHETIC TEST ONLY. No legal validity.", publish: true });
+    assert.ok(result.ok); if (result.ok) definitionIds.push(result.definition.id);
+  }
 });
 after(async () => {
   try {
     if (!safeTarget) return;
     await db.delete(auditEvents).where(eq(auditEvents.actorUserId, userId));
     if (subscriptionIds.length) {
+      await db.delete(consentRecords).where(inArray(consentRecords.subscriptionId, subscriptionIds));
       await db.delete(onboardingItems).where(inArray(onboardingItems.subscriptionId, subscriptionIds));
       await db.delete(subscriptionStatusHistory).where(inArray(subscriptionStatusHistory.subscriptionId, subscriptionIds));
       await db.delete(subscriptions).where(inArray(subscriptions.id, subscriptionIds));
@@ -41,6 +51,7 @@ after(async () => {
     }
     await db.delete(customers).where(eq(customers.id, customerId));
     await db.delete(users).where(eq(users.id, userId));
+    if (definitionIds.length) await db.delete(consentDefinitions).where(inArray(consentDefinitions.id, definitionIds));
   } finally { await pool.end(); }
 });
 
@@ -73,9 +84,10 @@ async function initialize(id: string) { assert.equal((await execute(id, { action
 async function itemId(id: string, type: string) {
   const item = (await detail(id)).items.find(item => item.itemType === type); assert.ok(item); return item.id;
 }
-// Synthetic fixture standing in for later authoritative workflows; no such completion API is added.
+// Questionnaire completion remains a future-workflow fixture; terms use real S4.4 evidence.
 async function futureWorkflowComplete(id: string) {
-  await db.update(onboardingItems).set({ status: "completed", completedAt: new Date() }).where(and(eq(onboardingItems.subscriptionId, id), inArray(onboardingItems.itemType, ["service_terms", "questionnaire"])));
+  assert.equal((await consents.execute(id, { action: "capture", decisions: { service_terms: "granted", privacy_notice: "granted" }, expectedDefinitionIds: definitionIds }, actor)).ok, true);
+  await db.update(onboardingItems).set({ status: "completed", completedAt: new Date() }).where(and(eq(onboardingItems.subscriptionId, id), eq(onboardingItems.itemType, "questionnaire")));
 }
 async function satisfy(id: string) {
   await initialize(id); await futureWorkflowComplete(id);

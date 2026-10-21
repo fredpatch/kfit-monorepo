@@ -8,6 +8,7 @@ import { PublicCataloguePage } from "../catalogue/components/PublicCataloguePage
 import { AdminRequestsQueuePage } from "../requests/components/AdminRequestsQueuePage.js";
 import { AdminCustomersPage } from "../customers/components/AdminCustomersPage.js";
 import { AdminOnboardingPage } from "../onboarding/components/AdminOnboardingPage.js";
+import { PublicConsentPage } from "../consents/components/PublicConsentPage.js";
 
 type AdminTab = "catalogue" | "requests" | "customers" | "onboarding";
 
@@ -114,6 +115,7 @@ function AdminApp() {
 }
 
 export function App() {
+  if (window.location.pathname === "/consent") return <PublicConsentPage />;
   if (window.location.pathname.startsWith("/admin")) {
     return (
       <AuthProvider>

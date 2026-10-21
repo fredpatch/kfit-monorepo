@@ -18,6 +18,7 @@
     "db:reset": "docker compose down -v && docker compose up -d postgres",
     "db:check": "npm run db:check --workspace @kfit/server",
     "preflight:onboarding-uniqueness": "npm run preflight:onboarding-uniqueness --workspace @kfit/server",
+    "preflight:consents": "npm run preflight:consents --workspace @kfit/server",
     "db:generate": "npm run db:generate --workspace @kfit/server",
     "db:migrate": "npm run db:migrate --workspace @kfit/server",
     "preflight:otp": "npm run preflight:otp --workspace @kfit/server",
@@ -30,6 +31,7 @@
     "preflight:auth-recovery": "npm run preflight:auth-recovery --workspace @kfit/server",
     "seed:catalogue": "npm run seed:catalogue --workspace @kfit/server",
     "seed:demo-admin": "npm run build --workspace @kfit/shared && npm run seed:demo-admin --workspace @kfit/server",
+    "seed:demo-consents": "npm run build --workspace @kfit/shared && npm run seed:demo-consents --workspace @kfit/server",
     "preflight:catalogue-seed": "npm run preflight:catalogue-seed --workspace @kfit/server"
   },
   "engines": {

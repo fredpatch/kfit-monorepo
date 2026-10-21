@@ -4,6 +4,7 @@ import type { db as appDb } from "../../../db/client.js";
 import { servicePolicies, services, serviceVariants } from "../../../db/schema/catalogue.js";
 import { subscriptions, subscriptionStatusHistory } from "../../../db/schema/customers.js";
 import { onboardingItems } from "../../../db/schema/onboarding.js";
+import { lockConsentDefinitions, readConsentEvidence } from "../../consents/repositories/consent.repository.js";
 import { AuditService, type AuditMetadata } from "../../auth/services/audit.service.js";
 import { checklistDefinition, deriveOnboarding, itemPermissions, resolveCapacity, resolveEffectivePolicy,
   type OnboardingActor, type OnboardingCommand, type OnboardingRepository, type OnboardingResult } from "../services/onboarding.service.js";
@@ -40,7 +41,11 @@ export class DrizzleOnboardingRepository implements OnboardingRepository {
         userAgent: actor.userAgent, eventType, entityType: "subscription", entityId: subscriptionId, result: "success", metadata,
       });
       const view = async (): Promise<OnboardingDetail> => {
-        const items = await tx.select().from(onboardingItems).where(eq(onboardingItems.subscriptionId, subscriptionId)).orderBy(onboardingItems.itemType);
+        await lockConsentDefinitions(tx);
+        const evidence = await readConsentEvidence(tx, subscriptionId);
+        const items = (await tx.select().from(onboardingItems).where(eq(onboardingItems.subscriptionId, subscriptionId)).orderBy(onboardingItems.itemType))
+          .map(item => item.itemType === "service_terms" && (!evidence.current || !evidence.bundle.satisfied)
+            ? { ...item, status: "pending", completedAt: null, waivedAt: null, waiverReason: null } : item);
         // Refresh time after acquiring capacity locks, including any time spent waiting.
         const now = new Date();
         const [claims] = capacity.mode === "limited" ? await tx.select({ value: count() }).from(subscriptions).where(and(

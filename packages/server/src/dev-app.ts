@@ -103,6 +103,7 @@ export function createDevelopmentApp() {
   );
 
   return createServerApp({
+    consentController: new ConsentController(new ConsentService(new DrizzleConsentRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     authController,
     resolveAuthSession: (request) => resolver.resolveFromRequest(request),
     catalogueController,
@@ -113,3 +114,6 @@ export function createDevelopmentApp() {
     customersController: new CustomersController(new CustomersService(new DrizzleCustomersRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
   });
 }
+import { ConsentController } from "./modules/consents/controllers/consent.controller.js";
+import { ConsentService } from "./modules/consents/services/consent.service.js";
+import { DrizzleConsentRepository } from "./modules/consents/repositories/consent.repository.js";

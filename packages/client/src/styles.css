@@ -8,6 +8,18 @@ body {
   margin: 0;
 }
 
+.consent-shell { max-width: 860px; margin: 32px auto; padding: 0 16px; }
+.consent-form { display: grid; gap: 20px; margin-top: 20px; }
+.consent-form fieldset { border: 1px solid #dce8d4; border-radius: 12px; padding: 20px; min-width: 0; }
+.consent-form legend { font-weight: 700; padding: 0 8px; }
+.consent-form label { display: block; margin-top: 12px; line-height: 1.6; }
+.consent-form input[type="radio"], .consent-form input[type="checkbox"] { width: auto; margin-right: 10px; }
+.consent-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
+.consent-link { margin: 20px 0; }
+.consent-link input { display: block; box-sizing: border-box; width: 100%; margin-top: 8px; padding: 12px; }
+.consent-panel summary { cursor: pointer; font-weight: 700; margin: 18px 0; }
+.consent-panel li button { margin: 8px; }
+
 .onboarding-grid { display: grid; gap: 20px; margin-top: 20px; }
 .onboarding-items { list-style: none; padding: 0; display: grid; gap: 12px; }
 .onboarding-items li { border: 1px solid #dce8d4; border-radius: 12px; padding: 16px; overflow-wrap: anywhere; }

@@ -14,6 +14,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:check": "drizzle-kit check",
     "preflight:onboarding-uniqueness": "node ./scripts/preflight/onboarding-uniqueness.mjs",
+    "preflight:consents": "node ./scripts/preflight/consents.mjs",
     "preflight:otp": "node ./scripts/preflight/otp.mjs",
     "preflight:smtp": "node ./scripts/preflight/smtp.mjs",
     "preflight:files": "node ./scripts/preflight/files.mjs",
@@ -24,6 +25,7 @@
     "preflight:auth-recovery": "node ./scripts/preflight/password-recovery.mjs",
     "seed:catalogue": "node ./dist/db/seeds/catalogue.seed.js",
     "seed:demo-admin": "npm run build && node ./scripts/dev/seed-demo-admin.mjs",
+    "seed:demo-consents": "npm run build && node ./scripts/dev/seed-demo-consents.mjs",
     "preflight:catalogue-seed": "node ./scripts/preflight/catalogue-seed.mjs"
   },
   "dependencies": {

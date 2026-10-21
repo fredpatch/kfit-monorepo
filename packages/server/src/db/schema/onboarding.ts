@@ -1,7 +1,8 @@
-import { boolean, index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { idColumn, timestamps } from "./_helpers.js";
 import { users } from "./auth.js";
 import { customers, subscriptions } from "./customers.js";
+import { secureAccessTokens } from "./documents.js";
 
 export const onboardingItems = pgTable("onboarding_items", {
   id: idColumn(),
@@ -36,9 +37,12 @@ export const consentDefinitions = pgTable("consent_definitions", {
   consentType: text("consent_type").notNull(),
   version: text("version").notNull(),
   title: text("title").notNull(),
+  content: text("content").notNull(),
   contentHash: text("content_hash").notNull(),
+  status: text("status").notNull().default("draft"),
   publishedAt: timestamp("published_at", { withTimezone: true }),
   retiredAt: timestamp("retired_at", { withTimezone: true }),
+  ...timestamps,
 }, (t) => [uniqueIndex("consent_definitions_version_uq").on(t.consentType, t.version)]);
 
 export const consentRecords = pgTable("consent_records", {
@@ -49,6 +53,10 @@ export const consentRecords = pgTable("consent_records", {
   decision: text("decision").notNull(),
   capturedVia: text("captured_via").notNull(),
   capturedAt: timestamp("captured_at", { withTimezone: true }).defaultNow().notNull(),
+  capturedByUserId: uuid("captured_by_user_id").references(() => users.id, { onDelete: "restrict" }),
+  secureAccessTokenId: uuid("secure_access_token_id").references(() => secureAccessTokens.id, { onDelete: "restrict" }),
+  supersedesConsentRecordId: uuid("supersedes_consent_record_id").references((): AnyPgColumn => consentRecords.id, { onDelete: "restrict" }),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   verificationMetadataJson: jsonb("verification_metadata_json"),
-}, (t) => [index("consent_records_customer_idx").on(t.customerId, t.capturedAt), index("consent_records_subscription_idx").on(t.subscriptionId, t.capturedAt)]);
+}, (t) => [index("consent_records_customer_idx").on(t.customerId, t.capturedAt), index("consent_records_subscription_idx").on(t.subscriptionId, t.capturedAt),
+  uniqueIndex("consent_records_supersedes_uq").on(t.supersedesConsentRecordId)]);

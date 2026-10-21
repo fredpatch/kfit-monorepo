@@ -13,6 +13,8 @@ import type { CustomersController } from "./modules/customers/controllers/custom
 import { createExpressCustomersRouter } from "./modules/customers/routes/express-customers.router.js";
 import type { OnboardingController } from "./modules/onboarding/controllers/onboarding.controller.js";
 import { createExpressOnboardingRouter } from "./modules/onboarding/routes/express-onboarding.router.js";
+import type { ConsentController } from "./modules/consents/controllers/consent.controller.js";
+import { createExpressConsentRouter } from "./modules/consents/routes/express-consent.router.js";
 
 export type ServerAppDeps = {
   authController: AuthController;
@@ -23,6 +25,7 @@ export type ServerAppDeps = {
   requestConversionController?: RequestConversionController;
   customersController?: CustomersController;
   onboardingController?: OnboardingController;
+  consentController?: ConsentController;
 };
 
 export function createServerApp(deps: ServerAppDeps): Express {
@@ -66,5 +69,6 @@ export function createServerApp(deps: ServerAppDeps): Express {
     app.use(createExpressCustomersRouter({ controller: deps.customersController, resolveSession: deps.resolveAuthSession }));
   }
   if (deps.onboardingController) app.use(createExpressOnboardingRouter({ controller: deps.onboardingController, resolveSession: deps.resolveAuthSession }));
+  if (deps.consentController) app.use(createExpressConsentRouter({ controller: deps.consentController, resolveSession: deps.resolveAuthSession }));
   return app;
 }

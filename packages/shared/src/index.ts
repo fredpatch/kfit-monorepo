@@ -5,3 +5,4 @@ export * from "./customers/contracts.js";
 export * from "./phone.js";
 export * from "./dev/demo-account.js";
 export * from "./onboarding/contracts.js";
+export * from "./consents/contracts.js";

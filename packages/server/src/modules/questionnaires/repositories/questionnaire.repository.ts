@@ -57,12 +57,16 @@ export class DrizzleQuestionnaireRepository implements QuestionnaireRepository {
     }
     const policies = await tx.select().from(servicePolicies).where(and(eq(servicePolicies.serviceId, subscription.serviceId),
       subscription.variantId ? or(isNull(servicePolicies.variantId), eq(servicePolicies.variantId, subscription.variantId)) : isNull(servicePolicies.variantId))).for("share");
-    const specific = policies.filter(p => p.variantId === subscription.variantId && p.variantId !== null);
-    const selected = specific.length ? specific : policies.filter(p => p.variantId === null);
-    if (selected.length > 1 || selected[0]?.medicalClearancePolicy && !["not_required", "required_if_risk_flag"].includes(selected[0].medicalClearancePolicy)) return { ok: false, error: "QUESTIONNAIRE_ASSIGNMENT_INVALID" };
-    const medicalPolicy = selected[0]?.medicalClearancePolicy === "required_if_risk_flag" ? "required_if_risk_flag" : "not_required";
+    const servicePoliciesForScope = policies.filter(p => p.variantId === null);
+    const variantPoliciesForScope = subscription.variantId ? policies.filter(p => p.variantId === subscription.variantId) : [];
+    if (servicePoliciesForScope.length > 1 || variantPoliciesForScope.length > 1) return { ok: false, error: "QUESTIONNAIRE_ASSIGNMENT_INVALID" };
+    const servicePolicy = servicePoliciesForScope[0];
+    const variantPolicy = variantPoliciesForScope[0];
+    const effectiveMedicalPolicy = variantPolicy?.medicalClearancePolicy ?? servicePolicy?.medicalClearancePolicy ?? null;
+    if (effectiveMedicalPolicy && !["not_required", "required_if_risk_flag"].includes(effectiveMedicalPolicy)) return { ok: false, error: "QUESTIONNAIRE_ASSIGNMENT_INVALID" };
+    const medicalPolicy = effectiveMedicalPolicy === "required_if_risk_flag" ? "required_if_risk_flag" : "not_required";
     await lockQuestionnaireTemplates(tx);
-    const templateId = selected[0]?.questionnaireTemplateId;
+    const templateId = variantPolicy?.questionnaireTemplateId ?? servicePolicy?.questionnaireTemplateId ?? null;
     if (!templateId) return { ok: true, document: null, history: [], medicalPolicy };
     const template = await loadQuestionnaireTemplate(tx, templateId);
     if (!template || template.status !== "published" || !template.publishedAt) return { ok: false, error: "QUESTIONNAIRE_ASSIGNMENT_INVALID" };

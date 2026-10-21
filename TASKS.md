@@ -9,9 +9,9 @@
 Branch            sprint-5
 Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
 Active slice      S5.2 — Appointment scheduling, confirmation links, cancellation policy and history
-Workflow state    PLANNING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    S5.1 — 2026-10-21
-Next action       Fred: review/approve S5.2 appointment scheduling invariants before implementation
+Next action       Implementer: execute approved S5.2 server-first appointment plan only
 ```
 
 ## Sprint 5 objective
@@ -21,7 +21,7 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 ## Sprint 5 execution order
 
 1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — CLOSED, Fred validated 2026-10-21.
-2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — PLANNING.
+2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — APPROVED_FOR_IMPLEMENTATION.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions.
 5. S5.5 — Personalized document versioning and secure temporary delivery links.
@@ -48,7 +48,7 @@ Slice             S5.2
 Workflow state    PLANNING
 Done              S5.1 implementation + correction + review + QA + Fred Gate 2 validation
 Validation done   Gate 2 green; browser/DBeaver lifecycle acceptance green
-Next action       Planner: inspect S5.2 only
+Next action       Implementer
 ```
 
 

@@ -7,7 +7,7 @@ Deliver the authoritative post-onboarding subscription/coaching lifecycle: activ
 ## Ordered tasks
 
 1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — VALIDATED.
-2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — PLANNING.
+2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — APPROVED_FOR_IMPLEMENTATION.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions.
 5. S5.5 — Personalized document versioning and secure temporary delivery links.
@@ -497,5 +497,36 @@ Fred Gate 2:
 - mark missed scenario according to policy;
 - restore one consumed unit;
 - DBeaver verify original/rescheduled rows, events, token hashes, component events/counters and safe audit.
+
+Do not start S5.3 until Fred validates S5.2 locally.
+
+
+### S5.2 Gate 1 — approved rules
+
+Fred approved the S5.2 appointment plan.
+
+Locked:
+- appointment lifecycle uses named commands only;
+- rescheduling never overwrites original schedule facts; it creates a linked replacement appointment;
+- late-cancel/missed policy is snapshotted at appointment creation and historical decisions never consult current catalogue policy;
+- only active subscriptions may receive new appointments or rescheduled replacement slots;
+- customer confirmation/decline/reschedule request uses a scoped, expiring, hash-only secure link with no customer account and no OTP;
+- coach cancellation never consumes entitlement;
+- on-time customer cancellation never consumes entitlement;
+- late customer cancellation consumes at most one linked component only when the appointment snapshot says so;
+- missed consumes at most one linked component only when the snapshot says so;
+- completed linked appointment consumes one entitlement atomically;
+- component_events are append-only; quantity_consumed is updated in the same transaction;
+- restoration is explicit, reasoned, append-only and does not reopen/change appointment status;
+- S5.2 never mutates subscription lifecycle;
+- reminders/jobs, calendar integrations, follow-ups, payments, customer accounts and multi-coach scheduling remain out of scope.
+
+Proposed appointment schema additions are approved:
+- rescheduled_from_appointment_id
+- late_cancel_notice_hours_snapshot
+- late_cancel_consumes_component_snapshot
+- missed_consumes_component_snapshot
+- cancelled_at
+- cancelled_by_type
 
 Do not start S5.3 until Fred validates S5.2 locally.

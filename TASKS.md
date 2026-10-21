@@ -9,9 +9,9 @@
 Branch            sprint-4
 Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
 Active slice      S4.5 — Versioned assessment and health-questionnaire templates
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Last validated    S4.4 — 2026-10-21
-Next action       Implementer: execute approved S4.5 server-first questionnaire plan only
+Workflow state    CLOSED
+Last validated    Sprint 4 / S4.5 — 2026-10-21
+Next action       Sprint boundary: reconcile Sprint 4 and identify exact first Sprint 5 task
 ```
 
 ## Sprint 4 objective
@@ -24,7 +24,7 @@ Build the customer/conversion/onboarding foundation after the validated Sprint 3
 2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link — CLOSED, Fred validated 2026-10-20.
 3. S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review — CLOSED, Fred validated 2026-10-20.
 4. S4.4 — Separate consent records and versioned terms/privacy acceptance — CLOSED, Fred validated 2026-10-21.
-5. S4.5 — Versioned assessment and health-questionnaire templates — APPROVED_FOR_IMPLEMENTATION.
+5. S4.5 — Versioned assessment and health-questionnaire templates — CLOSED, Fred validated 2026-10-21.
 
 S4.3 is locally validated. Do not implement the next slice before its plan is inspected and approved.
 
@@ -85,12 +85,12 @@ Before production:
 Branch            sprint-4
 Sprint            4
 Slice             S4.5
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Done              S4.4 validated; S4.5 planning + Fred Gate 1 approval
-Validation done   none for S4.5 yet
+Workflow state    CLOSED
+Done              S4.5 implementation + corrective assignment path + review + QA + Fred Gate 2 validation
+Validation done   final local validation suite green; browser/mobile/keyboard and DBeaver acceptance green
 Key rules          explicit capacity deadline for limited services; derived stalled state; strict checklist ownership
 Out of scope      questionnaire/consent/medical/finance workflows, activation, automatic cancellation/waitlist movement
-Next action       Implementer
+Next action       Sprint boundary reconciliation
 ```
 
 
@@ -470,3 +470,35 @@ Validation pending:
 - variant override path;
 - variant inheritance after clearing override;
 - onboarding questionnaire panel becomes available after assignment.
+
+
+## S4.5 — validation closure
+
+Validated locally by Fred on 2026-10-21.
+
+Validated behavior:
+- versioned assessment/health templates and all eight V1 question types;
+- secure public and coach-assisted submissions;
+- append-only revision history;
+- health_data consent gate with refusal producing no questionnaire submission/answers;
+- declarative non-diagnostic risk flags;
+- questionnaire onboarding completion;
+- risk-triggered medical-clearance blocker/record;
+- safe coach correction creates revision N+1 without auto-clearing medical clearance;
+- consumed-link replay rejection;
+- DBeaver verification of immutable history, consent provenance, token hashing and safe audits.
+
+Corrective fix validated during Gate 2:
+- added visible service/variant questionnaire assignment path;
+- only published templates assignable;
+- assignments persist to service_policies.questionnaire_template_id;
+- variant override works;
+- clearing variant override restores service-level inheritance;
+- effective resolver falls back per field instead of treating null variant questionnaire as a hard override;
+- questionnaire assignment route added to Vite proxy;
+- local API/client restarts were required after new route/proxy wiring.
+
+Validation:
+- original agent run before the corrective fix: server 214/214, shared 34/34, PostgreSQL integration 131/131 including 43 S4.5 cases;
+- Fred reran the final validation suite after the corrective fix and reported all checks green;
+- exact post-correction test counts were not separately reported, so do not substitute the pre-correction counts as final counts.

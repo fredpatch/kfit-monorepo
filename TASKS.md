@@ -9,9 +9,9 @@
 Branch            sprint-4
 Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
 Active slice      S4.5 — Versioned assessment and health-questionnaire templates
-Workflow state    PLANNING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    S4.4 — 2026-10-21
-Next action       Fred: review/approve S4.5 questionnaire/health-risk invariants before implementation
+Next action       Implementer: execute approved S4.5 server-first questionnaire plan only
 ```
 
 ## Sprint 4 objective
@@ -24,7 +24,7 @@ Build the customer/conversion/onboarding foundation after the validated Sprint 3
 2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link — CLOSED, Fred validated 2026-10-20.
 3. S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review — CLOSED, Fred validated 2026-10-20.
 4. S4.4 — Separate consent records and versioned terms/privacy acceptance — CLOSED, Fred validated 2026-10-21.
-5. S4.5 — Versioned assessment and health-questionnaire templates — PLANNING.
+5. S4.5 — Versioned assessment and health-questionnaire templates — APPROVED_FOR_IMPLEMENTATION.
 
 S4.3 is locally validated. Do not implement the next slice before its plan is inspected and approved.
 
@@ -84,13 +84,13 @@ Before production:
 ```text
 Branch            sprint-4
 Sprint            4
-Slice             S4.4
-Workflow state    CLOSED
-Done              S4.4 implementation + review + QA + Fred Gate 2 validation
-Validation done   server 195/195; shared 20/20; PostgreSQL integration 88/88; browser+DBeaver green
+Slice             S4.5
+Workflow state    APPROVED_FOR_IMPLEMENTATION
+Done              S4.4 validated; S4.5 planning + Fred Gate 1 approval
+Validation done   none for S4.5 yet
 Key rules          explicit capacity deadline for limited services; derived stalled state; strict checklist ownership
 Out of scope      questionnaire/consent/medical/finance workflows, activation, automatic cancellation/waitlist movement
-Next action       Planner: inspect S4.5 only
+Next action       Implementer
 ```
 
 
@@ -444,4 +444,4 @@ Applicable patterns:
 - Audit Event System
 - append-only revision history
 
-Gate 1 pending Fred approval.
+Gate 1 approved by Fred.

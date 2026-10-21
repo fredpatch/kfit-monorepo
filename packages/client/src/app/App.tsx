@@ -9,8 +9,10 @@ import { AdminRequestsQueuePage } from "../requests/components/AdminRequestsQueu
 import { AdminCustomersPage } from "../customers/components/AdminCustomersPage.js";
 import { AdminOnboardingPage } from "../onboarding/components/AdminOnboardingPage.js";
 import { PublicConsentPage } from "../consents/components/PublicConsentPage.js";
+import { PublicQuestionnairePage } from "../questionnaires/components/PublicQuestionnairePage.js";
+import { AdminQuestionnaireTemplatesPage } from "../questionnaires/components/AdminQuestionnaireTemplatesPage.js";
 
-type AdminTab = "catalogue" | "requests" | "customers" | "onboarding";
+type AdminTab = "catalogue" | "requests" | "customers" | "onboarding" | "questionnaires";
 
 function AdminApp() {
   const auth = useAuth();
@@ -78,11 +80,11 @@ function AdminApp() {
       <header className="admin-topbar">
         <div>
           <p className="eyebrow">K'FIT Admin</p>
-          <h1>{activeTab === "catalogue" ? "Gestion du catalogue" : activeTab === "customers" ? "Gestion des clients" : activeTab === "onboarding" ? "Préparation des abonnements" : "Demandes et contacts"}</h1>
+          <h1>{activeTab === "catalogue" ? "Gestion du catalogue" : activeTab === "customers" ? "Gestion des clients" : activeTab === "onboarding" ? "Préparation des abonnements" : activeTab === "questionnaires" ? "Modèles de questionnaires" : "Demandes et contacts"}</h1>
           <p className="muted">
             {activeTab === "catalogue"
               ? "Pilote la disponibilité des offres publiques depuis un espace authentifié."
-              : activeTab === "customers" ? "Retrouve un client par WhatsApp ou crée sa fiche." : activeTab === "onboarding" ? "Vérifie les exigences et la capacité avant le démarrage." : "Suis les demandes reçues et enregistre les tentatives de contact."}
+              : activeTab === "customers" ? "Retrouve un client par WhatsApp ou crée sa fiche." : activeTab === "onboarding" ? "Vérifie les exigences et la capacité avant le démarrage." : activeTab === "questionnaires" ? "Prépare et publie les versions des questionnaires d’évaluation et de santé." : "Suis les demandes reçues et enregistre les tentatives de contact."}
           </p>
         </div>
         <SessionPanel />
@@ -107,15 +109,17 @@ function AdminApp() {
           Clients
         </button>
         <button type="button" className={activeTab === "onboarding" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"} onClick={() => setActiveTab("onboarding")}>Onboarding</button>
+        <button type="button" className={activeTab === "questionnaires" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"} onClick={() => setActiveTab("questionnaires")}>Questionnaires</button>
       </nav>
 
-      {activeTab === "catalogue" ? <AdminCatalogueCapacityPage /> : activeTab === "customers" ? <AdminCustomersPage /> : activeTab === "onboarding" ? <AdminOnboardingPage initialSubscriptionId={onboardingId} /> : <AdminRequestsQueuePage />}
+      {activeTab === "catalogue" ? <AdminCatalogueCapacityPage /> : activeTab === "customers" ? <AdminCustomersPage /> : activeTab === "onboarding" ? <AdminOnboardingPage initialSubscriptionId={onboardingId} /> : activeTab === "questionnaires" ? <AdminQuestionnaireTemplatesPage /> : <AdminRequestsQueuePage />}
     </main>
   );
 }
 
 export function App() {
   if (window.location.pathname === "/consent") return <PublicConsentPage />;
+  if (window.location.pathname === "/questionnaire") return <PublicQuestionnairePage />;
   if (window.location.pathname.startsWith("/admin")) {
     return (
       <AuthProvider>

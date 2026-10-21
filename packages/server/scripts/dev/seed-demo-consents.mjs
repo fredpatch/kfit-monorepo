@@ -13,10 +13,10 @@ try {
   const { DrizzleConsentRepository } = await import("../../dist/modules/consents/repositories/consent.repository.js");
   const repository = new DrizzleConsentRepository(database.db, { auditHashPepper: config.auditHashPepper });
   const existing = await database.db.select().from(consentDefinitions);
-  for (const consentType of ["service_terms", "privacy_notice"]) {
+  for (const consentType of ["service_terms", "privacy_notice", "health_data"]) {
     if (existing.some(row => row.consentType === consentType && row.status === "published")) continue;
     const version = (existing.filter(row => row.consentType === consentType).reduce((max, row) => BigInt(row.version) > max ? BigInt(row.version) : max, 0n) + 1n).toString();
-    const result = await repository.saveDefinition({ consentType, version, title: consentType === "service_terms" ? "DÉMONSTRATION — Conditions fictives" : "DÉMONSTRATION — Confidentialité fictive",
+    const result = await repository.saveDefinition({ consentType, version, title: consentType === "service_terms" ? "DÉMONSTRATION — Conditions fictives" : consentType === "health_data" ? "DÉMONSTRATION — Données de santé fictives" : "DÉMONSTRATION — Confidentialité fictive",
       content: "DÉMONSTRATION LOCALE UNIQUEMENT. Ce texte synthétique sert à tester les choix d’accord et de refus. Il ne constitue aucun document juridique applicable. Ne pas utiliser pour un véritable recueil client.", publish: true });
     if (!result.ok) throw new Error("Synthetic definition provisioning failed");
   }

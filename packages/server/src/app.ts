@@ -15,6 +15,8 @@ import type { OnboardingController } from "./modules/onboarding/controllers/onbo
 import { createExpressOnboardingRouter } from "./modules/onboarding/routes/express-onboarding.router.js";
 import type { ConsentController } from "./modules/consents/controllers/consent.controller.js";
 import { createExpressConsentRouter } from "./modules/consents/routes/express-consent.router.js";
+import type { QuestionnaireController } from "./modules/questionnaires/controllers/questionnaire.controller.js";
+import { createExpressQuestionnaireRouter } from "./modules/questionnaires/routes/express-questionnaire.router.js";
 
 export type ServerAppDeps = {
   authController: AuthController;
@@ -26,6 +28,7 @@ export type ServerAppDeps = {
   customersController?: CustomersController;
   onboardingController?: OnboardingController;
   consentController?: ConsentController;
+  questionnaireController?: QuestionnaireController;
 };
 
 export function createServerApp(deps: ServerAppDeps): Express {
@@ -70,5 +73,6 @@ export function createServerApp(deps: ServerAppDeps): Express {
   }
   if (deps.onboardingController) app.use(createExpressOnboardingRouter({ controller: deps.onboardingController, resolveSession: deps.resolveAuthSession }));
   if (deps.consentController) app.use(createExpressConsentRouter({ controller: deps.consentController, resolveSession: deps.resolveAuthSession }));
+  if (deps.questionnaireController) app.use(createExpressQuestionnaireRouter({ controller: deps.questionnaireController, resolveSession: deps.resolveAuthSession }));
   return app;
 }

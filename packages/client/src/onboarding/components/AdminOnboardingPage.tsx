@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { OnboardingOwner, OnboardingResponse } from "@kfit/shared";
 import { onboardingApi, onboardingErrorMessage } from "../api/onboarding-api.js";
 import { AdminConsentPanel } from "../../consents/components/AdminConsentPanel.js";
+import { AdminQuestionnairePanel } from "../../questionnaires/components/AdminQuestionnairePanel.js";
 
 const owners: Record<OnboardingOwner, string> = { system: "Automatique", coach: "Coach", consent: "Acceptation des conditions", questionnaire: "Questionnaire", medical: "Validation médicale", external: "Parcours dédié" };
 const statuses: Record<string, string> = { pending: "À compléter", blocked: "Bloquant", completed: "Complété", waived: "Dispensé", not_applicable: "Non applicable" };
@@ -68,6 +69,7 @@ function OnboardingPanel({ subscriptionId }: { subscriptionId: string }) {
       </>}
     </section>
     <AdminConsentPanel subscriptionId={subscriptionId} editable={editable} />
+    <AdminQuestionnairePanel subscriptionId={subscriptionId} editable={editable} />
     <section className="customers-panel"><h3>Prêt à démarrer</h3>
       <p className="muted">Toutes les exigences bloquantes et la capacité doivent être validées avant ce changement d’état.</p>
       <button type="button" disabled={pending || !view.canReady} onClick={() => void change(() => onboardingApi.ready(subscriptionId), "Abonnement prêt à démarrer.")}>Confirmer « Prêt à démarrer »</button>

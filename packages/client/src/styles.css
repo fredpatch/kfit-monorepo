@@ -20,6 +20,21 @@ body {
 .consent-panel summary { cursor: pointer; font-weight: 700; margin: 18px 0; }
 .consent-panel li button { margin: 8px; }
 
+.questionnaire-form, .questionnaire-templates { display: grid; gap: 20px; }
+.questionnaire-form fieldset { border: 1px solid #dce8d4; border-radius: 12px; min-width: 0; padding: 18px; }
+.questionnaire-form legend { font-weight: 700; }
+.questionnaire-form label { display: block; margin: 10px 0; line-height: 1.5; }
+.questionnaire-form label > input:not([type="checkbox"]):not([type="radio"]), .questionnaire-form label > select, .questionnaire-form label > textarea,
+.questionnaire-field > input, .questionnaire-field > select, .questionnaire-field > textarea { display: block; box-sizing: border-box; width: 100%; border: 1px solid #cdd8c5; border-radius: 10px; padding: 10px; margin-top: 6px; font: inherit; }
+.questionnaire-field { margin: 18px 0; }
+.questionnaire-form input[type="checkbox"], .questionnaire-form input[type="radio"] { margin-right: 8px; }
+.questionnaire-form fieldset:disabled { opacity: .65; }
+.questionnaire-editor-question { display: grid; gap: 12px; }
+.questionnaire-option { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; border-bottom: 1px solid #dce8d4; padding-bottom: 12px; }
+.questionnaire-option label { flex: 1 1 180px; min-width: 0; }
+.questionnaire-consent { background: #f5f7f2; padding: 18px; border-radius: 12px; }
+.questionnaire-templates summary, .onboarding-grid summary { cursor: pointer; margin: 14px 0; }
+
 .onboarding-grid { display: grid; gap: 20px; margin-top: 20px; }
 .onboarding-items { list-style: none; padding: 0; display: grid; gap: 12px; }
 .onboarding-items li { border: 1px solid #dce8d4; border-radius: 12px; padding: 16px; overflow-wrap: anywhere; }

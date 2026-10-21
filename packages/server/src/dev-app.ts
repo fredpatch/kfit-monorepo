@@ -103,6 +103,7 @@ export function createDevelopmentApp() {
   );
 
   return createServerApp({
+    questionnaireController: new QuestionnaireController(new QuestionnaireService(new DrizzleQuestionnaireRepository(db, { auditHashPepper: authConfig.auditHashPepper })), new QuestionnaireTemplateService(new DrizzleQuestionnaireTemplateRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     consentController: new ConsentController(new ConsentService(new DrizzleConsentRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     authController,
     resolveAuthSession: (request) => resolver.resolveFromRequest(request),
@@ -117,3 +118,7 @@ export function createDevelopmentApp() {
 import { ConsentController } from "./modules/consents/controllers/consent.controller.js";
 import { ConsentService } from "./modules/consents/services/consent.service.js";
 import { DrizzleConsentRepository } from "./modules/consents/repositories/consent.repository.js";
+import { QuestionnaireController } from "./modules/questionnaires/controllers/questionnaire.controller.js";
+import { QuestionnaireService, QuestionnaireTemplateService } from "./modules/questionnaires/services/questionnaire.service.js";
+import { DrizzleQuestionnaireRepository } from "./modules/questionnaires/repositories/questionnaire.repository.js";
+import { DrizzleQuestionnaireTemplateRepository } from "./modules/questionnaires/repositories/template.repository.js";

@@ -545,3 +545,196 @@ Validated locally by Fred on 2026-10-21.
 - Cancellation-window semantics validated: null means no late penalty; exactly at deadline is on time.
 
 Do not start S5.3 implementation before its plan is inspected and Fred approves Gate 1.
+
+
+## S5.3 — planning brief
+
+Goal: structured coach follow-ups plus operational cadence/overdue detection for active subscriptions, with pause-aware time and no background-job dependency.
+
+Cadence source:
+- subscriptions.followUpFrequencyDaysOverride when set;
+- otherwise variant service_policies.followUpFrequencyDays when non-null;
+- otherwise service-level service_policies.followUpFrequencyDays;
+- null effective cadence = cadence monitoring disabled;
+- positive integer days only.
+- Unlike commercial/cancellation snapshots, cadence is operational configuration and applies prospectively/currently; changing it intentionally changes the current follow-up rhythm.
+
+Meaningful activity:
+- subscription activation actualStartDate is initial baseline;
+- completed appointment completedAt;
+- recorded structured follow-up occurredAt;
+- completing an open follow-up action completedAt.
+Not meaningful:
+- appointment scheduled/confirmed/cancelled/missed/reschedule traffic;
+- secure-link views/responses;
+- payment activity;
+- questionnaire/consent activity;
+- goals/progress (S5.4 not yet implemented).
+
+Subscription cadence health is derived, not persisted:
+- active only: healthy/due/overdue;
+- paused: excluded and clock frozen;
+- non-active lifecycle states: excluded from overdue queue;
+- no scheduled job writes overdue state in S5.3.
+Due time = latest meaningful activity + effective cadence measured in active subscription time, subtracting pause intervals after the activity baseline.
+A meaningful activity immediately establishes a new baseline and clears derived overdue.
+
+Follow-up records:
+- existing follow_ups rows represent structured coach activity plus optional next action;
+- occurredAt must not be in the future;
+- followUpType closed V1 vocabulary: check_in | progress_review | coaching_contact | other;
+- note optional;
+- nextAction/nextActionAt optional but if one is supplied both are required;
+- nextActionAt must be after occurredAt.
+
+Stored follow-up state:
+- open: next action pending;
+- done: next action resolved or recorded activity has no pending action;
+- cancelled: pending next action explicitly cancelled.
+Derived effective state:
+- open with nextActionAt < now => overdue.
+Do not persist overdue in S5.3; expose it as derived effectiveStatus. This satisfies state-machine operational overdue semantics without cron/job writes.
+
+State commands:
+- create structured follow-up;
+- complete open follow-up;
+- cancel open follow-up.
+No generic status patch.
+
+Proposed schema:
+- follow_ups.completed_at nullable timestamp;
+- follow_ups.cancelled_at nullable timestamp;
+- new follow_up_events append-only table: id, follow_up_id, event_type, from_status, to_status, actor_user_id, created_at.
+Free-text note/nextAction/cancel reason stays on business record/event reason where required, never generic audit metadata.
+
+Creating follow-up:
+- subscription must be active;
+- occurredAt <= authoritative now;
+- create open when next action exists, otherwise done;
+- if done directly, completedAt=occurredAt;
+- create event + audit atomically;
+- occurredAt is meaningful activity and resets cadence baseline.
+
+Completing:
+- open only;
+- completedAt=authoritative now;
+- status done;
+- append event + audit;
+- completion timestamp is meaningful activity.
+
+Cancelling:
+- open only;
+- mandatory reason;
+- status cancelled + cancelledAt;
+- append event;
+- does not create a new meaningful-activity timestamp.
+
+Follow-up task overdue:
+- open && nextActionAt < now => effectiveStatus overdue;
+- exactly at nextActionAt is due, not overdue until strictly later;
+- paused subscription does not hide the row's own missed next-action history, but global subscription cadence queue excludes paused subscriptions. UI may label pending task separately from cadence health.
+
+Cadence override:
+- explicit admin command to set positive integer days or clear override;
+- only active/paused subscription may be configured;
+- audit structural old/new values;
+- clearing restores variant/service fallback;
+- no retroactive data rewrite, only derived due time recalculation.
+
+API proposal:
+- GET /admin/follow-ups/queue
+- GET /admin/subscriptions/:subscriptionId/follow-ups
+- POST /admin/subscriptions/:subscriptionId/follow-ups
+- POST /admin/follow-ups/:followUpId/complete
+- POST /admin/follow-ups/:followUpId/cancel
+- PUT /admin/subscriptions/:subscriptionId/follow-up-cadence
+
+Queue returns active subscriptions with enabled cadence and derived:
+- effectiveCadenceDays
+- cadenceSource override|variant|service
+- latestMeaningfulActivityAt
+- nextFollowUpDueAt
+- cadenceState healthy|due|overdue
+- overdueByDays when overdue
+Paused/non-active subscriptions excluded.
+
+Pause arithmetic:
+- time in subscription_pauses after the latest meaningful activity does not consume cadence days;
+- an open pause freezes at current elapsed active time;
+- on resume the remaining cadence continues;
+- meaningful activity after resume resets baseline normally.
+
+No scheduled job in S5.3:
+- overdue is query/read-time derived;
+- Scheduled Business Jobs remains for Sprint 7 reminders/notifications/materialized operational jobs if later required.
+
+Concurrency:
+- lock follow-up row for complete/cancel;
+- cadence override locks subscription;
+- audit + status mutation atomic;
+- duplicate complete/cancel returns typed conflict and no duplicate event.
+
+Audit:
+- follow_up.recorded
+- follow_up.completed
+- follow_up.cancelled
+- follow_up.cadence_override_updated
+Metadata only structural IDs/type/status/cadence values; no note/nextAction/cancellation reason.
+
+Client:
+- French Suivis area on active subscription;
+- global À suivre / Retards queue;
+- show effective cadence and source, latest meaningful activity, due date, pause-excluded state;
+- record follow-up with type/note/optional next action;
+- complete/cancel pending next action;
+- configure/clear cadence override.
+UI never mutates overdue directly.
+
+Out of scope:
+- email/WhatsApp reminders;
+- background overdue jobs;
+- automatic follow-up creation;
+- goals/progress measurements;
+- document attachments implementation beyond existing nullable field;
+- customer follow-up portal;
+- payment-driven activity;
+- changing subscription lifecycle.
+
+Validation target:
+1. fallback service cadence;
+2. variant cadence overrides service per field;
+3. subscription override wins and clear restores fallback;
+4. null cadence disables monitoring;
+5. activation is initial meaningful baseline;
+6. completed appointment resets baseline;
+7. appointment confirm/cancel/missed/reschedule does not reset;
+8. recorded follow-up resets baseline;
+9. complete open follow-up resets baseline;
+10. cancellation of follow-up does not reset;
+11. due boundary exactly dueAt = due, strictly later = overdue;
+12. paused subscription excluded from queue;
+13. pause duration freezes cadence clock;
+14. resume preserves remaining cadence time;
+15. multiple pauses subtract correctly;
+16. non-active states excluded;
+17. create done follow-up without next action;
+18. create open follow-up with valid next action;
+19. reject partial next-action fields/future occurredAt;
+20. open next action derives overdue read-time;
+21. complete/cancel state transitions append one history event;
+22. double complete/cancel no duplicate events;
+23. audit failure rolls back representative mutation;
+24. notes/reasons absent from generic audit metadata.
+
+Fred Gate 2:
+- configure service cadence and inspect active subscription derived due;
+- apply subscription override then clear it;
+- create structured follow-up and verify cadence resets;
+- create follow-up with next action and cross due boundary fixture;
+- complete and cancel separate follow-ups;
+- pause subscription and verify excluded/frozen cadence;
+- resume and verify remaining interval;
+- complete appointment and verify meaningful activity resets cadence;
+- DBeaver inspect follow_ups, follow_up_events, subscription_pauses, subscription override and audit.
+
+Do not start S5.4 until Fred validates S5.3 locally.

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PublicAppointmentPage } from "../appointments/components/PublicAppointmentPage.js";
 import { AdminSubscriptionPage } from "../subscriptions/components/AdminSubscriptionPage.js";
 import { BootstrapForm } from "../auth/components/BootstrapForm.js";
 import { LoginForm } from "../auth/components/LoginForm.js";
@@ -121,6 +122,7 @@ function AdminApp() {
 }
 
 export function App() {
+  if (window.location.pathname === "/appointment") return <PublicAppointmentPage />;
   if (window.location.pathname === "/consent") return <PublicConsentPage />;
   if (window.location.pathname === "/questionnaire") return <PublicQuestionnairePage />;
   if (window.location.pathname.startsWith("/admin")) {

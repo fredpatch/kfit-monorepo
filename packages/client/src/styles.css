@@ -768,3 +768,6 @@ button {
 .subscription-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
 .subscription-dates dt { font-weight: 600; }
 .subscription-dates dd { margin: .3rem 0 0; }
+.appointment-panel { grid-column: 1 / -1; min-width: 0; }
+.appointment-panel summary { cursor: pointer; margin-block: 1rem; font-weight: 600; }
+.appointment-panel h4 { overflow-wrap: anywhere; }

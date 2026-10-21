@@ -1,4 +1,4 @@
-import { check, index, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, numeric, pgTable, text, timestamp, uniqueIndex, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { idColumn, timestamps } from "./_helpers.js";
 import { users } from "./auth.js";
@@ -8,6 +8,12 @@ export const appointments = pgTable("appointments", {
   id: idColumn(),
   subscriptionId: uuid("subscription_id").notNull().references(() => subscriptions.id, { onDelete: "restrict" }),
   componentId: uuid("component_id").references(() => subscriptionComponents.id, { onDelete: "restrict" }),
+  rescheduledFromAppointmentId: uuid("rescheduled_from_appointment_id").references((): AnyPgColumn => appointments.id, { onDelete: "restrict" }),
+  lateCancelNoticeHoursSnapshot: integer("late_cancel_notice_hours_snapshot"),
+  lateCancelConsumesComponentSnapshot: boolean("late_cancel_consumes_component_snapshot").notNull().default(false),
+  missedConsumesComponentSnapshot: boolean("missed_consumes_component_snapshot").notNull().default(false),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  cancelledByType: text("cancelled_by_type"),
   scheduledStart: timestamp("scheduled_start", { withTimezone: true }).notNull(),
   scheduledEnd: timestamp("scheduled_end", { withTimezone: true }).notNull(),
   status: text("status").notNull().default("scheduled"),
@@ -18,6 +24,7 @@ export const appointments = pgTable("appointments", {
   ...timestamps,
 }, (t) => [
   check("appointments_time_order", sql`${t.scheduledEnd} > ${t.scheduledStart}`),
+  uniqueIndex("appointments_rescheduled_from_uq").on(t.rescheduledFromAppointmentId),
   index("appointments_subscription_idx").on(t.subscriptionId, t.scheduledStart),
   index("appointments_queue_idx").on(t.status, t.scheduledStart),
 ]);

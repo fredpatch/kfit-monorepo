@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "preflight:appointments": "node ./scripts/preflight/appointments.mjs",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
     "test": "npm run build && node --test dist/**/*.test.js",

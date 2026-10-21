@@ -13,7 +13,7 @@ export class QuestionnaireController {
     const auth = requireAuthenticatedSession(context); if (!auth.ok) return auth.response;
     if (auth.session.role !== "admin") return { status: 403, body: { error: "QUESTIONNAIRE_ADMIN_FORBIDDEN" } };
     const actor = { userId: auth.session.userId, requestId: context.requestId, ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null };
-    return response(await (["list", "create", "publish", "new_version"].includes(action)
+    return response(await (["list", "create", "publish", "new_version", "assignment_list", "assignment_set"].includes(action)
       ? this.templates.execute(action as TemplateCommand["action"], body, selector, actor)
       : this.service.execute(subscriptionId, action as QuestionnaireCommand["action"], body, selector, actor)));
   }

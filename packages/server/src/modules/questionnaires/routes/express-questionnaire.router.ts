@@ -28,7 +28,7 @@ export function createExpressQuestionnaireRouter(deps: { controller: Questionnai
       } catch { res.status(500).json({ error: "QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE" }); }
     };
   }
-  router.get(questionnaireApiRoutes.templates, handle("list")); router.post(questionnaireApiRoutes.templates, handle("create"));
+  router.get(questionnaireApiRoutes.templates, handle("list")); router.post(questionnaireApiRoutes.templates, handle("create"));\n  router.get(questionnaireApiRoutes.assignments, handle("assignment_list")); router.post(questionnaireApiRoutes.assignments, handle("assignment_set"));
   router.post(questionnaireApiRoutes.publish, handle("publish")); router.post(questionnaireApiRoutes.newVersion, handle("new_version"));
   router.get(questionnaireApiRoutes.detail, handle("read")); router.post(questionnaireApiRoutes.coachSubmit, handle("submit"));
   router.post(questionnaireApiRoutes.link, handle("issue")); router.post(questionnaireApiRoutes.revokeLink, handle("revoke_link"));

@@ -6,7 +6,7 @@ Deliver the authoritative post-onboarding subscription/coaching lifecycle: activ
 
 ## Ordered tasks
 
-1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution.
+1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — APPROVED_FOR_IMPLEMENTATION.
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions.
@@ -246,4 +246,30 @@ Fred Gate 2:
 - renew completion_due/completed subscription and inspect new onboarding child;
 - DBeaver inspect subscriptions, status history, pauses, components and audit.
 
-Gate 1 pending Fred approval.
+Gate 1 approved by Fred.
+
+
+### S5.1 Gate 1 — approved rules
+
+Fred approved the S5.1 lifecycle plan.
+
+Locked:
+- named lifecycle commands only; no generic status patch;
+- ready_to_start -> active rechecks blockers and writes actualStartDate/history/audit atomically;
+- subscription duration is snapshotted so catalogue edits cannot alter existing commercial duration;
+- pause creates one open pause with mandatory reason;
+- resume uses an explicitly chosen revised end date for duration-based subscriptions; no automatic pause-day arithmetic;
+- reaching planned end never auto-completes; completion_due is explicit;
+- completion checks unresolved coach-owed components and requires explicit override+reason when necessary;
+- cancellation requires reason and never mutates finance/refunds;
+- renewal creates one new linked onboarding subscription and never reopens the old subscription;
+- renewal clones commercial/component snapshots but resets consumption/owed counters;
+- payment remains an independent axis;
+- appointments, follow-ups, goals/progress, documents, jobs and finance remain out of S5.1.
+
+Proposed schema additions are approved:
+- subscriptions.duration_value_snapshot
+- subscriptions.duration_unit_snapshot
+- subscriptions.renewed_from_subscription_id
+
+Do not start S5.2 until Fred validates S5.1 locally.

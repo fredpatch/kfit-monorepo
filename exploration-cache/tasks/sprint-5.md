@@ -9,7 +9,7 @@ Deliver the authoritative post-onboarding subscription/coaching lifecycle: activ
 1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — VALIDATED.
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — VALIDATED.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — VALIDATED.
-4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — PLANNING.
+4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — APPROVED_FOR_IMPLEMENTATION.
 5. S5.5 — Personalized document versioning and secure temporary delivery links.
 
 ## S5.1 — planning
@@ -1005,5 +1005,30 @@ Fred Gate 2:
 - revoke health_data and verify new measurement rejected while history remains;
 - if photo linking included, verify progress_photo_storage prerequisite and private-only behavior;
 - DBeaver inspect progress_measurements, goals, goal_events, consent_records and audit_events.
+
+Do not start S5.5 until Fred validates S5.4 locally.
+
+
+### S5.4 Gate 1 — approved rules
+
+Fred approved the S5.4 progress/goals plan.
+
+Locked:
+- progress measurements are append-only historical facts; no edit/delete in S5.4;
+- recording structured progress measurements requires current health_data grant;
+- progress-photo storage/linkage requires separate progress_photo_storage grant; publication/marketing remains separate and is never inferred;
+- progress photos stay private by default; upload/version/share infrastructure remains S5.5 unless existing private-document linkage can be reused without opening scope;
+- goal status uses named transitions only;
+- suggested_status is deterministic advisory state only and never mutates authoritative goal.status automatically;
+- coach confirmation is required for achieved / partially_achieved / not_achieved;
+- coach override differing from suggestion requires reason;
+- goal history is append-only via goal_events;
+- subscription pause/completion/cancellation never auto-finalizes or auto-pauses goals in S5.4;
+- no medical diagnosis, BMI/risk scoring or AI-generated conclusions;
+- health/body values, notes and override reasons never enter generic audit metadata.
+
+Proposed schema additions are approved:
+- goals.metric_key nullable text
+- goal_events append-only table
 
 Do not start S5.5 until Fred validates S5.4 locally.

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { AdminProgressPanel } from "../../progress/components/AdminProgressPanel.js";
 import { AdminFollowUpsPanel } from "../../follow-ups/components/AdminFollowUpsPanel.js";
 import { AdminAppointmentsPanel } from "../../appointments/components/AdminAppointmentsPanel.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -43,6 +44,8 @@ function Panel({ id }: { id: string }) {
       await client.invalidateQueries({ queryKey: ["onboarding", id] });
       await client.invalidateQueries({ queryKey: ["appointments", id] }); setAction(null); setNotice("Décision enregistrée.");
       await client.invalidateQueries({ queryKey: ["follow-ups", id] });
+      await client.invalidateQueries({ queryKey: ["progress", id] });
+      await client.invalidateQueries({ queryKey: ["goals", id] });
       await client.invalidateQueries({ queryKey: ["follow-up-queue"] });
     } catch (failure) { setError(subscriptionErrorMessage(failure)); await query.refetch(); }
     finally { inFlight.current = false; }
@@ -71,6 +74,7 @@ function Panel({ id }: { id: string }) {
     </section>
     <AdminAppointmentsPanel subscriptionId={id} />
     <AdminFollowUpsPanel subscriptionId={id} />
+    <AdminProgressPanel subscriptionId={id} />
     <section className="customers-panel"><h3>Prestations convenues</h3>{view.components.length === 0 ? <p>Aucune prestation enregistrée.</p> : <ul className="onboarding-items">{view.components.map(c => <li key={c.id}><strong>{c.labelSnapshot}</strong><p>{c.quantityEntitled} prévue(s) · {c.quantityConsumed} réalisée(s) · {c.quantityOwedByCoach} due(s) par le coach</p></li>)}</ul>}</section>
     <section className="customers-panel"><h3>Renouvellements</h3>{view.renewedFromSubscriptionId ? <p>Abonnement précédent : <a href={`/admin/subscription/${view.renewedFromSubscriptionId}`}>Ouvrir le précédent</a></p> : <p>Aucun abonnement précédent.</p>}
       {view.renewalChild ? <><p>Renouvellement : <a href={`/admin/subscription/${view.renewalChild.id}`}>{view.renewalChild.reference}</a></p><a href={`/admin/onboarding/${view.renewalChild.id}`}>Préparer le nouvel abonnement</a></> : <p>Aucun renouvellement créé.</p>}

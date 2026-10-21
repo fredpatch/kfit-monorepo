@@ -765,6 +765,25 @@ button {
 }
 /* Subscription detail follows the existing admin panel and responsive grid. */
 .subscription-summary { border-top: 3px solid var(--color-primary, #285b41); }
+.progress-panel fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.progress-panel legend { font-weight: 600; margin-bottom: 12px; }
+.progress-panel h4 { margin-top: 28px; }
+.progress-panel h5 { font-size: 1rem; margin: 8px 0; }
+.progress-metrics, .progress-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+.progress-metrics dl { padding: 12px; border: 1px solid #dbe5df; border-radius: 8px; margin: 8px 0; }
+.progress-metrics dd { margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+.progress-metrics dd strong { font-size: 1.4rem; }
+.progress-table-wrap { overflow-x: auto; margin-top: 20px; }
+.progress-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.progress-table caption { text-align: left; margin-bottom: 12px; font-weight: 600; }
+.progress-table th, .progress-table td { padding: 12px; border-bottom: 1px solid #dbe5df; text-align: left; }
+.progress-goal-states { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.progress-goal-states p { padding: 12px; border: 1px solid #dbe5df; border-radius: 8px; }
+.progress-goal-states span, .progress-goal-states strong { display: block; }
+.progress-goal-states strong { margin-top: 6px; }
+.progress-suggestion { background: #f6f4ec; border-left: 3px solid #a17b28; padding: 12px; }
+.progress-decision { border: 2px solid var(--color-primary, #285b41); padding: 20px; border-radius: 8px; margin-top: 20px; }
+.progress-private-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 .subscription-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
 .subscription-dates dt { font-weight: 600; }
 .subscription-dates dd { margin: .3rem 0 0; }

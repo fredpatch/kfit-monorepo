@@ -72,6 +72,7 @@ export const goals = pgTable("goals", {
   subscriptionId: uuid("subscription_id").notNull().references(() => subscriptions.id, { onDelete: "restrict" }),
   category: text("category").notNull(),
   label: text("label").notNull(),
+  metricKey: text("metric_key"),
   baselineValue: numeric("baseline_value"),
   targetValue: numeric("target_value"),
   unit: text("unit"),
@@ -82,10 +83,23 @@ export const goals = pgTable("goals", {
   ...timestamps,
 }, (t) => [index("goals_subscription_idx").on(t.subscriptionId, t.status)]);
 
+export const goalEvents = pgTable("goal_events", {
+  id: idColumn(),
+  goalId: uuid("goal_id").notNull().references(() => goals.id, { onDelete: "restrict" }),
+  eventType: text("event_type").notNull(),
+  fromStatus: text("from_status"),
+  toStatus: text("to_status"),
+  suggestedStatusSnapshot: text("suggested_status_snapshot"),
+  actorUserId: uuid("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+  reason: text("reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [index("goal_events_history_idx").on(t.goalId, t.createdAt)]);
+
 export const progressMeasurements = pgTable("progress_measurements", {
   id: idColumn(),
   subscriptionId: uuid("subscription_id").notNull().references(() => subscriptions.id, { onDelete: "restrict" }),
   measuredAt: timestamp("measured_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   weightKg: numeric("weight_kg", { precision: 6, scale: 2 }),
   waistCm: numeric("waist_cm", { precision: 6, scale: 2 }),
   hipsCm: numeric("hips_cm", { precision: 6, scale: 2 }),

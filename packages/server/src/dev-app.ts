@@ -1,4 +1,7 @@
 import { createServerApp } from "./app.js";
+import { ProgressController } from "./modules/progress/controllers/progress.controller.js";
+import { ProgressService } from "./modules/progress/services/progress.service.js";
+import { DrizzleProgressRepository } from "./modules/progress/repositories/progress.repository.js";
 import { db } from "./db/client.js";
 import { AuthController } from "./modules/auth/controllers/auth.controller.js";
 import {
@@ -103,6 +106,7 @@ export function createDevelopmentApp() {
   );
 
   return createServerApp({
+    progressController: new ProgressController(new ProgressService(new DrizzleProgressRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     followUpsController: new FollowUpsController(new FollowUpsService(new DrizzleFollowUpsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     appointmentsController: new AppointmentsController(new AppointmentsService(new DrizzleAppointmentsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     subscriptionsController: new SubscriptionsController(new SubscriptionsService(new DrizzleSubscriptionsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),

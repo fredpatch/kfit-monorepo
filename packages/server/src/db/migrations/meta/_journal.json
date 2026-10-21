@@ -57,6 +57,13 @@
       "when": 1792611234750,
       "tag": "0007_misty_kronos",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792617123574,
+      "tag": "0008_luxuriant_centennial",
+      "breakpoints": true
     }
   ]
 }

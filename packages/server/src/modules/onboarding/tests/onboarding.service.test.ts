@@ -9,10 +9,10 @@ const actor = { userId: id, requestId: "synthetic-onboarding", ipAddress: null, 
 const completed = checklistDefinition(false).map(item => ({ ...item, status: "completed", isBlocking: true, waiverReason: null, waivedAt: null }));
 const base = { status: "onboarding", plannedStartDate: future, until: null, limited: false, capacityAvailable: true, items: completed, questionnaireRequired: false, now };
 
-test("onboarding policy uses complete variant policy before service fallback", () => {
+test("onboarding policy resolves questionnaire per field with variant override and service fallback", () => {
   const service = { variantId: null, questionnaireTemplateId: id, medicalClearancePolicy: "required_if_risk_flag" };
   const variant = { variantId: id, questionnaireTemplateId: null, medicalClearancePolicy: "not_required" };
-  assert.deepEqual(resolveEffectivePolicy([service, variant], id), { status: "ok", source: "variant", questionnaireRequired: false });
+  assert.deepEqual(resolveEffectivePolicy([service, variant], id), { status: "ok", source: "variant", questionnaireRequired: true });
   assert.deepEqual(resolveEffectivePolicy([service], id), { status: "ok", source: "service", questionnaireRequired: true });
   assert.deepEqual(resolveEffectivePolicy([], id), { status: "ok", source: "none", questionnaireRequired: false });
   assert.deepEqual(resolveEffectivePolicy([service, service], null), { status: "policy_invalid" });

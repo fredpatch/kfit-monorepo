@@ -11,7 +11,7 @@ Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
 Active slice      S5.2 — Appointment scheduling, confirmation links, cancellation policy and history
 Workflow state    PLANNING
 Last validated    S5.1 — 2026-10-21
-Next action       Planner: inspect S5.2 appointment scheduling task; no implementation before Gate 1
+Next action       Fred: review/approve S5.2 appointment scheduling invariants before implementation
 ```
 
 ## Sprint 5 objective
@@ -105,3 +105,196 @@ Corrective Gate 2 finding:
 - stale pre-fix ready_to_start fixtures were not mutated with ad-hoc SQL.
 
 Exact post-correction test counts were not separately reported; do not present the pre-correction counts as the final rerun counts.
+
+
+## S5.2 — planning brief
+
+Goal: implement authoritative appointment scheduling for active subscriptions, secure customer confirmation/decline/reschedule links without accounts, immutable appointment history, and transactional component consumption according to snapshotted cancellation policy.
+
+Existing foundation:
+- appointments
+- appointment_events
+- subscription_components
+- component_events
+- service_policies.late_cancel_notice_hours
+- service_policies.late_cancel_consumes_component
+- service_policies.missed_consumes_component
+- secure_access_tokens / external_access_events
+
+Appointment lifecycle:
+- scheduled -> confirmed
+- scheduled|confirmed -> reschedule_requested
+- scheduled|confirmed|reschedule_requested -> rescheduled
+- scheduled|confirmed -> completed
+- scheduled|confirmed -> cancelled
+- scheduled|confirmed -> missed
+- rescheduled, completed, cancelled and missed are terminal appointment records in S5.2
+
+Reschedule rule:
+- do not overwrite the original scheduled_start/scheduled_end;
+- reschedule creates a NEW appointment row linked to the prior appointment;
+- old appointment becomes rescheduled;
+- history preserves both original and replacement facts.
+
+Proposed schema additions:
+- appointments.rescheduled_from_appointment_id nullable self-FK RESTRICT, unique when non-null;
+- appointments.late_cancel_notice_hours_snapshot nullable integer;
+- appointments.late_cancel_consumes_component_snapshot boolean not null;
+- appointments.missed_consumes_component_snapshot boolean not null;
+- appointments.cancelled_at nullable timestamp;
+- appointments.cancelled_by_type nullable text;
+- appointments.response_token_issued_at optional only if needed for read model; token truth remains secure_access_tokens.
+
+Policy snapshot timing:
+- when appointment is created, resolve variant policy field-by-field with service fallback;
+- snapshot late-cancel/missed policy onto appointment;
+- later catalogue/service-policy edits never reinterpret an existing appointment.
+
+Scheduling:
+- subscription must be active;
+- componentId optional for non-entitlement/general appointment;
+- if componentId supplied, it must belong to same subscription and have remaining entitled quantity;
+- scheduledEnd > scheduledStart;
+- S5.2 does not implement coach-calendar overlap prevention because no multi-calendar/availability model exists yet; same-subscription duplicate exact slot is rejected as duplicate intent;
+- create appointment + appointment.created event + audit atomically.
+
+Customer response link:
+- admin issues secure appointment-response token;
+- scoped to one appointment and action appointment_response;
+- random bearer token, hash only, explicit expiry, revocable;
+- GET non-consuming;
+- customer may confirm, decline/cancel, or request reschedule without account;
+- successful response consumes token;
+- public endpoint exposes only safe appointment facts: service label, date/time, location/channel and response choices; no unrelated customer PII;
+- rate-limited and externally audited;
+- no OTP in S5.2.
+
+Confirmation:
+- scheduled -> confirmed;
+- customerResponseStatus -> confirmed;
+- no component consumption.
+
+Customer decline/cancel:
+- response records customerResponseStatus=declined and appointment -> cancelled;
+- cancellation timeliness is computed from authoritative response time vs scheduledStart using the appointment policy snapshot;
+- on-time customer cancellation never consumes entitlement;
+- late customer cancellation consumes one linked component only when lateCancelConsumesComponentSnapshot=true;
+- if no linked component, no component mutation;
+- consume at most one unit per appointment in S5.2;
+- cancellation + component event/counter + appointment event + audit + token consumption are one transaction.
+
+Coach cancellation:
+- admin command;
+- never consumes entitlement, regardless of policy;
+- reason mandatory;
+- appointment -> cancelled;
+- preserves appointment history.
+
+Missed:
+- admin marks scheduled/confirmed appointment missed after scheduledStart;
+- consumes one linked component only when missedConsumesComponentSnapshot=true;
+- otherwise no entitlement consumption;
+- cannot mark future appointment missed;
+- missed + optional component consumption + events/audit atomic.
+
+Completion:
+- admin marks scheduled/confirmed appointment completed;
+- scheduledEnd must have passed unless explicit early-completion override with reason is approved;
+- if linked component exists, successful completion consumes one entitlement unit;
+- if no remaining entitlement, reject;
+- appointment.completedAt set;
+- completed + component event/counter + appointment event + audit atomic.
+
+Component consumption:
+- source of truth is component_events append-only;
+- subscription_components.quantity_consumed is authoritative cached counter updated in same transaction;
+- event types in S5.2: appointment_completed, late_customer_cancel, missed, restoration;
+- relatedAppointmentId required for appointment-driven events;
+- never increment beyond quantityEntitled;
+- repeated/double command must not double-consume.
+
+Restoration:
+- coach may explicitly restore one unit for a cancelled/missed/completed appointment only if that appointment previously produced a consumptive component_event;
+- restoration reason mandatory;
+- append restoration event and decrement quantityConsumed by one;
+- does not reopen/change appointment status;
+- one restoration maximum per consumed event in S5.2.
+
+Reschedule request:
+- customer secure-link command marks appointment reschedule_requested and stores no new schedule;
+- optional short customer note allowed, stored on appointment.rescheduleNote but never copied to generic audit metadata;
+- token consumed after successful request.
+
+Coach reschedule:
+- requires source status scheduled|confirmed|reschedule_requested;
+- requires new start/end;
+- creates replacement appointment with same subscription/component and SAME snapshotted cancellation policy;
+- source -> rescheduled;
+- source response status retained historically;
+- replacement starts scheduled + pending response;
+- existing response tokens for source are revoked atomically;
+- new response link is a separate explicit admin issuance step;
+- no component consumption on reschedule.
+
+Lifecycle interaction:
+- appointment creation only for active subscription;
+- existing appointments remain readable if subscription later pauses/completion_due/completes/cancels;
+- while subscription is paused or non-active, no new appointment can be scheduled or rescheduled into a replacement;
+- marking an already-held appointment completed/missed/cancelled remains allowed according to appointment state even if subscription status subsequently changed, so historical delivery can be finalized;
+- S5.2 does not mutate subscription lifecycle.
+
+API proposal:
+- GET /admin/subscriptions/:subscriptionId/appointments
+- POST /admin/subscriptions/:subscriptionId/appointments
+- GET /admin/appointments/:appointmentId
+- POST /admin/appointments/:appointmentId/confirm
+- POST /admin/appointments/:appointmentId/cancel
+- POST /admin/appointments/:appointmentId/reschedule
+- POST /admin/appointments/:appointmentId/complete
+- POST /admin/appointments/:appointmentId/missed
+- POST /admin/appointments/:appointmentId/restore-component
+- POST /admin/appointments/:appointmentId/response-link
+- GET /public/appointments/:token
+- POST /public/appointments/:token
+
+Public response input:
+- confirm
+- decline
+- request_reschedule
+
+Audit events:
+- appointment.created
+- appointment.confirmed
+- appointment.cancelled
+- appointment.reschedule_requested
+- appointment.rescheduled
+- appointment.completed
+- appointment.missed
+- appointment.component_restored
+- appointment.response_link_created
+
+Audit metadata: structural IDs, from/to states, actor type, lateCancellation boolean, componentConsumed boolean. Never customer note/reason/raw token.
+
+Out of scope:
+- automated reminders/notifications;
+- scheduled no-show jobs;
+- calendar integrations;
+- coach availability/working-hours engine;
+- recurring appointment generation;
+- appointment payments;
+- follow-up creation;
+- customer accounts;
+- OTP;
+- multi-coach calendar/conflict allocation.
+
+Applicable patterns:
+- Explicit State Transitions
+- Atomic Business Operation
+- Idempotent Business Command
+- Historical Business Snapshot
+- Secure External Document Sharing
+- Audit Event System
+- Shared API Contracts
+- Domain Error Taxonomy
+
+Gate 1 pending Fred approval.

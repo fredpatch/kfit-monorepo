@@ -38,7 +38,9 @@ function QuestionEditor({ question, onChange, onRemove, disabled }: { question: 
       const operator = operators.find(op => op === event.target.value); onChange({ ...question, riskFlagRuleJson: operator ? { operator, value: operator === "in" ? [] : question.questionType === "boolean" ? true : numeric ? 0 : "" } : null });
     }}><option value="">Aucune règle</option>{operators.map(op => <option key={op} value={op}>{operatorLabels[op]}</option>)}</select></label>
     {rule && (rule.operator === "in" ? <label>Valeurs déclenchant le signalement (une par ligne){choice && <span className="muted">Utilise les références des choix ci-dessus.</span>}
-      <textarea rows={3} required value={Array.isArray(rule.value) ? rule.value.map(String).join("\n") : ""} onChange={event => onChange({ ...question, riskFlagRuleJson: { operator: "in", value: event.target.value.split("\n").map(riskValue) } })} />
+      <textarea rows={3} required value={Array.isArray(rule.value) ? rule.value.map(String).join("
+") : ""} onChange={event => onChange({ ...question, riskFlagRuleJson: { operator: "in", value: event.target.value.split("
+").map(riskValue) } })} />
     </label> : question.questionType === "boolean" ? <label>Réponse déclenchant le signalement<select value={String(rule.value)} onChange={event => onChange({ ...question, riskFlagRuleJson: { ...rule, value: event.target.value === "true" } })}><option value="true">Oui</option><option value="false">Non</option></select></label>
       : choice ? <label>Choix déclenchant le signalement<select required value={String(rule.value)} onChange={event => onChange({ ...question, riskFlagRuleJson: { ...rule, value: event.target.value } })}><option value="">Choisir</option>{question.optionsJson?.map((option,i) => <option key={i} value={option.value}>{option.label || option.value}</option>)}</select></label>
       : <label>Seuil ou valeur<input required type={numeric ? "number" : question.questionType === "date" ? "date" : "text"} step={question.questionType === "integer" ? 1 : "any"} value={String(rule.value)} onChange={event => onChange({ ...question, riskFlagRuleJson: { ...rule, value: riskValue(event.target.value) } })} /></label>)}
@@ -46,9 +48,11 @@ function QuestionEditor({ question, onChange, onRemove, disabled }: { question: 
   </fieldset>;
 }
 export function AdminQuestionnaireTemplatesPage() {
-  const query = useQuery({ queryKey: ["questionnaire-templates"], queryFn: questionnaireApi.templates });\n  const assignments = useQuery({ queryKey: ["questionnaire-assignments"], queryFn: questionnaireApi.assignments });
+  const query = useQuery({ queryKey: ["questionnaire-templates"], queryFn: questionnaireApi.templates });
+  const assignments = useQuery({ queryKey: ["questionnaire-assignments"], queryFn: questionnaireApi.assignments });
   const [form, setForm] = useState<QuestionnaireTemplateInput>(blankTemplate); const [sourceId, setSourceId] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null); const [notice, setNotice] = useState<string | null>(null); const inFlight = useRef(false);\n  const [assignmentScope, setAssignmentScope] = useState(""); const [assignmentTemplateId, setAssignmentTemplateId] = useState("");
+  const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null); const [notice, setNotice] = useState<string | null>(null); const inFlight = useRef(false);
+  const [assignmentScope, setAssignmentScope] = useState(""); const [assignmentTemplateId, setAssignmentTemplateId] = useState("");
   async function change(work: () => Promise<unknown>, message: string) {
     if (inFlight.current) return; inFlight.current = true; setBusy(true); setError(null); setNotice(null);
     try { await work(); setNotice(message); } catch (failure) { setError(questionnaireErrorMessage(failure)); }

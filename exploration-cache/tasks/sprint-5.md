@@ -8,7 +8,7 @@ Deliver the authoritative post-onboarding subscription/coaching lifecycle: activ
 
 1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — VALIDATED.
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — VALIDATED.
-3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — PLANNING.
+3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — APPROVED_FOR_IMPLEMENTATION.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions.
 5. S5.5 — Personalized document versioning and secure temporary delivery links.
 
@@ -736,5 +736,32 @@ Fred Gate 2:
 - resume and verify remaining interval;
 - complete appointment and verify meaningful activity resets cadence;
 - DBeaver inspect follow_ups, follow_up_events, subscription_pauses, subscription override and audit.
+
+Do not start S5.4 until Fred validates S5.3 locally.
+
+
+### S5.3 Gate 1 — approved rules
+
+Fred approved the S5.3 follow-up plan.
+
+Locked:
+- effective cadence = subscription override -> variant policy -> service policy; null disables monitoring;
+- cadence is operational/current configuration, not an immutable commercial snapshot;
+- meaningful activity = activation, completed appointment, structured follow-up recorded, or open follow-up completed;
+- appointment scheduled/confirmed/cancelled/missed/rescheduled, token activity, payment, questionnaire and consent do not reset cadence;
+- subscription cadence health is derived at read time as healthy/due/overdue;
+- only active subscriptions participate in cadence queue;
+- paused subscriptions are excluded and pause time freezes cadence using subscription_pauses history;
+- overdue is not persisted and no scheduled job is introduced in S5.3;
+- follow_ups stored states remain open/done/cancelled, with overdue for next actions derived from nextActionAt;
+- exactly at nextActionAt is due, strictly later is overdue;
+- follow-up create/complete/cancel use named commands only;
+- free-text notes/next actions/cancel reasons never enter generic audit metadata;
+- S5.3 never mutates subscription lifecycle.
+
+Proposed schema additions are approved:
+- follow_ups.completed_at
+- follow_ups.cancelled_at
+- follow_up_events append-only history table
 
 Do not start S5.4 until Fred validates S5.3 locally.

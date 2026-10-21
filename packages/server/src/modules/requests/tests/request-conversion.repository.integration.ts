@@ -88,6 +88,32 @@ async function seedScenario(config: { status?: string; outcome?: string; start?:
   return { requestId, prospectId, phone, status: config.status ?? "qualified" };
 }
 
+test("PostgreSQL conversion snapshots variant duration and survives catalogue edits", async () => {
+  await db.update(services).set({ defaultDurationValue: 1, defaultDurationUnit: "month" }).where(eq(services.id, serviceId));
+  await db.update(serviceVariants).set({ durationValue: 12, durationUnit: "week" }).where(eq(serviceVariants.id, variantId));
+  try {
+    const scenario = await seedScenario(); const result = await repository.convert(scenario.requestId, null, actor); assert.equal(result.status, "ok");
+    const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.sourceRequestId, scenario.requestId)); assert.ok(sub); assert.equal(sub.durationValueSnapshot, 12); assert.equal(sub.durationUnitSnapshot, "week");
+    await db.update(serviceVariants).set({ durationValue: 9, durationUnit: "day" }).where(eq(serviceVariants.id, variantId));
+    const [unchanged] = await db.select().from(subscriptions).where(eq(subscriptions.id, sub.id)); assert.equal(unchanged?.durationValueSnapshot, 12); assert.equal(unchanged?.durationUnitSnapshot, "week");
+  } finally {
+    await db.update(serviceVariants).set({ durationValue: null, durationUnit: null }).where(eq(serviceVariants.id, variantId));
+    await db.update(services).set({ defaultDurationValue: null, defaultDurationUnit: null }).where(eq(services.id, serviceId));
+  }
+});
+test("PostgreSQL conversion falls back to whole service duration and rejects a partial variant pair", async () => {
+  await db.update(services).set({ defaultDurationValue: 1, defaultDurationUnit: "month" }).where(eq(services.id, serviceId));
+  try {
+    const first = await seedScenario(); assert.equal((await repository.convert(first.requestId, null, actor)).status, "ok");
+    const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.sourceRequestId, first.requestId)); assert.equal(sub?.durationValueSnapshot, 1); assert.equal(sub?.durationUnitSnapshot, "month");
+    await db.update(serviceVariants).set({ durationValue: 12, durationUnit: null }).where(eq(serviceVariants.id, variantId));
+    const second = await seedScenario(); assert.deepEqual(await repository.convert(second.requestId, null, actor), { status: "duration_invalid" }); await noWrites(second);
+  } finally {
+    await db.update(serviceVariants).set({ durationValue: null, durationUnit: null }).where(eq(serviceVariants.id, variantId));
+    await db.update(services).set({ defaultDurationValue: null, defaultDurationUnit: null }).where(eq(services.id, serviceId));
+  }
+});
+
 async function noWrites(scenario: Awaited<ReturnType<typeof seedScenario>>) {
   const [request] = await db.select().from(serviceRequests).where(eq(serviceRequests.id, scenario.requestId));
   assert.equal(request?.status, scenario.status);

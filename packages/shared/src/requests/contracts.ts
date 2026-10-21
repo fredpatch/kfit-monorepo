@@ -41,6 +41,7 @@ export const requestErrorCodes = [
   "REQUEST_CONVERSION_NOT_ELIGIBLE",
   "REQUEST_CONVERSION_QUALIFICATION_INVALID",
   "REQUEST_CONVERSION_START_DATE_REQUIRED",
+  "REQUEST_CONVERSION_DURATION_INVALID",
 ] as const;
 
 export type RequestErrorCode = (typeof requestErrorCodes)[number];

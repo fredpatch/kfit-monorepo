@@ -1,0 +1,6 @@
+ALTER TABLE "subscriptions" ADD COLUMN "duration_value_snapshot" integer;--> statement-breakpoint
+ALTER TABLE "subscriptions" ADD COLUMN "duration_unit_snapshot" text;--> statement-breakpoint
+ALTER TABLE "subscriptions" ADD COLUMN "renewed_from_subscription_id" uuid;--> statement-breakpoint
+ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_renewed_from_subscription_id_subscriptions_id_fk" FOREIGN KEY ("renewed_from_subscription_id") REFERENCES "public"."subscriptions"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "subscriptions_renewed_from_uq" ON "subscriptions" USING btree ("renewed_from_subscription_id");--> statement-breakpoint
+ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_duration_snapshot_valid" CHECK (("subscriptions"."duration_value_snapshot" IS NULL AND "subscriptions"."duration_unit_snapshot" IS NULL) OR ("subscriptions"."duration_value_snapshot" IS NOT NULL AND "subscriptions"."duration_unit_snapshot" IS NOT NULL AND "subscriptions"."duration_value_snapshot" > 0 AND "subscriptions"."duration_unit_snapshot" IN ('day', 'week', 'month')));

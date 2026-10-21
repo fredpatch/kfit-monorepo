@@ -25,6 +25,7 @@ const requestErrorMessages: Record<RequestErrorCode, string> = {
   REQUEST_CONVERSION_NOT_ELIGIBLE: "Cette demande doit être qualifiée avant de pouvoir être convertie.",
   REQUEST_CONVERSION_QUALIFICATION_INVALID: "La qualification actuelle est incomplète ou incohérente. Vérifie la décision avant de convertir.",
   REQUEST_CONVERSION_START_DATE_REQUIRED: "Renseigne une date de début prévue pour convertir cette demande.",
+  REQUEST_CONVERSION_DURATION_INVALID: "La durée du service est invalide. Vérifie le catalogue avant de convertir cette demande.",
 };
 
 const fallbackMessage = "Une erreur est survenue. Réessaie dans un instant.";

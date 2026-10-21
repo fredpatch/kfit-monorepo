@@ -51,7 +51,7 @@ export class DrizzleOnboardingRepository implements OnboardingRepository {
         const [claims] = capacity.mode === "limited" ? await tx.select({ value: count() }).from(subscriptions).where(and(
           eq(subscriptions.serviceId, service.id), ne(subscriptions.id, subscriptionId),
           capacity.scope === "variant" ? eq(subscriptions.variantId, subscription.variantId!) : undefined,
-          or(inArray(subscriptions.status, ["ready_to_start", "active"]), and(eq(subscriptions.status, "onboarding"), gt(subscriptions.capacityReservedUntil, now))),
+          or(inArray(subscriptions.status, ["ready_to_start", "active", "paused", "completion_due"]), and(eq(subscriptions.status, "onboarding"), gt(subscriptions.capacityReservedUntil, now))),
         )) : [];
         const occupied = claims?.value ?? 0;
         const derived = deriveOnboarding({ status: subscription.status, plannedStartDate: subscription.plannedStartDate,

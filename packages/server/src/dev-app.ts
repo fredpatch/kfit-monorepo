@@ -103,6 +103,7 @@ export function createDevelopmentApp() {
   );
 
   return createServerApp({
+    subscriptionsController: new SubscriptionsController(new SubscriptionsService(new DrizzleSubscriptionsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     questionnaireController: new QuestionnaireController(new QuestionnaireService(new DrizzleQuestionnaireRepository(db, { auditHashPepper: authConfig.auditHashPepper })), new QuestionnaireTemplateService(new DrizzleQuestionnaireTemplateRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     consentController: new ConsentController(new ConsentService(new DrizzleConsentRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     authController,
@@ -122,3 +123,6 @@ import { QuestionnaireController } from "./modules/questionnaires/controllers/qu
 import { QuestionnaireService, QuestionnaireTemplateService } from "./modules/questionnaires/services/questionnaire.service.js";
 import { DrizzleQuestionnaireRepository } from "./modules/questionnaires/repositories/questionnaire.repository.js";
 import { DrizzleQuestionnaireTemplateRepository } from "./modules/questionnaires/repositories/template.repository.js";
+import { SubscriptionsController } from "./modules/subscriptions/controllers/subscriptions.controller.js";
+import { SubscriptionsService } from "./modules/subscriptions/services/subscriptions.service.js";
+import { DrizzleSubscriptionsRepository } from "./modules/subscriptions/repositories/subscriptions.repository.js";

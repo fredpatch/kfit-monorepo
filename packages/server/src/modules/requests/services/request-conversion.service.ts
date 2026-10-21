@@ -1,6 +1,6 @@
 import type { RequestConversionResponse } from "@kfit/shared";
 
-export type ConversionFailure = "not_found" | "already_converted" | "not_eligible" | "qualification_invalid" | "start_date_required";
+export type ConversionFailure = "not_found" | "already_converted" | "not_eligible" | "qualification_invalid" | "start_date_required" | "duration_invalid";
 export type ConversionResult = { status: "ok"; response: RequestConversionResponse } | { status: ConversionFailure };
 export type ConversionActor = { userId: string; requestId: string; ipAddress: string | null; userAgent: string | null };
 export interface RequestConversionRepository {

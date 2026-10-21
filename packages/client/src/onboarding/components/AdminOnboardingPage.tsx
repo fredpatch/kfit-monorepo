@@ -32,6 +32,7 @@ function OnboardingPanel({ subscriptionId }: { subscriptionId: string }) {
   return <div className="onboarding-grid">
     <section className="customers-panel">
       <h2>Abonnement {view.subscription.reference}</h2>
+      <a href={`/admin/subscription/${subscriptionId}`}>Ouvrir le cycle de vie de l’abonnement</a>
       <p>{view.service.name}{view.service.variantName ? ` — ${view.service.variantName}` : ""}</p>
       <p>{lifecycle[view.subscription.status] ?? "Autre état"}</p>
       <p className={view.onboardingState === "stalled" ? "error" : "status"} role="status">{state}</p>

@@ -22,6 +22,7 @@ export class RequestConversionController {
       case "not_eligible": return { status: 409, body: { error: "REQUEST_CONVERSION_NOT_ELIGIBLE" } };
       case "qualification_invalid": return { status: 409, body: { error: "REQUEST_CONVERSION_QUALIFICATION_INVALID" } };
       case "start_date_required": return { status: 400, body: { error: "REQUEST_CONVERSION_START_DATE_REQUIRED" } };
+      case "duration_invalid": return { status: 409, body: { error: "REQUEST_CONVERSION_DURATION_INVALID" } };
     }
   }
 }

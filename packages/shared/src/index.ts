@@ -8,3 +8,4 @@ export * from "./onboarding/contracts.js";
 export * from "./consents/contracts.js";
 export * from "./questionnaires/contracts.js";
 export * from "./questionnaires/schema.js";
+export * from "./subscriptions/contracts.js";

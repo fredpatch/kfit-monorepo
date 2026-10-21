@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import { and, eq, isNull, or } from "drizzle-orm";
 import { normalizeWhatsapp, type RequestConversionResponse } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
-import { serviceComponents, serviceVariants } from "../../../db/schema/catalogue.js";
+import { serviceComponents, serviceVariants, services } from "../../../db/schema/catalogue.js";
+import { resolveDuration } from "../../subscriptions/services/subscription-lifecycle.policy.js";
 import { customers, subscriptionComponents, subscriptions, subscriptionStatusHistory } from "../../../db/schema/customers.js";
 import { prospects, qualificationReviews, serviceRequests } from "../../../db/schema/prospects.js";
 import { AuditService } from "../../auth/services/audit.service.js";
@@ -29,9 +30,12 @@ export class DrizzleRequestConversionRepository implements RequestConversionRepo
         const reviews = await tx.select().from(qualificationReviews).where(and(eq(qualificationReviews.requestId, requestId), isNull(qualificationReviews.supersededAt)));
         const decision = resolveConversionDecision(request.status, reviews, fallbackStart);
         if (decision.status !== "ok") return decision;
-        const [variant] = await tx.select({ id: serviceVariants.id }).from(serviceVariants)
-          .where(and(eq(serviceVariants.id, decision.variantId), eq(serviceVariants.serviceId, request.serviceId)));
-        if (!variant) return { status: "qualification_invalid" };
+        const [service] = await tx.select().from(services).where(eq(services.id, request.serviceId)).for("share");
+        const [variant] = await tx.select().from(serviceVariants)
+          .where(and(eq(serviceVariants.id, decision.variantId), eq(serviceVariants.serviceId, request.serviceId))).for("share");
+        if (!service || !variant) return { status: "qualification_invalid" };
+        const duration = resolveDuration({ value: variant.durationValue, unit: variant.durationUnit }, { value: service.defaultDurationValue, unit: service.defaultDurationUnit });
+        if (!duration) return { status: "duration_invalid" };
 
         const [prospect] = await tx.select().from(prospects).where(eq(prospects.id, request.prospectId)).for("share");
         const whatsapp = prospect ? normalizeWhatsapp(prospect.whatsapp) : null;
@@ -52,6 +56,7 @@ export class DrizzleRequestConversionRepository implements RequestConversionRepo
           reference: `SUB-${randomUUID().toUpperCase()}`, customerId, sourceRequestId: requestId,
           serviceId: request.serviceId, variantId: decision.variantId, status: "onboarding",
           agreedPriceXaf: decision.agreedPriceXaf, currency: "XAF", plannedStartDate: decision.plannedStartDate,
+          durationValueSnapshot: duration.value, durationUnitSnapshot: duration.unit,
           createdByUserId: actor.userId, capacityReservedUntil: null,
         }).returning({ id: subscriptions.id, reference: subscriptions.reference });
         if (!subscription) throw new Error("Conversion subscription insert returned no row");

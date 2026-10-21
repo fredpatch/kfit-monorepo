@@ -763,3 +763,8 @@ button {
     grid-template-columns: 1fr;
   }
 }
+/* Subscription detail follows the existing admin panel and responsive grid. */
+.subscription-summary { border-top: 3px solid var(--color-primary, #285b41); }
+.subscription-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+.subscription-dates dt { font-weight: 600; }
+.subscription-dates dd { margin: .3rem 0 0; }

@@ -1,4 +1,4 @@
-import { check, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { check, index, integer, pgTable, text, timestamp, uniqueIndex, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { archivedAt, idColumn, timestamps } from "./_helpers.js";
 import { users } from "./auth.js";
@@ -29,6 +29,9 @@ export const subscriptions = pgTable("subscriptions", {
   status: text("status").notNull(),
   agreedPriceXaf: integer("agreed_price_xaf").notNull(),
   currency: text("currency").notNull().default("XAF"),
+  durationValueSnapshot: integer("duration_value_snapshot"),
+  durationUnitSnapshot: text("duration_unit_snapshot"),
+  renewedFromSubscriptionId: uuid("renewed_from_subscription_id").references((): AnyPgColumn => subscriptions.id, { onDelete: "restrict" }),
   plannedStartDate: timestamp("planned_start_date", { withTimezone: true }),
   actualStartDate: timestamp("actual_start_date", { withTimezone: true }),
   plannedEndDate: timestamp("planned_end_date", { withTimezone: true }),
@@ -42,6 +45,8 @@ export const subscriptions = pgTable("subscriptions", {
 }, (t) => [
   uniqueIndex("subscriptions_reference_uq").on(t.reference),
   uniqueIndex("subscriptions_source_request_uq").on(t.sourceRequestId),
+  uniqueIndex("subscriptions_renewed_from_uq").on(t.renewedFromSubscriptionId),
+  check("subscriptions_duration_snapshot_valid", sql`(${t.durationValueSnapshot} IS NULL AND ${t.durationUnitSnapshot} IS NULL) OR (${t.durationValueSnapshot} IS NOT NULL AND ${t.durationUnitSnapshot} IS NOT NULL AND ${t.durationValueSnapshot} > 0 AND ${t.durationUnitSnapshot} IN ('day', 'week', 'month'))`),
   check("subscriptions_price_nonnegative", sql`${t.agreedPriceXaf} >= 0`),
   check("subscriptions_currency_xaf", sql`${t.currency} = 'XAF'`),
   index("subscriptions_customer_idx").on(t.customerId, t.status),

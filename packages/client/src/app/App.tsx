@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AdminSubscriptionPage } from "../subscriptions/components/AdminSubscriptionPage.js";
 import { BootstrapForm } from "../auth/components/BootstrapForm.js";
 import { LoginForm } from "../auth/components/LoginForm.js";
 import { SessionPanel } from "../auth/components/SessionPanel.js";
@@ -12,12 +13,13 @@ import { PublicConsentPage } from "../consents/components/PublicConsentPage.js";
 import { PublicQuestionnairePage } from "../questionnaires/components/PublicQuestionnairePage.js";
 import { AdminQuestionnaireTemplatesPage } from "../questionnaires/components/AdminQuestionnaireTemplatesPage.js";
 
-type AdminTab = "catalogue" | "requests" | "customers" | "onboarding" | "questionnaires";
+type AdminTab = "catalogue" | "requests" | "customers" | "onboarding" | "questionnaires" | "subscriptions";
 
 function AdminApp() {
   const auth = useAuth();
   const onboardingId = /^\/admin\/onboarding\/([0-9a-f-]{36})$/i.exec(window.location.pathname)?.[1] ?? "";
-  const [activeTab, setActiveTab] = useState<AdminTab>(onboardingId ? "onboarding" : "catalogue");
+  const subscriptionId = /^\/admin\/subscription\/([0-9a-f-]{36})$/i.exec(window.location.pathname)?.[1] ?? "";
+  const [activeTab, setActiveTab] = useState<AdminTab>(subscriptionId ? "subscriptions" : onboardingId ? "onboarding" : "catalogue");
 
   if (auth.isLoading) {
     return (
@@ -80,9 +82,9 @@ function AdminApp() {
       <header className="admin-topbar">
         <div>
           <p className="eyebrow">K'FIT Admin</p>
-          <h1>{activeTab === "catalogue" ? "Gestion du catalogue" : activeTab === "customers" ? "Gestion des clients" : activeTab === "onboarding" ? "Préparation des abonnements" : activeTab === "questionnaires" ? "Modèles de questionnaires" : "Demandes et contacts"}</h1>
+          <h1>{activeTab === "subscriptions" ? "Cycle de vie des abonnements" : activeTab === "catalogue" ? "Gestion du catalogue" : activeTab === "customers" ? "Gestion des clients" : activeTab === "onboarding" ? "Préparation des abonnements" : activeTab === "questionnaires" ? "Modèles de questionnaires" : "Demandes et contacts"}</h1>
           <p className="muted">
-            {activeTab === "catalogue"
+            {activeTab === "subscriptions" ? "Consulte les dates et prestations, puis enregistre chaque décision du cycle de vie." : activeTab === "catalogue"
               ? "Pilote la disponibilité des offres publiques depuis un espace authentifié."
               : activeTab === "customers" ? "Retrouve un client par WhatsApp ou crée sa fiche." : activeTab === "onboarding" ? "Vérifie les exigences et la capacité avant le démarrage." : activeTab === "questionnaires" ? "Prépare et publie les versions des questionnaires d’évaluation et de santé." : "Suis les demandes reçues et enregistre les tentatives de contact."}
           </p>
@@ -91,6 +93,7 @@ function AdminApp() {
       </header>
 
       <nav className="admin-tabs">
+        <button type="button" className={activeTab === "subscriptions" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"} onClick={() => setActiveTab("subscriptions")}>Abonnements</button>
         <button
           type="button"
           className={activeTab === "catalogue" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"}
@@ -112,7 +115,7 @@ function AdminApp() {
         <button type="button" className={activeTab === "questionnaires" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"} onClick={() => setActiveTab("questionnaires")}>Questionnaires</button>
       </nav>
 
-      {activeTab === "catalogue" ? <AdminCatalogueCapacityPage /> : activeTab === "customers" ? <AdminCustomersPage /> : activeTab === "onboarding" ? <AdminOnboardingPage initialSubscriptionId={onboardingId} /> : activeTab === "questionnaires" ? <AdminQuestionnaireTemplatesPage /> : <AdminRequestsQueuePage />}
+      {activeTab === "subscriptions" ? <AdminSubscriptionPage initialSubscriptionId={subscriptionId} /> : activeTab === "catalogue" ? <AdminCatalogueCapacityPage /> : activeTab === "customers" ? <AdminCustomersPage /> : activeTab === "onboarding" ? <AdminOnboardingPage initialSubscriptionId={onboardingId} /> : activeTab === "questionnaires" ? <AdminQuestionnaireTemplatesPage /> : <AdminRequestsQueuePage />}
     </main>
   );
 }

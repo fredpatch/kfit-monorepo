@@ -19,8 +19,9 @@ const ok: QuestionnaireResult = { ok: true, body: { result: { outcome: "submitte
 const repository: QuestionnaireRepository = { async execute() { return ok; }, async publicAccess(_token, _input, _actor, rejected) { return rejected ? { ok: false, error: "QUESTIONNAIRE_INVALID_INPUT" } : ok; } };
 const templateRepository: TemplateRepository = { async execute() { return ok; } };
 const routes = [
-  ...Object.entries(questionnaireApiRoutes).filter(([key]) => key !== "public").map(([action, route]) => ({ action, path: route.replace(":subscriptionId", id).replace(":templateId", id).replace(":tokenId", id), method: ["templates", "detail"].includes(action) ? "GET" : "POST" })),
+  ...Object.entries(questionnaireApiRoutes).filter(([key]) => key !== "public").map(([action, route]) => ({ action, path: route.replace(":subscriptionId", id).replace(":templateId", id).replace(":tokenId", id), method: ["templates", "detail", "assignments"].includes(action) ? "GET" : "POST" })),
   { action: "create", path: questionnaireApiRoutes.templates, method: "POST" },
+  { action: "assignmentSet", path: questionnaireApiRoutes.assignments, method: "POST" },
 ];
 async function withServer(run: (base: string) => Promise<void>, repo = repository, templates = templateRepository, auth: AuthenticatedSessionContext | null = session, max = 100) {
   const app = express(); app.use(express.json()); app.use(createExpressQuestionnaireRouter({ controller: new QuestionnaireController(new QuestionnaireService(repo), new QuestionnaireTemplateService(templates)), resolveSession: () => auth,
@@ -42,7 +43,7 @@ test("every questionnaire admin mutation requires CSRF and same origin", async (
 test("authorized questionnaire routes transport caller-owned fields and authenticated provenance", async () => {
   const seen: string[] = [];
   await withServer(async base => { for (const route of routes) {
-    const body = ["create", "newVersion"].includes(route.action) ? syntheticTemplate() : route.action === "link" ? { expiresAt: "2030-01-01T00:00:00Z" }
+    const body = ["create", "newVersion"].includes(route.action) ? syntheticTemplate() : route.action === "assignmentSet" ? { serviceId: id, variantId: null, questionnaireTemplateId: id } : route.action === "link" ? { expiresAt: "2030-01-01T00:00:00Z" }
       : route.action === "coachSubmit" ? { templateId: id, templateVersion: 1, schemaHash: "0".repeat(64), expectedHeadId: null, answers: [] } : {};
     const response = await fetch(base + route.path, { method: route.method, headers: { ...headers, origin: base }, ...(route.method === "POST" ? { body: JSON.stringify(body) } : {}) }); assert.equal(response.status, 200);
   } }, { ...repository, async execute(_id, command, actor) { assert.equal(actor.userId, id); seen.push(command.action); return ok; } },

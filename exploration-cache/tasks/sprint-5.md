@@ -8,8 +8,8 @@ Deliver the authoritative post-onboarding subscription/coaching lifecycle: activ
 
 1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — VALIDATED.
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — VALIDATED.
-3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — APPROVED_FOR_IMPLEMENTATION.
-4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions.
+3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — VALIDATED.
+4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — PLANNING.
 5. S5.5 — Personalized document versioning and secure temporary delivery links.
 
 ## S5.1 — planning
@@ -765,3 +765,19 @@ Proposed schema additions are approved:
 - follow_up_events append-only history table
 
 Do not start S5.4 until Fred validates S5.3 locally.
+
+
+### S5.3 validation evidence
+
+Validated locally by Fred on 2026-10-21.
+
+- Server 274 passed; shared 39 passed.
+- PostgreSQL integration 275 passed, including 51 follow-up cases.
+- Typecheck/build/db:check/diff green.
+- Migration 0007_misty_kronos.sql applied locally; no backfill needed.
+- Reviewer passed with notes; QA passed with limitations.
+- Gate 2 validated cadence override/reset, structured follow-up create/complete/cancel, appointment-driven cadence reset, pause/resume active-time arithmetic, global queue behavior and DBeaver invariants.
+- Cadence uses active elapsed time; overdue is derived and never persisted.
+- Queue history loading may need batching at larger scale; deferred as optimization.
+
+Do not start S5.4 implementation before its plan is inspected and Fred approves Gate 1.

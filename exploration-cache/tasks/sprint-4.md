@@ -12,7 +12,7 @@ Build the M4 customer/conversion/onboarding foundation after the validated Sprin
 2. [x] S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link.
 3. [x] S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review.
 4. [x] S4.4 — Separate consent records and versioned terms/privacy acceptance.
-5. [ ] S4.5 — Versioned assessment and health-questionnaire templates — APPROVED_FOR_IMPLEMENTATION.
+5. [x] S4.5 — Versioned assessment and health-questionnaire templates.
 
 ## S4.1 — validated
 
@@ -530,7 +530,7 @@ Validated locally by Fred on 2026-10-21.
 - preceding 87/88 run was the known unchanged Sprint 3 concurrency flake; all S4.4 cases passed in both runs.
 
 
-## S4.5 — approved for implementation
+## S4.5 — validated
 
 Backlog task: **Versioned assessment and health-questionnaire templates**.
 
@@ -719,3 +719,16 @@ Locked:
 - no customer OTP, medical diagnosis/advice, medical clearance completion, AI review, active-coaching questionnaires or subscription activation in S4.5.
 
 Do not start any later Sprint 4/5 behavior until Fred validates S4.5 locally.
+
+
+### S4.5 validation evidence
+
+Validated locally by Fred on 2026-10-21.
+
+- Original pre-correction agent validation: server 214/214, shared 34/34, PostgreSQL integration 131/131 including 43 S4.5 cases.
+- Gate 2 exposed a missing admin assignment path from published questionnaire templates to service/variant policy.
+- Corrective S4.5 work added assignment read/write, policy persistence, variant/service inheritance and Vite proxy coverage.
+- Fred reran the final validation suite after the correction and reported all checks green.
+- Browser acceptance validated assignment, public/coach-assisted questionnaire flows, health-consent refusal behavior, risk-triggered medical clearance, safe revision N+1 and replay rejection.
+- DBeaver checks were green for immutable templates/submissions/answers, consent provenance, medical-clearance state, token hashes and safe audits.
+- Exact post-correction test counts were not separately reported.

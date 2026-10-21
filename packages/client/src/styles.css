@@ -771,3 +771,7 @@ button {
 .appointment-panel { grid-column: 1 / -1; min-width: 0; }
 .appointment-panel summary { cursor: pointer; margin-block: 1rem; font-weight: 600; }
 .appointment-panel h4 { overflow-wrap: anywhere; }
+.follow-up-panel { grid-column: 1 / -1; min-width: 0; }
+.follow-up-panel summary { cursor: pointer; margin-block: 1rem; font-weight: 600; }
+.follow-up-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.qualification-review-form .follow-up-check { display: flex; align-items: center; gap: .5rem; }

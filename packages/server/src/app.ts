@@ -1,4 +1,6 @@
 import express, { type Express } from "express";
+import type { FollowUpsController } from "./modules/follow-ups/controllers/follow-ups.controller.js";
+import { createExpressFollowUpsRouter } from "./modules/follow-ups/routes/express-follow-ups.router.js";
 import type { AppointmentsController } from "./modules/appointments/controllers/appointments.controller.js";
 import { createExpressAppointmentsRouter } from "./modules/appointments/routes/express-appointments.router.js";
 import type { SubscriptionsController } from "./modules/subscriptions/controllers/subscriptions.controller.js";
@@ -23,6 +25,7 @@ import type { QuestionnaireController } from "./modules/questionnaires/controlle
 import { createExpressQuestionnaireRouter } from "./modules/questionnaires/routes/express-questionnaire.router.js";
 
 export type ServerAppDeps = {
+  followUpsController?: FollowUpsController;
   appointmentsController?: AppointmentsController;
   subscriptionsController?: SubscriptionsController;
   authController: AuthController;
@@ -82,5 +85,6 @@ export function createServerApp(deps: ServerAppDeps): Express {
   if (deps.questionnaireController) app.use(createExpressQuestionnaireRouter({ controller: deps.questionnaireController, resolveSession: deps.resolveAuthSession }));
   if (deps.subscriptionsController) app.use(createExpressSubscriptionsRouter({ controller: deps.subscriptionsController, resolveSession: deps.resolveAuthSession }));
   if (deps.appointmentsController) app.use(createExpressAppointmentsRouter({ controller: deps.appointmentsController, resolveSession: deps.resolveAuthSession }));
+  if (deps.followUpsController) app.use(createExpressFollowUpsRouter({ controller: deps.followUpsController, resolveSession: deps.resolveAuthSession }));
   return app;
 }

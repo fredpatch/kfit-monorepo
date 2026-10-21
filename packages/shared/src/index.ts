@@ -10,3 +10,4 @@ export * from "./questionnaires/contracts.js";
 export * from "./questionnaires/schema.js";
 export * from "./subscriptions/contracts.js";
 export * from "./appointments/contracts.js";
+export * from "./follow-ups/contracts.js";

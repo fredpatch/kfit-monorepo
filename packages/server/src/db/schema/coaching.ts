@@ -50,9 +50,22 @@ export const followUps = pgTable("follow_ups", {
   nextAction: text("next_action"),
   nextActionAt: timestamp("next_action_at", { withTimezone: true }),
   status: text("status").notNull().default("open"),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
   attachmentDocumentId: uuid("attachment_document_id"),
   createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
 }, (t) => [index("follow_ups_due_idx").on(t.status, t.nextActionAt), index("follow_ups_subscription_idx").on(t.subscriptionId, t.occurredAt)]);
+
+export const followUpEvents = pgTable("follow_up_events", {
+  id: idColumn(),
+  followUpId: uuid("follow_up_id").notNull().references(() => followUps.id, { onDelete: "restrict" }),
+  eventType: text("event_type").notNull(),
+  fromStatus: text("from_status"),
+  toStatus: text("to_status"),
+  actorUserId: uuid("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+  reason: text("reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [index("follow_up_events_history_idx").on(t.followUpId, t.createdAt)]);
 
 export const goals = pgTable("goals", {
   id: idColumn(),

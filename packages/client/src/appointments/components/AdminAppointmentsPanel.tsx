@@ -16,7 +16,7 @@ export function AdminAppointmentsPanel({ subscriptionId }: { subscriptionId: str
   const [link, setLink] = useState<{ id: string; url: string } | null>(null);
   async function change(operation: () => Promise<unknown>, message: string) {
     if (inFlight.current) return false; inFlight.current = true; setBusy(true); setError(null); setNotice(null); setLink(null);
-    try { await operation(); await client.invalidateQueries({ queryKey: key }); await client.invalidateQueries({ queryKey: ["subscription-lifecycle", subscriptionId] }); setNotice(message); return true; }
+    try { await operation(); await client.invalidateQueries({ queryKey: key }); await client.invalidateQueries({ queryKey: ["subscription-lifecycle", subscriptionId] }); await client.invalidateQueries({ queryKey: ["follow-ups", subscriptionId] }); await client.invalidateQueries({ queryKey: ["follow-up-queue"] }); setNotice(message); return true; }
     catch (failure) { setError(appointmentErrorMessage(failure)); await query.refetch(); return false; }
     finally { inFlight.current = false; setBusy(false); }
   }

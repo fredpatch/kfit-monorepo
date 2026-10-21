@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "preflight:follow-ups": "node ./scripts/preflight/follow-ups.mjs",
     "preflight:appointments": "node ./scripts/preflight/appointments.mjs",
     "typecheck": "tsc --noEmit",
     "build": "tsc",

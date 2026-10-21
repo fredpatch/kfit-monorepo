@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
+    "preflight:follow-ups": "npm run preflight:follow-ups --workspace @kfit/server",
     "preflight:appointments": "npm run preflight:appointments --workspace @kfit/server",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",

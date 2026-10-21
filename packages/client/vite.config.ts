@@ -29,6 +29,7 @@ export default defineConfig(({ mode }) => {
         "/admin/customers": apiProxy,
         "/admin/subscriptions": apiProxy,
         "/admin/questionnaire-templates": apiProxy,
+        "/admin/questionnaire-assignments": apiProxy,
         "/requests": apiProxy,
         "/public/consents": apiProxy,
         "/public/questionnaires": apiProxy,

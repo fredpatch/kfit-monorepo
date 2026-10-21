@@ -115,9 +115,10 @@ test("PostgreSQL retry/concurrent checklist initialization is idempotent and rel
     const cause = error instanceof Error ? error.cause : null; return !!cause && typeof cause === "object" && "code" in cause && cause.code === "23505";
   });
 });
-test("PostgreSQL variant policy overrides service policy as a whole", async () => {
+test("PostgreSQL variant policy inherits service questionnaire when variant has no questionnaire override", async () => {
   const id = await makeSubscription(await makePool({ serviceQuestionnaire: true, variantQuestionnaire: false }));
-  const view = await initialize(id); assert.equal(view.policy.source, "variant"); assert.equal(view.policy.questionnaireRequired, false); assert.equal(view.items.length, 3);
+  const view = await initialize(id); assert.equal(view.policy.source, "variant"); assert.equal(view.policy.questionnaireRequired, true); assert.equal(view.items.length, 4);
+  assert.equal(view.items.find(item => item.itemType === "questionnaire")?.owner, "questionnaire");
 });
 test("PostgreSQL service policy fallback creates questionnaire only when referenced", async () => {
   const id = await makeSubscription(await makePool({ serviceQuestionnaire: true, medical: "not_required" }));

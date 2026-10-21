@@ -12,7 +12,7 @@ Build the M4 customer/conversion/onboarding foundation after the validated Sprin
 2. [x] S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link.
 3. [x] S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review.
 4. [x] S4.4 — Separate consent records and versioned terms/privacy acceptance.
-5. [ ] S4.5 — Versioned assessment and health-questionnaire templates — PLANNING.
+5. [ ] S4.5 — Versioned assessment and health-questionnaire templates — APPROVED_FOR_IMPLEMENTATION.
 
 ## S4.1 — validated
 
@@ -530,7 +530,7 @@ Validated locally by Fred on 2026-10-21.
 - preceding 87/88 run was the known unchanged Sprint 3 concurrency flake; all S4.4 cases passed in both runs.
 
 
-## S4.5 — planning
+## S4.5 — approved for implementation
 
 Backlog task: **Versioned assessment and health-questionnaire templates**.
 
@@ -699,3 +699,23 @@ Fred Gate 2:
 - risk-answer case creates medical blocker;
 - coach-assisted safe revision;
 - DBeaver verify immutable versions/submissions/answers, consent provenance, medical blocker and safe audits.
+
+
+### S4.5 Gate 1 — approved rules
+
+Fred approved the S4.5 plan.
+
+Locked:
+- template categories are `assessment` and `health`;
+- published template versions/questions are immutable; edits create version N+1;
+- allowed V1 question types are short_text, long_text, boolean, single_choice, multi_choice, integer, decimal and date;
+- server validates all options/validation/risk JSON; no executable expressions;
+- health submissions require a current grant of the latest published `health_data` consent definition;
+- health refusal records consent evidence but persists zero health questionnaire submissions/answers;
+- risk evaluation is declarative/non-diagnostic and may only produce operational flags;
+- `required_if_risk_flag` may create a pending medical-clearance record/blocker; safe later revisions never auto-clear it;
+- successful submissions/revisions are immutable append-only records and complete the questionnaire onboarding item atomically;
+- questionnaire links use a separate secure token scope; GET non-consuming, successful POST consuming;
+- no customer OTP, medical diagnosis/advice, medical clearance completion, AI review, active-coaching questionnaires or subscription activation in S4.5.
+
+Do not start any later Sprint 4/5 behavior until Fred validates S4.5 locally.

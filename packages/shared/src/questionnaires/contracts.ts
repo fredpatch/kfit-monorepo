@@ -19,9 +19,12 @@ export type QuestionnaireRevision = { id: string; templateId: string; templateVe
 export type QuestionnaireDocument = { subscriptionReference: string; template: QuestionnaireTemplate; expectedHeadId: string | null;
   healthConsent: { definition: ConsentDefinition; granted: boolean } | null };
 export type QuestionnaireDetail = { document: QuestionnaireDocument | null; history: QuestionnaireRevision[]; links: ConsentLinkState[]; waived: boolean };
-export type QuestionnaireSubmitResult = { outcome: "submitted" | "health_consent_refused"; submissionId: string | null; revisionNumber: number | null };\nexport type QuestionnaireAssignmentScope = { serviceId: string; serviceName: string; variantId: string | null; variantName: string | null; questionnaireTemplateId: string | null; effectiveQuestionnaireTemplateId: string | null };\nexport type QuestionnaireAssignmentInput = { serviceId: string; variantId: string | null; questionnaireTemplateId: string | null };
+export type QuestionnaireSubmitResult = { outcome: "submitted" | "health_consent_refused"; submissionId: string | null; revisionNumber: number | null };
+export type QuestionnaireAssignmentScope = { serviceId: string; serviceName: string; variantId: string | null; variantName: string | null; questionnaireTemplateId: string | null; effectiveQuestionnaireTemplateId: string | null };
+export type QuestionnaireAssignmentInput = { serviceId: string; variantId: string | null; questionnaireTemplateId: string | null };
 export const questionnaireApiRoutes = {
-  templates: "/admin/questionnaire-templates", publish: "/admin/questionnaire-templates/:templateId/publish", newVersion: "/admin/questionnaire-templates/:templateId/new-version",\n  assignments: "/admin/questionnaire-assignments",
+  templates: "/admin/questionnaire-templates", publish: "/admin/questionnaire-templates/:templateId/publish", newVersion: "/admin/questionnaire-templates/:templateId/new-version",
+  assignments: "/admin/questionnaire-assignments",
   detail: "/admin/subscriptions/:subscriptionId/questionnaire", coachSubmit: "/admin/subscriptions/:subscriptionId/questionnaire/coach-submit",
   link: "/admin/subscriptions/:subscriptionId/questionnaire-link", revokeLink: "/admin/subscriptions/:subscriptionId/questionnaire-link/:tokenId/revoke",
   public: "/public/questionnaires/:token",

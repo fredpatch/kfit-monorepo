@@ -8,10 +8,10 @@
 ```text
 Branch            sprint-4
 Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
-Active slice      S4.4 — Separate consent records and versioned terms/privacy acceptance
-Workflow state    CLOSED
+Active slice      S4.5 — Versioned assessment and health-questionnaire templates
+Workflow state    PLANNING
 Last validated    S4.4 — 2026-10-21
-Next action       Planner: inspect S4.5 versioned assessment and health-questionnaire task only
+Next action       Fred: review/approve S4.5 questionnaire/health-risk invariants before implementation
 ```
 
 ## Sprint 4 objective
@@ -24,7 +24,7 @@ Build the customer/conversion/onboarding foundation after the validated Sprint 3
 2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link — CLOSED, Fred validated 2026-10-20.
 3. S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review — CLOSED, Fred validated 2026-10-20.
 4. S4.4 — Separate consent records and versioned terms/privacy acceptance — CLOSED, Fred validated 2026-10-21.
-5. S4.5 — Versioned assessment and health-questionnaire templates — PLANNING NEXT.
+5. S4.5 — Versioned assessment and health-questionnaire templates — PLANNING.
 
 S4.3 is locally validated. Do not implement the next slice before its plan is inspected and approved.
 
@@ -293,3 +293,155 @@ Evidence:
 
 Known note:
 - the preceding integration run was 87/88 only because of the documented unchanged Sprint 3 concurrency flake; all S4.4 tests passed in both runs.
+
+
+## S4.5 — planning brief
+
+Goal: implement versioned dynamic assessment/health questionnaires, secure public and coach-assisted submission, immutable revision history, and non-diagnostic risk flags that integrate with S4.3 onboarding and medical-clearance blocking.
+
+Existing schema:
+- questionnaire_templates
+- questionnaire_questions
+- questionnaire_submissions
+- questionnaire_answers
+- medical_clearance_records
+
+Existing catalogue hook:
+- effective service policy questionnaireTemplateId
+- medicalClearancePolicy
+
+Template/version rules:
+- template identity is templateKey;
+- version is positive integer and unique per templateKey;
+- statuses draft|published|retired;
+- published/retired templates and their questions are immutable;
+- editing published content creates version N+1;
+- service policy must reference a published template;
+- a submission always stores exact templateId + templateVersion and historical answers never reinterpret against a later version.
+
+Supported V1 question types:
+- short_text
+- long_text
+- boolean
+- single_choice
+- multi_choice
+- integer
+- decimal
+- date
+
+No arbitrary executable expressions.
+optionsJson and validationJson must conform to a server-owned schema per question type.
+
+Risk rules:
+- riskFlagRuleJson is declarative and allowlisted only;
+- supported V1 predicates are equality/inclusion and numeric threshold comparisons against the same question answer;
+- no JavaScript/eval/cross-question expressions;
+- risk output is an operational boolean flag with matched question keys only;
+- never infer diagnosis, disease, fitness-to-train, or medical advice.
+
+Questionnaire assignment:
+- resolve effective service policy variant-first then service fallback;
+- if no questionnaireTemplateId, no questionnaire blocker is required;
+- if configured, S4.3 questionnaire onboarding item is authoritative and can only be completed/waived by approved paths;
+- submission must use the exact currently configured published template when the questionnaire is started.
+
+Health-data consent:
+- templates have category assessment or health;
+- assessment category does not require health_data consent;
+- health category requires the latest published health_data consent definition;
+- the customer/coach must record a separate health_data decision before health answers are committed;
+- refused/missing health_data consent means zero health questionnaire answers/submission writes;
+- health_data consent remains a separate append-only consent record and can later be revoked; revocation does not delete historical questionnaire evidence, but prevents new health submissions until re-granted.
+
+Secure public questionnaire link:
+- reuse secure_access_tokens with a questionnaire-specific resource/action scope, separate from consent links;
+- raw token returned once, stored hashed, explicit expiry, revocable, GET non-consuming, successful submit consuming;
+- token snapshots the exact template/version/definition IDs needed for the attempt;
+- stale token is rejected if assignment/template or required health consent definition changed before submit;
+- public page exposes subscription reference + questionnaire schema only; no unrelated PII;
+- public token access is rate-limited and audited.
+
+Health public flow:
+- GET may display the exact health_data consent text separately from questionnaire questions;
+- POST requires explicit health_data granted decision plus answers in the same hard commit when no current grant exists;
+- explicit refusal persists the consent refusal but persists no health answers and leaves questionnaire blocker pending;
+- existing current grant may be reused without asking again if it targets the latest published health_data definition.
+
+Coach-assisted flow:
+- admin may submit assessment/health answers on behalf of customer;
+- for health category, a current health_data grant is still required; coach cannot bypass/reforge consent by submitting answers;
+- source/provenance is explicit.
+
+Submission/revision rules:
+- submitted revisions are immutable;
+- one initial submission revisionNumber=1;
+- correction/resubmission creates revision N+1 with supersedesSubmissionId;
+- only one chain head per subscription + logical template assignment;
+- draft persistence is out of scope for public V1; server commits only complete submitted revisions;
+- required answers and type-specific validation are enforced server-side against the snapshotted template version.
+
+Onboarding integration:
+- successful submitted current questionnaire marks S4.3 questionnaire item completed atomically;
+- new required template version/reassignment may reopen questionnaire item only through an explicit admin/configuration command, not silently during ordinary reads;
+- questionnaire waiver remains the existing S4.3 audited coach override.
+
+Medical-clearance integration:
+- resolve effective medicalClearancePolicy;
+- if policy = required_if_risk_flag and submitted questionnaire has >=1 risk match:
+  - create or preserve one active pending medical_clearance_record for subscription;
+  - create/upsert blocking onboarding item medical_clearance pending;
+  - triggerSource = questionnaire submission id/type, no diagnosis text;
+- if no risk match, do not create medical-clearance blocker;
+- if policy = not_required, never create blocker;
+- a later safe revision with no risk does NOT auto-clear an existing medical-clearance requirement;
+- S4.5 does not implement medical review/clearance completion or document upload.
+
+Hard commit on successful submission:
+- lock subscription
+- lock template/definition assignment as needed
+- validate exact schema/version
+- append health_data consent decision if needed
+- insert immutable questionnaire submission + answers
+- evaluate allowlisted risk rules
+- complete questionnaire onboarding item
+- create/preserve medical-clearance record/item if triggered
+- write safe audit(s)
+- consume public token if public flow
+- commit
+
+Audit:
+- questionnaire.link_created
+- questionnaire.submitted
+- questionnaire.revision_submitted
+- questionnaire.risk_flagged (structural keys/count only)
+- medical_clearance.required
+- existing onboarding completion event as compatible
+
+Never audit health answers, question labels containing health details, free text, diagnoses, or raw tokens.
+
+Out of scope:
+- medical diagnosis or automated medical advice;
+- medical-clearance completion/document upload;
+- AI interpretation/review generation;
+- progress tracking questionnaires during active coaching;
+- customer accounts;
+- automatic activation;
+- arbitrary branching/conditional visibility engine beyond safe schema metadata.
+
+Security recommendation for S4.5:
+- questionnaire links remain strong random single-purpose bearer links in V1, with no new customer OTP subsystem introduced in this slice;
+- because health answers are sensitive, public responses use no-store/no-referrer headers, rate limiting, hashed token storage, explicit expiry and one successful use;
+- OTP can be added later only through an explicitly approved security slice rather than a partial ad-hoc implementation.
+
+Applicable patterns:
+- Dynamic Form Schema
+- Form Schema Contract
+- Secure External Document Sharing
+- Shared API Contracts
+- Domain Error Taxonomy
+- Hard Commit Point
+- Atomic Business Operation
+- Audit Event System
+- append-only revision history
+
+Gate 1 pending Fred approval.

@@ -2,6 +2,21 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-21 — Sprint 5.3 structured follow-ups and cadence
+
+- Fred locally validated S5.3 end-to-end.
+- Added structured coach follow-ups with append-only history and optional next actions.
+- Added configurable cadence resolution: subscription override, then variant policy, then service policy; null disables monitoring.
+- Added pause-aware cadence calculation based on active elapsed time rather than wall-clock time.
+- Meaningful activity resets cadence; non-meaningful appointment/reschedule/cancellation traffic does not.
+- Subscription cadence health is derived as healthy/due/overdue and is never persisted.
+- Individual open follow-up next actions derive overdue at read time.
+- Added French subscription follow-up UI and global queue at /admin/follow-up-queue.
+- Agent validation: server 274 passed, shared 39 passed, PostgreSQL 275 passed including 51 follow-up cases; typecheck/build/db:check/diff green.
+- Migration 0007_misty_kronos.sql applied locally with no backfill needed.
+- Reviewer passed with notes; QA passed with limitations; Fred Gate 2 browser/DBeaver validation is green.
+- Queue history loading may need batching as volume grows; deferred as future optimization.
+
 ## 2026-10-21 — Sprint 5.2 appointment scheduling and secure responses
 
 - Fred locally validated S5.2 end-to-end.

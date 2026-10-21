@@ -2,6 +2,23 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-21 — Sprint 5.4 progress measurements and structured goals
+
+- Fred locally validated S5.4 end-to-end.
+- Added append-only chronological progress measurements with duplicate protection and health_data consent enforcement.
+- Consent refusal/revocation blocks new measurement collection while preserving historical measurements.
+- Added structured qualitative/numeric goals with deterministic advisory suggestions and explicit coach-confirmed outcomes.
+- Suggestions never mutate authoritative goal status automatically.
+- Added append-only goal events preserving transitions and suggestion snapshot at confirmation.
+- Added explicit goal pause/resume/cancel and outcome confirmation; subscription lifecycle does not auto-finalize goals.
+- Added French Progression UI with measurement history/deltas and distinct authoritative status vs system suggestion.
+- Progress photos remain deferred to S5.5.
+- Agent validation: server 304 passed, shared 41 passed, PostgreSQL integration 333/333 including 58 S5.4 cases; typecheck/build/db:check green.
+- Migration 0008 applied locally.
+- Reviewer passed with notes; QA passed with limitations; Fred Gate 2 browser/DBeaver validation is green.
+- First integration run reproduced the unchanged Sprint 3 concurrency flake; the approved retry passed.
+- UI currently uses kg/cm/%; stricter API metric/unit compatibility is deferred as hardening.
+
 ## 2026-10-21 — Sprint 5.3 structured follow-ups and cadence
 
 - Fred locally validated S5.3 end-to-end.

@@ -2,6 +2,26 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-21 — Sprint 4.5 versioned assessment and health questionnaires
+
+- Fred locally validated S4.5 end-to-end.
+- Added versioned assessment/health questionnaire templates with eight V1 question types and immutable published versions.
+- Added secure public and coach-assisted questionnaire submission, append-only correction revisions and strict answer validation.
+- Enforced separate health_data consent before health answers are persisted; refusal records consent evidence and stores zero questionnaire submissions/answers.
+- Added declarative non-diagnostic risk evaluation and integration with the onboarding questionnaire blocker and pending medical-clearance requirement.
+- A safe later revision does not auto-clear an existing medical-clearance requirement.
+- Gate 2 exposed a missing admin assignment path. The validated corrective fix added service/variant questionnaire assignment backed by service_policies.questionnaire_template_id, published-template validation, audited writes, variant override and service fallback.
+- Added the missing Vite dev proxy for the assignment endpoint; local API/client restarts were required after route/proxy changes.
+- Original agent validation before the corrective fix: server 214/214, shared 34/34, PostgreSQL integration 131/131 including 43 S4.5 cases.
+- Fred reran the final validation suite after the corrective fix and reported all checks green; exact post-correction counts were not separately reported.
+- Browser/DBeaver Gate 2 validated assignment, public/coach-assisted flows, immutable history, health-consent behavior, risk-triggered medical blocker, revision N+1, replay rejection, hashed tokens and safe audits.
+
+## 2026-10-21 — Sprint 4 closed
+
+- Sprint 4 acceptance criteria are satisfied across S4.1–S4.5.
+- Customer identity/search/manual creation, atomic request conversion, onboarding readiness/capacity, versioned consent/terms acceptance and versioned assessment/health questionnaires are locally validated.
+- Production blockers remain unchanged: applicable Gabon legal review and a true encrypted off-server backup destination.
+
 ## 2026-10-21 — Sprint 4.4 versioned consent and terms/privacy acceptance
 
 - Fred locally validated S4.4 end-to-end.

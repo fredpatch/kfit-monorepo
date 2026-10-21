@@ -8,10 +8,10 @@
 ```text
 Branch            sprint-5
 Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
-Active slice      S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Last validated    S5.2 — 2026-10-21
-Next action       Implementer: execute approved S5.3 server-first follow-up plan only
+Active slice      S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions
+Workflow state    PLANNING
+Last validated    S5.3 — 2026-10-21
+Next action       Planner: inspect S5.4 goals/progress task; no implementation before Gate 1
 ```
 
 ## Sprint 5 objective
@@ -22,8 +22,8 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 
 1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — CLOSED, Fred validated 2026-10-21.
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — CLOSED, Fred validated 2026-10-21.
-3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — APPROVED_FOR_IMPLEMENTATION.
-4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions.
+3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — CLOSED, Fred validated 2026-10-21.
+4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — PLANNING.
 5. S5.5 — Personalized document versioning and secure temporary delivery links.
 
 Gate 1 approved by Fred. Implement S5.1 only. Do not open S5.2 while S5.1 is unvalidated.
@@ -44,11 +44,11 @@ Before production:
 ```text
 Branch            sprint-5
 Sprint            5
-Slice             S5.3
+Slice             S5.4
 Workflow state    PLANNING
 Done              S5.1 implementation + correction + review + QA + Fred Gate 2 validation
 Validation done   Gate 2 green; browser/DBeaver lifecycle acceptance green
-Next action       Implementer
+Next action       Planner: inspect S5.4 only
 ```
 
 
@@ -518,3 +518,30 @@ Fred Gate 2:
 - DBeaver inspect follow_ups, follow_up_events, subscription_pauses, subscription override and audit.
 
 Gate 1 pending Fred approval.
+
+
+## S5.3 — validation closure
+
+Validated locally by Fred on 2026-10-21.
+
+Agent validation:
+- server tests: 274 passed;
+- shared tests: 39 passed;
+- PostgreSQL integration: 275 passed, including 51 follow-up cases;
+- typecheck/build/db:check/diff green;
+- migration 0007_misty_kronos.sql applied locally with no backfill needed;
+- Reviewer passed with notes;
+- QA passed with limitations.
+
+Fred Gate 2:
+- cadence override/reset validated;
+- structured follow-up create/complete/cancel validated;
+- completed appointment meaningfully resets cadence;
+- pause-aware cadence freeze/resume validated;
+- global queue /admin/follow-up-queue validated;
+- DBeaver checks green;
+- cadence uses active elapsed time;
+- overdue remains derived and is never persisted.
+
+Scaling note:
+- global queue history loading may need batching as data volume grows; record as future optimization, not S5.3 scope.

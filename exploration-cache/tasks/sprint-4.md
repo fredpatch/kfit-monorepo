@@ -11,8 +11,8 @@ Build the M4 customer/conversion/onboarding foundation after the validated Sprin
 1. [x] S4.1 — Client table + phone-based search/create-inline.
 2. [x] S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link.
 3. [x] S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review.
-4. [ ] S4.4 — Separate consent records and versioned terms/privacy acceptance — APPROVED_FOR_IMPLEMENTATION.
-5. [ ] S4.5 — Versioned assessment and health-questionnaire templates.
+4. [x] S4.4 — Separate consent records and versioned terms/privacy acceptance.
+5. [ ] S4.5 — Versioned assessment and health-questionnaire templates — PLANNING NEXT.
 
 ## S4.1 — validated
 
@@ -326,7 +326,7 @@ Validated locally by Fred on 2026-10-20.
 Notion dependency review selects **Separate consent records and versioned terms/privacy acceptance** before questionnaires. S4.3 provides the onboarding dependency, while the questionnaire task requires the consent model. Planning only until Fred approves Gate 1.
 
 
-## S4.4 — approved for implementation
+## S4.4 — validated
 
 Backlog task: **Separate consent records and versioned terms/privacy acceptance**.
 
@@ -512,3 +512,19 @@ Locked:
 - no questionnaire, medical, finance, customer-account, customer-OTP or V1.1 legal-review workflow is opened in S4.4.
 
 Do not start S4.5 until Fred validates S4.4 locally.
+
+
+### S4.4 validation evidence
+
+Validated locally by Fred on 2026-10-21.
+
+- `npm test`: server 195/195; shared 20/20.
+- PostgreSQL integration: 88/88, including 25 S4.4 cases.
+- typecheck/build/`db:check`/diff check green.
+- migration `0004` applied locally; initial runtime error disappeared after DB alignment.
+- public refusal path kept onboarding blocked.
+- fresh public link + both grants completed `service_terms`.
+- consumed-link replay was rejected without duplicate decisions.
+- coach-assisted capture succeeded with explicit provenance.
+- DBeaver confirmed append-only consent history, hashed token storage/consumption and safe audits.
+- preceding 87/88 run was the known unchanged Sprint 3 concurrency flake; all S4.4 cases passed in both runs.

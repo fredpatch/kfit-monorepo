@@ -9,9 +9,9 @@
 Branch            sprint-4
 Sprint            4 — Clients, conversion, onboarding, questionnaires et consentements
 Active slice      S4.4 — Separate consent records and versioned terms/privacy acceptance
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Last validated    S4.3 — 2026-10-20
-Next action       Implementer: execute approved S4.4 server-first consent/terms plan only
+Workflow state    CLOSED
+Last validated    S4.4 — 2026-10-21
+Next action       Planner: inspect S4.5 versioned assessment and health-questionnaire task only
 ```
 
 ## Sprint 4 objective
@@ -23,8 +23,8 @@ Build the customer/conversion/onboarding foundation after the validated Sprint 3
 1. S4.1 — Client table + phone-based search/create-inline — CLOSED, Fred validated 2026-10-20.
 2. S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link — CLOSED, Fred validated 2026-10-20.
 3. S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review — CLOSED, Fred validated 2026-10-20.
-4. S4.4 — Separate consent records and versioned terms/privacy acceptance — APPROVED_FOR_IMPLEMENTATION.
-5. S4.5 — Versioned assessment and health-questionnaire templates — blocked until S4.4 validation.
+4. S4.4 — Separate consent records and versioned terms/privacy acceptance — CLOSED, Fred validated 2026-10-21.
+5. S4.5 — Versioned assessment and health-questionnaire templates — PLANNING NEXT.
 
 S4.3 is locally validated. Do not implement the next slice before its plan is inspected and approved.
 
@@ -85,12 +85,12 @@ Before production:
 Branch            sprint-4
 Sprint            4
 Slice             S4.4
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Done              S4.3 validated; S4.4 planning + Fred Gate 1 approval
-Validation done   none for S4.4 yet
+Workflow state    CLOSED
+Done              S4.4 implementation + review + QA + Fred Gate 2 validation
+Validation done   server 195/195; shared 20/20; PostgreSQL integration 88/88; browser+DBeaver green
 Key rules          explicit capacity deadline for limited services; derived stalled state; strict checklist ownership
 Out of scope      questionnaire/consent/medical/finance workflows, activation, automatic cancellation/waitlist movement
-Next action       Implementer
+Next action       Planner: inspect S4.5 only
 ```
 
 
@@ -270,3 +270,26 @@ Applicable patterns:
 - explicit append-only history.
 
 Gate 1 approved by Fred.
+
+
+## S4.4 — validation closure
+
+Validated locally by Fred on 2026-10-21.
+
+Evidence:
+- typecheck/build/db:check/diff check green;
+- server tests 195/195;
+- shared tests 20/20;
+- PostgreSQL integration 88/88, including 25 S4.4 cases;
+- migration 0004 applied locally after zero affected legacy rows in preflight;
+- initial browser failure was caused by the local database not yet having migration 0004, not by consent-domain logic;
+- after migration, consent panel loaded correctly;
+- demo-only published consent definitions seeded locally;
+- public link refusal kept service_terms pending;
+- fresh-link dual grant completed service_terms;
+- consumed-link replay rejected without duplicate decisions;
+- coach-assisted capture passed on a second subscription;
+- DBeaver checks for append-only decisions, token hashing/consumption, onboarding integration and safe audit metadata were green.
+
+Known note:
+- the preceding integration run was 87/88 only because of the documented unchanged Sprint 3 concurrency flake; all S4.4 tests passed in both runs.

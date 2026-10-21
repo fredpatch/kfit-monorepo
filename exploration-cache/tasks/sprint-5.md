@@ -7,8 +7,8 @@ Deliver the authoritative post-onboarding subscription/coaching lifecycle: activ
 ## Ordered tasks
 
 1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — VALIDATED.
-2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — APPROVED_FOR_IMPLEMENTATION.
-3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence.
+2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — VALIDATED.
+3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — PLANNING.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions.
 5. S5.5 — Personalized document versioning and secure temporary delivery links.
 
@@ -530,3 +530,18 @@ Proposed appointment schema additions are approved:
 - cancelled_by_type
 
 Do not start S5.3 until Fred validates S5.2 locally.
+
+
+### S5.2 validation evidence
+
+Validated locally by Fred on 2026-10-21.
+
+- Server 251 passed; shared 37 passed.
+- PostgreSQL integration 224 passed, including 47 appointment cases.
+- Typecheck/build/db:check/diff green.
+- Migration 0006_free_tusk.sql applied locally; no backfill needed.
+- Reviewer passed with notes; QA passed with limitations.
+- Gate 2 validated scheduling, secure customer responses, confirmation/decline/reschedule, immutable reschedule chains, late-cancel/missed policy snapshots, completion, component consumption/restoration, token semantics and safe audit evidence.
+- Cancellation-window semantics validated: null means no late penalty; exactly at deadline is on time.
+
+Do not start S5.3 implementation before its plan is inspected and Fred approves Gate 1.

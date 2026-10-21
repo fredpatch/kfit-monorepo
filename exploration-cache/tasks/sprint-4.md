@@ -12,7 +12,7 @@ Build the M4 customer/conversion/onboarding foundation after the validated Sprin
 2. [x] S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link.
 3. [x] S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review.
 4. [x] S4.4 — Separate consent records and versioned terms/privacy acceptance.
-5. [ ] S4.5 — Versioned assessment and health-questionnaire templates — PLANNING NEXT.
+5. [ ] S4.5 — Versioned assessment and health-questionnaire templates — PLANNING.
 
 ## S4.1 — validated
 
@@ -528,3 +528,174 @@ Validated locally by Fred on 2026-10-21.
 - coach-assisted capture succeeded with explicit provenance.
 - DBeaver confirmed append-only consent history, hashed token storage/consumption and safe audits.
 - preceding 87/88 run was the known unchanged Sprint 3 concurrency flake; all S4.4 cases passed in both runs.
+
+
+## S4.5 — planning
+
+Backlog task: **Versioned assessment and health-questionnaire templates**.
+
+### Template schema
+
+Use existing questionnaire tables.
+
+Published template versions are immutable. Template identity uses `templateKey`; each version is a positive integer. Questions are immutable with their published template.
+
+V1 question types:
+- short_text
+- long_text
+- boolean
+- single_choice
+- multi_choice
+- integer
+- decimal
+- date
+
+Server owns JSON schemas for options/validation/risk rules. No executable expressions.
+
+### Categories and consent
+
+Template category:
+- `assessment`
+- `health`
+
+Health questionnaires require current grant of the latest published `health_data` consent definition.
+
+If no current grant:
+- public flow may record the health_data decision separately in the questionnaire submit transaction;
+- refusal is persisted as consent evidence but no questionnaire submission/answers are stored;
+- coach-assisted answer capture is forbidden until health_data is granted.
+
+Revoked health consent prevents future health submissions but does not erase immutable historical submissions.
+
+### Assignment
+
+Resolve effective service policy:
+1. selected variant policy;
+2. service-level policy.
+
+Configured `questionnaireTemplateId` must reference a published template.
+No configured template means no questionnaire requirement.
+
+### Submission revisions
+
+A committed submission is immutable.
+- first submitted revision = 1;
+- later correction = N+1;
+- `supersedesSubmissionId` links revision chain;
+- one logical head under subscription lock;
+- exact template id/version is retained.
+
+Public V1 does not persist partial drafts.
+
+### Risk engine
+
+Risk rules are declarative allowlisted predicates against the answer to their own question only.
+
+Allowed V1:
+- equals / in
+- numeric gt/gte/lt/lte
+
+No eval, scripting, cross-question logic, diagnosis or medical recommendations.
+
+Result:
+- boolean riskDetected;
+- matched question keys for internal structural evidence.
+
+### Onboarding
+
+Successful submission for the currently assigned template:
+- completes S4.3 `questionnaire` item atomically.
+
+Questionnaire waiver remains S4.3 behavior.
+
+Ordinary reads never silently reopen a completed blocker because a newer template exists. Reassignment/reacceptance requires an explicit future/admin configuration action.
+
+### Medical clearance
+
+If effective policy = `required_if_risk_flag` and riskDetected:
+- create/preserve one active pending `medical_clearance_record`;
+- create/upsert blocking onboarding item `medical_clearance` pending;
+- trigger source references questionnaire submission;
+- no diagnosis content.
+
+If no risk:
+- no blocker is created.
+
+A later safe revision does not auto-clear an existing medical requirement.
+
+S4.5 does not clear/review medical records.
+
+### API proposal
+
+Admin template/configuration:
+- `GET /admin/questionnaire-templates`
+- `POST /admin/questionnaire-templates`
+- `POST /admin/questionnaire-templates/:templateId/publish`
+- `POST /admin/questionnaire-templates/:templateId/new-version`
+
+Subscription:
+- `GET /admin/subscriptions/:subscriptionId/questionnaire`
+- `POST /admin/subscriptions/:subscriptionId/questionnaire-link`
+- `POST /admin/subscriptions/:subscriptionId/questionnaire/coach-submit`
+
+Public:
+- `GET /public/questionnaires/:token`
+- `POST /public/questionnaires/:token`
+
+Revision/correction may reuse coach/public submission commands with explicit expected head/revision to prevent stale overwrites.
+
+### Secure token
+
+Questionnaire action is separate from S4.4 consent-token action.
+Token snapshots:
+- subscriptionId
+- templateId
+- templateVersion
+- question schema identity/hash
+- required health_data definition id when category=health
+
+GET is non-consuming.
+Successful submitted questionnaire consumes token.
+Health-consent refusal may consume token after recording refusal because no answers may follow under that attempt.
+
+### Validation target
+
+Shared/unit/Express:
+- every question type;
+- options/validation schema;
+- published immutability;
+- assignment resolution;
+- required answer validation;
+- health consent precondition;
+- risk predicate validation/evaluation;
+- admin auth/CSRF and public token errors.
+
+PostgreSQL integration:
+- publish immutable version;
+- create N+1 without mutating old;
+- assessment submit without health consent;
+- health submit rejected with no consent;
+- health refusal records consent but zero answers/submission;
+- health grant + answers commits atomically;
+- exact template version retained;
+- correction creates immutable revision N+1;
+- concurrent revisions create one chain head;
+- questionnaire blocker completes on valid current submission;
+- risk + required_if_risk_flag creates one medical blocker/record;
+- no risk creates none;
+- not_required policy creates none despite risk;
+- later safe revision does not auto-clear medical requirement;
+- public GET does not consume token;
+- submit consumes; replay rejected;
+- audit failure rolls back submission/answers/onboarding/medical/token use;
+- health answers/free text absent from audit metadata.
+
+Fred Gate 2:
+- create/publish synthetic assessment + health template;
+- assign through service policy fixture;
+- public assessment completion;
+- public health refusal (no answers stored);
+- fresh health link grant + answers;
+- risk-answer case creates medical blocker;
+- coach-assisted safe revision;
+- DBeaver verify immutable versions/submissions/answers, consent provenance, medical blocker and safe audits.

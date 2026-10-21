@@ -1,6 +1,6 @@
 import axios, { AxiosHeaders } from "axios";
 import { authCsrfHeaderName, questionnaireApiRoutes, type QuestionnaireDetail, type QuestionnaireDocument, type QuestionnaireSubmitInput, type QuestionnaireSubmitResult,
-  type QuestionnaireTemplate, type QuestionnaireTemplateInput, type PublicQuestionnaireSubmitInput, type ConsentLinkState } from "@kfit/shared";
+  type QuestionnaireTemplate, type QuestionnaireTemplateInput, type QuestionnaireAssignmentInput, type QuestionnaireAssignmentScope, type PublicQuestionnaireSubmitInput, type ConsentLinkState } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
 const admin = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "", withCredentials: true, headers: { accept: "application/json" } });
 admin.interceptors.request.use(config => {
@@ -12,7 +12,7 @@ const route = (path: string, id: string) => path.replace(":subscriptionId", enco
 export const questionnaireApi = {
   async templates() { return (await admin.get<{ templates: QuestionnaireTemplate[] }>(questionnaireApiRoutes.templates)).data; },
   async create(input: QuestionnaireTemplateInput) { return (await admin.post<{ template: QuestionnaireTemplate }>(questionnaireApiRoutes.templates, input)).data; },
-  async publish(id: string) { return (await admin.post<{ template: QuestionnaireTemplate }>(route(questionnaireApiRoutes.publish, id), {})).data; },
+  async publish(id: string) { return (await admin.post<{ template: QuestionnaireTemplate }>(route(questionnaireApiRoutes.publish, id), {})).data; },\n  async assignments() { return (await admin.get<{ assignments: QuestionnaireAssignmentScope[] }>(questionnaireApiRoutes.assignments)).data; },\n  async assign(input: QuestionnaireAssignmentInput) { return (await admin.post<{ assignment: QuestionnaireAssignmentScope }>(questionnaireApiRoutes.assignments, input)).data; },
   async newVersion(id: string, input: QuestionnaireTemplateInput) { return (await admin.post<{ template: QuestionnaireTemplate }>(route(questionnaireApiRoutes.newVersion, id), input)).data; },
   async get(id: string) { return (await admin.get<{ questionnaire: QuestionnaireDetail }>(route(questionnaireApiRoutes.detail, id))).data; },
   async submit(id: string, input: QuestionnaireSubmitInput) { return (await admin.post<{ result: QuestionnaireSubmitResult }>(route(questionnaireApiRoutes.coachSubmit, id), input)).data; },

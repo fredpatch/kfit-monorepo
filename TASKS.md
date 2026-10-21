@@ -11,7 +11,7 @@ Sprint            4 — Clients, conversion, onboarding, questionnaires et conse
 Active slice      S4.5 — Versioned assessment and health-questionnaire templates
 Workflow state    CLOSED
 Last validated    Sprint 4 / S4.5 — 2026-10-21
-Next action       Sprint boundary: reconcile Sprint 4 and identify exact first Sprint 5 task
+Next action       Fred: merge/align Sprint 4, create sprint-5 branch; then plan S5.1 subscription lifecycle only
 ```
 
 ## Sprint 4 objective
@@ -502,3 +502,17 @@ Validation:
 - original agent run before the corrective fix: server 214/214, shared 34/34, PostgreSQL integration 131/131 including 43 S4.5 cases;
 - Fred reran the final validation suite after the corrective fix and reported all checks green;
 - exact post-correction test counts were not separately reported, so do not substitute the pre-correction counts as final counts.
+
+
+## Sprint 5 first task
+
+S5.1 — **Subscription lifecycle with pause, completion_due, renewal and cancellation resolution**
+
+Why first:
+- depends on the validated onboarding ready-to-start gate from Sprint 4;
+- appointment scheduling depends on an active subscription and package components;
+- structured follow-ups depend on an active subscription;
+- goals depend on follow-up + subscription model;
+- personalized documents depend on subscriptions/private storage.
+
+Do not implement S5.1 until the Sprint 5 branch/state is initialized and Gate 1 planning is approved.

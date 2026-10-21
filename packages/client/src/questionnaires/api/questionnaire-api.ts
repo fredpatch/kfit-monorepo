@@ -12,7 +12,9 @@ const route = (path: string, id: string) => path.replace(":subscriptionId", enco
 export const questionnaireApi = {
   async templates() { return (await admin.get<{ templates: QuestionnaireTemplate[] }>(questionnaireApiRoutes.templates)).data; },
   async create(input: QuestionnaireTemplateInput) { return (await admin.post<{ template: QuestionnaireTemplate }>(questionnaireApiRoutes.templates, input)).data; },
-  async publish(id: string) { return (await admin.post<{ template: QuestionnaireTemplate }>(route(questionnaireApiRoutes.publish, id), {})).data; },\n  async assignments() { return (await admin.get<{ assignments: QuestionnaireAssignmentScope[] }>(questionnaireApiRoutes.assignments)).data; },\n  async assign(input: QuestionnaireAssignmentInput) { return (await admin.post<{ assignment: QuestionnaireAssignmentScope }>(questionnaireApiRoutes.assignments, input)).data; },
+  async publish(id: string) { return (await admin.post<{ template: QuestionnaireTemplate }>(route(questionnaireApiRoutes.publish, id), {})).data; },
+  async assignments() { return (await admin.get<{ assignments: QuestionnaireAssignmentScope[] }>(questionnaireApiRoutes.assignments)).data; },
+  async assign(input: QuestionnaireAssignmentInput) { return (await admin.post<{ assignment: QuestionnaireAssignmentScope }>(questionnaireApiRoutes.assignments, input)).data; },
   async newVersion(id: string, input: QuestionnaireTemplateInput) { return (await admin.post<{ template: QuestionnaireTemplate }>(route(questionnaireApiRoutes.newVersion, id), input)).data; },
   async get(id: string) { return (await admin.get<{ questionnaire: QuestionnaireDetail }>(route(questionnaireApiRoutes.detail, id))).data; },
   async submit(id: string, input: QuestionnaireSubmitInput) { return (await admin.post<{ result: QuestionnaireSubmitResult }>(route(questionnaireApiRoutes.coachSubmit, id), input)).data; },

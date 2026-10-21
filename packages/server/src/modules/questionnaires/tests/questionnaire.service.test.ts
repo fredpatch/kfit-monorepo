@@ -25,6 +25,14 @@ test("template service rejects malformed nested schema before persistence", asyn
   const repo: TemplateRepository = { async execute() { assert.fail("invalid schema reached repository"); } };
   assert.deepEqual(await new QuestionnaireTemplateService(repo).execute("create", { ...syntheticTemplate(), script: "eval" }, undefined, actor), { ok: false, error: "QUESTIONNAIRE_TEMPLATE_INVALID" });
 });
+test("template assignment commands validate scope IDs before persistence", async () => {
+  let seen: unknown = null;
+  const repo: TemplateRepository = { async execute(command) { seen = command; return { ok: true, body: { assignments: [] } }; } };
+  const service = new QuestionnaireTemplateService(repo);
+  assert.deepEqual(await service.execute("assignment_set", { serviceId: "bad", variantId: null, questionnaireTemplateId: null }, undefined, actor), { ok: false, error: "QUESTIONNAIRE_INVALID_INPUT" });
+  await service.execute("assignment_set", { serviceId: id, variantId: null, questionnaireTemplateId: id }, undefined, actor);
+  assert.deepEqual(seen, { action: "assignment_set", input: { serviceId: id, variantId: null, questionnaireTemplateId: id } });
+});
 const riskCases: [RiskRule["operator"], RiskRule["value"], boolean | number, boolean][] = [["equals", true, true, true], ["equals", true, false, false], ["in", [1, 3], 3, true], ["gt", 3, 4, true], ["gte", 3, 3, true], ["lt", 3, 2, true], ["lte", 3, 3, true]];
 for (const [operator, value, answer, expected] of riskCases) {
   test(`risk evaluator ${operator} remains limited to its own declared answer`, () => {

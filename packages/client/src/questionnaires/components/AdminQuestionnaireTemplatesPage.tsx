@@ -46,17 +46,20 @@ function QuestionEditor({ question, onChange, onRemove, disabled }: { question: 
   </fieldset>;
 }
 export function AdminQuestionnaireTemplatesPage() {
-  const query = useQuery({ queryKey: ["questionnaire-templates"], queryFn: questionnaireApi.templates });
+  const query = useQuery({ queryKey: ["questionnaire-templates"], queryFn: questionnaireApi.templates });\n  const assignments = useQuery({ queryKey: ["questionnaire-assignments"], queryFn: questionnaireApi.assignments });
   const [form, setForm] = useState<QuestionnaireTemplateInput>(blankTemplate); const [sourceId, setSourceId] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null); const [notice, setNotice] = useState<string | null>(null); const inFlight = useRef(false);
+  const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null); const [notice, setNotice] = useState<string | null>(null); const inFlight = useRef(false);\n  const [assignmentScope, setAssignmentScope] = useState(""); const [assignmentTemplateId, setAssignmentTemplateId] = useState("");
   async function change(work: () => Promise<unknown>, message: string) {
     if (inFlight.current) return; inFlight.current = true; setBusy(true); setError(null); setNotice(null);
     try { await work(); setNotice(message); } catch (failure) { setError(questionnaireErrorMessage(failure)); }
-    finally { await query.refetch(); inFlight.current = false; setBusy(false); }
+    finally { await Promise.all([query.refetch(), assignments.refetch()]); inFlight.current = false; setBusy(false); }
   }
   function version(template: QuestionnaireTemplate) {
     setSourceId(template.id); setForm({ templateKey: template.templateKey, name: template.name, category: template.category, questions: template.questions.map(({ id: _id, sortOrder: _order, ...q }) => q) }); setError(null); setNotice("Modifie les champs ci-dessous pour créer une nouvelle version.");
   }
+  const publishedTemplates = query.data?.templates.filter(template => template.status === "published") ?? [];
+  const assignmentRows = assignments.data?.assignments ?? [];
+  const selectedScope = assignmentRows.find(scope => `${scope.serviceId}:${scope.variantId ?? "service"}` === assignmentScope) ?? null;
   return <section className="questionnaire-templates"><section className="customers-panel"><h2>Modèles de questionnaires</h2><p>Les versions publiées sont conservées. Toute modification crée une nouvelle version.</p>
     {query.isPending ? <p role="status">Chargement des modèles…</p> : query.isError ? <div role="alert"><p className="error">{questionnaireErrorMessage(query.error)}</p><button type="button" onClick={() => void query.refetch()}>Réessayer</button></div>
       : query.data?.templates.length ? <ul className="onboarding-items">{query.data.templates.map(template => <li key={template.id}><strong>{template.name}</strong><p>Référence : {template.templateKey} · version {template.version} · {template.category === "health" ? "Santé" : "Évaluation"} · {template.status === "draft" ? "Brouillon" : template.status === "published" ? "Publié" : "Retiré"}</p>
@@ -66,6 +69,18 @@ export function AdminQuestionnaireTemplatesPage() {
         </li>)}</ol></details><div className="onboarding-actions">{template.status === "draft" ? <button type="button" disabled={busy} onClick={() => void change(() => questionnaireApi.publish(template.id), "Version publiée.")}>Publier cette version</button>
           : <button type="button" disabled={busy} onClick={() => version(template)}>Préparer une nouvelle version</button>}</div>
       </li>)}</ul> : <p>Aucun modèle créé.</p>}
+  </section><section className="customers-panel"><h2>Affectation aux services</h2>
+    <p>Associe un modèle publié à la politique d’un service ou d’une option. Une option sans affectation propre hérite du service.</p>
+    {assignments.isPending ? <p role="status">Chargement des affectations…</p> : assignments.isError ? <div role="alert"><p className="error">Impossible de charger les affectations.</p><button type="button" onClick={() => void assignments.refetch()}>Réessayer</button></div> : <>
+      <label>Service ou option<select value={assignmentScope} onChange={event => { const value = event.target.value; setAssignmentScope(value); const scope = assignmentRows.find(item => `${item.serviceId}:${item.variantId ?? "service"}` === value); setAssignmentTemplateId(scope?.questionnaireTemplateId ?? ""); }}>
+        <option value="">Choisir…</option>{assignmentRows.map(scope => <option key={`${scope.serviceId}:${scope.variantId ?? "service"}`} value={`${scope.serviceId}:${scope.variantId ?? "service"}`}>{scope.serviceName}{scope.variantName ? ` — ${scope.variantName}` : " — Politique du service"}</option>)}
+      </select></label>
+      {selectedScope && <p className="muted">Affectation effective : {selectedScope.effectiveQuestionnaireTemplateId ? publishedTemplates.find(template => template.id === selectedScope.effectiveQuestionnaireTemplateId)?.name ?? selectedScope.effectiveQuestionnaireTemplateId : "Aucun questionnaire"}</p>}
+      <label>Questionnaire<select value={assignmentTemplateId} disabled={!selectedScope || busy} onChange={event => setAssignmentTemplateId(event.target.value)}>
+        <option value="">{selectedScope?.variantId ? "Hériter du service / aucun override" : "Aucun questionnaire"}</option>{publishedTemplates.map(template => <option key={template.id} value={template.id}>{template.name} · v{template.version} · {template.category === "health" ? "Santé" : "Évaluation"}</option>)}
+      </select></label>
+      <button type="button" disabled={!selectedScope || busy} onClick={() => selectedScope && void change(() => questionnaireApi.assign({ serviceId: selectedScope.serviceId, variantId: selectedScope.variantId, questionnaireTemplateId: assignmentTemplateId || null }), "Affectation du questionnaire enregistrée.")}>Enregistrer l’affectation</button>
+    </>}
   </section><section className="customers-panel"><h2>{sourceId ? "Nouvelle version" : "Créer un modèle"}</h2>
     {error && <p className="error" role="alert">{error}</p>}{notice && <p className="status" role="status">{notice}</p>}
     <form className="questionnaire-form" onSubmit={event => { event.preventDefault(); const parsed = parseQuestionnaireTemplate(form); if (!parsed) { setError("Vérifie les références uniques, les choix, les limites et les règles de chaque question."); return; }

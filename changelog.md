@@ -2,6 +2,21 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-21 — Sprint 5.1 subscription lifecycle
+
+- Fred locally validated S5.1 end-to-end.
+- Added authoritative lifecycle commands for activation, pause/resume, completion review, completion, cancellation and renewal.
+- Added immutable duration snapshots and linked renewal lineage; catalogue edits do not rewrite existing subscription duration.
+- Pause/resume preserves an explicit manually chosen revised end date rather than auto-adding pause days.
+- Planned end never auto-completes; completion review is explicit.
+- Completion preserves component balances and enforces the outstanding-component safeguard before closure.
+- Cancellation preserves history and remains independent from finance.
+- Renewal creates exactly one linked onboarding subscription, clones commercial/component snapshots and resets consumption/owed counters.
+- Gate 2 exposed an onboarding/questionnaire policy fallback mismatch. Onboarding was aligned to the same per-field variant-to-service fallback used by questionnaire assignment, and a fresh-request retest passed.
+- Agent baseline before that final correction: server 231 passed, shared 35 passed, PostgreSQL integration 177/177 including 44 lifecycle cases; typecheck/build/db:check/diff green.
+- Reviewer passed with notes; QA passed with limitations; Fred Gate 2 browser/DBeaver validation is green.
+- Exact post-correction automated test counts were not separately reported.
+
 ## 2026-10-21 — Sprint 4.5 versioned assessment and health questionnaires
 
 - Fred locally validated S4.5 end-to-end.

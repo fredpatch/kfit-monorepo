@@ -9,8 +9,8 @@ Deliver the authoritative post-onboarding subscription/coaching lifecycle: activ
 1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — VALIDATED.
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — VALIDATED.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — VALIDATED.
-4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — APPROVED_FOR_IMPLEMENTATION.
-5. S5.5 — Personalized document versioning and secure temporary delivery links.
+4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — VALIDATED.
+5. S5.5 — Personalized document versioning and secure temporary delivery links — PLANNING.
 
 ## S5.1 — planning
 
@@ -1032,3 +1032,20 @@ Proposed schema additions are approved:
 - goal_events append-only table
 
 Do not start S5.5 until Fred validates S5.4 locally.
+
+
+### S5.4 validation evidence
+
+Validated locally by Fred on 2026-10-21.
+
+- Typecheck/build/db:check green.
+- Server 304 passed; shared 41 passed.
+- PostgreSQL integration 333/333 passed, including 58 S5.4 cases.
+- Migration 0008 applied locally.
+- Reviewer passed with notes; QA passed with limitations.
+- First integration run reproduced the unchanged Sprint 3 concurrency flake; approved retry passed.
+- Gate 2 validated append-only measurement chronology/deltas, health_data consent/revocation behavior, qualitative/numeric goals, advisory-vs-authoritative status separation, explicit coach confirmation/override reason, goal pause/resume/cancel, subscription-goal independence and DBeaver/audit invariants.
+- Progress photos remain deferred to S5.5.
+- UI uses kg/cm/%; stricter API metric/unit compatibility is a future hardening consideration.
+
+Do not start S5.5 implementation before its plan is inspected and Fred approves Gate 1.

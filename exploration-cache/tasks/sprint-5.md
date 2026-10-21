@@ -280,3 +280,222 @@ Do not start S5.2 until Fred validates S5.1 locally.
 Validated locally by Fred on 2026-10-21. Agent baseline before the final correction: server 231 passed, shared 35 passed, PostgreSQL 177/177 including 44 lifecycle cases. Typecheck/build/db:check/diff were green. Gate 2 validated activation, pause/resume with manual revised end, completion review, completion safeguards, cancellation, renewal, and DBeaver history/audit invariants. A questionnaire-policy fallback mismatch was corrected during Gate 2 and passed fresh-request retest. Exact post-correction automated counts were not separately reported.
 
 Do not start S5.2 implementation before Fred approves its Gate 1 plan.
+
+
+## S5.2 — planning
+
+Backlog task: **Appointment scheduling, confirmation links, cancellation policy and history**.
+
+### State model
+
+Appointment records are historical business facts.
+
+Allowed transitions:
+- scheduled -> confirmed
+- scheduled|confirmed -> reschedule_requested
+- scheduled|confirmed|reschedule_requested -> rescheduled
+- scheduled|confirmed -> completed
+- scheduled|confirmed -> cancelled
+- scheduled|confirmed -> missed
+
+Terminal in S5.2:
+- rescheduled
+- completed
+- cancelled
+- missed
+
+A reschedule never overwrites original schedule facts. It creates a new linked appointment.
+
+### Schema additions
+
+Proposed migration:
+- appointments.rescheduled_from_appointment_id nullable self-FK RESTRICT + unique;
+- appointments.late_cancel_notice_hours_snapshot nullable integer;
+- appointments.late_cancel_consumes_component_snapshot boolean NOT NULL default false;
+- appointments.missed_consumes_component_snapshot boolean NOT NULL default false;
+- appointments.cancelled_at nullable timestamp;
+- appointments.cancelled_by_type nullable text.
+
+Existing rows preflight before migration. No destructive backfill assumptions.
+
+### Policy snapshot
+
+At appointment creation:
+1. load subscription/service/variant;
+2. resolve variant policy field-by-field with service fallback;
+3. snapshot late-cancel notice/consumption and missed-consumption settings onto appointment.
+
+Historical appointment decisions always use appointment snapshots, never current catalogue values.
+
+### Scheduling
+
+Only active subscriptions may receive new appointments.
+
+If component is linked:
+- must belong to same subscription;
+- quantityConsumed < quantityEntitled;
+- S5.2 consumes max one unit per appointment.
+
+Create appointment, appointment event and audit atomically.
+
+### Secure response links
+
+Reuse secure_access_tokens/external_access_events.
+
+Token:
+- resource = appointment;
+- action = appointment_response;
+- random/hash-only;
+- explicit expiry;
+- revocable;
+- GET non-consuming;
+- successful response consuming;
+- rate-limited;
+- no OTP.
+
+Customer actions:
+- confirm
+- decline
+- request_reschedule
+
+### Cancellation policy
+
+Coach cancellation:
+- never consumes entitlement;
+- mandatory reason.
+
+Customer cancellation:
+- authoritative server time determines lateness relative to scheduledStart;
+- on-time never consumes;
+- late consumes one linked component only if snapshot says so.
+
+No linked component => no consumption.
+
+### Missed
+
+Admin may mark missed only once scheduledStart has passed.
+
+Consume one linked component only if missed policy snapshot says so.
+
+### Completed
+
+Admin marks completed.
+Linked component completion consumes one entitlement unit atomically.
+No entitlement available => reject.
+
+Early completion before scheduledEnd requires explicit override + reason.
+
+### Component accounting
+
+component_events are append-only.
+
+S5.2 event types:
+- appointment_completed
+- late_customer_cancel
+- missed
+- restoration
+
+Update quantityConsumed in same transaction.
+
+Double-submit/replay cannot create a second consumption event.
+
+Explicit restoration:
+- reason required;
+- only when appointment previously consumed a component;
+- max one restoration per consumptive event;
+- decrements quantityConsumed by one;
+- never changes appointment status.
+
+### Rescheduling
+
+Customer request:
+- appointment -> reschedule_requested;
+- optional rescheduleNote;
+- no component consumption.
+
+Coach reschedule:
+- source status scheduled|confirmed|reschedule_requested;
+- new start/end required;
+- subscription must currently be active;
+- source -> rescheduled;
+- create replacement appointment linked through rescheduled_from_appointment_id;
+- replacement keeps same subscription/component and copied policy snapshots;
+- revoke active source response tokens;
+- replacement starts scheduled/pending;
+- issue replacement response link separately.
+
+### Subscription lifecycle interaction
+
+Creation/reschedule-to-new-slot require subscription active.
+
+Existing appointment may still be finalized as completed/missed/cancelled after subscription changes state, provided appointment-state/time invariants permit it. S5.2 never mutates subscription lifecycle.
+
+### API proposal
+
+Admin:
+- GET /admin/subscriptions/:subscriptionId/appointments
+- POST /admin/subscriptions/:subscriptionId/appointments
+- GET /admin/appointments/:appointmentId
+- POST /admin/appointments/:appointmentId/confirm
+- POST /admin/appointments/:appointmentId/cancel
+- POST /admin/appointments/:appointmentId/reschedule
+- POST /admin/appointments/:appointmentId/complete
+- POST /admin/appointments/:appointmentId/missed
+- POST /admin/appointments/:appointmentId/restore-component
+- POST /admin/appointments/:appointmentId/response-link
+
+Public:
+- GET /public/appointments/:token
+- POST /public/appointments/:token
+
+### Validation target
+
+Shared/unit/Express:
+- closed transition map;
+- scheduling/date validation;
+- component ownership/remaining entitlement validation;
+- policy fallback/snapshot;
+- cancellation lateness boundary;
+- auth/CSRF;
+- public token input/replay/error taxonomy.
+
+PostgreSQL integration:
+1. schedule active subscription appointment;
+2. reject scheduling non-active subscription;
+3. reject component from another subscription;
+4. policy snapshot remains unchanged after catalogue policy edit;
+5. customer confirmation;
+6. on-time customer decline consumes nothing;
+7. late decline + consume=false consumes nothing;
+8. late decline + consume=true consumes exactly one;
+9. coach cancellation never consumes;
+10. missed before scheduledStart rejected;
+11. missed + consume policy true consumes one;
+12. completion consumes one linked entitlement;
+13. no remaining entitlement rejects completion/new linked appointment as applicable;
+14. duplicate completion/cancel/missed cannot double-consume;
+15. restoration appends event and decrements once;
+16. duplicate restoration rejected;
+17. customer reschedule request stores history without consuming;
+18. coach reschedule creates replacement and preserves original facts;
+19. replacement copies policy snapshot and source component;
+20. reschedule revokes source response tokens;
+21. public GET non-consuming;
+22. successful public response consumes token;
+23. replay cannot apply a second response;
+24. audit failure rolls back appointment/component/token authoritative writes;
+25. free-text reason/note absent from generic audit metadata.
+
+Fred Gate 2:
+- schedule appointment on active subscription/component;
+- issue customer response link;
+- confirm one appointment;
+- on-time decline another and verify no consumption;
+- late decline under consuming policy and verify component counter/event;
+- reschedule request + coach replacement;
+- complete appointment and verify entitlement consumed;
+- mark missed scenario according to policy;
+- restore one consumed unit;
+- DBeaver verify original/rescheduled rows, events, token hashes, component events/counters and safe audit.
+
+Do not start S5.3 until Fred validates S5.2 locally.

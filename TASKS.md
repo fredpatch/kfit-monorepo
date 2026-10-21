@@ -445,3 +445,28 @@ Applicable patterns:
 - append-only revision history
 
 Gate 1 approved by Fred.
+
+
+## S4.5 corrective fix — questionnaire assignment
+
+Status: IMPLEMENTED, awaiting Fred local validation.
+
+Reason:
+- S4.5 originally created/published questionnaire templates but exposed no admin path to assign a published template to service_policies.questionnaire_template_id.
+- As a result, onboarding correctly reported no questionnaire configured even after template publication.
+
+Correction:
+- added questionnaire assignment contracts and admin GET/POST route;
+- added service/variant assignment scopes in the Questionnaires admin page;
+- assignment persists to service_policies and accepts published templates only;
+- service/variant assignment writes are serialized and audited;
+- variant questionnaire resolution now falls back per-field to the service-level assignment when no variant override exists;
+- clearing a variant override restores service-level inheritance;
+- no questionnaire submission behavior, consent behavior, medical-review behavior or schema migration changed.
+
+Validation pending:
+- typecheck/build/tests;
+- assignment UI service-level path;
+- variant override path;
+- variant inheritance after clearing override;
+- onboarding questionnaire panel becomes available after assignment.

@@ -9,9 +9,9 @@
 Branch            sprint-5
 Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
 Active slice      S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution
-Workflow state    PLANNING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    Sprint 4 — closed 2026-10-21
-Next action       Fred: review/approve S5.1 lifecycle plan
+Next action       Implementer: execute approved S5.1 server-first lifecycle plan only
 ```
 
 ## Sprint 5 objective
@@ -20,13 +20,13 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 
 ## Sprint 5 execution order
 
-1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — PLANNING.
+1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — APPROVED_FOR_IMPLEMENTATION.
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions.
 5. S5.5 — Personalized document versioning and secure temporary delivery links.
 
-Do not implement S5.1 before Gate 1 approval. Do not open S5.2 while S5.1 is unvalidated.
+Gate 1 approved by Fred. Implement S5.1 only. Do not open S5.2 while S5.1 is unvalidated.
 
 ## Blockers
 
@@ -45,8 +45,8 @@ Before production:
 Branch            sprint-5
 Sprint            5
 Slice             S5.1
-Workflow state    PLANNING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Done              Sprint 4 closed/aligned; sprint-5 branch created; S5.1 inspected
 Validation done   none for S5.1
-Next action       Fred reviews Gate 1 plan
+Next action       Implementer
 ```

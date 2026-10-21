@@ -1,14 +1,14 @@
 import { exactKeys, parseQuestionnaireAnswers, parseQuestionnaireTemplate, questionnaireObject, type PublicQuestionnaireSubmitInput,
   type QuestionnaireDetail, type QuestionnaireDocument, type QuestionnaireErrorCode, type QuestionnaireSubmitInput, type QuestionnaireSubmitResult,
-  type QuestionnaireTemplate, type QuestionnaireTemplateInput } from "@kfit/shared";
+  type QuestionnaireTemplate, type QuestionnaireTemplateInput, type QuestionnaireAssignmentInput, type QuestionnaireAssignmentScope } from "@kfit/shared";
 import { uuidPattern, type ConsentActor } from "../../consents/services/consent.service.js";
 export type QuestionnaireActor = ConsentActor;
-export type QuestionnaireBody = { templates: QuestionnaireTemplate[] } | { template: QuestionnaireTemplate } | { questionnaire: QuestionnaireDetail } | { revoked: true }
+export type QuestionnaireBody = { templates: QuestionnaireTemplate[] } | { template: QuestionnaireTemplate } | { assignments: QuestionnaireAssignmentScope[] } | { assignment: QuestionnaireAssignmentScope } | { questionnaire: QuestionnaireDetail } | { revoked: true }
   | { document: QuestionnaireDocument } | { result: QuestionnaireSubmitResult } | { token: string; link: import("@kfit/shared").ConsentLinkState };
 export type QuestionnaireResult = { ok: true; body: QuestionnaireBody } | { ok: false; error: QuestionnaireErrorCode };
 export const questionnaireFailure = (error: QuestionnaireErrorCode): QuestionnaireResult => ({ ok: false, error });
 export type TemplateCommand = { action: "list" } | { action: "create"; input: QuestionnaireTemplateInput } | { action: "publish"; templateId: string }
-  | { action: "new_version"; templateId: string; input: QuestionnaireTemplateInput };
+  | { action: "new_version"; templateId: string; input: QuestionnaireTemplateInput } | { action: "assignment_list" } | { action: "assignment_set"; input: QuestionnaireAssignmentInput };
 export interface TemplateRepository { execute(command: TemplateCommand, actor: QuestionnaireActor): Promise<QuestionnaireResult> }
 export type QuestionnaireCommand = { action: "read" } | { action: "issue"; expiresAt: Date } | { action: "revoke_link"; tokenId: string }
   | { action: "submit"; input: QuestionnaireSubmitInput };
@@ -19,7 +19,15 @@ export interface QuestionnaireRepository {
 export class QuestionnaireTemplateService {
   constructor(private readonly repository: TemplateRepository) {}
   async execute(action: TemplateCommand["action"], body: unknown, templateId: string | undefined, actor: QuestionnaireActor): Promise<QuestionnaireResult> {
-    if (action === "list") return this.repository.execute({ action }, actor);
+    if (action === "list" || action === "assignment_list") return this.repository.execute({ action }, actor);
+    if (action === "assignment_set") {
+      if (!questionnaireObject(body) || !exactKeys(body, ["serviceId", "variantId", "questionnaireTemplateId"])) return questionnaireFailure("QUESTIONNAIRE_INVALID_INPUT");
+      const input = body as Record<string, unknown>;
+      if (typeof input.serviceId !== "string" || !uuidPattern.test(input.serviceId)) return questionnaireFailure("QUESTIONNAIRE_INVALID_INPUT");
+      if (!(input.variantId === null || typeof input.variantId === "string" && uuidPattern.test(input.variantId))) return questionnaireFailure("QUESTIONNAIRE_INVALID_INPUT");
+      if (!(input.questionnaireTemplateId === null || typeof input.questionnaireTemplateId === "string" && uuidPattern.test(input.questionnaireTemplateId))) return questionnaireFailure("QUESTIONNAIRE_INVALID_INPUT");
+      return this.repository.execute({ action, input: { serviceId: input.serviceId, variantId: input.variantId as string | null, questionnaireTemplateId: input.questionnaireTemplateId as string | null } }, actor);
+    }
     if (action !== "create" && (!templateId || !uuidPattern.test(templateId))) return questionnaireFailure("QUESTIONNAIRE_INVALID_INPUT");
     if (action === "publish") return questionnaireObject(body) && Object.keys(body).length === 0 ? this.repository.execute({ action, templateId: templateId! }, actor) : questionnaireFailure("QUESTIONNAIRE_INVALID_INPUT");
     const input = parseQuestionnaireTemplate(body); if (!input) return questionnaireFailure("QUESTIONNAIRE_TEMPLATE_INVALID");

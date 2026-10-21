@@ -9,9 +9,9 @@
 Branch            sprint-5
 Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
 Active slice      S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions
-Workflow state    PLANNING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    S5.3 — 2026-10-21
-Next action       Fred: review/approve S5.4 progress/goals plan before implementation
+Next action       Implementer: execute approved S5.4 server-first progress/goals plan only
 ```
 
 ## Sprint 5 objective
@@ -23,7 +23,7 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — CLOSED, Fred validated 2026-10-21.
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — CLOSED, Fred validated 2026-10-21.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — CLOSED, Fred validated 2026-10-21.
-4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — PLANNING.
+4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — APPROVED_FOR_IMPLEMENTATION.
 5. S5.5 — Personalized document versioning and secure temporary delivery links.
 
 Gate 1 approved by Fred. Implement S5.1 only. Do not open S5.2 while S5.1 is unvalidated.
@@ -48,7 +48,7 @@ Slice             S5.4
 Workflow state    PLANNING
 Done              S5.1 implementation + correction + review + QA + Fred Gate 2 validation
 Validation done   Gate 2 green; browser/DBeaver lifecycle acceptance green
-Next action       Planner: inspect S5.4 only
+Next action       Implementer
 ```
 
 

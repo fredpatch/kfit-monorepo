@@ -8,10 +8,10 @@
 ```text
 Branch            sprint-5
 Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
-Active slice      S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Last validated    S5.3 — 2026-10-21
-Next action       Implementer: execute approved S5.4 server-first progress/goals plan only
+Active slice      S5.5 — Personalized document versioning and secure temporary delivery links
+Workflow state    PLANNING
+Last validated    S5.4 — 2026-10-21
+Next action       Planner: inspect S5.5 personalized document workflow; no implementation before Gate 1
 ```
 
 ## Sprint 5 objective
@@ -23,8 +23,8 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — CLOSED, Fred validated 2026-10-21.
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — CLOSED, Fred validated 2026-10-21.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — CLOSED, Fred validated 2026-10-21.
-4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — APPROVED_FOR_IMPLEMENTATION.
-5. S5.5 — Personalized document versioning and secure temporary delivery links.
+4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — CLOSED, Fred validated 2026-10-21.
+5. S5.5 — Personalized document versioning and secure temporary delivery links — PLANNING.
 
 Gate 1 approved by Fred. Implement S5.1 only. Do not open S5.2 while S5.1 is unvalidated.
 
@@ -44,11 +44,11 @@ Before production:
 ```text
 Branch            sprint-5
 Sprint            5
-Slice             S5.4
+Slice             S5.5
 Workflow state    PLANNING
 Done              S5.1 implementation + correction + review + QA + Fred Gate 2 validation
 Validation done   Gate 2 green; browser/DBeaver lifecycle acceptance green
-Next action       Implementer
+Next action       Planner: inspect S5.5 only
 ```
 
 
@@ -771,3 +771,34 @@ Fred Gate 2:
 - DBeaver inspect progress_measurements, goals, goal_events, consent_records and audit_events.
 
 Gate 1 pending Fred approval.
+
+
+## S5.4 — validation closure
+
+Validated locally by Fred on 2026-10-21.
+
+Agent validation:
+- typecheck passed;
+- server tests: 304 passed;
+- shared tests: 41 passed;
+- build passed;
+- db:check passed;
+- PostgreSQL integration: 333/333 passed, including 58 S5.4 cases;
+- migration 0008 applied locally;
+- Reviewer passed with notes;
+- QA passed with limitations.
+- First integration run reproduced the unchanged Sprint 3 concurrency flake; approved retry passed.
+
+Fred Gate 2:
+- chronological append-only measurement history/deltas validated;
+- health_data consent guard and revocation-preserves-history behavior validated;
+- qualitative and numeric goals validated;
+- advisory suggestions remained distinct from authoritative goal status;
+- explicit coach confirmation and override-reason behavior validated;
+- goal pause/resume/cancel validated;
+- subscription pause did not auto-pause goals;
+- DBeaver checks green for progress_measurements, goals, goal_events, consent evidence and safe audit metadata.
+- photos remain deferred to S5.5.
+- UI currently uses kg/cm/%; stronger API metric/unit compatibility remains a future hardening item.
+
+Full-project acceptance recipe is maintained in docs/RECETTE_V1_CORE.md and must be extended as later slices/sprints are validated.

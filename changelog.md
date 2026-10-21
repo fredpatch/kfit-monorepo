@@ -2,6 +2,21 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-21 — Sprint 5.2 appointment scheduling and secure responses
+
+- Fred locally validated S5.2 end-to-end.
+- Added appointment scheduling for active subscriptions, optional linkage to subscription components and immutable appointment event history.
+- Added secure public appointment-response links for confirm, decline and reschedule-request without customer accounts.
+- Added appointment-time snapshots for late-cancellation and missed-session consumption policy so later catalogue edits cannot reinterpret historical appointments.
+- Rescheduling preserves original schedule facts and creates one linked replacement appointment.
+- Coach cancellation never consumes entitlement; on-time customer cancellation never consumes entitlement; late customer cancellation/missed may consume exactly one unit according to the appointment policy snapshot.
+- Completed linked appointments consume one entitlement atomically.
+- Component accounting uses append-only component events with explicit restoration rather than rewriting consumption history.
+- Validated cancellation-window semantics: null notice-hours means no late penalty and exactly at the deadline counts as on time.
+- Agent validation: server 251 passed, shared 37 passed, PostgreSQL 224 passed including 47 appointment cases; typecheck/build/db:check/diff green.
+- Migration 0006_free_tusk.sql applied locally with no backfill needed.
+- Reviewer passed with notes; QA passed with limitations; Fred Gate 2 browser/DBeaver validation is green.
+
 ## 2026-10-21 — Sprint 5.1 subscription lifecycle
 
 - Fred locally validated S5.1 end-to-end.

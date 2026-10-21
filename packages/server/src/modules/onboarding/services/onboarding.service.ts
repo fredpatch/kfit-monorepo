@@ -37,12 +37,19 @@ export function checklistDefinition(questionnaireRequired: boolean) {
 export function resolveEffectivePolicy(rows: Array<{ variantId: string | null; questionnaireTemplateId: string | null; medicalClearancePolicy: string | null }>, variantId: string | null):
   | { status: "ok"; source: "variant" | "service" | "none"; questionnaireRequired: boolean }
   | { status: "policy_invalid" } {
-  const specific = variantId ? rows.filter(row => row.variantId === variantId) : [];
-  const selected = specific.length ? specific : rows.filter(row => row.variantId === null);
-  if (selected.length > 1) return { status: "policy_invalid" };
-  const policy = selected[0];
-  if (policy?.medicalClearancePolicy && !["not_required", "required_if_risk_flag"].includes(policy.medicalClearancePolicy)) return { status: "policy_invalid" };
-  return { status: "ok", source: policy ? specific.length ? "variant" : "service" : "none", questionnaireRequired: !!policy?.questionnaireTemplateId };
+  const serviceRows = rows.filter(row => row.variantId === null);
+  const variantRows = variantId ? rows.filter(row => row.variantId === variantId) : [];
+  if (serviceRows.length > 1 || variantRows.length > 1) return { status: "policy_invalid" };
+  const service = serviceRows[0];
+  const variant = variantRows[0];
+  const effectiveQuestionnaireTemplateId = variant?.questionnaireTemplateId ?? service?.questionnaireTemplateId ?? null;
+  const effectiveMedicalClearancePolicy = variant?.medicalClearancePolicy ?? service?.medicalClearancePolicy ?? null;
+  if (effectiveMedicalClearancePolicy && !["not_required", "required_if_risk_flag"].includes(effectiveMedicalClearancePolicy)) return { status: "policy_invalid" };
+  return {
+    status: "ok",
+    source: variant ? "variant" : service ? "service" : "none",
+    questionnaireRequired: !!effectiveQuestionnaireTemplateId,
+  };
 }
 
 export function resolveCapacity(mode: string, serviceLimit: number | null, variantLimit: number | null):

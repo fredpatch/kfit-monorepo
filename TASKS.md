@@ -8,10 +8,10 @@
 ```text
 Branch            sprint-5
 Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
-Active slice      S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Last validated    Sprint 4 — closed 2026-10-21
-Next action       Implementer: execute approved S5.1 server-first lifecycle plan only
+Active slice      S5.2 — Appointment scheduling, confirmation links, cancellation policy and history
+Workflow state    PLANNING
+Last validated    S5.1 — 2026-10-21
+Next action       Planner: inspect S5.2 appointment scheduling task; no implementation before Gate 1
 ```
 
 ## Sprint 5 objective
@@ -20,8 +20,8 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 
 ## Sprint 5 execution order
 
-1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — APPROVED_FOR_IMPLEMENTATION.
-2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history.
+1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — CLOSED, Fred validated 2026-10-21.
+2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — PLANNING.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions.
 5. S5.5 — Personalized document versioning and secure temporary delivery links.
@@ -44,11 +44,11 @@ Before production:
 ```text
 Branch            sprint-5
 Sprint            5
-Slice             S5.1
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Done              Sprint 4 closed/aligned; sprint-5 branch created; S5.1 inspected
-Validation done   none for S5.1
-Next action       Implementer
+Slice             S5.2
+Workflow state    PLANNING
+Done              S5.1 implementation + correction + review + QA + Fred Gate 2 validation
+Validation done   Gate 2 green; browser/DBeaver lifecycle acceptance green
+Next action       Planner: inspect S5.2 only
 ```
 
 
@@ -73,3 +73,35 @@ Local fixture note:
 
 Health test prerequisite:
 - current development seed provisions synthetic published service_terms, privacy_notice and health_data consent definitions.
+
+
+## S5.1 — validation closure
+
+Validated locally by Fred on 2026-10-21.
+
+Agent baseline before final Gate 2 correction:
+- server unit tests: 231 passed;
+- shared tests: 35 passed;
+- PostgreSQL integration: 177/177, including 44 lifecycle cases;
+- typecheck/build/db:check/diff green;
+- Reviewer passed with notes;
+- QA passed with limitations.
+
+Fred Gate 2:
+- activation blocking respected authoritative onboarding requirements;
+- fresh request/subscription validated correct questionnaire + health-data-consent integration;
+- ready_to_start -> active validated from lifecycle page;
+- pause/resume with manually chosen revised end date validated;
+- completion_due flow validated;
+- outstanding-component block/override validated;
+- cancellation validated;
+- renewal validated with one linked onboarding child;
+- DBeaver lifecycle/history/pause/component/audit checks green.
+
+Corrective Gate 2 finding:
+- onboarding still used old whole-row variant policy resolution while questionnaire assignment used per-field service fallback;
+- fix aligned onboarding questionnaire resolution with questionnaire module;
+- fresh-request retest passed;
+- stale pre-fix ready_to_start fixtures were not mutated with ad-hoc SQL.
+
+Exact post-correction test counts were not separately reported; do not present the pre-correction counts as the final rerun counts.

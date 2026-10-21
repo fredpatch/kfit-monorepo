@@ -6,8 +6,8 @@ Deliver the authoritative post-onboarding subscription/coaching lifecycle: activ
 
 ## Ordered tasks
 
-1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — APPROVED_FOR_IMPLEMENTATION.
-2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history.
+1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — VALIDATED.
+2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — PLANNING.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions.
 5. S5.5 — Personalized document versioning and secure temporary delivery links.
@@ -273,3 +273,10 @@ Proposed schema additions are approved:
 - subscriptions.renewed_from_subscription_id
 
 Do not start S5.2 until Fred validates S5.1 locally.
+
+
+### S5.1 validation evidence
+
+Validated locally by Fred on 2026-10-21. Agent baseline before the final correction: server 231 passed, shared 35 passed, PostgreSQL 177/177 including 44 lifecycle cases. Typecheck/build/db:check/diff were green. Gate 2 validated activation, pause/resume with manual revised end, completion review, completion safeguards, cancellation, renewal, and DBeaver history/audit invariants. A questionnaire-policy fallback mismatch was corrected during Gate 2 and passed fresh-request retest. Exact post-correction automated counts were not separately reported.
+
+Do not start S5.2 implementation before Fred approves its Gate 1 plan.

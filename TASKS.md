@@ -8,10 +8,10 @@
 ```text
 Branch            sprint-5
 Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
-Active slice      S5.2 — Appointment scheduling, confirmation links, cancellation policy and history
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Last validated    S5.1 — 2026-10-21
-Next action       Implementer: execute approved S5.2 server-first appointment plan only
+Active slice      S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence
+Workflow state    PLANNING
+Last validated    S5.2 — 2026-10-21
+Next action       Planner: inspect S5.3 follow-up workflow; no implementation before Gate 1
 ```
 
 ## Sprint 5 objective
@@ -21,8 +21,8 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 ## Sprint 5 execution order
 
 1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — CLOSED, Fred validated 2026-10-21.
-2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — APPROVED_FOR_IMPLEMENTATION.
-3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence.
+2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — CLOSED, Fred validated 2026-10-21.
+3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — PLANNING.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions.
 5. S5.5 — Personalized document versioning and secure temporary delivery links.
 
@@ -44,11 +44,11 @@ Before production:
 ```text
 Branch            sprint-5
 Sprint            5
-Slice             S5.2
+Slice             S5.3
 Workflow state    PLANNING
 Done              S5.1 implementation + correction + review + QA + Fred Gate 2 validation
 Validation done   Gate 2 green; browser/DBeaver lifecycle acceptance green
-Next action       Implementer
+Next action       Planner: inspect S5.3 only
 ```
 
 
@@ -298,3 +298,30 @@ Applicable patterns:
 - Domain Error Taxonomy
 
 Gate 1 pending Fred approval.
+
+
+## S5.2 — validation closure
+
+Validated locally by Fred on 2026-10-21.
+
+Agent validation:
+- server unit tests: 251 passed;
+- shared tests: 37 passed;
+- PostgreSQL integration: 224 passed, including 47 appointment cases;
+- typecheck/build/db:check/diff green;
+- migration 0006_free_tusk.sql applied locally with no backfill needed;
+- Reviewer passed with notes;
+- QA passed with limitations.
+
+Fred Gate 2:
+- scheduling on active subscription/component validated;
+- secure public response link validated;
+- confirmation, on-time decline, late-decline policy handling and reschedule request validated;
+- coach reschedule preserved original schedule and created linked replacement;
+- completion/missed behavior and component consumption validated;
+- explicit component restoration validated;
+- DBeaver checks green for policy snapshots, appointment chains, component counters/events, token consumption/revocation and safe audit metadata.
+
+Cancellation-window rule validated:
+- null notice-hours means no late penalty;
+- exactly at the cancellation deadline counts as on time.

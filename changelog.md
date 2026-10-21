@@ -2,6 +2,21 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-21 — Sprint 4.4 versioned consent and terms/privacy acceptance
+
+- Fred locally validated S4.4 end-to-end.
+- Added versioned consent definitions and append-only consent decisions.
+- Added separate consent types for service terms, privacy, health data, progress-photo storage, marketing and publication.
+- Added secure subscription-scoped public consent links using hashed bearer tokens; successful submission consumes the link and replay cannot duplicate decisions.
+- Added coach-assisted consent capture with explicit actor/provenance.
+- Integrated required service-terms/privacy grants atomically with the S4.3 `service_terms` onboarding blocker.
+- Kept optional consent types independent from onboarding readiness.
+- Added migration `0004`; local runtime initially failed until Fred applied the migration, after which the consent panel loaded correctly.
+- No production legal wording was embedded; local testing used clearly synthetic demo definitions.
+- Validation: server 195/195, shared 20/20, PostgreSQL integration 88/88 including 25 S4.4 cases, plus green typecheck/build/`db:check`/diff.
+- Browser/DBeaver Gate 2 validated refusal, fresh-link grant, consumed-link replay rejection, coach-assisted provenance, append-only decision history, hashed tokens and safe audits.
+- The preceding 87/88 run was the documented unchanged Sprint 3 concurrency flake; no S4.4 case failed.
+
 ## 2026-10-20 — Sprint 4.2 atomic qualified-request conversion
 
 - Fred locally validated S4.2 end-to-end.

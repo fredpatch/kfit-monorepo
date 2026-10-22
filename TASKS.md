@@ -9,17 +9,26 @@ Sprint 6 S6.1 is authorized on `main`. The former `sprint-5` branch remains hist
 
 ```text
 Branch            main
+<<<<<<< HEAD
 Sprint            6 — Payments, installments, quotes, receipts and proofs
 Active slice      S6.1 — Authoritative payment plans, installments, events and allocations
 Workflow state    AWAITING_REVIEW
 Last validated    S5.4 — 2026-10-21
 Next action       Reviewer: inspect S6.1 diff; QA and Fred local acceptance remain open
+=======
+Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
+Active slice      S6.1 — Financial ledger: plans, installments, payments, allocations
+Workflow state    APPROVED_FOR_IMPLEMENTATION
+Last validated    Sprint 5 — closed 2026-10-22
+Next action       IDE Implementer: implement S6.1 server-first only; stop before S6.2
+>>>>>>> 83f8639031348be71b14a3eeea3d95cc9eac1932
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
 UX next           close UX-10 locally, then UX-11
 ```
 
+<<<<<<< HEAD
 ## S6.1 execution notes — 2026-10-22
 
 - Fred authorized the pasted S6.1 request as the detailed approved spec and allowed synchronizing local notes; saved verbatim at `exploration-cache/tasks/sprint-6.md`.
@@ -36,6 +45,22 @@ UX next           close UX-10 locally, then UX-11
 - S6.2, quotes, proofs, receipts, refunds, credits, extras, analytics and Sprint 7 remain out of scope.
 
 ## Sprint 5 objective (historical)
+=======
+## Sprint 6 objective
+
+Build the authoritative V1 Core finance flow while keeping financial state independent from subscription lifecycle.
+
+## Sprint 6 execution order
+
+1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — APPROVED_FOR_IMPLEMENTATION.
+2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — closed until S6.1 validation.
+3. S6.3 — Customer payment-proof upload and structured coach review workflow — closed until S6.2 validation.
+4. S6.4 — Sequential payment receipts and secure sharing preparation — closed until S6.3 validation.
+
+Planning source: `exploration-cache/tasks/sprint-6.md`. Fred approved S6.1 Gate 1 on 2026-10-22. Implementation is authorized for S6.1 only; S6.2 remains closed.
+
+## Sprint 5 objective
+>>>>>>> 83f8639031348be71b14a3eeea3d95cc9eac1932
 
 Build the authoritative subscription/coaching delivery lifecycle after the validated Sprint 4 onboarding foundation.
 
@@ -45,9 +70,13 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — CLOSED, Fred validated 2026-10-21.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — CLOSED, Fred validated 2026-10-21.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — CLOSED, Fred validated 2026-10-21.
-5. S5.5 — Personalized document versioning and secure temporary delivery links — AWAITING_HUMAN_VALIDATION.
+5. S5.5 — Personalized document versioning and secure temporary delivery links — CLOSED, Fred validated 2026-10-22.
 
+<<<<<<< HEAD
 S5.1–S5.4 are locally validated and closed. Fred approved S5.5 Gate 1 on 2026-10-22. Fred subsequently authorized S6.1 explicitly; see current execution notes above. S5.5's outstanding human DB/storage checks remain recorded separately.
+=======
+S5.1–S5.5 are locally validated and Sprint 5 is closed. Sprint 6 remains planning-only until its first task passes Gate 1.
+>>>>>>> 83f8639031348be71b14a3eeea3d95cc9eac1932
 
 ## Blockers
 
@@ -60,7 +89,7 @@ S5.1–S5.4 are locally validated and closed. Fred approved S5.5 Gate 1 on 2026-
 - Local Chromium: 17 document/security/photo/mobile/keyboard/persistence checks passed; separate Aperçu/Progression/Analyse/Documents smoke passed. No uncaught page errors. Final persisted scenario verified 3 documents, 4 versions/files, 8 tokens, 1 photo linkage and 19 structural audits; file sizes and SHA-256 matched storage. Security edge cases were exercised through live HTTP; normal document, summary and photo operations through the UI.
 - Agent regression evidence: typecheck passed; server 332/332 and shared 47/47; real PostgreSQL 348/348; files/ClamAV and PDF preflights passed; diff check passed. Temporary QA servers are no longer listening. Browser harness reports are under ignored `tmp/`.
 - Fred confirmed the browser flow operational and authorized pushing the corrective changes on 2026-10-22.
-- Remaining Gate 2: Fred's DBeaver/private-storage acceptance. S5.5 remains AWAITING_HUMAN_VALIDATION; no validated changelog entry or Sprint 6 work.
+- Fred confirmed DBeaver and private-storage acceptance green on 2026-10-22. S5.5 Gate 2 is closed and Sprint 5 is validated.
 
 Before production:
 - Legal validation for the applicable Gabon context.
@@ -76,6 +105,7 @@ Before production:
 
 ```text
 Branch            main
+<<<<<<< HEAD
 Sprint            6
 Slice             S6.1
 Workflow state    AWAITING_REVIEW
@@ -84,6 +114,16 @@ Approved goal     Authoritative financial ledger using existing finance tables
 Next action       Reviewer: inspect S6.1 diff, then QA; Fred performs Gate 2 local commands/browser/DB checks
 UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
 Out of scope      S6.2+, refunds, credits, extras, finance analytics and Sprint 7
+=======
+Sprint            5 — CLOSED
+Validated         S5.1, S5.2, S5.3, S5.4, S5.5
+Closed            2026-10-22
+Next sprint       Sprint 6 — Finance
+First task        Financial ledger: charges, installments, transactions and allocations
+Workflow state    PLANNING_NEXT_SPRINT
+UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
+Rule              No Sprint 6 implementation before planning + Gate 1
+>>>>>>> 83f8639031348be71b14a3eeea3d95cc9eac1932
 ```
 
 ## Refonte UI — suivi

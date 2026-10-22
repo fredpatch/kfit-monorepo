@@ -414,3 +414,20 @@ Open accepted limitations:
 - production still requires a true encrypted off-server backup destination.
 
 Final notes:
+
+
+### S5.5 validation evidence
+
+Validated locally by Fred on 2026-10-22.
+
+- Typecheck and diff checks green.
+- Server unit tests: 332/332.
+- Shared tests: 47/47.
+- PostgreSQL integration: 348/348.
+- Private storage/ClamAV preflight passed, including clean-stream acceptance and EICAR rejection.
+- PDF/Puppeteer preflight passed with valid PDF signature, pagination and local-only branded rendering.
+- Browser Gate 2 validated normal personalized document upload/download, immutable V1/V2 history, explicit version selection for public sharing, generated progress-summary PDF, sensitive verification, max-use exhaustion, expiry/revocation and private progress-photo behavior.
+- DBeaver/private-storage checks validated document/version/current-pointer persistence, version-bound token resource IDs, hash-only bearer/verification storage, progress-photo linkage, structural-only generic audits, opaque storage names and matching stored file size/SHA.
+- Corrective commit `0f39eb2` restored the Documents profile navigation and fixed exact-version/public-verification UX.
+- S5.5 is closed. Sprint 5 is fully validated.
+

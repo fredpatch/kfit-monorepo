@@ -16,6 +16,8 @@ type TrendLineChartProps<T extends Record<string, unknown>> = {
   label: string;
   height?: number;
   yDomain?: [number | "auto", number | "auto"];
+  /** false leaves gaps where values are null (e.g. paused days). Default true. */
+  connectNulls?: boolean;
 };
 
 type TooltipPayload = { dataKey?: string | number; value?: number; color?: string; payload: Record<string, unknown> };
@@ -41,7 +43,7 @@ function TooltipBox({ active, payload, label, series, formatValue, noteKey }: { 
 }
 
 /** Line chart for trends with goal / threshold lines (boards 03b, 08). Legend shown when ≥ 2 series. */
-export function TrendLineChart<T extends Record<string, unknown>>({ data, xKey, series, references = [], formatValue = (v) => String(v), noteKey, label, height = 240, yDomain = ["auto", "auto"] }: TrendLineChartProps<T>) {
+export function TrendLineChart<T extends Record<string, unknown>>({ data, xKey, series, references = [], formatValue = (v) => String(v), noteKey, label, height = 240, yDomain = ["auto", "auto"], connectNulls = true }: TrendLineChartProps<T>) {
   return (
     <div className="flex w-full flex-col gap-2">
       <div role="img" aria-label={label} style={{ height }} className="w-full">
@@ -72,7 +74,7 @@ export function TrendLineChart<T extends Record<string, unknown>>({ data, xKey, 
                 dot={s.dashed ? false : { r: 3.5, fill: s.color ?? chartColors.primary, stroke: "#fff", strokeWidth: 2 }}
                 activeDot={{ r: 5 }}
                 isAnimationActive={false}
-                connectNulls
+                connectNulls={connectNulls}
               />
             ))}
           </LineChart>

@@ -15,7 +15,7 @@ const customer = { id: "33333333-3333-3333-3333-333333333333", fullName: "Synthe
 const csrf = "synthetic-csrf-token";
 const headers = { "content-type": "application/json", cookie: `${authCookieNames.csrfToken}=${csrf}`, "x-csrf-token": csrf };
 async function withServer(run: (url: string) => Promise<void>, auth: AuthenticatedSessionContext | null = session, overrides: Partial<CustomersRepository> = {}) {
-  const repository: CustomersRepository = { async listActive() { return [customer]; }, async searchActive() { return [customer]; }, async createManual() { return { status: "ok", customer }; }, async getDetail() { return { customer, subscriptions: [] }; }, ...overrides };
+  const repository: CustomersRepository = { async listActive() { return [customer]; }, async searchActive() { return [customer]; }, async createManual() { return { status: "ok", customer }; }, async getDetail() { return { customer, subscriptions: [] }; }, async getAnalyticsSource() { return { customerId: customer.id, subscriptions: [], appointments: [], followUps: [], links: [], rescheduleRequests: [] }; }, ...overrides };
   const app = express();
   app.use(express.json());
   app.use(createExpressCustomersRouter({ controller: new CustomersController(new CustomersService(repository)), resolveSession: () => auth }));
@@ -30,11 +30,11 @@ for (const role of [null, "coach"] as const) {
   test(`all customer routes reject ${role ?? "unauthenticated"} callers before persistence`, async () => {
     const fail = async (): Promise<never> => assert.fail("unauthorized persistence access");
     await withServer(async url => {
-      for (const [path, method] of [["/admin/customers", "GET"], ["/admin/customers/search?whatsapp=123456", "GET"], ["/admin/customers", "POST"], [`/admin/customers/${customer.id}`, "GET"]] as const) {
+      for (const [path, method] of [["/admin/customers", "GET"], ["/admin/customers/search?whatsapp=123456", "GET"], ["/admin/customers", "POST"], [`/admin/customers/${customer.id}`, "GET"], [`/admin/customers/${customer.id}/analytics`, "GET"]] as const) {
         const response = await fetch(url + path, { method, headers, ...(method === "POST" ? { body: "{}" } : {}) });
         assert.equal(response.status, role ? 403 : 401);
       }
-    }, role ? { ...session, role } : null, { listActive: fail, searchActive: fail, createManual: fail, getDetail: fail });
+    }, role ? { ...session, role } : null, { listActive: fail, searchActive: fail, createManual: fail, getDetail: fail, getAnalyticsSource: fail });
   });
 }
 
@@ -85,12 +85,12 @@ test("customer HTTP duplicate is a stable 409 conflict", async () => {
 test("customer HTTP persistence failures do not expose PII or internal causes", async () => {
   const fail = async (): Promise<never> => { throw new Error("secret database detail"); };
   await withServer(async url => {
-    for (const [path, method] of [["/admin/customers", "GET"], ["/admin/customers/search?whatsapp=123456", "GET"], ["/admin/customers", "POST"], [`/admin/customers/${customer.id}`, "GET"]] as const) {
+    for (const [path, method] of [["/admin/customers", "GET"], ["/admin/customers/search?whatsapp=123456", "GET"], ["/admin/customers", "POST"], [`/admin/customers/${customer.id}`, "GET"], [`/admin/customers/${customer.id}/analytics`, "GET"]] as const) {
       const response = await fetch(url + path, { method, headers, ...(method === "POST" ? { body: JSON.stringify(customer) } : {}) });
       assert.equal(response.status, 500);
       assert.deepEqual(await response.json(), { error: "CUSTOMER_ROUTE_UNEXPECTED_FAILURE" });
     }
-  }, session, { listActive: fail, searchActive: fail, createManual: fail, getDetail: fail });
+  }, session, { listActive: fail, searchActive: fail, createManual: fail, getDetail: fail, getAnalyticsSource: fail });
 });
 
 test("customer detail returns the profile, 404 for unknown ids, 400 for malformed ids, and keeps /search routed", async () => {
@@ -107,4 +107,22 @@ test("customer detail returns the profile, 404 for unknown ids, 400 for malforme
     assert.equal(search.status, 200);
     assert.deepEqual(await search.json(), { customers: [customer] });
   }, session, { async getDetail(id) { return id === customer.id ? { customer, subscriptions: [] } : null; } });
+});
+
+test("customer analytics returns the read-only analytics, 404 for unknown ids and 400 for invalid queries", async () => {
+  await withServer(async url => {
+    const ok = await fetch(`${url}/admin/customers/${customer.id}/analytics?periode=tout`, { headers });
+    assert.equal(ok.status, 200);
+    const body = await ok.json() as { analytics: { customerId: string; period: string; journey: unknown[] } };
+    assert.equal(body.analytics.customerId, customer.id);
+    assert.equal(body.analytics.period, "tout");
+    assert.deepEqual(body.analytics.journey, []);
+    const missing = await fetch(`${url}/admin/customers/44444444-4444-4444-4444-444444444444/analytics`, { headers });
+    assert.equal(missing.status, 404);
+    assert.deepEqual(await missing.json(), { error: "CUSTOMER_NOT_FOUND" });
+    for (const query of ["?periode=semaine", "?periode=30j&periode=tout", "?abonnement=not-a-uuid"]) {
+      const invalid = await fetch(`${url}/admin/customers/${customer.id}/analytics${query}`, { headers });
+      assert.equal(invalid.status, 400);
+    }
+  }, session, { async getAnalyticsSource(id) { return id === customer.id ? { customerId: id, subscriptions: [], appointments: [], followUps: [], links: [], rescheduleRequests: [] } : null; } });
 });

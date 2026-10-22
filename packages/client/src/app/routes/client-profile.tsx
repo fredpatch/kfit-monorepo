@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { NavLink, useParams, useSearchParams } from "react-router";
 import { isAxiosError } from "axios";
 import { Mail, MapPin, MessageCircle, Phone, Plus } from "lucide-react";
-import type { AdminCustomerSubscriptionSummary } from "@kfit/shared";
+import { customerAnalyticsPeriods, type AdminCustomerSubscriptionSummary, type CustomerAnalyticsPeriod } from "@kfit/shared";
 import { customersApi } from "../../customers/api/customers-api.js";
 import { OnboardingPanel, isOnboardingEditable } from "../../onboarding/components/AdminOnboardingPage.js";
 import { AdminAppointmentsPanel } from "../../appointments/components/AdminAppointmentsPanel.js";
@@ -24,6 +24,7 @@ import { defaultSubscription, deriveClientStatus } from "../../lib/client-status
 import { AdminPage, LegacyEmbed as Legacy } from "../layout/AdminPage.js";
 
 /* Charts (Recharts) load only when the Progression tab is opened. */
+const AnalysisTab = lazy(() => import("../../profile/analysis/AnalysisTab.js").then((m) => ({ default: m.AnalysisTab })));
 const ProgressTab = lazy(() => import("../../profile/progress/ProgressTab.js").then((m) => ({ default: m.ProgressTab })));
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -31,6 +32,7 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 /** Tabs of the client profile (board 03). « Analyse » arrives in a later step. */
 export const profileTabs = [
   { value: "apercu", label: "Aperçu" },
+  { value: "analyse", label: "Analyse" },
   { value: "rendez-vous", label: "Rendez-vous" },
   { value: "suivis", label: "Suivis" },
   { value: "preparation", label: "Préparation" },
@@ -76,6 +78,7 @@ export function ClientProfilePage() {
   const subscriptions = query.data?.subscriptions ?? [];
   const requested = params.get("abonnement");
   const selected = subscriptions.find((s) => s.id === requested) ?? defaultSubscription(subscriptions);
+  const period = customerAnalyticsPeriods.find((p) => p === params.get("periode")) ?? "30j";
   const tab = (profileTabs.some((t) => t.value === params.get("onglet")) ? params.get("onglet") : "apercu") as ProfileTab;
 
   const update = (next: Record<string, string>) => {
@@ -209,6 +212,18 @@ export function ClientProfilePage() {
           {/* Aperçu and Progression use the new design (board 03); the other tabs keep their current look until their own step. */}
           <TabsContent value="apercu">
             <OverviewTab key={selected.id} subscriptionId={selected.id} openTab={(onglet) => update({ onglet })} />
+          </TabsContent>
+          <TabsContent value="analyse">
+            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement de l'analyse…</p>}>
+              <AnalysisTab
+                customerId={id}
+                subscriptionId={selected.id}
+                period={period}
+                onPeriodChange={(periode: CustomerAnalyticsPeriod) => update({ periode })}
+                onSelectSubscription={(abonnement) => update({ abonnement })}
+                openProgress={() => update({ onglet: "progression" })}
+              />
+            </Suspense>
           </TabsContent>
           <TabsContent value="rendez-vous">
             <Legacy>

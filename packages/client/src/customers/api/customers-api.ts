@@ -1,5 +1,6 @@
 import axios, { AxiosHeaders } from "axios";
-import { adminCustomersApiRoutes, authCsrfHeaderName, type AdminCustomerDetailResponse, type AdminCustomersResponse, type CreateCustomerInput, type CreateCustomerResponse } from "@kfit/shared";
+import { adminCustomersApiRoutes, authCsrfHeaderName, type AdminCustomerDetailResponse, type AdminCustomersResponse, type CreateCustomerInput, type CreateCustomerResponse,
+  type CustomerAnalyticsPeriod, type CustomerAnalyticsResponse } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
 
 const http = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "", withCredentials: true, headers: { accept: "application/json" } });
@@ -22,6 +23,11 @@ export const customersApi = {
   },
   async detail(customerId: string): Promise<AdminCustomerDetailResponse> {
     return (await http.get<AdminCustomerDetailResponse>(adminCustomersApiRoutes.detail.replace(":customerId", encodeURIComponent(customerId)))).data;
+  },
+  /** Client analytics (UX-4c). `subscriptionId` selects the subscription used for cadence and pace. */
+  async analytics(customerId: string, period: CustomerAnalyticsPeriod, subscriptionId?: string): Promise<CustomerAnalyticsResponse> {
+    const route = adminCustomersApiRoutes.analytics.replace(":customerId", encodeURIComponent(customerId));
+    return (await http.get<CustomerAnalyticsResponse>(route, { params: { periode: period, ...(subscriptionId ? { abonnement: subscriptionId } : {}) } })).data;
   },
   async create(input: CreateCustomerInput): Promise<CreateCustomerResponse> {
     return (await http.post<CreateCustomerResponse>(adminCustomersApiRoutes.create, input)).data;

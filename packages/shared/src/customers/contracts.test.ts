@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { adminCustomersApiRoutes, customerErrorCodes, normalizeWhatsapp, type AdminCustomer } from "../index.js";
+import { adminCustomersApiRoutes, customerAnalyticsPeriods, customerErrorCodes, normalizeWhatsapp, type AdminCustomer } from "../index.js";
 
-test("customer routes and stable codes expose the approved S4.1 surface plus the UX-4 read-only profile", () => {
-  assert.deepEqual(adminCustomersApiRoutes, { list: "/admin/customers", search: "/admin/customers/search", create: "/admin/customers", detail: "/admin/customers/:customerId" });
+test("customer routes and stable codes expose the approved S4.1 surface plus the UX-4 read-only profile and analytics", () => {
+  assert.deepEqual(adminCustomersApiRoutes, { list: "/admin/customers", search: "/admin/customers/search", create: "/admin/customers", detail: "/admin/customers/:customerId", analytics: "/admin/customers/:customerId/analytics" });
+  assert.deepEqual(customerAnalyticsPeriods, ["30j", "abonnement", "tout"]);
   assert.ok(customerErrorCodes.includes("CUSTOMER_DUPLICATE_WHATSAPP"));
   assert.ok(customerErrorCodes.includes("CUSTOMER_NOT_FOUND"));
 });

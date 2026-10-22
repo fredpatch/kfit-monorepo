@@ -12,15 +12,20 @@ export function resolveCadence(override: number | null, rows: Policy[], variantI
 }
 export type MeaningfulActivity = { at: Date; type: MeaningfulActivityType };
 export type CadencePause = { startedAt: Date; endedAt: Date | null };
-export function latestMeaningfulActivity(start: Date | null, completedAppointments: Array<{ completedAt: Date | null }>, followUps: Array<{ occurredAt: Date; completedAt: Date | null; status: string }>): MeaningfulActivity | null {
-  if (!start) return null;
+/** Every meaningful activity (S5.3 definition), unordered. Also used by the client analytics (UX-4c). */
+export function meaningfulActivities(start: Date | null, completedAppointments: Array<{ completedAt: Date | null }>, followUps: Array<{ occurredAt: Date; completedAt: Date | null; status: string }>): MeaningfulActivity[] {
+  if (!start) return [];
   const candidates: MeaningfulActivity[] = [{ at: start, type: "activation" }];
   for (const app of completedAppointments) if (app.completedAt) candidates.push({ at: app.completedAt, type: "appointment_completed" });
   for (const row of followUps) {
     candidates.push({ at: row.occurredAt, type: "follow_up_recorded" });
     if (row.status === "done" && row.completedAt) candidates.push({ at: row.completedAt, type: "follow_up_completed" });
   }
-  return candidates.reduce((latest, candidate) => candidate.at > latest.at ? candidate : latest);
+  return candidates;
+}
+export function latestMeaningfulActivity(start: Date | null, completedAppointments: Array<{ completedAt: Date | null }>, followUps: Array<{ occurredAt: Date; completedAt: Date | null; status: string }>): MeaningfulActivity | null {
+  const candidates = meaningfulActivities(start, completedAppointments, followUps);
+  return candidates.reduce<MeaningfulActivity | null>((latest, candidate) => !latest || candidate.at > latest.at ? candidate : latest, null);
 }
 export function calculateCadence(input: { status: string; actualStartDate: Date | null; cadence: { days: number | null; source: CadenceSource }; activity: MeaningfulActivity | null; pauses: CadencePause[]; now: Date }): FollowUpCadence {
   const { cadence, now, activity } = input;

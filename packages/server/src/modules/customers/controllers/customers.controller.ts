@@ -3,9 +3,9 @@ import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/
 import type { CustomersService } from "../services/customers.service.js";
 
 export class CustomersController {
-  constructor(private readonly service: Pick<CustomersService, "listActive" | "search" | "createManual" | "getDetail">) {}
+  constructor(private readonly service: Pick<CustomersService, "listActive" | "search" | "createManual" | "getDetail" | "getAnalytics">) {}
 
-  async handle(context: AuthHttpRequestContext, action: "list" | "search" | "create" | "detail", input?: unknown): Promise<HttpJsonResponse> {
+  async handle(context: AuthHttpRequestContext, action: "list" | "search" | "create" | "detail" | "analytics", input?: unknown): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
     if (auth.session.role !== "admin") return { status: 403, body: { error: "CUSTOMER_ADMIN_FORBIDDEN" } };
@@ -13,6 +13,14 @@ export class CustomersController {
     if (action === "detail") {
       const result = await this.service.getDetail(input);
       if (result.status === "ok") return { status: 200, body: result.detail };
+      return result.status === "not_found"
+        ? { status: 404, body: { error: "CUSTOMER_NOT_FOUND" } }
+        : { status: 400, body: { error: "CUSTOMER_INVALID_INPUT", reason: result.reason } };
+    }
+    if (action === "analytics") {
+      const { customerId, query } = (input ?? {}) as { customerId?: unknown; query?: { periode?: unknown; abonnement?: unknown } };
+      const result = await this.service.getAnalytics(customerId, query ?? {});
+      if (result.status === "ok") return { status: 200, body: { analytics: result.analytics } };
       return result.status === "not_found"
         ? { status: 404, body: { error: "CUSTOMER_NOT_FOUND" } }
         : { status: 400, body: { error: "CUSTOMER_INVALID_INPUT", reason: result.reason } };

@@ -7,9 +7,16 @@ import type { ExpressAuthSessionResolver } from "../../auth/routes/express-auth.
 import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js";
 import type { CustomersController } from "../controllers/customers.controller.js";
 
+function input(action: "list" | "search" | "create" | "detail" | "analytics", request: Request): unknown {
+  if (action === "search") return request.query.whatsapp;
+  if (action === "detail") return request.params.customerId;
+  if (action === "analytics") return { customerId: request.params.customerId, query: { periode: request.query.periode, abonnement: request.query.abonnement } };
+  return request.body;
+}
+
 export function createExpressCustomersRouter(deps: { controller: CustomersController; resolveSession: ExpressAuthSessionResolver }) {
   const router = Router();
-  function handler(action: "list" | "search" | "create" | "detail") {
+  function handler(action: "list" | "search" | "create" | "detail" | "analytics") {
     return async (request: Request, response: Response) => {
       try {
         const headers: Record<string, string | undefined> = {};
@@ -21,7 +28,7 @@ export function createExpressCustomersRouter(deps: { controller: CustomersContro
           session: await deps.resolveSession(request),
         };
         const guard = action === "create" ? requireSameOrigin(context) ?? requireCsrf(context) : null;
-        const result = guard ?? await deps.controller.handle(context, action, action === "search" ? request.query.whatsapp : action === "detail" ? request.params.customerId : request.body);
+        const result = guard ?? await deps.controller.handle(context, action, input(action, request));
         response.status(result.status).json(result.body);
       } catch {
         response.status(500).json({ error: "CUSTOMER_ROUTE_UNEXPECTED_FAILURE" });
@@ -33,5 +40,6 @@ export function createExpressCustomersRouter(deps: { controller: CustomersContro
   router.post(adminCustomersApiRoutes.create, handler("create"));
   // Registered after /search so the literal path wins over the parameter.
   router.get(adminCustomersApiRoutes.detail, handler("detail"));
+  router.get(adminCustomersApiRoutes.analytics, handler("analytics"));
   return router;
 }

@@ -1,4 +1,5 @@
-import { normalizeWhatsapp, type AdminCustomer, type AdminCustomerDetailResponse } from "@kfit/shared";
+import { customerAnalyticsPeriods, normalizeWhatsapp, type AdminCustomer, type AdminCustomerDetailResponse, type CustomerAnalytics, type CustomerAnalyticsPeriod } from "@kfit/shared";
+import { computeCustomerAnalytics, selectFocusSubscription, type AnalyticsSource } from "./customer-analytics.policy.js";
 
 export type NormalizedCustomerInput = {
   fullName: string;
@@ -24,7 +25,13 @@ export interface CustomersRepository {
   createManual(input: NormalizedCustomerInput, actor: CustomerActorContext): Promise<Exclude<CreateCustomerResult, { status: "invalid" }>>;
   /** Active customer with all their subscriptions (any status), newest first. Null when unknown, archived or anonymized. */
   getDetail(customerId: string): Promise<AdminCustomerDetailResponse | null>;
+  /** Raw rows for the client analytics (UX-4c). Null when the customer is unknown, archived or anonymized. */
+  getAnalyticsSource(customerId: string): Promise<AnalyticsSource | null>;
 }
+export type CustomerAnalyticsResult =
+  | { status: "ok"; analytics: CustomerAnalytics }
+  | { status: "not_found" }
+  | { status: "invalid"; reason: string };
 export type CustomerDetailResult =
   | { status: "ok"; detail: AdminCustomerDetailResponse }
   | { status: "not_found" }
@@ -47,7 +54,21 @@ function phone(value: unknown): string | null {
 }
 
 export class CustomersService {
-  constructor(private readonly repository: CustomersRepository) {}
+  constructor(private readonly repository: CustomersRepository, private readonly clock: () => Date = () => new Date()) {}
+
+  /** Read-only client analytics (UX-4c). Query: periode=30j|abonnement|tout (default 30j), abonnement=<subscription id of this customer>. */
+  async getAnalytics(customerId: unknown, query: { periode?: unknown; abonnement?: unknown }): Promise<CustomerAnalyticsResult> {
+    if (typeof customerId !== "string" || !uuidPattern.test(customerId)) return { status: "invalid", reason: "customer_id_invalid" };
+    const period = query.periode === undefined ? "30j" : customerAnalyticsPeriods.find((p) => p === query.periode);
+    if (!period) return { status: "invalid", reason: "period_invalid" };
+    if (query.abonnement !== undefined && (typeof query.abonnement !== "string" || !uuidPattern.test(query.abonnement))) return { status: "invalid", reason: "subscription_id_invalid" };
+    const source = await this.repository.getAnalyticsSource(customerId.toLowerCase());
+    if (!source) return { status: "not_found" };
+    const requested = typeof query.abonnement === "string" ? query.abonnement.toLowerCase() : null;
+    const focus = selectFocusSubscription(source.subscriptions, requested);
+    if (requested && !focus) return { status: "invalid", reason: "subscription_not_owned" };
+    return { status: "ok", analytics: computeCustomerAnalytics(source, { period: period as CustomerAnalyticsPeriod, focus, now: this.clock() }) };
+  }
 
   listActive(): Promise<AdminCustomer[]> {
     return this.repository.listActive();

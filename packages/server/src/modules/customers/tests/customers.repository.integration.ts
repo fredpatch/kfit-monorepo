@@ -5,7 +5,9 @@ import { after, before, test } from "node:test";
 import { eq, inArray } from "drizzle-orm";
 import { db, pool } from "../../../db/client.js";
 import { auditEvents, users } from "../../../db/schema/auth.js";
-import { customers, subscriptions } from "../../../db/schema/customers.js";
+import { componentEvents, customers, subscriptionComponents, subscriptionPauses, subscriptions } from "../../../db/schema/customers.js";
+import { appointmentEvents, appointments, followUps } from "../../../db/schema/coaching.js";
+import { secureAccessTokens } from "../../../db/schema/documents.js";
 import { services } from "../../../db/schema/catalogue.js";
 import { prospects } from "../../../db/schema/prospects.js";
 import { DrizzleCustomersRepository } from "../repositories/customers.repository.js";
@@ -145,4 +147,64 @@ test("PostgreSQL customer detail returns the profile with its subscriptions newe
   assert.deepEqual(await service.getDetail(randomUUID()), { status: "not_found" });
   await db.delete(subscriptions).where(inArray(subscriptions.id, [newer.id, older.id]));
   subscriptionIds.clear();
+});
+
+test("PostgreSQL analytics source reads only this customer's rows and feeds the validated calculations", async () => {
+  const created = await service.createManual(input(), actor);
+  const other = await service.createManual(input(), actor);
+  assert.ok(created.status === "ok" && other.status === "ok");
+  if (created.status !== "ok" || other.status !== "ok") return;
+  ids.add(created.customer.id); ids.add(other.customer.id);
+  const [catalogueService] = await db.select({ id: services.id }).from(services).limit(1);
+  assert.ok(catalogueService, "integration requires at least one seeded catalogue service");
+  const day = 86_400_000, now = Date.now();
+  const mine = { id: randomUUID(), reference: `SUB-IT-${randomUUID()}`, customerId: created.customer.id, serviceId: catalogueService.id, status: "active", agreedPriceXaf: 1000,
+    actualStartDate: new Date(now - 20 * day), plannedEndDate: new Date(now + 20 * day), followUpFrequencyDaysOverride: 7 };
+  const theirs = { id: randomUUID(), reference: `SUB-IT-${randomUUID()}`, customerId: other.customer.id, serviceId: catalogueService.id, status: "active", agreedPriceXaf: 1000 };
+  subscriptionIds.add(mine.id); subscriptionIds.add(theirs.id);
+  await db.insert(subscriptions).values([mine, theirs]);
+  const [component] = await db.insert(subscriptionComponents).values({ subscriptionId: mine.id, componentType: "session", labelSnapshot: "Séance", quantityEntitled: 8, quantityConsumed: 2 }).returning({ id: subscriptionComponents.id });
+  assert.ok(component);
+  const [done, missed, foreign] = await db.insert(appointments).values([
+    { subscriptionId: mine.id, scheduledStart: new Date(now - 10 * day), scheduledEnd: new Date(now - 10 * day + 3_600_000), status: "completed", completedAt: new Date(now - 10 * day) },
+    { subscriptionId: mine.id, scheduledStart: new Date(now - 5 * day), scheduledEnd: new Date(now - 5 * day + 3_600_000), status: "missed" },
+    { subscriptionId: theirs.id, scheduledStart: new Date(now - 5 * day), scheduledEnd: new Date(now - 5 * day + 3_600_000), status: "completed", completedAt: new Date(now - 5 * day) },
+  ]).returning({ id: appointments.id });
+  assert.ok(done && missed && foreign);
+  await db.insert(componentEvents).values([
+    { subscriptionComponentId: component.id, eventType: "appointment_completed", quantity: 1, relatedAppointmentId: done.id, createdAt: new Date(now - 10 * day) },
+    { subscriptionComponentId: component.id, eventType: "missed", quantity: 1, relatedAppointmentId: missed.id, createdAt: new Date(now - 5 * day) },
+  ]);
+  await db.insert(appointmentEvents).values({ appointmentId: missed.id, eventType: "appointment.reschedule_requested", fromStatus: "scheduled", toStatus: "reschedule_requested", actorType: "customer", createdAt: new Date(now - 6 * day) });
+  await db.insert(followUps).values({ subscriptionId: mine.id, followUpType: "check_in", occurredAt: new Date(now - 3 * day), status: "done", completedAt: new Date(now - 3 * day) });
+  await db.insert(subscriptionPauses).values({ subscriptionId: mine.id, startedAt: new Date(now - 15 * day), endedAt: new Date(now - 14 * day), reason: "synthetic" });
+  await db.insert(secureAccessTokens).values([
+    { tokenHash: randomUUID(), resourceType: "appointment", resourceId: missed.id, action: "appointment_response", expiresAt: new Date(now + day), createdAt: new Date(now - 7 * day), usedAt: new Date(now - 7 * day + 2 * 3_600_000) },
+    { tokenHash: randomUUID(), resourceType: "appointment", resourceId: foreign.id, action: "appointment_response", expiresAt: new Date(now + day), createdAt: new Date(now - 7 * day) },
+  ]);
+  try {
+    const result = await service.getAnalytics(created.customer.id, { periode: "30j" });
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    const a = result.analytics;
+    assert.equal(a.focusSubscriptionId, mine.id);
+    assert.deepEqual(a.attendance, { honored: 1, missed: 1, rescheduled: 0, rate: 0.5 });
+    assert.deepEqual(a.links, { sent: 1, used: 1, medianHoursToUse: 2, rescheduleRequests: 1 });
+    assert.equal(a.cadence?.cadenceDays, 7);
+    assert.equal(a.cadence?.series.at(-1)?.daysSinceContact, 3);
+    assert.equal(a.pace?.realized, 2);
+    assert.deepEqual(a.pace?.series.map((p) => p.realized), [0, 1, 2, 2]);
+    assert.deepEqual(a.journey.map((j) => j.subscriptionId), [mine.id]);
+    assert.deepEqual(await service.getAnalytics(created.customer.id, { abonnement: theirs.id }), { status: "invalid", reason: "subscription_not_owned" });
+  } finally {
+    await db.delete(secureAccessTokens).where(inArray(secureAccessTokens.resourceId, [done.id, missed.id, foreign.id]));
+    await db.delete(appointmentEvents).where(eq(appointmentEvents.appointmentId, missed.id));
+    await db.delete(componentEvents).where(eq(componentEvents.subscriptionComponentId, component.id));
+    await db.delete(appointments).where(inArray(appointments.id, [done.id, missed.id, foreign.id]));
+    await db.delete(subscriptionComponents).where(eq(subscriptionComponents.id, component.id));
+    await db.delete(followUps).where(eq(followUps.subscriptionId, mine.id));
+    await db.delete(subscriptionPauses).where(eq(subscriptionPauses.subscriptionId, mine.id));
+    await db.delete(subscriptions).where(inArray(subscriptions.id, [mine.id, theirs.id]));
+    subscriptionIds.clear();
+  }
 });

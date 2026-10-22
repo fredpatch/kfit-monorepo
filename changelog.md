@@ -2,6 +2,27 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-22 — Sprint 5 closed
+
+- Sprint 5 is locally validated and closed across S5.1–S5.5.
+- The sprint now delivers the authoritative post-onboarding coaching lifecycle: subscription state, appointments/component consumption, follow-up cadence, progress/goals and personalized documents.
+- Production blockers remain unchanged: applicable Gabon legal review, a true encrypted off-server backup destination, and the device-OTP/trusted-device login contract before production.
+- Next dependency-ordered sprint is Sprint 6 — finance. First task: financial ledger for charges, installments, transactions and allocations; implementation remains gated by Sprint 6 planning/Gate 1.
+
+## 2026-10-22 — Sprint 5.5 personalized documents and secure delivery
+
+- Fred locally validated S5.5 end-to-end.
+- Added private personalized documents owned by subscription with immutable document versions and an explicit current-version pointer.
+- Added clean-file hard-commit storage using signature/extension validation, SHA-256 metadata, opaque private filenames and mandatory ClamAV scanning.
+- Added deterministic Puppeteer progress-summary PDFs from authoritative K'FIT data; generation requires current health-data consent.
+- Added private progress-photo storage guarded independently by progress-photo-storage consent; V1 Core exposes no public photo-delivery path.
+- Added temporary version-bound customer delivery links with hash-only bearer storage, expiry, revocation, default three-use limit and exact old-version binding after newer versions exist.
+- Sensitive-health document links require a separately communicated six-digit verification challenge; raw codes are not persisted and five failed attempts lock verification.
+- Gate 2 exposed a missing Documents profile tab and two delivery UX issues. Commit `0f39eb2` exposed the tab, added exact-version link selection and corrected post-verification public download behavior.
+- Validation: typecheck/diff green; server 332/332; shared 47/47; PostgreSQL 348/348; file/ClamAV preflight passed; PDF/Puppeteer preflight passed.
+- Browser/mobile/keyboard flow and DBeaver/private-storage inspection are green. Stored files matched DB size/SHA evidence and generic audits contained structural data only.
+- No S5.5 migration or new package dependency was required.
+
 ## 2026-10-22 — Refonte UI UX-10 Connexion
 
 - Board 09 rebuilt: two-panel auth shell (text-only brand panel, hidden below lg), Connexion with show/hide password and DEV-only demo button, « Mot de passe oublié » in three steps (e-mail → 6-digit code → new password), Initialisation restyled.

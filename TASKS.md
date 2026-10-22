@@ -1307,3 +1307,18 @@ Static QA coverage now includes:
 No S5.5 schema migration or new package dependency is required; existing document/version/token/context_json/progress_photos foundation is reused.
 
 Do not mark S5.5 validated or close Sprint 5 until Fred reports local commands + browser/DBeaver/storage checks green.
+
+
+## S6.2 Gate 1 — approved 2026-10-22
+
+Fred approved all seven S6.2 planning decisions:
+
+1. Quote creation occurs against an existing subscription/customer after request conversion; request linkage is derived from subscription.sourceRequestId where available.
+2. Official quote numbering is allocated only on first issue, using a concurrency-safe annual sequence with format `DEV-YYYY-NNNN`.
+3. Issued quote versions are immutable; changes require a new version.
+4. Public response choices are accepted, declined, or changes_requested; secure response tokens are scoped, expiring, revocable, rate-limited and hash-only in storage.
+5. Quote PDFs render from immutable historical snapshots, not mutable live catalogue/customer data.
+6. Customer acceptance never mutates the subscription. A separate coach synchronization command applies the accepted quote reference and may update agreed price only when no authoritative finance activity exists; otherwise it rejects with a typed conflict.
+7. Quote validity and commercial terms are explicit inputs, not invented legal text. Storage/API remain XAF; customer-facing display may use FCFA.
+
+Implementation is authorized for S6.2 only. S6.3 remains closed until Fred locally validates S6.2.

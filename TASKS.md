@@ -9,11 +9,11 @@ Sprint 5 business work and the UI/UX refonte are unified on `main`. The former `
 
 ```text
 Branch            main
-Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
-Active slice      S5.5 — Personalized document versioning and secure temporary delivery links
-Workflow state    AWAITING_HUMAN_VALIDATION
-Last validated    S5.4 — 2026-10-21
-Next action       Fred: confirm remaining DBeaver/private-storage acceptance; browser flow confirmed operational 2026-10-22
+Sprint 5          CLOSED — validated 2026-10-22
+Last validated    S5.5 — personalized documents/versioning/secure delivery
+Workflow state    SPRINT_5_CLOSED
+Next sprint       6 — Paiements, échéances, devis, reçus et justificatifs
+Next action       Planner: open Sprint 6 with the financial ledger task; no implementation before Gate 1
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -30,9 +30,9 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — CLOSED, Fred validated 2026-10-21.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — CLOSED, Fred validated 2026-10-21.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — CLOSED, Fred validated 2026-10-21.
-5. S5.5 — Personalized document versioning and secure temporary delivery links — AWAITING_HUMAN_VALIDATION.
+5. S5.5 — Personalized document versioning and secure temporary delivery links — CLOSED, Fred validated 2026-10-22.
 
-S5.1–S5.4 are locally validated and closed. Fred approved S5.5 Gate 1 on 2026-10-22. Implement S5.5 only; do not open Sprint 6 before S5.5 Gate 2 and Sprint 5 closure.
+S5.1–S5.5 are locally validated and Sprint 5 is closed. Sprint 6 remains planning-only until its first task passes Gate 1.
 
 ## Blockers
 
@@ -45,7 +45,7 @@ S5.1–S5.4 are locally validated and closed. Fred approved S5.5 Gate 1 on 2026-
 - Local Chromium: 17 document/security/photo/mobile/keyboard/persistence checks passed; separate Aperçu/Progression/Analyse/Documents smoke passed. No uncaught page errors. Final persisted scenario verified 3 documents, 4 versions/files, 8 tokens, 1 photo linkage and 19 structural audits; file sizes and SHA-256 matched storage. Security edge cases were exercised through live HTTP; normal document, summary and photo operations through the UI.
 - Agent regression evidence: typecheck passed; server 332/332 and shared 47/47; real PostgreSQL 348/348; files/ClamAV and PDF preflights passed; diff check passed. Temporary QA servers are no longer listening. Browser harness reports are under ignored `tmp/`.
 - Fred confirmed the browser flow operational and authorized pushing the corrective changes on 2026-10-22.
-- Remaining Gate 2: Fred's DBeaver/private-storage acceptance. S5.5 remains AWAITING_HUMAN_VALIDATION; no validated changelog entry or Sprint 6 work.
+- Fred confirmed DBeaver and private-storage acceptance green on 2026-10-22. S5.5 Gate 2 is closed and Sprint 5 is validated.
 
 Before production:
 - Legal validation for the applicable Gabon context.
@@ -61,14 +61,14 @@ Before production:
 
 ```text
 Branch            main
-Sprint            5
-Slice             S5.5
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Validated         S5.1, S5.2, S5.3, S5.4
-Approved goal     Personalized document versioning + secure temporary delivery
-Next action       Implementer: S5.5 server-first only
+Sprint            5 — CLOSED
+Validated         S5.1, S5.2, S5.3, S5.4, S5.5
+Closed            2026-10-22
+Next sprint       Sprint 6 — Finance
+First task        Financial ledger: charges, installments, transactions and allocations
+Workflow state    PLANNING_NEXT_SPRINT
 UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
-Out of scope      Sprint 6, public photo publication, structured meal/workout editor, AI generation
+Rule              No Sprint 6 implementation before planning + Gate 1
 ```
 
 ## Refonte UI — suivi

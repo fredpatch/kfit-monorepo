@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv, type ProxyOptions } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 function createApiProxy(target: string): ProxyOptions {
   return {
@@ -19,7 +20,7 @@ export default defineConfig(({ mode }) => {
   const apiProxy = createApiProxy(apiTarget);
 
   return {
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     server: {
       proxy: {
         "/auth": apiProxy,

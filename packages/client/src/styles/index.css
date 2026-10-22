@@ -1,0 +1,159 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource-variable/plus-jakarta-sans";
+
+/*
+ * K'FIT design tokens (board 01 · Système de design).
+ * Semantic names follow shadcn/ui conventions so copied components work unchanged.
+ * Brand, status and family tokens are K'FIT additions.
+ */
+:root {
+  --radius: 0.625rem;
+
+  /* Surfaces & text */
+  --background: #f6f7f4;
+  --foreground: #141a15;
+  --card: #ffffff;
+  --card-foreground: #141a15;
+  --popover: #ffffff;
+  --popover-foreground: #141a15;
+  --muted: #f0f2ec;
+  --muted-foreground: #5d6b5f;
+  --border: #e4e7e0;
+  --border-subtle: #eef0ea;
+  --input: #d5dbcf;
+  --ring: #2e6a2e;
+
+  /* Actions */
+  --primary: #2e6a2e;
+  --primary-hover: #255725;
+  --primary-foreground: #ffffff;
+  --secondary: #ffffff;
+  --secondary-foreground: #141a15;
+  --accent: #f5faf2;
+  --accent-foreground: #141a15;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+
+  /* Brand */
+  --brand-950: #0f2a1a;
+  --brand-100: #dcebd3;
+  --brand-50: #f5faf2;
+  --lime: #b8e05a;
+
+  /* Status tones — background / foreground pairs (text contrast ≥ 4.5:1) */
+  --tone-success-bg: #e3f4e6;
+  --tone-success-fg: #1f6b33;
+  --tone-info-bg: #e8effd;
+  --tone-info-fg: #1d4ed8;
+  --tone-warning-bg: #fef3c7;
+  --tone-warning-fg: #92400e;
+  --tone-danger-bg: #fee4e2;
+  --tone-danger-fg: #b42318;
+  --tone-neutral-bg: #f0f2ec;
+  --tone-neutral-fg: #4a5548;
+  --tone-waitlist-bg: #f1ecfe;
+  --tone-waitlist-fg: #5b34b8;
+
+  /* Offer families — fixed order, validated for colour-blind separation (board 01b) */
+  --family-transpitime: #3b6fd8;
+  --family-nutrition: #3e8e41;
+  --family-pilates: #8a5cd6;
+  --family-pack: #c2701f;
+  --family-unknown: #c9d0c4;
+
+  /* Sidebar */
+  --sidebar: #0f2a1a;
+  --sidebar-foreground: #c9dbc4;
+  --sidebar-muted: #7e9a7b;
+  --sidebar-active: rgb(184 224 90 / 14%);
+}
+
+@theme inline {
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 10px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-brand-950: var(--brand-950);
+  --color-brand-100: var(--brand-100);
+  --color-brand-50: var(--brand-50);
+  --color-lime: var(--lime);
+
+  --color-success: var(--tone-success-fg);
+  --color-success-soft: var(--tone-success-bg);
+  --color-info: var(--tone-info-fg);
+  --color-info-soft: var(--tone-info-bg);
+  --color-warning: var(--tone-warning-fg);
+  --color-warning-soft: var(--tone-warning-bg);
+  --color-danger: var(--tone-danger-fg);
+  --color-danger-soft: var(--tone-danger-bg);
+  --color-neutral: var(--tone-neutral-fg);
+  --color-neutral-soft: var(--tone-neutral-bg);
+  --color-waitlist: var(--tone-waitlist-fg);
+  --color-waitlist-soft: var(--tone-waitlist-bg);
+
+  --color-family-transpitime: var(--family-transpitime);
+  --color-family-nutrition: var(--family-nutrition);
+  --color-family-pilates: var(--family-pilates);
+  --color-family-pack: var(--family-pack);
+  --color-family-unknown: var(--family-unknown);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-active: var(--sidebar-active);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

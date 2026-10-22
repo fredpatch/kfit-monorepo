@@ -206,7 +206,7 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
         if(!version) return {ok:false,error:"DOCUMENT_VERSION_NOT_FOUND"};
         const [doc]=await tx.select().from(documents).where(eq(documents.id,version.documentId)).for("update");
         if(!doc) return {ok:false,error:"DOCUMENT_NOT_FOUND"};
-        if(doc.status!=="available" || version.malwareScanStatus!=="clean") return {ok:false,error:"DOCUMENT_STATUS_INVALID"};
+        if(doc.status!=="available" || version.malwareScanStatus!=="clean" || doc.documentType==="progress_photo") return {ok:false,error:"DOCUMENT_STATUS_INVALID"};
         const raw=createDocumentBearer(), requires=sensitive(doc.documentType), code=requires?createDocumentVerificationCode():undefined;
         const now=this.clock();
         const ctx:TokenContext=requires&&code?{verification:{codeHash:hashDocumentVerificationCode(code,this.options.verificationPepper),attempts:0,maxAttempts:5,verifiedUntil:null}}:{};

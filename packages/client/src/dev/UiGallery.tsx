@@ -16,6 +16,7 @@ import { EmptyState } from "../components/ui/empty-state.js";
 import { StatusPill } from "../components/ui/status-pill.js";
 import { appointmentStatus, cadenceState, requestStatus, subscriptionStatus, type StatusDescriptor } from "../lib/status-map.js";
 import { familyMeta, offerFamilies } from "../lib/families.js";
+import { DataGallery } from "./DataGallery.js";
 
 /** DEV-only visual check of UX-1 primitives. Reachable at /__ui in `npm run dev`; excluded from production builds. */
 export function UiGallery() {
@@ -219,6 +220,8 @@ export function UiGallery() {
           <TabsContent value="historique">Historique des décisions.</TabsContent>
         </Tabs>
       </Card>
+
+      <DataGallery />
     </main>
   );
 }

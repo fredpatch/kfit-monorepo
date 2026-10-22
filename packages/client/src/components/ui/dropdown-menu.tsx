@@ -1,5 +1,6 @@
 import * as React from "react";
 import * as Menu from "@radix-ui/react-dropdown-menu";
+import { Check } from "lucide-react";
 import { cn } from "../../lib/utils.js";
 
 /* The « ⋯ » menu for secondary and rare actions (boards 03, 04, 06). */
@@ -51,3 +52,29 @@ export const DropdownMenuSeparator = React.forwardRef<React.ElementRef<typeof Me
   ({ className, ...props }, ref) => <Menu.Separator ref={ref} className={cn("-mx-1 my-1 h-px bg-border-subtle", className)} {...props} />,
 );
 DropdownMenuSeparator.displayName = "DropdownMenuSeparator";
+
+/** Multi-select entry for faceted filters (board 01b). Keeps the menu open on select. */
+export const DropdownMenuCheckboxItem = React.forwardRef<React.ElementRef<typeof Menu.CheckboxItem>, React.ComponentPropsWithoutRef<typeof Menu.CheckboxItem>>(
+  ({ className, children, onSelect, ...props }, ref) => (
+    <Menu.CheckboxItem
+      ref={ref}
+      onSelect={(event) => {
+        event.preventDefault();
+        onSelect?.(event);
+      }}
+      className={cn(
+        "relative flex cursor-pointer select-none items-center gap-2 rounded-md py-2 pl-8 pr-2.5 text-sm font-medium outline-none transition-colors focus:bg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        className,
+      )}
+      {...props}
+    >
+      <span className="absolute left-2 flex size-4 items-center justify-center rounded-[4px] border border-input data-[state=checked]:border-primary">
+        <Menu.ItemIndicator>
+          <Check className="size-3 text-primary" aria-hidden="true" />
+        </Menu.ItemIndicator>
+      </span>
+      {children}
+    </Menu.CheckboxItem>
+  ),
+);
+DropdownMenuCheckboxItem.displayName = "DropdownMenuCheckboxItem";

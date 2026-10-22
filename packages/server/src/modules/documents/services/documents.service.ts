@@ -38,7 +38,7 @@ const object = (v: unknown): v is Record<string, unknown> => typeof v === "objec
 export class DocumentsService {
   constructor(
     private readonly repository: DocumentRepository,
-    private readonly storage: PrivateDocumentStorage,
+    private readonly storage: Pick<PrivateDocumentStorage, "persist" | "read" | "remove">,
     private readonly renderer: ProgressSummaryRenderer,
   ) {}
   private invalid(): DocumentResult { return { ok:false,error:"DOCUMENT_INVALID_INPUT" }; }

@@ -1,4 +1,6 @@
 import express, { type Express } from "express";
+import type { DocumentsController } from "./modules/documents/controllers/documents.controller.js";
+import { createExpressDocumentsRouter } from "./modules/documents/routes/express-documents.router.js";
 import type { ProgressController } from "./modules/progress/controllers/progress.controller.js";
 import { createExpressProgressRouter } from "./modules/progress/routes/express-progress.router.js";
 import type { FollowUpsController } from "./modules/follow-ups/controllers/follow-ups.controller.js";
@@ -29,6 +31,7 @@ import type { QuestionnaireController } from "./modules/questionnaires/controlle
 import { createExpressQuestionnaireRouter } from "./modules/questionnaires/routes/express-questionnaire.router.js";
 
 export type ServerAppDeps = {
+  documentsController?: DocumentsController;
   progressController?: ProgressController;
   followUpsController?: FollowUpsController;
   appointmentsController?: AppointmentsController;
@@ -95,5 +98,6 @@ export function createServerApp(deps: ServerAppDeps): Express {
   if (deps.appointmentsController) app.use(createExpressAppointmentsRouter({ controller: deps.appointmentsController, resolveSession: deps.resolveAuthSession }));
   if (deps.followUpsController) app.use(createExpressFollowUpsRouter({ controller: deps.followUpsController, resolveSession: deps.resolveAuthSession }));
   if (deps.progressController) app.use(createExpressProgressRouter({ controller: deps.progressController, resolveSession: deps.resolveAuthSession }));
+  if (deps.documentsController) app.use(createExpressDocumentsRouter({ controller: deps.documentsController, resolveSession: deps.resolveAuthSession }));
   return app;
 }

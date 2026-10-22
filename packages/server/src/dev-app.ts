@@ -1,4 +1,9 @@
 import { createServerApp } from "./app.js";
+import { DocumentsController } from "./modules/documents/controllers/documents.controller.js";
+import { DrizzleDocumentsRepository } from "./modules/documents/repositories/documents.repository.js";
+import { DocumentsService } from "./modules/documents/services/documents.service.js";
+import { PrivateDocumentStorage } from "./modules/documents/services/document-storage.service.js";
+import { PuppeteerProgressSummaryRenderer } from "./modules/documents/services/progress-summary.renderer.js";
 import { ProgressController } from "./modules/progress/controllers/progress.controller.js";
 import { ProgressService } from "./modules/progress/services/progress.service.js";
 import { DrizzleProgressRepository } from "./modules/progress/repositories/progress.repository.js";
@@ -148,7 +153,18 @@ export function createDevelopmentApp() {
     },
   }));
 
+  const documentsController = new DocumentsController(new DocumentsService(
+    new DrizzleDocumentsRepository(db, {
+      auditHashPepper: authConfig.auditHashPepper,
+      tokenPepper: authConfig.otpPepper,
+      verificationPepper: authConfig.otpPepper,
+    }),
+    new PrivateDocumentStorage(),
+    new PuppeteerProgressSummaryRenderer(),
+  ));
+
   return createServerApp({
+    documentsController,
     progressController: new ProgressController(new ProgressService(new DrizzleProgressRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     followUpsController: new FollowUpsController(followUpsService),
     appointmentsController: new AppointmentsController(new AppointmentsService(new DrizzleAppointmentsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),

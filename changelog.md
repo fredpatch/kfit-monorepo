@@ -2,6 +2,20 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-22 — Sprint 6.3 secure payment proofs and coach review
+
+- Implementation commit: `8edebc7` — `feat(payment-proofs): add secure upload and coach review`.
+- Fred locally validated S6.3 end-to-end, including browser/mobile/keyboard, private scanned storage/ClamAV behavior and DBeaver evidence.
+- Added scoped, expiring, revocable, hash-only, single-use customer upload links and French public/admin interfaces in the subscription Finance area.
+- Upload stores private scanned evidence and untrusted customer claims only; it never creates authoritative money.
+- Named full/partial coach confirmation reuses S6.1 payment/FIFO machinery in one transaction with exact proof-to-payment linkage and audit; rejected/correction/duplicate outcomes create no payment or lifecycle changes.
+- Correction creates a new proof/document with preserved lineage and historical evidence. Same-lineage SHA duplicates are rejected; private notes remain separate from customer-facing messages. Proof files have no public download path.
+- Migration `0011_motionless_molly_hayes.sql` was generated/applied locally after zero-evidence preflight; no backfill required.
+- Validation: server 437/437, shared 53/53, PostgreSQL 467/467 including 39 S6.3 cases; typecheck/build/db:check/files preflight green.
+- Dedicated concurrency coverage confirms double-review creates one payment and manual payment vs proof confirmation cannot over-allocate.
+- Known non-blocking gap: no dedicated expiry-during-lock-wait runtime regression; expiry is rechecked after locks.
+- S6.3 is closed. S6.4 remains planning-only until its Gate 1.
+
 ## 2026-10-22 — Sprint 6.2 versioned quotes and secure acceptance
 
 - Implementation commit: `9fe7e1b` — `feat(quotes): add versioned quotes and secure acceptance`.

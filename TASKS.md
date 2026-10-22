@@ -11,9 +11,9 @@ Sprint 6 S6.1 is implemented on `main`. The former `sprint-5` branch remains his
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
 Active slice      S6.2 — Versioned quotes + secure customer acceptance
-Workflow state    PLANNING / GATE_1_PENDING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    S6.1 — 2026-10-22
-Next action       Planner: inspect S6.2 quote patterns/contracts and prepare Gate 1
+Next action       IDE Implementer: implement S6.2 server-first only; stop before S6.3
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -27,7 +27,7 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 ## Sprint 6 execution order
 
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED, Fred validated 2026-10-22.
-2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — PLANNING / Gate 1 pending.
+2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — APPROVED_FOR_IMPLEMENTATION.
 3. S6.3 — Customer payment-proof upload and structured coach review workflow — closed until S6.2 validation.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — closed until S6.3 validation.
 
@@ -1275,3 +1275,18 @@ Static QA coverage now includes:
 No S5.5 schema migration or new package dependency is required; existing document/version/token/context_json/progress_photos foundation is reused.
 
 Do not mark S5.5 validated or close Sprint 5 until Fred reports local commands + browser/DBeaver/storage checks green.
+
+
+## S6.2 Gate 1 — approved 2026-10-22
+
+Fred approved all seven S6.2 planning decisions:
+
+1. Quote creation occurs against an existing subscription/customer after request conversion; request linkage is derived from subscription.sourceRequestId where available.
+2. Official quote numbering is allocated only on first issue, using a concurrency-safe annual sequence with format `DEV-YYYY-NNNN`.
+3. Issued quote versions are immutable; changes require a new version.
+4. Public response choices are accepted, declined, or changes_requested; secure response tokens are scoped, expiring, revocable, rate-limited and hash-only in storage.
+5. Quote PDFs render from immutable historical snapshots, not mutable live catalogue/customer data.
+6. Customer acceptance never mutates the subscription. A separate coach synchronization command applies the accepted quote reference and may update agreed price only when no authoritative finance activity exists; otherwise it rejects with a typed conflict.
+7. Quote validity and commercial terms are explicit inputs, not invented legal text. Storage/API remain XAF; customer-facing display may use FCFA.
+
+Implementation is authorized for S6.2 only. S6.3 remains closed until Fred locally validates S6.2.

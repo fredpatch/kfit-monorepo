@@ -8,7 +8,7 @@ Deliver the V1 Core finance workflow for subscription obligations, payments, quo
 
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED / validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED / validated 2026-10-22.
-3. S6.3 — Customer payment-proof upload and structured coach review workflow — APPROVED_FOR_IMPLEMENTATION.
+3. S6.3 — Customer payment-proof upload and structured coach review workflow — IMPLEMENTED / Fred Gate 2 pending.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — CLOSED until S6.3 validation.
 
 Backlog rows labelled coach sign-off / bug list / full UAT are not Sprint 6 finance implementation slices; final V1 Core UAT remains a later sprint gate.
@@ -2037,3 +2037,44 @@ Stop after S6.3 implementation and handoff.
 
 ### Fred clarification — 2026-10-22
 Full confirmation requires confirmedAmountXaf = claimedAmountXaf exactly. Partial confirmation requires 0 < confirmedAmountXaf < claimedAmountXaf.
+
+
+## S6.3 implementation checkpoint — 2026-10-22
+
+Status: **IMPLEMENTED / AWAITING_HUMAN_VALIDATION**.
+
+Implementation commit:
+- `8edebc7` — `feat(payment-proofs): add secure upload and coach review`.
+
+Implemented:
+- shared payment-proof contracts and closed review states;
+- additive migration `0011_motionless_molly_hayes.sql`;
+- secure hash-only proof-upload links;
+- private scanned payment-proof documents with SHA-256 metadata;
+- untrusted customer claims separated from authoritative coach-confirmed facts;
+- named review commands for confirmed, partially_confirmed, correction_requested, rejected and duplicate;
+- explicit proof -> payment_event linkage;
+- S6.1 authoritative payment/FIFO reuse inside the proof-review transaction;
+- immutable correction/replacement lineage;
+- French admin Finance proof panel and public `/justificatif/:token` page.
+
+Agent/reviewer/QA evidence reported:
+- typecheck green;
+- server 437/437;
+- shared 53/53;
+- PostgreSQL 467/467, including 39 S6.3 cases;
+- production build and db:check green;
+- real files/ClamAV preflight green;
+- dedicated double-review concurrency coverage;
+- dedicated manual-payment-vs-proof-confirmation race coverage;
+- Reviewer PASSED WITH NOTES;
+- QA PASSED WITH LIMITATIONS.
+
+Known non-blocking coverage note:
+- no dedicated proof expiry-during-lock-wait runtime regression; expiry is rechecked after locks.
+
+Important validation boundary:
+- Fred has not yet confirmed S6.3 Gate 2 in this chat.
+- Browser/mobile/keyboard, end-to-end proof upload/review flow and DBeaver/private-storage acceptance remain human validation gates.
+- No validated S6.3 changelog entry is allowed before Fred confirms those checks.
+- S6.4 remains closed.

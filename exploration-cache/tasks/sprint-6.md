@@ -441,3 +441,36 @@ Remaining Gate 2:
 Repository merge note:
 - merge commit `ee793c2` accidentally persisted literal conflict markers in `TASKS.md` and this file;
 - documentation state was repaired afterward without changing S6.1 business implementation.
+
+
+## S6.2 Gate 1 — approved 2026-10-22
+
+Fred approved the complete S6.2 plan.
+
+Locked decisions:
+- Quotes are created for an existing subscription/customer after conversion; requestId is derived from subscription.sourceRequestId when present.
+- Drafts have no official quote number. First issue allocates `DEV-YYYY-NNNN` under a concurrency-safe annual counter in the same transaction.
+- Issued versions are immutable. Changes create a new version.
+- Public response commands: `accepted`, `declined`, `changes_requested`.
+- Public access uses scoped, expiring, revocable, hash-only secure tokens with rate limiting and external-access audit.
+- PDFs are deterministic artifacts rendered from immutable quote-version snapshots and linked through private document storage.
+- Customer acceptance never writes subscription commercial state.
+- Coach synchronization is a separate explicit command.
+- Synchronization records the accepted quote version and may update subscription.agreed_price_xaf only when no authoritative payment plan/payment activity exists.
+- If finance activity exists and accepted amount differs, synchronization rejects with a typed conflict; no retroactive ledger rewrite.
+- S6.2 does not change service, variant, component entitlements or duration; subscription-amendment semantics remain out of scope.
+- Quote expiry/validity and terms are explicit coach/configured inputs. No production legal wording is invented by the app.
+- Storage/API currency remains XAF; customer-facing display may show FCFA.
+- S6.3 remains closed until S6.2 local validation.
+
+Applicable reusable patterns:
+- Concurrent Sequential Numbering
+- Historical Business Snapshot
+- Business Document PDF Generation
+- Secure External Document Sharing
+- Explicit State Transitions
+- Hard Commit Point
+- Atomic Business Operation
+- Audit Event System
+- Shared API Contracts
+- Domain Error Taxonomy

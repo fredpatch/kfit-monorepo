@@ -1,15 +1,14 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NavLink, useParams, useSearchParams } from "react-router";
 import { isAxiosError } from "axios";
 import { Mail, MapPin, MessageCircle, Phone, Plus } from "lucide-react";
 import type { AdminCustomerSubscriptionSummary } from "@kfit/shared";
 import { customersApi } from "../../customers/api/customers-api.js";
-import { SubscriptionLifecyclePanel } from "../../subscriptions/components/AdminSubscriptionPage.js";
 import { OnboardingPanel, isOnboardingEditable } from "../../onboarding/components/AdminOnboardingPage.js";
 import { AdminAppointmentsPanel } from "../../appointments/components/AdminAppointmentsPanel.js";
 import { AdminFollowUpsPanel } from "../../follow-ups/components/AdminFollowUpsPanel.js";
-import { AdminProgressPanel } from "../../progress/components/AdminProgressPanel.js";
+import { OverviewTab } from "../../profile/overview/OverviewTab.js";
 import { AdminConsentPanel } from "../../consents/components/AdminConsentPanel.js";
 import { AdminQuestionnairePanel } from "../../questionnaires/components/AdminQuestionnairePanel.js";
 import { Avatar } from "../../components/ui/avatar.js";
@@ -23,6 +22,9 @@ import { describeStatus, subscriptionStatus } from "../../lib/status-map.js";
 import { familyMeta, familyOfSlug } from "../../lib/families.js";
 import { defaultSubscription, deriveClientStatus } from "../../lib/client-status.js";
 import { AdminPage, LegacyEmbed as Legacy } from "../layout/AdminPage.js";
+
+/* Charts (Recharts) load only when the Progression tab is opened. */
+const ProgressTab = lazy(() => import("../../profile/progress/ProgressTab.js").then((m) => ({ default: m.ProgressTab })));
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -204,11 +206,9 @@ export function ClientProfilePage() {
               </TabsTrigger>
             ))}
           </TabsList>
-          {/* Panels keep their current look in this step; Aperçu and Progression are rebuilt next (board 03 / 08). */}
+          {/* Aperçu and Progression use the new design (board 03); the other tabs keep their current look until their own step. */}
           <TabsContent value="apercu">
-            <Legacy>
-              <SubscriptionLifecyclePanel key={selected.id} id={selected.id} sections={false} />
-            </Legacy>
+            <OverviewTab key={selected.id} subscriptionId={selected.id} openTab={(onglet) => update({ onglet })} />
           </TabsContent>
           <TabsContent value="rendez-vous">
             <Legacy>
@@ -226,9 +226,9 @@ export function ClientProfilePage() {
             </Legacy>
           </TabsContent>
           <TabsContent value="progression">
-            <Legacy>
-              <AdminProgressPanel key={selected.id} subscriptionId={selected.id} />
-            </Legacy>
+            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement de la progression…</p>}>
+              <ProgressTab key={selected.id} subscriptionId={selected.id} />
+            </Suspense>
           </TabsContent>
           <TabsContent value="sante">
             <Legacy>

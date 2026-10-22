@@ -10,10 +10,10 @@ Sprint 6 S6.1 is implemented on `main`. The former `sprint-5` branch remains his
 ```text
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
-Active slice      S6.1 — Financial ledger: plans, installments, payments, allocations
-Workflow state    AWAITING_HUMAN_DB_VALIDATION
-Last validated    Sprint 5 — closed 2026-10-22
-Next action       Fred: DBeaver finance/audit inspection; close S6.1 only if green
+Active slice      S6.2 — Versioned quotes + secure customer acceptance
+Workflow state    PLANNING / GATE_1_PENDING
+Last validated    S6.1 — 2026-10-22
+Next action       Planner: inspect S6.2 quote patterns/contracts and prepare Gate 1
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -26,12 +26,12 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 
 ## Sprint 6 execution order
 
-1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — IMPLEMENTED; automated + browser validation green; Fred DBeaver inspection pending.
-2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — closed until S6.1 validation.
+1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED, Fred validated 2026-10-22.
+2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — PLANNING / Gate 1 pending.
 3. S6.3 — Customer payment-proof upload and structured coach review workflow — closed until S6.2 validation.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — closed until S6.3 validation.
 
-Execution source: `exploration-cache/tasks/sprint-6.md`. Fred approved S6.1 Gate 1 on 2026-10-22. Implementation commit `1050fcb` is pushed. Agent validation is green; Fred confirmed browser acceptance. DBeaver inspection remains the final S6.1 Gate 2 check. S6.2 remains closed.
+Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation commit `1050fcb` is locally validated end-to-end by Fred, including browser and DBeaver Gate 2. S6.1 is closed. S6.2 is now the active planning slice; no implementation before Gate 1.
 
 ## Sprint 5 objective
 

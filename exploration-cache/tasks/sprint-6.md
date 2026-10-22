@@ -6,7 +6,7 @@ Deliver the V1 Core finance workflow for subscription obligations, payments, quo
 
 ## Ordered tasks
 
-1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — PLANNING / Gate 1 pending.
+1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — APPROVED_FOR_IMPLEMENTATION.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED until S6.1 validation.
 3. S6.3 — Customer payment-proof upload and structured coach review workflow — CLOSED until S6.2 validation.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — CLOSED until S6.3 validation.
@@ -161,7 +161,7 @@ Payment event:
 - eventType uses a closed S6.1 vocabulary;
 - amountXaf positive integer;
 - currency fixed to XAF server-side;
-- paymentMethod is required but its final closed V1 vocabulary is a Gate 1 decision;
+- paymentMethod is required and uses the closed V1 vocabulary: `cash`, `bank_transfer`, `mobile_money`;
 - externalReference optional but normalized when supplied;
 - occurredAt explicit and cannot be future-invalid;
 - confirmedAt / confirmedByUserId set server-side;
@@ -397,5 +397,11 @@ Fred Gate 2:
 9. Plan revision creates a new plan and preserves historical rows.
 10. No Sprint 6 implementation before Fred approves Gate 1.
 
-Open Gate 1 item:
-- define the closed V1 payment-method vocabulary before implementation.
+Gate 1 payment-method vocabulary approved:
+- `cash`
+- `bank_transfer`
+- `mobile_money`
+
+## S6.1 Gate 1 — approved 2026-10-22
+
+Fred approved the complete S6.1 plan and the closed V1 payment-method vocabulary above. Implementation is authorized on `main` for S6.1 only, server-first. S6.2 remains closed until S6.1 is locally validated by Fred.

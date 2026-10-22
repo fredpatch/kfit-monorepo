@@ -1,3 +1,13 @@
+## 2026-10-22 — Sprint 5 and UI refonte unified on main
+
+**Context**: Sprint 5 business work continued on `sprint-5` while the validated UI/UX refonte advanced on `main`. Both branches descended from UX-1 and then diverged: `main` carried UX-2→UX-10 work while `sprint-5` carried S5.5 planning/execution-memory updates.
+
+**Decision**: Merge the two histories and use `main` as the single active continuation branch for the remainder of Sprint 5 and the UI refonte. The old `sprint-5` branch becomes historical and receives no new implementation.
+
+**Rationale**: The refonte is not a separate product line; it is the client continuation of the same Sprint 5 product. One branch removes avoidable drift while preserving server-authoritative business gates.
+
+**Impact**: S5.5 implementation starts on `main`. UX work and business work still retain their scope rules: UI changes may not silently alter business invariants, and S5.5 must stop for Reviewer/QA/Fred Gate 2 before Sprint 6.
+
 ## 2026-10-22 — Refonte UI: read-only API only, business time zone Africa/Libreville
 
 **Context**: The UI redesign (UX-1 → UX-13) runs on `main` in parallel with Sprint 5 and needed data the existing endpoints did not expose (customer overview, analytics, catalogue occupancy, daily dashboard, cross-subscription agenda). Day and week boundaries were computed in UTC or in the device time zone depending on the screen.

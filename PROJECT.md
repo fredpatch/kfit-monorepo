@@ -19,7 +19,7 @@ Users       public visitors; one privileged coach/admin in V1
 Runtime           Node >= 22 (tests use `node --test` glob patterns)
 Package manager   npm workspaces — never yarn/pnpm/bun
 Backend           Express 5 + TypeScript (ESM)
-Frontend          React 18 + Vite 7 + TanStack Query + axios
+Frontend          React 18 + Vite 7 + TanStack Query + axios + Tailwind v4 + Radix/shadcn-style primitives + Plus Jakarta Sans + lucide-react + sonner
 Test framework    node:test (shared, server); no client test framework
 ```
 
@@ -168,10 +168,13 @@ Technical docs  English
 ## Branches
 
 ```text
-Protected   main
-Active      sprint-3
-Naming      sprint-N (one branch per sprint, created from validated main)
+Protected / release branch   main
+Active development branch    main
+Historical Sprint 5 branch   sprint-5 (merged into main on 2026-10-22; no new work)
 ```
+
+Sprint 5 business work and the UI/UX refonte now continue together on `main`. Do not reopen parallel implementation branches without an explicit plan.
+
 
 ## Developer
 

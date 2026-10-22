@@ -16,7 +16,7 @@ const ClientsPage = lazy(() => import("../customers/components/ClientsPage.js").
 const AdminFollowUpQueuePage = lazy(() => import("../follow-ups/components/AdminFollowUpQueuePage.js").then((m) => ({ default: m.AdminFollowUpQueuePage })));
 const AdminQuestionnaireTemplatesPage = lazy(() => import("../questionnaires/components/AdminQuestionnaireTemplatesPage.js").then((m) => ({ default: m.AdminQuestionnaireTemplatesPage })));
 const PublicQuestionnairePage = lazy(() => import("../questionnaires/components/PublicQuestionnairePage.js").then((m) => ({ default: m.PublicQuestionnairePage })));
-const AdminRequestsQueuePage = lazy(() => import("../requests/components/AdminRequestsQueuePage.js").then((m) => ({ default: m.AdminRequestsQueuePage })));
+const RequestsPage = lazy(() => import("../requests/components/RequestsPage.js").then((m) => ({ default: m.RequestsPage })));
 const ClientProfilePage = lazy(() => import("./routes/client-profile.js").then((m) => ({ default: m.ClientProfilePage })));
 
 // DEV-only component gallery (UX-1). The condition is static in production builds, so the module is dropped.
@@ -84,14 +84,7 @@ export function App() {
               </AdminPage>
             }
           />
-          <Route
-            path="demandes"
-            element={
-              <AdminPage title="Demandes" description="Suis les demandes reçues, enregistre les tentatives de contact et fais progresser leur statut." legacy>
-                <AdminRequestsQueuePage />
-              </AdminPage>
-            }
-          />
+          <Route path="demandes" element={<RequestsPage />} />
           <Route path="clients" element={<ClientsPage />} />
           <Route path="clients/:id" element={<ClientProfilePage />} />
           <Route path="abonnements/:id" element={<SubscriptionRoute />} />

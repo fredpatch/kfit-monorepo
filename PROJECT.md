@@ -19,9 +19,19 @@ Users       public visitors; one privileged coach/admin in V1
 Runtime           Node >= 22 (tests use `node --test` glob patterns)
 Package manager   npm workspaces — never yarn/pnpm/bun
 Backend           Express 5 + TypeScript (ESM)
-Frontend          React 18 + Vite 7 + TanStack Query + axios
+Frontend          React 18 + Vite 7 + TanStack Query + axios; UI refonte adds Tailwind v4, Radix/shadcn-style primitives, Plus Jakarta Sans, lucide-react and sonner (repo-authoritative per branch)
 Test framework    node:test (shared, server); no client test framework
 ```
+
+## Parallel UI track
+
+```text
+Track A   sprint-5 — business feature slices and server-authoritative domain work
+Track B   main     — UI/UX refonte; read-only/presentation API additions only by default
+Time zone Africa/Libreville (UTC+1), week starts Monday for business-date UI/read models
+```
+
+Do not assume Track B commits exist on `sprint-5`; inspect the target branch before S5.5 client integration or release reconciliation.
 
 ## Layout
 

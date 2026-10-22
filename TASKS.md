@@ -10,10 +10,10 @@ Sprint 6 S6.1 and S6.2 are validated and closed on `main`. The former `sprint-5`
 ```text
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
-Active slice      S6.2 — Closed; versioned quotes + secure customer acceptance
-Workflow state    CLOSED
+Active slice      S6.3 — Customer payment-proof upload + structured coach review
+Workflow state    PLANNING / GATE_1_PENDING
 Last validated    S6.2 — 2026-10-22
-Next action       Await separately approved S6.3 scope; no implementation started
+Next action       Planner: define S6.3 proof intake/review invariants and Gate 1
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -28,7 +28,7 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED, Fred validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED, Fred validated 2026-10-22; implementation commit `9fe7e1b`.
-3. S6.3 — Customer payment-proof upload and structured coach review workflow — not started; requires its own approved scope.
+3. S6.3 — Customer payment-proof upload and structured coach review workflow — PLANNING / Gate 1 pending.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — closed until S6.3 validation.
 
 Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation commit `1050fcb` is locally validated end-to-end by Fred, including browser and DBeaver Gate 2. S6.1 is closed. Fred's pasted S6.2 request explicitly approves implementation on main; the connected backlog confirms Gate 1. The detailed request is appended to the local sprint spec.
@@ -51,7 +51,7 @@ Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation com
 - Fred subsequently confirmed "all green" for the presented Gate 2 checklist on 2026-10-22. S6.2 is VALIDATED: developer-reported local commands, browser/mobile/keyboard, scan/storage and DBeaver acceptance are recorded separately from agent evidence. No new per-command counts or direct synchronization-versus-finance race regression are claimed. Await explicit commit instruction; no commit/push or S6.3 work authorized by this acceptance.
 - Fred subsequently instructed "commit and push" on 2026-10-22, explicitly authorizing Gate 3 and publication of the validated S6.2 changes to main. S6.3 remains outside this authorization.
 - Implementation committed as `9fe7e1b` — `feat(quotes): add versioned quotes and secure acceptance`. S6.2 is closed after Fred validation and Gate 3; this documentation update records the implementation hash. S6.3 remains unstarted and requires separate approval.
-- Not validated: live S6.2 UI/mobile/keyboard flows, real end-to-end ClamAV/storage issuance and Fred's DBeaver acceptance. No S6.2 dev server, fixture seed, commit, push, validated changelog entry or S6.3 work.
+- S6.2 local validation is complete: Fred confirmed browser/mobile/keyboard, scan/storage issuance and DBeaver acceptance green. Implementation `9fe7e1b` and validated closure are pushed. S6.3 planning may begin; implementation remains gated.
 
 ## Sprint 5 objective
 
@@ -95,8 +95,8 @@ Before production:
 ```text
 Branch            main
 Sprint            6
-Slice             S6.2
-Workflow state    CLOSED
+Slice             S6.3
+Workflow state    PLANNING / GATE_1_PENDING
 Validated         Sprint 5, S6.1 and S6.2 (Fred, 2026-10-22)
 Approved goal     Versioned quotes/PDFs, secure explicit responses, coach synchronization
 Done              Contracts, schema/migration, server, French client and static inspection
@@ -111,7 +111,7 @@ Human acceptance  Fred confirmed Gate 2 checklist all green; command/browser/mob
 Coverage note     Direct synchronization-versus-finance race has no dedicated automated regression
 Assumptions       Current issued version is public-response eligible; obsolete links cannot respond
 Risks             PDF render/scan holds issuance locks; fixed process-local rate limit; preserve history on rollback
-Next action       Await separately approved S6.3 scope; no implementation started
+Next action       Planner: prepare S6.3 Gate 1; no implementation yet
 UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
 Out of scope      S6.3+, refunds, credits, extras, finance analytics and Sprint 7
 ```

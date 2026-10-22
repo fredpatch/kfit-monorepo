@@ -11,9 +11,9 @@ Sprint 5 business work and the UI/UX refonte are unified on `main`. The former `
 Branch            main
 Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
 Active slice      S5.5 — Personalized document versioning and secure temporary delivery links
-Workflow state    APPROVED_FOR_IMPLEMENTATION
+Workflow state    AWAITING_HUMAN_VALIDATION
 Last validated    S5.4 — 2026-10-21
-Next action       Implementer: execute approved S5.5 server-first document/versioning/delivery plan only
+Next action       Fred: run S5.5 local automated suite, browser/mobile/keyboard flow, ClamAV/PDF preflights and DBeaver/storage checks
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -30,7 +30,7 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — CLOSED, Fred validated 2026-10-21.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — CLOSED, Fred validated 2026-10-21.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — CLOSED, Fred validated 2026-10-21.
-5. S5.5 — Personalized document versioning and secure temporary delivery links — APPROVED_FOR_IMPLEMENTATION.
+5. S5.5 — Personalized document versioning and secure temporary delivery links — AWAITING_HUMAN_VALIDATION.
 
 S5.1–S5.4 are locally validated and closed. Fred approved S5.5 Gate 1 on 2026-10-22. Implement S5.5 only; do not open Sprint 6 before S5.5 Gate 2 and Sprint 5 closure.
 
@@ -1214,3 +1214,40 @@ Fred approved the complete S5.5 plan on 2026-10-22, including:
 - no customer account/SMS/WhatsApp OTP infrastructure introduced.
 
 Implementation is authorized on `main`. Stop at AWAITING_REVIEW before Reviewer → QA → Fred Gate 2.
+
+
+### S5.5 implementation checkpoint — 2026-10-22
+
+Status: IMPLEMENTED + STATICALLY REVIEWED; runtime/local validation remains open.
+
+Implementation commits on main:
+- c12e318 — server document workflow;
+- e6ce097 — admin/public document UI;
+- a9fae25 — progress photos remain private/no public delivery link;
+- 8ce1f6d — S5.5 focused tests;
+- 7a75747 — link lifecycle hardening coverage;
+- bffba46 — upload validation + concurrency/version-binding/audit QA coverage;
+- 0f2bfae — refonte panel source-format correction.
+
+Static Reviewer findings fixed before handoff:
+- progress photos cannot issue public customer links;
+- admin download extension now follows actual MIME type;
+- MIME/signature/filename extension must agree;
+- literal source-format escape in Documents panel corrected.
+
+Static QA coverage now includes:
+- immutable v1/v2/v3 versioning and concurrent version allocation;
+- duplicate SHA/replay rejection;
+- exact version-bound old links after newer versions;
+- hash-only bearer storage and non-consuming public metadata;
+- max-use exhaustion, expiry and explicit revocation;
+- document-wide revocation across versions;
+- health consent gate for generated progress summary;
+- separate progress-photo-storage consent and private-only photo behavior;
+- sensitive verification challenge, raw-code non-persistence and five-attempt lockout;
+- hard-commit orphan cleanup on repository error/throw;
+- public read-model and generic-audit privacy constraints.
+
+No S5.5 schema migration or new package dependency is required; existing document/version/token/context_json/progress_photos foundation is reused.
+
+Do not mark S5.5 validated or close Sprint 5 until Fred reports local commands + browser/DBeaver/storage checks green.

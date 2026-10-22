@@ -1369,3 +1369,21 @@ Branch policy after unification:
 - `main` is the single active continuation branch;
 - `sprint-5` is historical only;
 - do not start Sprint 6 until S5.5 passes Reviewer, QA and Fred Gate 2 and Sprint 5 is reconciled/closed.
+
+
+### S5.5 implementation checkpoint — 2026-10-22
+
+Implemented on `main` through commit `0f2bfae`.
+
+State: **AWAITING_HUMAN_VALIDATION**.
+
+Static review/QA found and corrected:
+- public delivery of progress photos (forbidden in S5.5);
+- forced .pdf admin filename for image documents;
+- filename-extension validation gap;
+- missing expiry/revoke/concurrency/version-binding/verification-lock test coverage;
+- a client source-format escape defect.
+
+No migration is required: S5.5 reuses documents, document_versions, secure_access_tokens.context_json, external_access_events and progress_photos.
+
+Runtime is NOT yet validated. Fred must run the full automated suite/preflights and perform browser/DBeaver/private-storage Gate 2 before S5.5/Sprint 5 can close.

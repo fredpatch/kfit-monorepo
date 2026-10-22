@@ -5,13 +5,23 @@
 
 ## Now
 
+Two tracks currently run in parallel. Track A owns Sprint 5 business features. Track B owns the UI/UX refonte and may add read-only/presentation endpoints only; business-rule changes still require the normal Sprint planning gate.
+
 ```text
+Track A — Sprint 5 business features
 Branch            sprint-5
 Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
 Active slice      S5.5 — Personalized document versioning and secure temporary delivery links
 Workflow state    PLANNING
 Last validated    S5.4 — 2026-10-21
 Next action       Planner: inspect S5.5 personalized document workflow; no implementation before Gate 1
+
+Track B — Refonte UI
+Branch            main
+Latest pushed     e0ae7f1 — UX-10 Connexion/password recovery implementation
+Validated pushed  UX-1 → UX-9b
+UX-10 state       AWAITING_HUMAN_VALIDATION — Fred local Mailpit check still required
+Next UX action    Fred validates UX-10 locally; then UX-11
 ```
 
 ## Sprint 5 objective
@@ -26,7 +36,7 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — CLOSED, Fred validated 2026-10-21.
 5. S5.5 — Personalized document versioning and secure temporary delivery links — PLANNING.
 
-Gate 1 approved by Fred. Implement S5.1 only. Do not open S5.2 while S5.1 is unvalidated.
+S5.1–S5.4 are locally validated and closed. S5.5 is the only open Sprint 5 business slice and remains PLANNING until Fred approves Gate 1.
 
 ## Blockers
 
@@ -42,15 +52,40 @@ Before production:
 ## Handoff
 
 ```text
-Branch            sprint-5
-Sprint            5
-Slice             S5.5
-Workflow state    PLANNING
-Done              S5.1 implementation + correction + review + QA + Fred Gate 2 validation
-Validation done   Gate 2 green; browser/DBeaver lifecycle acceptance green
-Next action       Planner: inspect S5.5 only
+Track A branch      sprint-5
+Sprint              5
+Slice               S5.5
+Workflow state      PLANNING
+Validated           S5.1, S5.2, S5.3, S5.4
+Next action         Planner: inspect S5.5 only; no implementation before Gate 1
+
+Track B branch      main
+UI track            Refonte UI
+Validated pushed    UX-1 → UX-9b
+Latest pushed       UX-10 — e0ae7f1
+UX-10 validation    Agent checks green; Fred local Mailpit/browser validation still pending
+Rule                Track B may add read-only/presentation APIs only unless separately approved
+Business time       Africa/Libreville (UTC+1), week starts Monday
 ```
 
+### Parallel UI/UX refonte — resync 2026-10-22
+
+- Design phase: 17 boards validated in Notion.
+- Implementation plan: UX-1 → UX-13 on the dedicated Refonte UI tracker.
+- Current GitHub reality:
+  - `sprint-5` includes UX-1 foundation commit `88235de`;
+  - later UI work lives on `main`;
+  - `main` validated/pushed through UX-9b;
+  - UX-10 is pushed at `e0ae7f1` but still awaits Fred's local Mailpit validation.
+- Validated refonte decisions:
+  - business/presentation time zone is `Africa/Libreville`;
+  - week starts Monday;
+  - customer status is derived once in `@kfit/shared`;
+  - dashboard time-series/sparklines/funnel remain Sprint 7 scope;
+  - UI refonte may add read-only/presentation endpoints, not new business mutations without approval.
+- New read-only/presentation API families on `main`: customer detail/overview/analytics, catalogue overview, `/admin/today`, cross-subscription `/admin/appointments`.
+- Production/refonte blockers now also include device-OTP/trusted-device login contract completion, SMTP configuration for password recovery, reverse-proxy exposure for new read endpoints, and missing brand assets for public UI.
+- Before merging/rebasing Track A/Track B, reconcile both branches deliberately; do not assume `main` UI commits are present on `sprint-5`.
 
 ## S5.1 Gate 2 corrective note — questionnaire policy consistency
 

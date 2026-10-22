@@ -1049,3 +1049,21 @@ Validated locally by Fred on 2026-10-21.
 - UI uses kg/cm/%; stricter API metric/unit compatibility is a future hardening consideration.
 
 Do not start S5.5 implementation before its plan is inspected and Fred approves Gate 1.
+
+
+### Parallel UI/UX refonte resync — 2026-10-22
+
+Sprint 5 functional delivery remains Track A on `sprint-5`. The UI/UX refonte is Track B on `main`.
+
+Current refonte state:
+- 17 design boards validated in Notion.
+- UX-1 → UX-9b are pushed/validated on `main`.
+- UX-10 Connexion/password recovery is pushed at `e0ae7f1` but still awaits Fred's local Mailpit/browser validation.
+- `sprint-5` itself contains only the UX-1 foundation refonte commit `88235de`; later Track B commits are not yet part of the functional branch.
+- Read-only/presentation endpoints added by Track B do not change Sprint 5 business invariants.
+- Business time is Africa/Libreville (UTC+1), Monday week start.
+- Dashboard series/sparklines/funnel stay Sprint 7 scope.
+- Device-OTP/trusted-device login remains a pre-production blocker.
+- Any eventual branch reconciliation must be deliberate and reviewed before release.
+
+S5.5 planning must inspect both the current `sprint-5` document/storage implementation and any relevant UI/navigation patterns from `main`, without assuming Track B code is already merged.

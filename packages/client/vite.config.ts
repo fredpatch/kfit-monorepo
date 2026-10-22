@@ -30,6 +30,7 @@ export default defineConfig(({ mode }) => {
         "/admin/customers": apiProxy,
         "/admin/subscriptions": apiProxy,
         "/admin/appointments": apiProxy,
+        "/admin/today": apiProxy,
         "/admin/follow-ups": apiProxy,
         "/admin/goals": apiProxy,
         "/admin/questionnaire-templates": apiProxy,

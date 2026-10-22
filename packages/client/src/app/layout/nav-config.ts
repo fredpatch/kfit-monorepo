@@ -1,6 +1,6 @@
-import { ClipboardList, Inbox, Layers, MessageCircle, Users, type LucideIcon } from "lucide-react";
+import { ClipboardList, Inbox, Layers, MessageCircle, Sun, Users, type LucideIcon } from "lucide-react";
 
-export type NavBadgeSource = "followUpsOverdue" | "requestsNew";
+export type NavBadgeSource = "followUpsOverdue" | "requestsNew" | "todayTasks";
 
 export type NavItem = {
   to: string;
@@ -10,16 +10,19 @@ export type NavItem = {
   badge?: NavBadgeSource;
   /** Shown in the phone bottom bar (max 3, the rest go under « Plus »). */
   mobile?: boolean;
+  /** Active only on this exact path (the /admin home). */
+  end?: boolean;
 };
 
 export type NavGroup = { title: string | null; items: NavItem[] };
 
 /**
- * Admin navigation (board 02). Only screens that exist today are listed:
- * « Aujourd'hui » arrives in UX-9, « Abonnements » once a subscription list exists (backlog gap).
+ * Admin navigation (board 02). Only screens that exist today are listed;
+ * « Abonnements » and « Agenda » come once their screens exist (backlog).
  */
 export const adminNav: NavGroup[] = [
-  { title: "Coaching", items: [{ to: "/admin/suivis", label: "Suivis", icon: MessageCircle, badge: "followUpsOverdue", mobile: true }] },
+  { title: null, items: [{ to: "/admin", label: "Aujourd'hui", icon: Sun, badge: "todayTasks", mobile: true, end: true }] },
+  { title: "Coaching", items: [{ to: "/admin/suivis", label: "Suivis", icon: MessageCircle, badge: "followUpsOverdue" }] },
   { title: "Pipeline", items: [{ to: "/admin/demandes", label: "Demandes", icon: Inbox, badge: "requestsNew", mobile: true }] },
   { title: "Clients", items: [{ to: "/admin/clients", label: "Clients", icon: Users, mobile: true }] },
   {

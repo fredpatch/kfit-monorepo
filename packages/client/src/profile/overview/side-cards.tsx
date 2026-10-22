@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Check, Minus } from "lucide-react";
-import type { SubscriptionDetail } from "@kfit/shared";
+import { businessTimeZone, type SubscriptionDetail } from "@kfit/shared";
 import { followUpsApi, followUpErrorMessage } from "../../follow-ups/api/follow-ups-api.js";
 import { activityTypes, cadenceSources } from "../../follow-ups/components/follow-up-labels.js";
 import { onboardingApi, onboardingErrorMessage } from "../../onboarding/api/onboarding-api.js";
@@ -176,8 +176,8 @@ export function UpcomingAppointmentsCard({ subscriptionId, openTab }: { subscrip
             return (
               <li key={a.id} className="flex items-center gap-3.5 border-b border-border-subtle py-3 last:border-0">
                 <span className="flex size-[52px] shrink-0 flex-col items-center justify-center rounded-lg border border-border-subtle bg-[#f7f8f5]">
-                  <span className="text-[11px] font-bold uppercase text-muted-foreground">{start.toLocaleDateString("fr-FR", { month: "short" })}</span>
-                  <span className="text-lg font-extrabold leading-none">{start.getDate()}</span>
+                  <span className="text-[11px] font-bold uppercase text-muted-foreground">{start.toLocaleDateString("fr-FR", { timeZone: businessTimeZone, month: "short" })}</span>
+                  <span className="text-lg font-extrabold leading-none">{Number(start.toLocaleDateString("fr-FR", { timeZone: businessTimeZone, day: "numeric" }))}</span>
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="text-sm font-bold">

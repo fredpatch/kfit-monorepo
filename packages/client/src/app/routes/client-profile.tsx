@@ -18,6 +18,7 @@ import { StatusPill } from "../../components/ui/status-pill.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs.js";
 import { Tooltip } from "../../components/ui/tooltip.js";
 import { cn } from "../../lib/utils.js";
+import { dateFr } from "../../lib/format.js";
 import { describeStatus, subscriptionStatus } from "../../lib/status-map.js";
 import { familyMeta, familyOfSlug } from "../../lib/families.js";
 import { defaultSubscription, deriveClientStatus } from "../../lib/client-status.js";
@@ -41,7 +42,7 @@ export const profileTabs = [
 ] as const;
 type ProfileTab = (typeof profileTabs)[number]["value"];
 
-const dateFr = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+
 const waLink = (phone: string) => `https://wa.me/${phone.replace(/[^0-9]/g, "")}`;
 
 function SubscriptionChip({ subscription, selected, onSelect }: { subscription: AdminCustomerSubscriptionSummary; selected: boolean; onSelect: () => void }) {

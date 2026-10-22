@@ -93,21 +93,39 @@ export function createDevelopmentApp() {
     inactivityTimeoutMs: authConfig.inactivityTimeoutMs,
   });
 
+  const catalogueService = new CatalogueService(new DrizzleCatalogueRepository(db));
   const catalogueController = new CatalogueController(
-    new CatalogueService(new DrizzleCatalogueRepository(db)),
+    catalogueService,
   );
 
   const requestsController = new RequestsController(
     new RequestsService(new DrizzleRequestsRepository(db), audit),
   );
 
-  const adminRequestsController = new AdminRequestsController(
-    new AdminRequestsService(new DrizzleAdminRequestsRepository(db, { auditHashPepper: authConfig.auditHashPepper })),
-  );
+  const adminRequestsService = new AdminRequestsService(new DrizzleAdminRequestsRepository(db, { auditHashPepper: authConfig.auditHashPepper }));
+  const adminRequestsController = new AdminRequestsController(adminRequestsService);
+  const followUpsService = new FollowUpsService(new DrizzleFollowUpsRepository(db, { auditHashPepper: authConfig.auditHashPepper }));
+  const onboardingService = new OnboardingService(new DrizzleOnboardingRepository(db, { auditHashPepper: authConfig.auditHashPepper }));
+  const customersService = new CustomersService(new DrizzleCustomersRepository(db, { auditHashPepper: authConfig.auditHashPepper }));
+  // UX-9 « Aujourd'hui »: reuses each module's own service so every state is computed by its owner.
+  const todayController = new TodayController(new TodayService(new DrizzleTodayRepository(db), {
+    async followUpQueue(actor) {
+      const result = await followUpsService.execute("", "queue", {}, actor);
+      if (!result.ok || !("items" in result.body)) throw new Error("Follow-up queue unavailable");
+      return result.body;
+    },
+    customerOverview: () => customersService.getOverview(),
+    catalogueOverview: () => catalogueService.listAdminOverview(),
+    requests: () => adminRequestsService.listQueue({}),
+    async onboarding(subscriptionId, actor) {
+      const result = await onboardingService.execute(subscriptionId, "read", {}, undefined, actor);
+      return result.status === "ok" ? result.onboarding : null;
+    },
+  }));
 
   return createServerApp({
     progressController: new ProgressController(new ProgressService(new DrizzleProgressRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
-    followUpsController: new FollowUpsController(new FollowUpsService(new DrizzleFollowUpsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
+    followUpsController: new FollowUpsController(followUpsService),
     appointmentsController: new AppointmentsController(new AppointmentsService(new DrizzleAppointmentsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     subscriptionsController: new SubscriptionsController(new SubscriptionsService(new DrizzleSubscriptionsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     questionnaireController: new QuestionnaireController(new QuestionnaireService(new DrizzleQuestionnaireRepository(db, { auditHashPepper: authConfig.auditHashPepper })), new QuestionnaireTemplateService(new DrizzleQuestionnaireTemplateRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
@@ -117,9 +135,10 @@ export function createDevelopmentApp() {
     catalogueController,
     requestsController,
     adminRequestsController,
-    onboardingController: new OnboardingController(new OnboardingService(new DrizzleOnboardingRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
+    onboardingController: new OnboardingController(onboardingService),
     requestConversionController: new RequestConversionController(new RequestConversionService(new DrizzleRequestConversionRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
-    customersController: new CustomersController(new CustomersService(new DrizzleCustomersRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
+    customersController: new CustomersController(customersService),
+    todayController,
   });
 }
 import { ConsentController } from "./modules/consents/controllers/consent.controller.js";
@@ -138,3 +157,6 @@ import { DrizzleAppointmentsRepository } from "./modules/appointments/repositori
 import { FollowUpsController } from "./modules/follow-ups/controllers/follow-ups.controller.js";
 import { FollowUpsService } from "./modules/follow-ups/services/follow-ups.service.js";
 import { DrizzleFollowUpsRepository } from "./modules/follow-ups/repositories/follow-ups.repository.js";
+import { TodayController } from "./modules/dashboard/controllers/today.controller.js";
+import { TodayService } from "./modules/dashboard/services/today.service.js";
+import { DrizzleTodayRepository } from "./modules/dashboard/repositories/today.repository.js";

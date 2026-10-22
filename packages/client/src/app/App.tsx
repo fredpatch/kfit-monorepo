@@ -14,6 +14,7 @@ const CataloguePage = lazy(() => import("../catalogue/components/CataloguePage.j
 const PublicConsentPage = lazy(() => import("../consents/components/PublicConsentPage.js").then((m) => ({ default: m.PublicConsentPage })));
 const ClientsPage = lazy(() => import("../customers/components/ClientsPage.js").then((m) => ({ default: m.ClientsPage })));
 const AdminFollowUpQueuePage = lazy(() => import("../follow-ups/components/AdminFollowUpQueuePage.js").then((m) => ({ default: m.AdminFollowUpQueuePage })));
+const TodayPage = lazy(() => import("../dashboard/components/TodayPage.js").then((m) => ({ default: m.TodayPage })));
 const QuestionnairesPage = lazy(() => import("../questionnaires/components/QuestionnairesPage.js").then((m) => ({ default: m.QuestionnairesPage })));
 const PublicQuestionnairePage = lazy(() => import("../questionnaires/components/PublicQuestionnairePage.js").then((m) => ({ default: m.PublicQuestionnairePage })));
 const RequestsPage = lazy(() => import("../requests/components/RequestsPage.js").then((m) => ({ default: m.RequestsPage })));
@@ -75,7 +76,7 @@ export function App() {
         */}
         <Route path="/admin" element={<AdminRoot />}>
           {/* « Aujourd'hui » replaces this redirect in UX-9. */}
-          <Route index element={<Navigate replace to="suivis" />} />
+          <Route index element={<TodayPage />} />
           <Route
             path="suivis"
             element={

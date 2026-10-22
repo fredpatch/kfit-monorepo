@@ -20,7 +20,7 @@ import { Button } from "../../components/ui/button.js";
 import { Field } from "../../components/ui/field.js";
 import { Input, NativeSelect, Textarea } from "../../components/ui/input.js";
 import { SegmentedControl } from "../../components/ui/segmented-control.js";
-import { fromLocalInput, moneyXaf, toLocalInput } from "../../lib/format.js";
+import { dateFr, fromLocalInput, moneyXaf, toLocalInput } from "../../lib/format.js";
 
 /** Refresh the detail, every queue key (incl. the nav badge) and, after conversion, customers. */
 export function useRequestRefresh(requestId: string) {
@@ -439,7 +439,7 @@ export function ConversionDialog({ request, open, onOpenChange, onConverted }: {
               <div className="col-span-2 flex flex-col gap-0.5"><dt className="text-muted-foreground">Offre</dt><dd className="font-semibold">{request.service.name} · {variantName}</dd></div>
               <div className="flex flex-col gap-0.5"><dt className="text-muted-foreground">Prix convenu</dt><dd className="font-semibold">{moneyXaf(review.agreedPriceXaf ?? 0)}</dd></div>
               {review.targetStartDate ? (
-                <div className="flex flex-col gap-0.5"><dt className="text-muted-foreground">Début prévu</dt><dd className="font-semibold">{new Date(review.targetStartDate).toLocaleDateString("fr-FR")}</dd></div>
+                <div className="flex flex-col gap-0.5"><dt className="text-muted-foreground">Début prévu</dt><dd className="font-semibold">{dateFr(review.targetStartDate)}</dd></div>
               ) : null}
             </dl>
             {!review.targetStartDate ? (

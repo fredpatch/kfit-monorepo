@@ -43,6 +43,7 @@ function Sidebar({ badges }: { badges: ReturnType<typeof useNavBadges> }) {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.end ?? false}
                 className={({ isActive }) =>
                   cn(
                     "flex h-[38px] items-center gap-2.5 rounded-[10px] px-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime",
@@ -66,6 +67,7 @@ function MobileTab({ item, badge }: { item: NavItem; badge: number | null }) {
   return (
     <NavLink
       to={item.to}
+      end={item.end ?? false}
       className={({ isActive }) =>
         cn("flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", isActive ? "font-bold text-primary" : "font-semibold text-muted-foreground")
       }

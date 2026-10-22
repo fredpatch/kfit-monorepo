@@ -13,7 +13,7 @@ import { documentErrorMessage, documentsApi } from "../api/documents-api.js";
 const labels:Record<PersonalizedDocumentType,string>={meal_plan:"Plan alimentaire",workout_plan:"Plan d'entraînement",progress_summary:"Bilan de progression",progress_photo:"Photo de progression",other_personalized:"Document personnalisé"};
 type UploadType="meal_plan"|"workout_plan"|"other_personalized";
 
-function downloadBlob(blob:Blob,filename:string){const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
+function extensionFor(mime:string){return mime==="application/pdf"?"pdf":mime==="image/png"?"png":mime==="image/webp"?"webp":"jpg";}\nfunction downloadBlob(blob:Blob,filename:string){const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
 
 function DocumentCard({doc,onChanged}:{doc:PersonalizedDocument;onChanged:()=>void}){
   const [file,setFile]=useState<File|null>(null);
@@ -27,7 +27,7 @@ function DocumentCard({doc,onChanged}:{doc:PersonalizedDocument;onChanged:()=>vo
   return <article className="rounded-xl border border-border bg-card p-4">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div><h3 className="font-bold">{labels[doc.documentType]}</h3><p className="text-xs text-muted-foreground">{doc.sensitivity==="sensitive_health"?"Donnée sensible · vérification renforcée":"Privé"} · {doc.status}</p></div>
-      {current?<Button size="sm" variant="secondary" onClick={async()=>{try{downloadBlob(await documentsApi.adminDownload(current.id),labels[doc.documentType]+".pdf");}catch(e){toast.error(documentErrorMessage(e));}}}><Download/>Télécharger</Button>:null}
+      {current?<Button size="sm" variant="secondary" onClick={async()=>{try{downloadBlob(await documentsApi.adminDownload(current.id),labels[doc.documentType]+"."+extensionFor(current.mimeType));}catch(e){toast.error(documentErrorMessage(e));}}}><Download/>Télécharger</Button>:null}
     </div>
     <div className="mt-4 space-y-2">
       {doc.versions.map(v=><div key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted px-3 py-2 text-sm">

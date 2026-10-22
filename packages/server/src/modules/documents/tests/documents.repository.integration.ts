@@ -52,3 +52,25 @@ test("public link is hash-only, read is non-consuming and maxUses exhausts",asyn
  for(let n=1;n<=3;n++){const r=await repo.execute("",{action:"public-download-commit",rawToken:issued.body.token},anon);assert.ok(r.ok);assert.equal(r.body.useCount,n);}
  assert.deepEqual(await repo.execute("",{action:"public-download-commit",rawToken:issued.body.token},anon),{ok:false,error:"DOCUMENT_LINK_EXHAUSTED"});
 });
+
+test("expired and revoked document links reject without business consumption",async()=>{
+ const id=await makeSub();const c=await repo.execute(id,{action:"create-upload",documentType:"meal_plan",file:file("e".repeat(64))},actor);assert.ok(c.ok);
+ const versionId=c.body.document.currentVersionId;
+ const expired=await repo.execute(versionId,{action:"issue-link",expiresAt:new Date(now.getTime()+1000),maxUses:3},actor);assert.ok(expired.ok);
+ const laterRepo=new DrizzleDocumentsRepository(db,{auditHashPepper:"document-audit-pepper-12345678901234567890",tokenPepper:"document-token-pepper-12345678901234567890",verificationPepper:"document-code-pepper-12345678901234567890"},()=>new Date(now.getTime()+2000));
+ assert.deepEqual(await laterRepo.execute("",{action:"public-read",rawToken:expired.body.token},anon),{ok:false,error:"DOCUMENT_LINK_EXPIRED"});
+ const active=await repo.execute(versionId,{action:"issue-link",expiresAt:new Date(now.getTime()+60000),maxUses:3},actor);assert.ok(active.ok);
+ assert.ok((await repo.execute(active.body.link.id,{action:"revoke-link"},actor)).ok);
+ assert.deepEqual(await repo.execute("",{action:"public-read",rawToken:active.body.token},anon),{ok:false,error:"DOCUMENT_LINK_REVOKED"});
+ const [stored]=await db.select().from(secureAccessTokens).where(eq(secureAccessTokens.id,active.body.link.id));assert.equal(stored?.useCount,0);
+});
+
+test("document revocation revokes all version-bound active links while preserving versions",async()=>{
+ const id=await makeSub();const c=await repo.execute(id,{action:"create-upload",documentType:"meal_plan",file:file("f".repeat(64))},actor);assert.ok(c.ok);
+ const v1=c.body.document.currentVersionId;const v2=await repo.execute(c.body.document.id,{action:"add-version",file:file("0".repeat(64))},actor);assert.ok(v2.ok);
+ const l1=await repo.execute(v1,{action:"issue-link",expiresAt:new Date(now.getTime()+60000),maxUses:3},actor);assert.ok(l1.ok);
+ const l2=await repo.execute(v2.body.document.currentVersionId,{action:"issue-link",expiresAt:new Date(now.getTime()+60000),maxUses:3},actor);assert.ok(l2.ok);
+ const revoked=await repo.execute(c.body.document.id,{action:"revoke"},actor);assert.ok(revoked.ok);assert.equal(revoked.body.document.versions.length,2);
+ assert.deepEqual(await repo.execute("",{action:"public-read",rawToken:l1.body.token},anon),{ok:false,error:"DOCUMENT_LINK_REVOKED"});
+ assert.deepEqual(await repo.execute("",{action:"public-read",rawToken:l2.body.token},anon),{ok:false,error:"DOCUMENT_LINK_REVOKED"});
+});

@@ -56,3 +56,15 @@ test("progress photo requires dedicated consent and has no public delivery link"
  const [link]=await db.select().from(progressPhotos).where(eq(progressPhotos.documentId,created.body.document.id));assert.ok(link);assert.equal(link.marketingAuthorizationId,null);
  assert.deepEqual(await repo.execute(created.body.document.currentVersionId,{action:"issue-link",expiresAt:new Date(now.getTime()+60000),maxUses:3},actor),{ok:false,error:"DOCUMENT_STATUS_INVALID"});
 });
+
+test("sensitive verification locks after five wrong attempts without exposing document bytes",async()=>{
+ const id=await makeSub();await grant(id,healthId);
+ const localPdf={...pdf,storageKey:randomUUID()+".pdf",sha256:"9".repeat(64)};
+ const created=await repo.execute(id,{action:"generate-summary",file:localPdf,templateVersion:"v1"},actor);assert.ok(created.ok);
+ const issued=await repo.execute(created.body.document.currentVersionId,{action:"issue-link",expiresAt:new Date(now.getTime()+60000),maxUses:3},actor);assert.ok(issued.ok);
+ const wrong=issued.body.verificationCode==="000000"?"999999":"000000";
+ for(let n=1;n<=4;n++)assert.deepEqual(await repo.execute("",{action:"public-verify",rawToken:issued.body.token,code:wrong},anon),{ok:false,error:"DOCUMENT_VERIFICATION_INVALID"});
+ assert.deepEqual(await repo.execute("",{action:"public-verify",rawToken:issued.body.token,code:wrong},anon),{ok:false,error:"DOCUMENT_VERIFICATION_LOCKED"});
+ assert.deepEqual(await repo.execute("",{action:"public-verify",rawToken:issued.body.token,code:issued.body.verificationCode},anon),{ok:false,error:"DOCUMENT_VERIFICATION_LOCKED"});
+ const [stored]=await db.select().from(secureAccessTokens).where(eq(secureAccessTokens.id,issued.body.link.id));const ctx=stored?.contextJson as any;assert.equal(ctx?.verification?.attempts,5);
+});

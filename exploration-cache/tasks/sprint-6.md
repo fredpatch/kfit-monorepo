@@ -8,7 +8,7 @@ Deliver the V1 Core finance workflow for subscription obligations, payments, quo
 
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED / validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED / validated 2026-10-22.
-3. S6.3 — Customer payment-proof upload and structured coach review workflow — PLANNING / Gate 1 pending.
+3. S6.3 — Customer payment-proof upload and structured coach review workflow — APPROVED_FOR_IMPLEMENTATION.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — CLOSED until S6.3 validation.
 
 Backlog rows labelled coach sign-off / bug list / full UAT are not Sprint 6 finance implementation slices; final V1 Core UAT remains a later sprint gate.
@@ -1093,3 +1093,162 @@ Known non-blocking gap:
 - direct synchronization-versus-finance race has no dedicated automated regression; lock ordering was reviewed and no defect was confirmed.
 
 S6.2 is Terminé. S6.3 is now the active planning slice; no S6.3 implementation before Gate 1.
+
+
+## S6.3 Gate 1 — approved 2026-10-22
+
+Goal: customer payment-proof upload and structured coach review, integrated with the authoritative S6.1 ledger without treating evidence as money.
+
+### Reused foundation
+- payment_proofs
+- documents / document_versions
+- secure_access_tokens / external_access_events
+- S6.1 payment_events / payment_allocations
+- private storage + MIME/signature/SHA-256 + ClamAV hard-commit flow
+- typed domain errors, transaction-scoped audit and Service → Controller → Route
+
+### Locked evidence rules
+1. V1 has no customer account, so upload is via secure temporary public token scoped to one subscription/proof-upload action.
+2. Payment-proof files remain private/admin-only. No public proof delivery link.
+3. Upload creates payment evidence only and never creates authoritative money.
+4. Customer provides:
+   - file;
+   - claimedAmountXaf;
+   - claimedPaymentMethod;
+   - claimedOccurredAt/payment date.
+   These are untrusted claims.
+5. Optional claimedExternalReference may be accepted as evidence but is not globally unique by assumption.
+6. payment methods remain the S6.1 closed vocabulary:
+   - cash
+   - bank_transfer
+   - mobile_money
+7. status vocabulary remains:
+   - pending_review
+   - confirmed
+   - partially_confirmed
+   - correction_requested
+   - rejected
+   - duplicate
+   - superseded
+
+### Coach review
+- confirmed: coach confirms the full authoritative payment facts and amount.
+- partially_confirmed: coach confirms a positive amount lower than the claimed amount.
+- correction_requested: no payment; optional customer-facing message may explain what to resubmit.
+- rejected: no payment.
+- duplicate: no payment.
+- superseded: historical proof replaced by a later proof; history preserved.
+
+### Authoritative payment integration
+For confirmed / partially_confirmed:
+- lock proof;
+- lock subscription / eligible finance obligations using S6.1 ordering;
+- recompute outstanding balance;
+- validate reviewed amount/method/date;
+- create authoritative payment_event;
+- create FIFO payment_allocations;
+- link payment_proof.payment_event_id;
+- mark proof reviewed;
+- write transaction-scoped audit;
+- commit atomically.
+
+The original evidence does not become the payment event. The review command produces the payment event.
+
+### Concurrency invariants
+- two concurrent review confirmations of one proof create exactly one payment event;
+- proof confirmation racing a manual S6.1 payment must serialize against the true outstanding amount;
+- overpayment from review is rejected atomically;
+- duplicate/replayed review cannot create duplicate allocations.
+
+### Proof replacement
+- correction request issues/permits a fresh upload path;
+- replacement creates a new payment_proofs row;
+- new row supersedes old proof by supersedesProofId;
+- old proof and old document remain immutable;
+- no in-place replacement of evidence.
+
+### Schema hardening proposed
+- payment_proofs.document_id -> documents.id FK if missing;
+- payment_proofs.supersedes_proof_id self-FK RESTRICT if missing;
+- payment_proofs.payment_event_id nullable FK -> payment_events.id;
+- claimed_amount_xaf;
+- claimed_payment_method;
+- claimed_occurred_at;
+- optional claimed_external_reference;
+- confirmed_amount_xaf;
+- confirmed_payment_method;
+- confirmed_occurred_at;
+- optional customer_message;
+- status and amount consistency constraints/indexes where practical.
+
+Exact minimal migration should be chosen after current-row inspection. No destructive changes.
+
+### API proposal
+Admin:
+- GET /admin/subscriptions/:subscriptionId/payment-proofs
+- GET /admin/payment-proofs/:proofId
+- GET /admin/payment-proofs/:proofId/document
+- POST /admin/subscriptions/:subscriptionId/payment-proof-links
+- POST /admin/payment-proof-links/:tokenId/revoke
+- POST /admin/payment-proofs/:proofId/confirm
+- POST /admin/payment-proofs/:proofId/partially-confirm
+- POST /admin/payment-proofs/:proofId/request-correction
+- POST /admin/payment-proofs/:proofId/reject
+- POST /admin/payment-proofs/:proofId/mark-duplicate
+
+Public:
+- GET /public/payment-proofs/:token
+- POST /public/payment-proofs/:token/upload
+
+No generic status PATCH.
+
+### Audit privacy
+Safe metadata only:
+- proofId
+- subscriptionId
+- documentId / documentVersionId
+- paymentEventId
+- amountXaf
+- paymentMethod
+- structural transition
+- tokenId if needed
+
+Do not place in generic audit:
+- raw bearer
+- customer PII
+- claimedExternalReference
+- reviewNote
+- customerMessage
+- uploaded document content
+
+### Validation target
+Must cover:
+- clean upload;
+- infected/malformed file rejection;
+- token expiry/revocation/replay;
+- pending evidence creates no payment;
+- full confirmation creates exactly one payment + allocations;
+- partial confirmation creates exact reviewed amount;
+- overpayment review rejects atomically;
+- concurrent double-review creates one payment;
+- manual payment vs proof confirmation cannot over-allocate;
+- correction request -> replacement lineage;
+- rejection/duplicate create no payment;
+- exact proof -> payment event linkage;
+- later payment correction preserves original proof evidence;
+- subscription lifecycle unchanged;
+- audit privacy;
+- private storage SHA/DBeaver evidence.
+
+### Out of scope
+- receipts/S6.4;
+- OCR or automatic proof interpretation;
+- automatic financial confirmation;
+- bank/mobile-money provider APIs;
+- refunds;
+- customer accounts;
+- SMS/email/WhatsApp sending engine;
+- AI review;
+- finance analytics.
+
+Fred approved the complete plan above. S6.3 implementation is authorized on main, server-first. S6.4 remains closed until local validation.

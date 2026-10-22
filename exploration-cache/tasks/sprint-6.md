@@ -9,7 +9,7 @@ Deliver the V1 Core finance workflow for subscription obligations, payments, quo
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED / validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED / validated 2026-10-22.
 3. S6.3 — Customer payment-proof upload and structured coach review workflow — CLOSED / validated 2026-10-22.
-4. S6.4 — Sequential payment receipts and secure sharing preparation — PLANNING / Gate 1 pending.
+4. S6.4 — Sequential payment receipts and secure sharing preparation — APPROVED_FOR_IMPLEMENTATION.
 
 Backlog rows labelled coach sign-off / bug list / full UAT are not Sprint 6 finance implementation slices; final V1 Core UAT remains a later sprint gate.
 
@@ -2113,3 +2113,205 @@ Known non-blocking coverage note:
 - no dedicated expiry-during-lock-wait regression; expiry is rechecked after locks.
 
 S6.3 is Terminé. S6.4 is now the active planning slice; no S6.4 implementation before Gate 1.
+
+
+## S6.4 Gate 1 — approved 2026-10-22
+
+Goal: issue one immutable, sequential receipt for one authoritative confirmed payment event, with deterministic PDF generation and secure temporary customer sharing.
+
+### Reused foundation
+- receipts
+- payment_events / payment_allocations
+- business_document_counters from S6.2
+- documents / document_versions
+- secure_access_tokens / external_access_events
+- S6.2 deterministic PDF/private storage hard-commit pattern
+- transaction-scoped audit
+- Concurrent Sequential Numbering
+- Historical Business Snapshot
+- Business Document PDF Generation
+- Secure External Document Sharing
+- Hard Commit Point
+- Atomic Business Operation
+
+### Locked business rules
+1. Receipt source:
+   - only `payment_received`;
+   - payment must be confirmed;
+   - no receipt for payment proof itself;
+   - no receipt for `payment_correction`.
+
+2. Cardinality:
+   - exactly one receipt per source payment event;
+   - add/enforce DB uniqueness on `receipts.payment_event_id`;
+   - repeated issuance may return existing receipt or stable conflict/idempotent result but never allocate a second number.
+
+3. Number:
+   - `REC-YYYY-NNNN`;
+   - annual `business_document_counters` partition using documentType `receipt`;
+   - counter row locked and incremented in same issuance hard commit;
+   - DB uniqueness on receipt number;
+   - never MAX()+1;
+   - number never accepted from client.
+
+4. Historical snapshot:
+   Freeze all facts required to reconstruct the issued receipt:
+   - receipt number;
+   - minimal customer display identity;
+   - subscription reference;
+   - payment event ID;
+   - payment amount XAF;
+   - payment method;
+   - payment occurredAt;
+   - issuedAt;
+   - allocation breakdown by installment/plan reference and amount;
+   - subscription agreed amount;
+   - paid/balance-after-this-payment as of issuance;
+   - template version.
+   Customer-facing display may use FCFA while persistence/API remain XAF.
+
+5. PDF:
+   - render only from the frozen snapshot;
+   - deterministic French PDF;
+   - scan/store privately with SHA-256, opaque name and immutable document version;
+   - `receipts.pdf_document_id` becomes a proper FK to documents if missing;
+   - receipt-owned PDF cannot be changed through generic personalized-document routes.
+
+6. Sharing:
+   - secure token bound to exact receipt/PDF action;
+   - random bearer, hash-only DB;
+   - expiry, revocation, usage limit, rate limit;
+   - successful/failed access in external_access_events;
+   - raw bearer never logged/audited.
+
+7. Corrections:
+   - later payment corrections never mutate receipt number/snapshot/PDF;
+   - receipt read model derives current source-payment correction state separately from historical receipt snapshot.
+
+8. Void:
+   - explicit named command only;
+   - allow only when source payment is fully corrected (correctable amount = 0 / full compensation according to S6.1 authoritative history);
+   - partial correction does not allow void;
+   - void records voidedAt and private voidReason;
+   - original PDF remains preserved.
+
+9. Preservation:
+   - voided receipts never deleted;
+   - receipt number never reused;
+   - no re-issuance under another number for the same payment.
+
+10. Public void behavior:
+   - historical public page/PDF access remains possible while token is otherwise valid;
+   - page clearly marks `Annulé` and current source-payment correction state;
+   - do not rewrite original PDF unless a separate future legal requirement explicitly demands a void-stamped derivative; not S6.4.
+
+11. Explicit issuance:
+   - coach clicks `Émettre le reçu`;
+   - S6.1 manual payment and S6.3 proof-confirmation transactions remain independent of Chromium/ClamAV receipt work.
+
+12. Out of scope:
+   - invoices;
+   - refunds/reimbursements;
+   - credit notes/avoirs;
+   - VAT/tax/fiscal engine;
+   - provider APIs;
+   - automatic email/WhatsApp delivery;
+   - accounting export;
+   - automatic bulk receipt generation.
+
+### Suggested schema hardening
+- `receipts.payment_event_id` unique;
+- `receipts.pdf_document_id` FK -> documents.id;
+- add immutable snapshot JSON or explicit snapshot columns sufficient for historical PDF/read reconstruction;
+- add templateVersion if snapshot JSON does not contain it;
+- keep voidReason private;
+- receipt state derived from `voidedAt` unless a status column is proven necessary.
+
+Inspect existing receipt rows before migration. No destructive migration.
+
+### API proposal
+Admin:
+- GET /admin/subscriptions/:subscriptionId/receipts
+- GET /admin/receipts/:receiptId
+- POST /admin/payment-events/:paymentEventId/receipt
+- GET /admin/receipts/:receiptId/pdf
+- POST /admin/receipts/:receiptId/share
+- POST /admin/receipt-links/:tokenId/revoke
+- POST /admin/receipts/:receiptId/void
+
+Public:
+- GET /public/receipts/:token
+- GET /public/receipts/:token/pdf
+
+No generic receipt-status PATCH.
+
+### Issuance hard commit
+1. resolve/lock payment event and its subscription/customer scope;
+2. require confirmed `payment_received`;
+3. lock/check existing receipt for payment event;
+4. reconstruct authoritative payment/allocation state at issuance;
+5. build immutable receipt snapshot;
+6. lock/increment annual receipt counter;
+7. render deterministic PDF to temporary/private staging;
+8. scan/store artifact;
+9. insert receipt + document linkage + snapshot;
+10. write audit;
+11. commit;
+12. compensate temporary/finalized file on rollback according to existing hard-commit pattern.
+
+A receipt must never exist as a usable issued record without its required PDF.
+
+### Concurrency
+Mandatory integration cases:
+- concurrent duplicate issue -> exactly one receipt/number/PDF;
+- receipt issue vs source payment correction -> deterministic lock ordering and no inconsistent snapshot;
+- counter rollback/failure -> no duplicate number or orphan receipt;
+- concurrent void commands -> one void transition;
+- partial-correction vs void race -> void cannot win unless payment is fully corrected.
+
+### Audit
+Suggested events:
+- receipt.issued
+- receipt.link_issued
+- receipt.link_revoked
+- receipt.voided
+
+Safe metadata:
+- receiptId
+- receiptNumber
+- paymentEventId
+- subscriptionId
+- documentId/versionId
+- amountXaf
+- paymentMethod
+- allocationCount
+- structural state
+
+Exclude:
+- raw token
+- customer PII
+- external payment reference
+- voidReason
+- free text
+- PDF content
+
+### Validation target
+- only confirmed payment_received is issuable;
+- correction events rejected;
+- one receipt per payment;
+- annual sequence concurrent safety;
+- snapshot uses authoritative allocation/payment state;
+- historical PDF unchanged after later customer/subscription/payment changes;
+- deterministic PDF hashes for identical snapshot;
+- private storage/scan/SHA linkage;
+- token hash-only/expiry/revoke/use-limit;
+- metadata/PDF access semantics;
+- payment correction never rewrites receipt;
+- partial correction keeps issued/non-voidable;
+- full correction permits explicit void;
+- void preserves number/PDF/history;
+- public page shows Annulé for voided receipt;
+- audit privacy;
+- subscription lifecycle untouched.
+
+Fred approved the complete S6.4 plan above. Implementation is authorized on main, server-first. Sprint 6 is not closed until Fred locally validates S6.4.

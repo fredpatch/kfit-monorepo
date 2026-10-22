@@ -74,3 +74,31 @@ test("document revocation revokes all version-bound active links while preservin
  assert.deepEqual(await repo.execute("",{action:"public-read",rawToken:l1.body.token},anon),{ok:false,error:"DOCUMENT_LINK_REVOKED"});
  assert.deepEqual(await repo.execute("",{action:"public-read",rawToken:l2.body.token},anon),{ok:false,error:"DOCUMENT_LINK_REVOKED"});
 });
+
+test("concurrent version additions allocate distinct immutable version numbers",async()=>{
+ const id=await makeSub();const c=await repo.execute(id,{action:"create-upload",documentType:"meal_plan",file:file("3".repeat(64))},actor);assert.ok(c.ok);
+ const [a,b]=await Promise.all([
+   repo.execute(c.body.document.id,{action:"add-version",file:file("4".repeat(64))},actor),
+   repo.execute(c.body.document.id,{action:"add-version",file:file("5".repeat(64))},actor),
+ ]);
+ assert.ok(a.ok&&b.ok);
+ const detail=await repo.execute(c.body.document.id,{action:"read"},actor);assert.ok(detail.ok);
+ assert.deepEqual(detail.body.document.versions.map((v:any)=>v.versionNumber),[1,2,3]);
+});
+
+test("old link stays bound to v1 after a newer current version is added",async()=>{
+ const id=await makeSub();const c=await repo.execute(id,{action:"create-upload",documentType:"meal_plan",file:file("6".repeat(64))},actor);assert.ok(c.ok);
+ const v1=c.body.document.currentVersionId;const link=await repo.execute(v1,{action:"issue-link",expiresAt:new Date(now.getTime()+60000),maxUses:3},actor);assert.ok(link.ok);
+ const v2=await repo.execute(c.body.document.id,{action:"add-version",file:file("7".repeat(64))},actor);assert.ok(v2.ok);assert.notEqual(v2.body.document.currentVersionId,v1);
+ const meta=await repo.execute("",{action:"public-read",rawToken:link.body.token},anon);assert.ok(meta.ok);assert.equal(meta.body.document.versionNumber,1);
+});
+
+test("public read model and generic audits expose structural data only",async()=>{
+ const id=await makeSub();const c=await repo.execute(id,{action:"create-upload",documentType:"meal_plan",file:file("8".repeat(64))},actor);assert.ok(c.ok);
+ const issued=await repo.execute(c.body.document.currentVersionId,{action:"issue-link",expiresAt:new Date(now.getTime()+60000),maxUses:3},actor);assert.ok(issued.ok);
+ const meta=await repo.execute("",{action:"public-read",rawToken:issued.body.token},anon);assert.ok(meta.ok);
+ assert.deepEqual(Object.keys(meta.body.document).sort(),["documentType","expiresAt","requiresVerification","versionNumber"]);
+ const rows=await db.select().from(auditEvents).where(eq(auditEvents.entityId,c.body.document.id));assert.ok(rows.length>=2);
+ const serialized=JSON.stringify(rows.map(r=>r.metadataJson));
+ assert.ok(!serialized.includes(issued.body.token));assert.ok(!serialized.includes("plan.pdf"));assert.ok(!serialized.includes("storageKey"));
+});

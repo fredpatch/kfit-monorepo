@@ -42,3 +42,15 @@ test("public issue input defaults to three uses and rejects invalid limits",asyn
   await service.execute(id,"issue-link",{expiresAt},actor); assert.equal(seen.maxUses,3);
   assert.deepEqual(await service.execute(id,"issue-link",{expiresAt,maxUses:0},actor),{ok:false,error:"DOCUMENT_INVALID_INPUT"});
 });
+
+test("thrown DB failure also removes finalized file",async()=>{
+  const removed:string[]=[];
+  const storage={
+    async persist(){return {storageKey:"22222222-2222-4222-8222-222222222222.pdf",originalFilename:"plan.pdf",mimeType:"application/pdf" as const,sizeBytes:8,sha256:"b".repeat(64)};},
+    async read(){return Buffer.from("x");}, async remove(key:string){removed.push(key);}
+  };
+  const repository:DocumentRepository={async execute(){throw new Error("synthetic-db-failure");},async summaryData(){return {ok:false,error:"DOCUMENT_NOT_FOUND"};}};
+  const service=new DocumentsService(repository,storage,{templateVersion:"v1",async render(){return Buffer.from("%PDF-");}});
+  await assert.rejects(service.upload(id,"meal_plan",{bytes:Buffer.from("%PDF-"),mimeType:"application/pdf",originalFilename:"plan.pdf"},actor),/synthetic-db-failure/);
+  assert.equal(removed.length,1);
+});

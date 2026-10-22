@@ -30,6 +30,13 @@ export class PrivateDocumentStorage {
     if (!(mimeType in signatures)) throw new DocumentStorageError("DOCUMENT_FILE_TYPE_UNSUPPORTED");
     const mime = mimeType as SupportedDocumentMime;
     if (!signatures[mime](bytes)) throw new DocumentStorageError("DOCUMENT_FILE_SIGNATURE_INVALID");
+    if (originalFilename) {
+      const extension = path.extname(originalFilename).slice(1).toLowerCase();
+      const allowedExtensions = mime === "application/pdf" ? ["pdf"]
+        : mime === "image/jpeg" ? ["jpg", "jpeg"]
+        : mime === "image/png" ? ["png"] : ["webp"];
+      if (!allowedExtensions.includes(extension)) throw new DocumentStorageError("DOCUMENT_FILE_SIGNATURE_INVALID");
+    }
     return mime;
   }
   private scan(bytes: Buffer): Promise<void> {

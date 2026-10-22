@@ -11,6 +11,7 @@ import { LegacySubscriptionRedirect, SubscriptionPreparationRoute, SubscriptionR
 /* Screens load on demand: keeps the first load small (charts, tables, legacy screens). */
 const PublicAppointmentPage = lazy(() => import("../appointments/components/PublicAppointmentPage.js").then((m) => ({ default: m.PublicAppointmentPage })));
 const PublicDocumentPage = lazy(() => import("../documents/components/PublicDocumentPage.js").then((m) => ({ default: m.PublicDocumentPage })));
+const PublicQuotePage = lazy(() => import("../quotes/components/PublicQuotePage.js").then((m) => ({ default: m.PublicQuotePage })));
 const CataloguePage = lazy(() => import("../catalogue/components/CataloguePage.js").then((m) => ({ default: m.CataloguePage })));
 const PublicConsentPage = lazy(() => import("../consents/components/PublicConsentPage.js").then((m) => ({ default: m.PublicConsentPage })));
 const ClientsPage = lazy(() => import("../customers/components/ClientsPage.js").then((m) => ({ default: m.ClientsPage })));
@@ -58,6 +59,7 @@ export function App() {
         <Route path="/" element={<Legacy><PublicCataloguePage /></Legacy>} />
         <Route path="/appointment" element={<Legacy><PublicAppointmentPage /></Legacy>} />
         <Route path="/document/:token" element={<Suspense fallback={null}><PublicDocumentPage /></Suspense>} />
+        <Route path="/devis/:token" element={<Suspense fallback={null}><PublicQuotePage /></Suspense>} />
         <Route path="/consent" element={<Legacy><PublicConsentPage /></Legacy>} />
         <Route path="/questionnaire" element={<Legacy><PublicQuestionnairePage /></Legacy>} />
 

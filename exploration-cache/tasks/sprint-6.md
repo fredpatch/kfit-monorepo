@@ -441,3 +441,598 @@ Remaining Gate 2:
 Repository merge note:
 - merge commit `ee793c2` accidentally persisted literal conflict markers in `TASKS.md` and this file;
 - documentation state was repaired afterward without changing S6.1 business implementation.
+
+
+## S6.2 — Fred-approved implementation request, 2026-10-22
+
+Implement K'FIT Sprint 6 slice S6.2 only.
+
+Branch: main
+Workflow state: APPROVED_FOR_IMPLEMENTATION
+
+Before coding inspect:
+- TASKS.md
+- exploration-cache/tasks/sprint-6.md
+- exploration-cache/project/database-schema.md
+- exploration-cache/project/relational-contract.md
+- exploration-cache/project/state-machines.md
+- exploration-cache/project/decisions.md
+- exploration-cache/technical/gotchas.md
+- packages/server/src/db/schema/finance.ts
+- packages/server/src/db/schema/documents.ts
+- current documents/secure-token implementation
+- current subscription/request conversion implementation
+- current S6.1 finance module
+
+Do NOT implement S6.3, payment-proof review, receipts, refunds, credits, extras, analytics or Sprint 7 work.
+
+==================================================
+GOAL
+==================================================
+
+Implement versioned quotations with:
+
+- existing subscription/customer ownership;
+- immutable issued quote versions;
+- deterministic quote PDF generation;
+- secure temporary public quote access;
+- explicit customer response:
+  accepted
+  declined
+  changes_requested
+- explicit coach synchronization after acceptance;
+- no automatic subscription mutation from public acceptance.
+
+==================================================
+LOCKED BUSINESS RULES
+==================================================
+
+1. Quote lifecycle location
+Quotes are created only for an existing subscription/customer after request conversion.
+
+Server derives:
+- customerId from subscription
+- requestId from subscription.sourceRequestId when present
+- subscriptionId from route/context
+
+Do not create customers or subscriptions from the quote flow.
+
+2. Official quote numbering
+Draft quote has no official final number.
+
+First issue allocates:
+
+DEV-YYYY-NNNN
+
+Example:
+DEV-2026-0001
+
+Use Concurrent Sequential Numbering:
+- PostgreSQL-backed counter
+- annual partition
+- row lock
+- allocate inside the same transaction as first issuance
+- database uniqueness constraint
+- never MAX(number)+1
+- never accept number from client
+
+Reissuing a later version of the same quote keeps the same quote number.
+
+3. Version immutability
+Draft version may be edited.
+
+Once version is issued:
+- amount frozen
+- service snapshot frozen
+- terms snapshot frozen
+- validity/expiry frozen
+- PDF frozen
+- no update path may edit it
+
+Changes require creation of version N+1.
+
+Previous versions remain reconstructable.
+
+4. Public response
+Closed response vocabulary:
+- accepted
+- declined
+- changes_requested
+
+Secure access:
+- random bearer
+- hash only stored
+- scoped to exact quote version and quote-response action
+- expiry
+- revocation
+- rate limiting
+- external access audit
+- no raw token in audit/log/database metadata
+
+Viewing metadata/PDF does NOT accept the quote.
+
+Successful response is single-use/idempotent.
+
+5. PDF
+Generate deterministic French PDF from quote-version snapshots.
+
+Do NOT render from:
+- live React DOM
+- mutable service catalogue
+- live subscription fields after issue
+
+Use:
+Authoritative snapshot
+→ normalized print model
+→ pinned template version
+→ Puppeteer renderer
+→ private stored PDF/document version
+
+Reuse the existing private document/PDF infrastructure where practical.
+
+quote_versions.pdf_document_id must link the generated artifact.
+
+Customer-facing currency label:
+FCFA
+
+Persistent/API currency:
+XAF
+
+Do not invent production legal language.
+
+6. Acceptance vs synchronization
+Public acceptance:
+- records immutable acceptance evidence
+- updates quote/version lifecycle only
+- DOES NOT mutate subscription.agreed_price_xaf
+- DOES NOT change service
+- DOES NOT change variant
+- DOES NOT change duration
+- DOES NOT change components
+- DOES NOT change payment plan
+- DOES NOT change subscription status
+
+Coach must invoke explicit synchronization command.
+
+Synchronization:
+- requires accepted current/selected quote version
+- stores exact accepted quote-version reference on subscription or equivalent authoritative linkage
+- may update subscription.agreed_price_xaf if safe
+- does not alter service/variant/components/duration in S6.2
+
+If accepted quote amount differs from current agreedPriceXaf:
+- allow synchronization only if there is no authoritative finance activity that would become inconsistent
+- finance activity includes committed/active/settled payment plan, confirmed payment event, or payment allocation for subscription
+- if incompatible finance activity exists, reject with typed conflict
+- never rewrite ledger/history
+
+7. Validity and terms
+Quote expiry/validity is explicit coach input.
+Commercial terms are explicit input/configured business data.
+
+Do not auto-generate legal clauses.
+
+==================================================
+STATE MODEL
+==================================================
+
+Quote parent suggested states:
+- draft
+- issued
+- accepted
+- declined
+- changes_requested
+- cancelled
+
+Version states should preferably be derived from timestamps/response evidence rather than redundant mutable flags where possible.
+
+Only named commands transition state.
+
+No generic PATCH status.
+
+Expected lifecycle examples:
+
+draft
+→ issue V1
+→ accepted
+
+draft
+→ issue V1
+→ changes_requested
+→ create V2 draft
+→ issue V2
+→ accepted
+
+draft
+→ issue V1
+→ declined
+
+Issued/accepted versions remain immutable forever.
+
+Creating V2 must not destroy V1 acceptance/response history.
+
+==================================================
+SCHEMA HARDENING
+==================================================
+
+Inspect existing rows before migration.
+
+Likely required changes:
+
+quotes:
+- quoteNumber nullable until first issue
+- currentVersionId proper FK if absent
+- status constraints/indexes as appropriate
+
+quote_versions:
+- pdfDocumentId FK if appropriate
+- validity/expiry field
+- issuedAt
+- acceptedAt
+- declinedAt
+- changesRequestedAt or equivalent response representation
+- immutable snapshot fields sufficient to render historical PDF
+- possibly templateVersion
+- possibly response evidence/reference
+
+subscriptions:
+- acceptedQuoteVersionId nullable FK or equivalent exact-version authoritative linkage
+
+numbering:
+- introduce/reuse a generic business-document counters table if project design supports future receipts
+- annual quote partition
+- row locking
+
+secure_access_tokens:
+reuse existing polymorphic mechanism.
+Suggested:
+resourceType = quote_version
+action = quote_response
+
+Do not invent a second public-token table.
+
+If the existing schema makes a materially different but safer minimal design obvious, explain it before implementing that deviation.
+
+No destructive migration.
+
+==================================================
+SNAPSHOT CONTENT
+==================================================
+
+At issuance snapshot all facts needed for historical rendering.
+
+At minimum:
+- quote number
+- quote version number
+- customer display identity needed for document
+- service label
+- variant label if applicable
+- quoted amount XAF
+- duration/commercial facts actually shown
+- issue date
+- valid-until date
+- explicit terms
+- template version
+
+Avoid unnecessary customer PII duplication.
+
+Historical PDFs must not change if:
+- customer later edits profile
+- service renamed
+- variant renamed
+- price catalogue changes
+- subscription later synchronizes
+
+==================================================
+API PROPOSAL
+==================================================
+
+Admin:
+
+GET
+/admin/subscriptions/:subscriptionId/quotes
+
+GET
+/admin/quotes/:quoteId
+
+POST
+/admin/subscriptions/:subscriptionId/quotes
+
+POST
+/admin/quotes/:quoteId/versions
+
+PUT or named POST
+/admin/quote-versions/:versionId/edit-draft
+
+POST
+/admin/quote-versions/:versionId/issue
+
+GET
+/admin/quote-versions/:versionId/pdf
+
+POST
+/admin/quote-versions/:versionId/share
+
+POST
+/admin/quote-links/:tokenId/revoke
+
+POST
+/admin/quote-versions/:versionId/synchronize
+
+POST
+/admin/quotes/:quoteId/cancel
+
+Prefer named commands over generic lifecycle PATCH endpoints.
+
+Public:
+
+GET
+/public/quotes/:token
+
+GET
+/public/quotes/:token/pdf
+
+POST
+/public/quotes/:token/respond
+
+respond body:
+{
+  decision: "accepted" | "declined" | "changes_requested"
+}
+
+If changes_requested needs a customer message:
+do not add free-text by default unless the approved product contract already requires it.
+Prefer a structured response first.
+
+==================================================
+TRANSACTIONS
+==================================================
+
+First issue hard commit transaction:
+
+1. lock quote
+2. lock draft version
+3. validate completeness
+4. allocate annual quote number if parent has none
+5. freeze snapshot
+6. mark version issued
+7. generate/store authoritative PDF according to existing hard-commit/file strategy
+8. update parent currentVersionId/status
+9. write audit
+10. commit
+
+If external/Puppeteer file generation cannot safely execute inside the DB transaction:
+follow the project Hard Commit Point pattern.
+Use prepare → render to temp/private staging → DB transaction finalize → cleanup/compensation.
+Never leave an issued version without its required PDF.
+
+Public response transaction:
+
+1. resolve token hash
+2. lock token
+3. validate expiry/revocation/use
+4. lock quote/version
+5. ensure version still response-eligible
+6. apply accepted/declined/changes_requested
+7. consume token
+8. write external access event
+9. write business audit if appropriate
+10. commit
+
+Concurrent duplicate responses:
+exactly one response wins.
+Replay must not produce conflicting acceptance/decline state.
+
+Synchronization transaction:
+
+1. lock subscription
+2. lock accepted quote/version
+3. verify exact accepted response
+4. inspect finance activity
+5. if amount changes and finance activity exists → typed conflict
+6. update acceptedQuoteVersionId
+7. update agreedPriceXaf only if allowed
+8. do not modify lifecycle/service/variant/components/duration
+9. audit
+10. commit
+
+==================================================
+AUDIT
+==================================================
+
+Suggested events:
+
+quote.created
+quote.version_created
+quote.version_issued
+quote.link_issued
+quote.link_revoked
+quote.accepted
+quote.declined
+quote.changes_requested
+quote.synchronized
+quote.cancelled
+
+Generic audit metadata may contain:
+- quoteId
+- quoteVersionId
+- subscriptionId
+- quoteNumber
+- versionNumber
+- amountXaf
+- transition
+- templateVersion
+- tokenId
+
+Do not put:
+- bearer token
+- customer email/phone/name
+- arbitrary terms text
+- external/private notes
+into generic audit metadata.
+
+Public access attempts use external_access_events.
+
+==================================================
+ERROR TAXONOMY
+==================================================
+
+Create stable QUOTE_* errors aligned with project conventions.
+
+At minimum cover:
+
+QUOTE_NOT_FOUND
+QUOTE_INVALID_INPUT
+QUOTE_INVALID_STATE
+QUOTE_VERSION_IMMUTABLE
+QUOTE_NUMBER_CONFLICT
+QUOTE_VERSION_CONFLICT
+QUOTE_LINK_INVALID
+QUOTE_LINK_EXPIRED
+QUOTE_LINK_REVOKED
+QUOTE_LINK_CONSUMED
+QUOTE_RESPONSE_CONFLICT
+QUOTE_SYNC_REQUIRES_ACCEPTANCE
+QUOTE_SYNC_FINANCE_CONFLICT
+QUOTE_ROUTE_UNEXPECTED_FAILURE
+
+Do not expose raw DB/Puppeteer/storage errors.
+
+==================================================
+CLIENT
+==================================================
+
+After server tests are ready, add French UI integrated into the existing customer/subscription profile pattern.
+
+Admin UI:
+- Devis
+- Nouveau devis
+- Brouillon
+- Émettre
+- Créer une nouvelle version
+- Générer / télécharger PDF
+- Partager
+- Révoquer le lien
+- Synchroniser avec l'abonnement
+
+Show:
+- numéro
+- version
+- montant
+- statut
+- date d'émission
+- validité
+- response customer
+- synchronization state
+
+Public UI:
+- K'FIT branding
+- quote number/version
+- service
+- quoted total in FCFA
+- validity date
+- explicit terms
+- PDF download
+- Accepter
+- Refuser
+- Demander une modification
+
+Clear confirmation before submitting irreversible response.
+
+Responsive + keyboard accessible.
+
+==================================================
+TESTS
+==================================================
+
+Shared/unit/HTTP:
+1. contract validation
+2. XAF integer amounts
+3. invalid states
+4. issued version cannot edit
+5. closed response vocabulary
+6. client cannot submit customerId/number/status/acceptedAt
+7. auth/admin/CSRF
+8. public rate limit
+9. safe error taxonomy
+10. snapshot mapper deterministic
+11. PDF print model contains snapshot values only
+12. sync policy detects finance conflict
+
+PostgreSQL integration:
+1. draft creation derives customer/request/subscription
+2. concurrent first issue yields exactly one unique DEV-YYYY-NNNN number
+3. counter + issue rollback atomically on forced failure
+4. issued version immutable
+5. V2 keeps V1 untouched
+6. old V1 PDF remains historical after catalogue/customer changes
+7. secure token stores hash only
+8. expired link rejected
+9. revoked link rejected
+10. response replay rejected/idempotent
+11. concurrent accept vs decline allows one authoritative result
+12. changes_requested allows later V2
+13. acceptance does not change subscription
+14. sync before finance activity updates allowed commercial fields/reference
+15. sync with same amount and existing finance remains safe if linkage-only
+16. differing amount + finance activity → typed conflict with zero subscription/finance mutation
+17. synchronization never changes service/variant/components/duration/status
+18. audit rollback preserves atomicity
+19. generic audit contains no token/customer PII/terms
+20. PDF document/version linkage remains immutable
+
+Browser Gate 2:
+- create draft
+- edit draft
+- issue V1
+- download PDF
+- issue share link
+- public accept
+- verify subscription unchanged before coach sync
+- coach sync
+- create second quote/version scenario with changes_requested
+- verify V1 historical PDF unchanged
+- expired/revoked/replayed token cases
+- responsive/mobile/keyboard
+- DBeaver inspect quotes, quote_versions, document linkage, tokens, external access events and audits
+
+==================================================
+EXECUTION RULES
+==================================================
+
+Follow:
+
+shared contracts
+→ schema/migration
+→ repository
+→ service
+→ controller
+→ routes
+→ server tests
+→ PostgreSQL integration
+→ client API/UI
+→ static review
+
+Do not mark S6.2 Terminé.
+Do not add S6.2 to changelog.md as validated.
+Do not start S6.3.
+
+At completion return:
+
+1. existing foundation reused
+2. schema changes
+3. numbering design
+4. quote lifecycle
+5. snapshot fields
+6. PDF/storage design
+7. secure-link behavior
+8. response behavior
+9. synchronization rules
+10. routes/contracts
+11. tests + exact results
+12. migration filename
+13. files changed
+14. limitations
+15. exact Fred Gate 2 commands/checks
+
+Stop after S6.2 handoff.

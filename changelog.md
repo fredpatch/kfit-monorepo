@@ -2,6 +2,18 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-22 — Sprint 6.2 versioned quotes and secure acceptance
+
+- Fred confirmed the S6.2 Gate 2 validation checklist "all green": local commands, browser/mobile/keyboard, real scan/storage issuance and DBeaver acceptance.
+- Added versioned subscription/customer-owned quotes with official DEV-YYYY-NNNN numbering allocated under an annual PostgreSQL counter lock at first issuance.
+- Issued commercial snapshots and private PDF artifacts remain immutable; later versions preserve the quote number and historical responses/documents.
+- Added exact-version, hash-only temporary response links with expiry/revocation, rate limiting, explicit accepted/declined/changes_requested decisions and safe access/audit evidence.
+- Public acceptance never changes subscriptions. Explicit coach synchronization records the accepted version and updates price only when compatible with authoritative finance history; lifecycle/service/variant/components/duration remain unchanged.
+- Added French admin Devis and public quote pages with explicit confirmations and FCFA display; persistence/API remain XAF.
+- Generated migration `0010_productive_post.sql` was approved and applied locally after a zero-evidence preflight; no backfill required.
+- Agent evidence: typecheck/build/schema/diff passed; server 400/400, shared 51/51, PostgreSQL 428/428 including 34 quote cases; real Chromium snapshot PDF determinism passed. Reviewer passed with notes; QA passed with limitations before Fred's acceptance. The known unchanged Sprint 3 concurrency flake passed its approved retry.
+- Direct synchronization-versus-finance race coverage remains a documented test gap. Fred explicitly authorized commit/push; S6.3 is not started.
+
 ## 2026-10-22 — Sprint 5 closed
 
 - Sprint 5 is locally validated and closed across S5.1–S5.5.

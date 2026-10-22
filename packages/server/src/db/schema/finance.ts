@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { idColumn, timestamps } from "./_helpers.js";
 import { users } from "./auth.js";
 import { customers, subscriptions } from "./customers.js";
+import { documents } from "./documents.js";
 
 export const paymentPlans = pgTable("payment_plans", {
   id: idColumn(),
@@ -77,12 +78,12 @@ export const paymentProofs = pgTable("payment_proofs", {
 
 export const quotes = pgTable("quotes", {
   id: idColumn(),
-  quoteNumber: text("quote_number").notNull(),
+  quoteNumber: text("quote_number"),
   customerId: uuid("customer_id").notNull().references(() => customers.id, { onDelete: "restrict" }),
   requestId: uuid("request_id"),
   subscriptionId: uuid("subscription_id").references(() => subscriptions.id, { onDelete: "restrict" }),
   status: text("status").notNull().default("draft"),
-  currentVersionId: uuid("current_version_id"),
+  currentVersionId: uuid("current_version_id").references((): AnyPgColumn => quoteVersions.id, { onDelete: "restrict" }),
   ...timestamps,
 }, (t) => [uniqueIndex("quotes_number_uq").on(t.quoteNumber), index("quotes_customer_idx").on(t.customerId, t.status)]);
 
@@ -96,8 +97,18 @@ export const quoteVersions = pgTable("quote_versions", {
   issuedAt: timestamp("issued_at", { withTimezone: true }),
   acceptedAt: timestamp("accepted_at", { withTimezone: true }),
   declinedAt: timestamp("declined_at", { withTimezone: true }),
-  pdfDocumentId: uuid("pdf_document_id"),
+  changesRequestedAt: timestamp("changes_requested_at", { withTimezone: true }),
+  validUntil: timestamp("valid_until", { withTimezone: true }),
+  pdfDocumentId: uuid("pdf_document_id").references(() => documents.id, { onDelete: "restrict" }),
 }, (t) => [uniqueIndex("quote_versions_number_uq").on(t.quoteId, t.versionNumber), check("quote_versions_amount_nonnegative", sql`${t.amountXaf} >= 0`)]);
+
+export const businessDocumentCounters = pgTable("business_document_counters", {
+  id: idColumn(),
+  documentType: text("document_type").notNull(),
+  year: integer("year").notNull(),
+  lastValue: integer("last_value").notNull().default(0),
+}, t => [uniqueIndex("business_document_counters_partition_uq").on(t.documentType, t.year),
+  check("business_document_counters_value_nonnegative", sql`${t.lastValue} >= 0`)]);
 
 export const receipts = pgTable("receipts", {
   id: idColumn(),

@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "preflight:finance": "npm run preflight:finance --workspace @kfit/server",
+    "preflight:quotes": "npm run preflight:quotes --workspace @kfit/server",
     "preflight:progress-goals": "npm run preflight:progress-goals --workspace @kfit/server",
     "preflight:follow-ups": "npm run preflight:follow-ups --workspace @kfit/server",
     "preflight:appointments": "npm run preflight:appointments --workspace @kfit/server",

@@ -18,3 +18,4 @@ export * from "./time/business-time.js";
 export * from "./dashboard/contracts.js";
 export * from "./documents/contracts.js";
 export * from "./finance/contracts.js";
+export * from "./quotes/contracts.js";

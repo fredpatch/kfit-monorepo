@@ -162,7 +162,7 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
     }
     if(command.action==="add-version"){
       return this.database.transaction(async tx=>{
-        const [doc]=await tx.select().from(documents).where(eq(documents.id,id)).for("update");
+        const [doc]=await tx.select().from(documents).where(and(eq(documents.id,id),eq(documents.ownerType,"subscription"))).for("update");
         if(!doc) return {ok:false,error:"DOCUMENT_NOT_FOUND"};
         if(!["available","draft"].includes(doc.status)) return {ok:false,error:"DOCUMENT_STATUS_INVALID"};
         const versions=await tx.select().from(documentVersions).where(eq(documentVersions.documentId,doc.id)).orderBy(documentVersions.versionNumber).for("update");
@@ -180,13 +180,13 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
     }
     if(command.action==="read"){
       return this.database.transaction(async tx=>{
-        const [doc]=await tx.select().from(documents).where(eq(documents.id,id)); if(!doc) return {ok:false,error:"DOCUMENT_NOT_FOUND"};
+        const [doc]=await tx.select().from(documents).where(and(eq(documents.id,id),eq(documents.ownerType,"subscription"))); if(!doc) return {ok:false,error:"DOCUMENT_NOT_FOUND"};
         return {ok:true,body:{document:await this.detail(tx,doc)}};
       },{isolationLevel:"repeatable read",accessMode:"read only"});
     }
     if(command.action==="revoke" || command.action==="archive"){
       return this.database.transaction(async tx=>{
-        const [doc]=await tx.select().from(documents).where(eq(documents.id,id)).for("update");
+        const [doc]=await tx.select().from(documents).where(and(eq(documents.id,id),eq(documents.ownerType,"subscription"))).for("update");
         if(!doc) return {ok:false,error:"DOCUMENT_NOT_FOUND"};
         if(["revoked","archived","pending_purge","purged"].includes(doc.status)) return {ok:false,error:"DOCUMENT_STATUS_INVALID"};
         const now=this.clock(), next=command.action==="revoke"?"revoked":"archived";
@@ -204,7 +204,7 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
       return this.database.transaction(async tx=>{
         const [version]=await tx.select().from(documentVersions).where(eq(documentVersions.id,id)).for("share");
         if(!version) return {ok:false,error:"DOCUMENT_VERSION_NOT_FOUND"};
-        const [doc]=await tx.select().from(documents).where(eq(documents.id,version.documentId)).for("update");
+        const [doc]=await tx.select().from(documents).where(and(eq(documents.id,version.documentId),eq(documents.ownerType,"subscription"))).for("update");
         if(!doc) return {ok:false,error:"DOCUMENT_NOT_FOUND"};
         if(doc.status!=="available" || version.malwareScanStatus!=="clean" || doc.documentType==="progress_photo") return {ok:false,error:"DOCUMENT_STATUS_INVALID"};
         const raw=createDocumentBearer(), requires=sensitive(doc.documentType), code=requires?createDocumentVerificationCode():undefined;
@@ -234,7 +234,7 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
       return this.database.transaction(async tx=>{
         const [version]=await tx.select().from(documentVersions).where(eq(documentVersions.id,id));
         if(!version) return {ok:false,error:"DOCUMENT_VERSION_NOT_FOUND"};
-        const [doc]=await tx.select().from(documents).where(eq(documents.id,version.documentId));
+        const [doc]=await tx.select().from(documents).where(and(eq(documents.id,version.documentId),eq(documents.ownerType,"subscription")));
         if(!doc) return {ok:false,error:"DOCUMENT_NOT_FOUND"};
         if(version.malwareScanStatus!=="clean" || doc.status==="purged" || doc.status==="pending_purge") return {ok:false,error:"DOCUMENT_STATUS_INVALID"};
         if(command.action==="admin-download-audit") {
@@ -256,7 +256,7 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
         if(state!=="available"){await this.accessEvent(tx,token.id,actor,eventType,state);
           return {ok:false,error:state==="expired"?"DOCUMENT_LINK_EXPIRED":state==="revoked"?"DOCUMENT_LINK_REVOKED":"DOCUMENT_LINK_EXHAUSTED"};}
         const [version]=await tx.select().from(documentVersions).where(eq(documentVersions.id,token.resourceId)).for("share");
-        const [doc]=version?await tx.select().from(documents).where(eq(documents.id,version.documentId)).for("share"):[];
+        const [doc]=version?await tx.select().from(documents).where(and(eq(documents.id,version.documentId),eq(documents.ownerType,"subscription"))).for("share"):[];
         if(!version||!doc||doc.status!=="available"||version.malwareScanStatus!=="clean"){
           await this.accessEvent(tx,token.id,actor,eventType,"revoked"); return {ok:false,error:"DOCUMENT_LINK_REVOKED"};}
         const ctx=context(token.contextJson), verification=ctx.verification;

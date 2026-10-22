@@ -1,5 +1,9 @@
 import { createServerApp } from "./app.js";
 import { FinanceController } from "./modules/finance/controllers/finance.controller.js";
+import { QuotesController } from "./modules/quotes/controllers/quotes.controller.js";
+import { QuotesService } from "./modules/quotes/services/quotes.service.js";
+import { DrizzleQuotesRepository } from "./modules/quotes/repositories/quotes.repository.js";
+import { PuppeteerQuoteRenderer } from "./modules/quotes/services/quote-pdf.renderer.js";
 import { FinanceService } from "./modules/finance/services/finance.service.js";
 import { DrizzleFinanceRepository } from "./modules/finance/repositories/finance.repository.js";
 import { DocumentsController } from "./modules/documents/controllers/documents.controller.js";
@@ -168,6 +172,13 @@ export function createDevelopmentApp() {
 
   return createServerApp({
     financeController: new FinanceController(new FinanceService(new DrizzleFinanceRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
+    quotesController: new QuotesController(new QuotesService(new DrizzleQuotesRepository(db,
+      { auditHashPepper: authConfig.auditHashPepper, tokenPepper: authConfig.otpPepper }, {
+        render: snapshot => new PuppeteerQuoteRenderer().render(snapshot),
+        persist: input => new PrivateDocumentStorage().persist(input),
+        read: key => new PrivateDocumentStorage().read(key),
+        remove: key => new PrivateDocumentStorage().remove(key),
+      }))),
     documentsController,
     progressController: new ProgressController(new ProgressService(new DrizzleProgressRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     followUpsController: new FollowUpsController(followUpsService),

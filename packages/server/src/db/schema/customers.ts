@@ -4,6 +4,7 @@ import { archivedAt, idColumn, timestamps } from "./_helpers.js";
 import { users } from "./auth.js";
 import { services, serviceComponents, serviceVariants } from "./catalogue.js";
 import { prospects, serviceRequests } from "./prospects.js";
+import { quoteVersions } from "./finance.js";
 
 export const customers = pgTable("customers", {
   id: idColumn(),
@@ -28,6 +29,7 @@ export const subscriptions = pgTable("subscriptions", {
   variantId: uuid("variant_id").references(() => serviceVariants.id, { onDelete: "restrict" }),
   status: text("status").notNull(),
   agreedPriceXaf: integer("agreed_price_xaf").notNull(),
+  acceptedQuoteVersionId: uuid("accepted_quote_version_id").references((): AnyPgColumn => quoteVersions.id, { onDelete: "restrict" }),
   currency: text("currency").notNull().default("XAF"),
   durationValueSnapshot: integer("duration_value_snapshot"),
   durationUnitSnapshot: text("duration_unit_snapshot"),

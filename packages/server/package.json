@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "preflight:finance": "node ./scripts/preflight/finance.mjs",
+    "preflight:quotes": "node ./scripts/preflight/quotes.mjs",
     "preflight:progress-goals": "node ./scripts/preflight/progress-goals.mjs",
     "preflight:follow-ups": "node ./scripts/preflight/follow-ups.mjs",
     "preflight:appointments": "node ./scripts/preflight/appointments.mjs",

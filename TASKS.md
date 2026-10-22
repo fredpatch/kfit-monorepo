@@ -5,15 +5,15 @@
 
 ## Now
 
-Sprint 6 S6.1 is implemented on `main`. The former `sprint-5` branch remains historical.
+Sprint 6 S6.1 is closed; Fred validated S6.2 on `main`. The former `sprint-5` branch remains historical.
 
 ```text
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
 Active slice      S6.2 — Versioned quotes + secure customer acceptance
-Workflow state    PLANNING / GATE_1_PENDING
-Last validated    S6.1 — 2026-10-22
-Next action       Planner: inspect S6.2 quote patterns/contracts and prepare Gate 1
+Workflow state    VALIDATED
+Last validated    S6.2 — 2026-10-22
+Next action       Execute Fred-authorized S6.2 commit/push; do not start S6.3
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -27,11 +27,30 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 ## Sprint 6 execution order
 
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED, Fred validated 2026-10-22.
-2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — PLANNING / Gate 1 pending.
-3. S6.3 — Customer payment-proof upload and structured coach review workflow — closed until S6.2 validation.
+2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — VALIDATED by Fred 2026-10-22; commit/push explicitly authorized.
+3. S6.3 — Customer payment-proof upload and structured coach review workflow — not started; requires its own approved scope.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — closed until S6.3 validation.
 
-Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation commit `1050fcb` is locally validated end-to-end by Fred, including browser and DBeaver Gate 2. S6.1 is closed. S6.2 is now the active planning slice; no implementation before Gate 1.
+Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation commit `1050fcb` is locally validated end-to-end by Fred, including browser and DBeaver Gate 2. S6.1 is closed. Fred's pasted S6.2 request explicitly approves implementation on main; the connected backlog confirms Gate 1. The detailed request is appended to the local sprint spec.
+
+### S6.2 execution evidence — 2026-10-22
+
+- Clean tree at start; baseline typecheck passed. Reusing existing quote/document/token tables, private scanned storage and PDF infrastructure; no dependencies or lockfile changes planned.
+- Approved read-only quotes preflight passed using root `.env`, guarded localhost:5433/kfit_dev: zero quotes, quote versions, quote tokens or invalid references. No backfill needed.
+- Fred approved generation and local application of `0010_productive_post.sql`. Generated SQL was inspected: nullable draft numbers, validity/change-response timestamps, current/PDF/accepted-version RESTRICT FKs and annual counter table/partition uniqueness only. Migration applied to verified server `.env` localhost:5433/kfit_dev. Rollback after use must preserve number allocation, responses, PDFs and synchronization references.
+- Shared quote contracts and 14 named admin/public routes implemented. Admin routes enforce admin auth and existing origin/CSRF; public routes enforce rate limiting, scoped hash-only tokens and origin checks.
+- Issuance locks quote/version and annual counter; renders/scans/stores immutable quote PDF within issuance transaction; failures roll back number/version/document/audit and compensate the finalized file. Quote-owned PDFs cannot be changed through personalized-document routes.
+- Public responses never mutate subscriptions. Coach synchronization locks the subscription before quote/version and rejects different-price synchronization when any committed plan or allocation exists; same-price linkage preserves ledger facts. No service/variant/component/duration/status updates.
+- French Devis profile tab and `/devis/:token` customer page implemented using existing components. Response requires confirmation; PDF/metadata reads do not accept or consume the response token. Issued historical PDFs download from stored artifacts.
+- Agent checks: typecheck passed; unit/HTTP/shared 400/400 server and 51/51 shared passed, including real Chromium identical-snapshot PDF hash determinism; production build passed; schema check passed; whitespace diff check passed. Approved final PostgreSQL run passed 428/428 including 34 quote cases. Earlier 422/423 run hit the known unchanged Sprint 3 concurrency failure; its approved retry passed 423/423. That test was not changed.
+- Implementer static review found no remaining blockers after correcting public failure-audit paths. This is not an independent Reviewer/QA verdict. S6.2 is AWAITING_REVIEW, with no human acceptance or validated changelog entry claimed. Existing Vite main-chunk-size warning remains; no dependency/lockfile changes.
+- Independent Reviewer completed Fred's requested review on 2026-10-22: REVIEW PASSED WITH NOTES, no confirmed BLOCKER/MAJOR/MINOR defects; actual tracked/untracked code, migration, contracts and consumers inspected; reviewer `git diff --check` passed. Prior automated counts were inspected as evidence, not rerun. State advanced to AWAITING_QA; no human acceptance claimed.
+- Reviewer notes: integration tests cover synchronization against existing real payments/allocations but do not directly race synchronization against finance creation/payment; subscription lock ordering appears correct by inspection. Issuance holds quote/annual-counter locks through render/scan/storage as designed; real end-to-end scan/storage and browser/mobile/keyboard remain unvalidated by review.
+- Fred requested `.github/agents/qa.agent.md`; independent QA entry gate passed and returned QA PASSED WITH LIMITATIONS on 2026-10-22. Fresh QA `npm test` passed 400 server + 51 shared (including real Chromium PDF determinism); fresh `git diff --check` passed. No feature failure/regression confirmed, no production/test/doc edits by QA, no new servers or DB commands. Prior typecheck/build/schema and PostgreSQL 428/428 (34 quote cases) were inspected, not rerun by QA.
+- QA mapped all 12 shared/unit/HTTP and 20 PostgreSQL criteria to actual assertions. Invalid lifecycle/issued immutability/sync-conflict policy are primarily established through prior PostgreSQL evidence. Live browser/mobile/keyboard, real Chromium-to-ClamAV-to-private-storage issuance and human DB acceptance remain NOT VALIDATED; no browser tools exposed. The direct synchronization-versus-finance race has no dedicated runtime regression; static subscription-lock evidence does not claim one.
+- Fred subsequently confirmed "all green" for the presented Gate 2 checklist on 2026-10-22. S6.2 is VALIDATED: developer-reported local commands, browser/mobile/keyboard, scan/storage and DBeaver acceptance are recorded separately from agent evidence. No new per-command counts or direct synchronization-versus-finance race regression are claimed. Await explicit commit instruction; no commit/push or S6.3 work authorized by this acceptance.
+- Fred subsequently instructed "commit and push" on 2026-10-22, explicitly authorizing Gate 3 and publication of the validated S6.2 changes to main. S6.3 remains outside this authorization.
+- Not validated: live S6.2 UI/mobile/keyboard flows, real end-to-end ClamAV/storage issuance and Fred's DBeaver acceptance. No S6.2 dev server, fixture seed, commit, push, validated changelog entry or S6.3 work.
 
 ## Sprint 5 objective
 
@@ -45,7 +64,7 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — CLOSED, Fred validated 2026-10-21.
 5. S5.5 — Personalized document versioning and secure temporary delivery links — CLOSED, Fred validated 2026-10-22.
 
-S5.1–S5.5 are locally validated and Sprint 5 is closed. Sprint 6 remains planning-only until its first task passes Gate 1.
+S5.1–S5.5 are locally validated and Sprint 5 is closed. S6.1 is closed; S6.2 is active under its approved scope.
 
 ## Blockers
 
@@ -75,13 +94,24 @@ Before production:
 ```text
 Branch            main
 Sprint            6
-Slice             S6.1
-Workflow state    AWAITING_HUMAN_DB_VALIDATION
-Validated         Sprint 5; S6.1 automated suite + browser flow
-Implementation    1050fcb — authoritative subscription ledger
-Next action       Fred: DBeaver inspect finance rows/audits
+Slice             S6.2
+Workflow state    VALIDATED
+Validated         Sprint 5, S6.1 and S6.2 (Fred, 2026-10-22)
+Approved goal     Versioned quotes/PDFs, secure explicit responses, coach synchronization
+Done              Contracts, schema/migration, server, French client and static inspection
+Pending           Execute authorized commit/push and record resulting commit
+Review            REVIEW PASSED WITH NOTES; no confirmed blocker/major/minor defects
+QA                QA PASSED WITH LIMITATIONS; fresh npm test 400 server + 51 shared; no regression confirmed
+Validation        typecheck/build/schema/diff passed; server 400, shared 51, PostgreSQL 428 (34 quote cases)
+Acceptance        S6.2 pasted spec in exploration-cache/tasks/sprint-6.md
+Files/layers      shared/quotes; server/quotes/schema/documents guard; client/quotes/profile/router/proxy
+Human acceptance  Fred confirmed Gate 2 checklist all green; command/browser/mobile/keyboard/scan-storage/DBeaver
+Coverage note     Direct synchronization-versus-finance race has no dedicated automated regression
+Assumptions       Current issued version is public-response eligible; obsolete links cannot respond
+Risks             PDF render/scan holds issuance locks; fixed process-local rate limit; preserve history on rollback
+Next action       Execute authorized S6.2 commit/push; S6.3 remains unstarted
 UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
-Out of scope      S6.2+, refunds, credits, extras, finance analytics and Sprint 7
+Out of scope      S6.3+, refunds, credits, extras, finance analytics and Sprint 7
 ```
 
 ## Refonte UI — suivi

@@ -5,62 +5,35 @@
 
 ## Now
 
-Sprint 6 S6.1 is authorized on `main`. The former `sprint-5` branch remains historical.
+Sprint 6 S6.1 is implemented on `main`. The former `sprint-5` branch remains historical.
 
 ```text
 Branch            main
-<<<<<<< HEAD
-Sprint            6 — Payments, installments, quotes, receipts and proofs
-Active slice      S6.1 — Authoritative payment plans, installments, events and allocations
-Workflow state    AWAITING_REVIEW
-Last validated    S5.4 — 2026-10-21
-Next action       Reviewer: inspect S6.1 diff; QA and Fred local acceptance remain open
-=======
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
 Active slice      S6.1 — Financial ledger: plans, installments, payments, allocations
-Workflow state    APPROVED_FOR_IMPLEMENTATION
+Workflow state    AWAITING_HUMAN_DB_VALIDATION
 Last validated    Sprint 5 — closed 2026-10-22
-Next action       IDE Implementer: implement S6.1 server-first only; stop before S6.2
->>>>>>> 83f8639031348be71b14a3eeea3d95cc9eac1932
+Next action       Fred: DBeaver finance/audit inspection; close S6.1 only if green
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
 UX next           close UX-10 locally, then UX-11
 ```
 
-<<<<<<< HEAD
-## S6.1 execution notes — 2026-10-22
-
-- Fred authorized the pasted S6.1 request as the detailed approved spec and allowed synchronizing local notes; saved verbatim at `exploration-cache/tasks/sprint-6.md`.
-- S6.1 authorization supersedes the former Sprint 6 sequencing restriction. S5.5 browser acceptance is recorded; Fred's outstanding DBeaver/private-storage acceptance is not claimed complete.
-- Fred returned correction-after-revision handling to Planner, then explicitly approved Planner's recommendation: preserve valid corrections, expose schedule gaps, require explicit replacement scheduling before new payments, atomically supersede/activate on revision, and never silently reopen settled/cancelled plans.
-- Read-only finance preflight passed against root `.env`, guarded localhost:5433/kfit_dev: zero plans/installments/events/allocations, duplicate active plans or invalid references/scopes. No rows changed; additive hardening requires no backfill.
-- Shared contracts drafted. Baseline typecheck and tests passed: server 332/332, shared 47/47. No S6.1 implementation validation or human acceptance claimed.
-- Independent hardening generated via `npm run db:generate`: `0009_puzzling_purifiers.sql`; inspected SQL adds only nullable UUID command identity/unique index, two RESTRICT self-FKs and one-active-plan partial unique index. Fred approved local application; migration applied successfully to verified localhost:5433/kfit_dev.
-- Server contracts/repository/service/controller/protected routes implemented. Closed event types: `payment_received` and `payment_correction`; positive correction allocations reverse the latest original FIFO targets first. Generic audits exclude external references and free text. No subscription writes.
-- French Finance profile area implemented with server-derived balances/statuses, installment/history views and explicit create/activate/revise/cancel/payment/correction commands. Unchanged payment retries preserve their command identity and the dialog's original input maximum after a lost response.
-- Agent validation passed: typecheck; 371/371 server tests; 49/49 shared tests; approved real PostgreSQL integration 394/394 (46 S6.1 cases); production build; schema check; diff whitespace check. Integration loaded the verified server environment for localhost:5433/kfit_dev. Six finance audit-failure rollback scenarios are covered.
-- Implementer static inspection found no remaining blockers. This is not an independent Reviewer/QA verdict. S6.1 remains AWAITING_REVIEW under WORKFLOW §7; no Fred acceptance or validated changelog entry is claimed.
-- Not validated: S6.1 live browser flows, mobile/keyboard interaction and Fred's DBeaver inspection. Existing Vite main-chunk size warning remains; no dependency or lockfile changes. No S6.1 commit or push performed.
-- S6.2, quotes, proofs, receipts, refunds, credits, extras, analytics and Sprint 7 remain out of scope.
-
-## Sprint 5 objective (historical)
-=======
 ## Sprint 6 objective
 
 Build the authoritative V1 Core finance flow while keeping financial state independent from subscription lifecycle.
 
 ## Sprint 6 execution order
 
-1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — APPROVED_FOR_IMPLEMENTATION.
+1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — IMPLEMENTED; automated + browser validation green; Fred DBeaver inspection pending.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — closed until S6.1 validation.
 3. S6.3 — Customer payment-proof upload and structured coach review workflow — closed until S6.2 validation.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — closed until S6.3 validation.
 
-Planning source: `exploration-cache/tasks/sprint-6.md`. Fred approved S6.1 Gate 1 on 2026-10-22. Implementation is authorized for S6.1 only; S6.2 remains closed.
+Execution source: `exploration-cache/tasks/sprint-6.md`. Fred approved S6.1 Gate 1 on 2026-10-22. Implementation commit `1050fcb` is pushed. Agent validation is green; Fred confirmed browser acceptance. DBeaver inspection remains the final S6.1 Gate 2 check. S6.2 remains closed.
 
 ## Sprint 5 objective
->>>>>>> 83f8639031348be71b14a3eeea3d95cc9eac1932
 
 Build the authoritative subscription/coaching delivery lifecycle after the validated Sprint 4 onboarding foundation.
 
@@ -72,11 +45,7 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — CLOSED, Fred validated 2026-10-21.
 5. S5.5 — Personalized document versioning and secure temporary delivery links — CLOSED, Fred validated 2026-10-22.
 
-<<<<<<< HEAD
-S5.1–S5.4 are locally validated and closed. Fred approved S5.5 Gate 1 on 2026-10-22. Fred subsequently authorized S6.1 explicitly; see current execution notes above. S5.5's outstanding human DB/storage checks remain recorded separately.
-=======
 S5.1–S5.5 are locally validated and Sprint 5 is closed. Sprint 6 remains planning-only until its first task passes Gate 1.
->>>>>>> 83f8639031348be71b14a3eeea3d95cc9eac1932
 
 ## Blockers
 
@@ -105,25 +74,14 @@ Before production:
 
 ```text
 Branch            main
-<<<<<<< HEAD
 Sprint            6
 Slice             S6.1
-Workflow state    AWAITING_REVIEW
-Validated         S5.1, S5.2, S5.3, S5.4
-Approved goal     Authoritative financial ledger using existing finance tables
-Next action       Reviewer: inspect S6.1 diff, then QA; Fred performs Gate 2 local commands/browser/DB checks
+Workflow state    AWAITING_HUMAN_DB_VALIDATION
+Validated         Sprint 5; S6.1 automated suite + browser flow
+Implementation    1050fcb — authoritative subscription ledger
+Next action       Fred: DBeaver inspect finance rows/audits
 UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
 Out of scope      S6.2+, refunds, credits, extras, finance analytics and Sprint 7
-=======
-Sprint            5 — CLOSED
-Validated         S5.1, S5.2, S5.3, S5.4, S5.5
-Closed            2026-10-22
-Next sprint       Sprint 6 — Finance
-First task        Financial ledger: charges, installments, transactions and allocations
-Workflow state    PLANNING_NEXT_SPRINT
-UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
-Rule              No Sprint 6 implementation before planning + Gate 1
->>>>>>> 83f8639031348be71b14a3eeea3d95cc9eac1932
 ```
 
 ## Refonte UI — suivi

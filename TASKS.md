@@ -11,9 +11,9 @@ Sprint 6 S6.1 and S6.2 are validated and closed on `main`. The former `sprint-5`
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
 Active slice      S6.3 — Customer payment-proof upload + structured coach review
-Workflow state    PLANNING / GATE_1_PENDING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    S6.2 — 2026-10-22
-Next action       Planner: define S6.3 proof intake/review invariants and Gate 1
+Next action       IDE Implementer: implement S6.3 server-first only; stop before S6.4
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -28,7 +28,7 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED, Fred validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED, Fred validated 2026-10-22; implementation commit `9fe7e1b`.
-3. S6.3 — Customer payment-proof upload and structured coach review workflow — PLANNING / Gate 1 pending.
+3. S6.3 — Customer payment-proof upload and structured coach review workflow — APPROVED_FOR_IMPLEMENTATION.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — closed until S6.3 validation.
 
 Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation commit `1050fcb` is locally validated end-to-end by Fred, including browser and DBeaver Gate 2. S6.1 is closed. Fred's pasted S6.2 request explicitly approves implementation on main; the connected backlog confirms Gate 1. The detailed request is appended to the local sprint spec.
@@ -1322,3 +1322,25 @@ Fred approved all seven S6.2 planning decisions:
 7. Quote validity and commercial terms are explicit inputs, not invented legal text. Storage/API remain XAF; customer-facing display may use FCFA.
 
 Implementation is authorized for S6.2 only. S6.3 remains closed until Fred locally validates S6.2.
+
+
+## S6.3 Gate 1 — approved 2026-10-22
+
+Fred approved the complete S6.3 payment-proof plan.
+
+Locked decisions:
+- Public customer upload uses a scoped, expiring, revocable, hash-only token for one subscription/payment-proof submission path.
+- Payment-proof files use the existing private scanned document pipeline and remain admin-private; no public proof download link.
+- Upload creates evidence only; it never creates a payment event or changes financial/subscription state.
+- Customer submission includes file + claimed amount + claimed payment method + claimed payment date. These values are untrusted claims until coach review.
+- Closed review outcomes remain: pending_review, confirmed, partially_confirmed, correction_requested, rejected, duplicate, superseded.
+- confirmed / partially_confirmed review creates the authoritative S6.1 payment event + allocations atomically and links proof -> payment event.
+- rejected / correction_requested / duplicate create no payment event.
+- correction requests create replacement evidence through a new proof row with supersedesProofId; historical proof/document evidence is never overwritten.
+- exact duplicate SHA within the same proof lineage is guarded; coach may also explicitly mark duplicate.
+- no unsafe global uniqueness assumption for bank/mobile-money external references.
+- private reviewNote is separate from optional customerMessage; neither enters generic audit metadata.
+- proof confirmation uses the same finance locking/recalculation semantics as S6.1 and must be concurrency-safe against duplicate review and concurrent manual payment.
+- S6.4 remains closed until Fred locally validates S6.3.
+
+Implementation is authorized for S6.3 only.

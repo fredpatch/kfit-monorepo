@@ -4,6 +4,7 @@
 
 ## 2026-10-22 — Sprint 6.3 secure payment proofs and coach review
 
+- Implementation commit: `8edebc7` — `feat(payment-proofs): add secure upload and coach review`.
 - Fred confirmed Gate 2 "all green", explicitly including browser and DBeaver, and authorized commit/push.
 - Added scoped, expiring, revocable, hash-only, single-use customer upload links and French public/admin interfaces in the subscription Finance area.
 - Upload stores private scanned evidence and untrusted claims only. Named full/partial coach confirmation reuses S6.1 payment/FIFO machinery in one transaction with proof linkage and audits; negative outcomes create no money or lifecycle changes.

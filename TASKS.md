@@ -5,15 +5,15 @@
 
 ## Now
 
-Sprint 6 S6.1 and S6.2 are closed on `main`; Fred has validated S6.3 and authorized commit/push. The former `sprint-5` branch remains historical.
+Sprint 6 S6.1, S6.2 and S6.3 are validated and closed on `main`. The former `sprint-5` branch remains historical.
 
 ```text
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
 Active slice      S6.3 — Customer payment-proof upload + structured coach review
-Workflow state    VALIDATED
+Workflow state    CLOSED
 Last validated    S6.3 — 2026-10-22
-Next action       Authorized S6.3 commit and push; no S6.4 implementation
+Next action       Publish authorized S6.3 commits; S6.4 planning/approval remains separate
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -28,8 +28,8 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED, Fred validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED, Fred validated 2026-10-22; implementation commit `9fe7e1b`.
-3. S6.3 — Customer payment-proof upload and structured coach review workflow — VALIDATED by Fred; commit/push authorized.
-4. S6.4 — Sequential payment receipts and secure sharing preparation — closed until S6.3 validation.
+3. S6.3 — Customer payment-proof upload and structured coach review workflow — CLOSED; Fred validated 2026-10-22; implementation commit `8edebc7`.
+4. S6.4 — Sequential payment receipts and secure sharing preparation — planning may begin; implementation requires separate approval.
 
 Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation commit `1050fcb` is locally validated end-to-end by Fred, including browser and DBeaver Gate 2. S6.1 is closed. Fred's pasted S6.2 request explicitly approves implementation on main; the connected backlog confirms Gate 1. The detailed request is appended to the local sprint spec.
 
@@ -50,6 +50,7 @@ Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation com
 - Independent QA then returned QA PASSED WITH LIMITATIONS on 2026-10-22. Fresh QA npm test passed 437/437 server + 53/53 shared; fresh git diff --check passed with existing LF-to-CRLF advisories. QA mapped all 12 unit/HTTP and 28 PostgreSQL acceptance criteria to actual assertions; inspected prior 467/467 database log (39 new proof cases), typecheck/build/schema and real files-preflight evidence without rerunning those commands. No confirmed feature failure/regression; no source/test/doc edits or servers started by QA. No new database/preflight/container/seed commands were run. Browser tools unavailable: live upload/download/forms, mobile/keyboard/focus/console/network and combined browser-to-real-scanner/storage/DB remain NOT VALIDATED. Reviewer coverage note retained. State is AWAITING_HUMAN_VALIDATION; Fred Gate 2, validated changelog, commit/push and S6.4 remain gated.
 
 - Fred subsequently confirmed "all green", explicitly including browser and DBeaver, on 2026-10-22 and authorized commit/push. Gate 2 is accepted on developer-reported evidence; agent counts remain separately recorded above. No additional runtime assertions or coverage are invented. The expiry-during-lock-wait test gap remains documented. S6.4 implementation requires separate authorization.
+- Gate 3 implementation committed as `8edebc7` — `feat(payment-proofs): add secure upload and coach review`. S6.3 is closed after Fred's validation; this documentation update records the implementation hash. Push is explicitly authorized and pending publication. No S6.4 implementation is authorized.
 
 ### S6.2 execution evidence — 2026-10-22
 
@@ -114,11 +115,11 @@ Before production:
 Branch            main
 Sprint            6
 Slice             S6.3
-Workflow state    VALIDATED
+Workflow state    CLOSED
 Validated         Sprint 5, S6.1, S6.2 and S6.3 (Fred, 2026-10-22)
 Approved goal     Secure proof evidence/upload/review; authoritative payments only through S6.1 review transaction
 Done              Contracts, generated/applied migration 0011, server, French client, automated checks, static inspection
-Pending           Authorized commit and push
+Pending           Authorized publication of implementation 8edebc7 and closure notes
 Validation        typecheck/build/db:check passed; server 437/437, shared 53/53, PostgreSQL 467/467; real files preflight passed
 Acceptance        S6.3 detailed request and exact-full/positive-partial clarification in sprint-6.md
 Files/layers      shared/payment-proofs; server/payment-proofs/schema/finance internal transaction entry; client/payment-proofs/Finance/App/proxy
@@ -126,7 +127,7 @@ Human acceptance  Fred reported all green, including browser and DBeaver; no new
 Rules             Evidence is not money; full equals claim; partial positive/lower; no lifecycle mutation/public file download
 Risks             File/DB cleanup compensation, shared finance locks, private-note separation, one active replacement
 Assumptions       No new business assumptions; exact-full/positive-partial rule explicitly approved by Fred
-Next action       Commit and push S6.3 as explicitly authorized; no S6.4 implementation
+Next action       Push as explicitly authorized; separate S6.4 planning/approval before implementation
 UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
 Out of scope      S6.4+, receipts, refunds, OCR/provider APIs, notifications, finance analytics and Sprint 7
 ```

@@ -52,6 +52,22 @@ Next action       Planner: inspect S5.5 only
 ```
 
 
+## Refonte UI — besoins Sprint 7 (fidélité maquette)
+
+> Canvas « K'FIT — Refonte UI ». Items the redesign could not reproduce for lack of API/rules; review them when planning Sprint 7.
+> Notion backlog: UX-9c, [API·UX] Séries temporelles, Endpoint agrégé des KPI, Statistiques de l'entonnoir, Prénom dans la session.
+
+### Board 02 — Aujourd'hui (UX-9 + UX-9b on `main`; reserved slots in place)
+
+- [ ] **Weekly requests chart** — requests received per business week (Mon–Sun, Africa/Libreville); periods 4 sem. / 8 sem. / 12 mois (monthly buckets for 12 mois); current week highlighted; tooltip `N demandes · 6–12 oct.`. Replaces the « Historique disponible au Sprint 7 » card.
+- [ ] **Conversion rate** in that chart's header (`47 sur 8 semaines · taux de conversion 38 %`) — depends on funnel counting rules (still open, Fred).
+- [ ] **KPI sparklines** — 8 weekly points for: clientes actives (end-of-week value), suivis en retard (end-of-week value), nouvelles demandes, séances réalisées. `KpiTile` already takes `trend` + `trendLabel`.
+- [ ] **KPI delta vs previous period** (`+12 % vs période précédente`) — define the reference period and the favourable direction per KPI (fewer overdue follow-ups = good). `KpiTile` already takes `delta`.
+- [ ] **Greeting with first name** (`Bonjour Konny`) — `/auth/session` returns id + role only; needs a display name on the user (small migration).
+- [x] Section order matches the mockup: KPIs → charts row (Nouvelles demandes + Clientes actives par offre) → À traiter | Rendez-vous du jour + Capacité (UX-9b).
+
+Rule: no invented data in placeholders; real current values only until the series API exists.
+
 ## S5.1 Gate 2 corrective note — questionnaire policy consistency
 
 Status: IMPLEMENTED, awaiting Fred local validation.

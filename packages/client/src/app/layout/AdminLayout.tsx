@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router";
 import { cn } from "../../lib/utils.js";
@@ -129,7 +130,9 @@ export function AdminLayout() {
           <UserMenu />
         </header>
         <main className="w-full max-w-[1240px] flex-1 px-4 pb-28 pt-6 sm:px-8 md:pb-12">
-          <Outlet />
+          <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement…</p>}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
       <MobileNav badges={badges} />

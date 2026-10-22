@@ -12,7 +12,7 @@ function CustomerTable({ customers }: { customers: AdminCustomer[] }) {
       <caption className="muted">Clients actifs</caption>
       <thead><tr><th scope="col">Nom complet</th><th scope="col">WhatsApp</th><th scope="col">E-mail</th><th scope="col">Ville / Pays</th><th scope="col">Contact préféré</th><th scope="col">Créé le</th></tr></thead>
       <tbody>{customers.map(customer => <tr key={customer.id}>
-        <th scope="row">{customer.fullName}</th><td>{customer.whatsapp}</td><td>{customer.email ?? "—"}</td>
+        <th scope="row"><a href={`/admin/clients/${customer.id}`}>{customer.fullName}</a></th><td>{customer.whatsapp}</td><td>{customer.email ?? "—"}</td>
         <td>{[customer.city, customer.country].filter(Boolean).join(" / ") || "—"}</td>
         <td>{channels[customer.preferredContactChannel] ?? "Autre"}</td>
         <td><time dateTime={customer.createdAt}>{new Date(customer.createdAt).toLocaleDateString("fr-FR")}</time></td>

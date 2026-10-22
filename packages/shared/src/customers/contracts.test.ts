@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { adminCustomersApiRoutes, customerErrorCodes, normalizeWhatsapp, type AdminCustomer } from "../index.js";
 
-test("customer routes and stable conflict code expose the approved S4.1 surface", () => {
-  assert.deepEqual(adminCustomersApiRoutes, { list: "/admin/customers", search: "/admin/customers/search", create: "/admin/customers" });
+test("customer routes and stable codes expose the approved S4.1 surface plus the UX-4 read-only profile", () => {
+  assert.deepEqual(adminCustomersApiRoutes, { list: "/admin/customers", search: "/admin/customers/search", create: "/admin/customers", detail: "/admin/customers/:customerId" });
   assert.ok(customerErrorCodes.includes("CUSTOMER_DUPLICATE_WHATSAPP"));
+  assert.ok(customerErrorCodes.includes("CUSTOMER_NOT_FOUND"));
 });
 
 test("WhatsApp normalization preserves Sprint 3 semantics", () => {

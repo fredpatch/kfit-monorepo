@@ -1,5 +1,5 @@
 import axios, { AxiosHeaders } from "axios";
-import { adminCustomersApiRoutes, authCsrfHeaderName, type AdminCustomersResponse, type CreateCustomerInput, type CreateCustomerResponse } from "@kfit/shared";
+import { adminCustomersApiRoutes, authCsrfHeaderName, type AdminCustomerDetailResponse, type AdminCustomersResponse, type CreateCustomerInput, type CreateCustomerResponse } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
 
 const http = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "", withCredentials: true, headers: { accept: "application/json" } });
@@ -19,6 +19,9 @@ export const customersApi = {
   },
   async search(whatsapp: string): Promise<AdminCustomersResponse> {
     return (await http.get<AdminCustomersResponse>(adminCustomersApiRoutes.search, { params: { whatsapp } })).data;
+  },
+  async detail(customerId: string): Promise<AdminCustomerDetailResponse> {
+    return (await http.get<AdminCustomerDetailResponse>(adminCustomersApiRoutes.detail.replace(":customerId", encodeURIComponent(customerId)))).data;
   },
   async create(input: CreateCustomerInput): Promise<CreateCustomerResponse> {
     return (await http.post<CreateCustomerResponse>(adminCustomersApiRoutes.create, input)).data;

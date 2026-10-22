@@ -9,7 +9,7 @@ import type { CustomersController } from "../controllers/customers.controller.js
 
 export function createExpressCustomersRouter(deps: { controller: CustomersController; resolveSession: ExpressAuthSessionResolver }) {
   const router = Router();
-  function handler(action: "list" | "search" | "create") {
+  function handler(action: "list" | "search" | "create" | "detail") {
     return async (request: Request, response: Response) => {
       try {
         const headers: Record<string, string | undefined> = {};
@@ -21,7 +21,7 @@ export function createExpressCustomersRouter(deps: { controller: CustomersContro
           session: await deps.resolveSession(request),
         };
         const guard = action === "create" ? requireSameOrigin(context) ?? requireCsrf(context) : null;
-        const result = guard ?? await deps.controller.handle(context, action, action === "search" ? request.query.whatsapp : request.body);
+        const result = guard ?? await deps.controller.handle(context, action, action === "search" ? request.query.whatsapp : action === "detail" ? request.params.customerId : request.body);
         response.status(result.status).json(result.body);
       } catch {
         response.status(500).json({ error: "CUSTOMER_ROUTE_UNEXPECTED_FAILURE" });
@@ -31,5 +31,7 @@ export function createExpressCustomersRouter(deps: { controller: CustomersContro
   router.get(adminCustomersApiRoutes.list, handler("list"));
   router.get(adminCustomersApiRoutes.search, handler("search"));
   router.post(adminCustomersApiRoutes.create, handler("create"));
+  // Registered after /search so the literal path wins over the parameter.
+  router.get(adminCustomersApiRoutes.detail, handler("detail"));
   return router;
 }

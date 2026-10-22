@@ -5,7 +5,8 @@ import { after, before, test } from "node:test";
 import { eq, inArray } from "drizzle-orm";
 import { db, pool } from "../../../db/client.js";
 import { auditEvents, users } from "../../../db/schema/auth.js";
-import { customers } from "../../../db/schema/customers.js";
+import { customers, subscriptions } from "../../../db/schema/customers.js";
+import { services } from "../../../db/schema/catalogue.js";
 import { prospects } from "../../../db/schema/prospects.js";
 import { DrizzleCustomersRepository } from "../repositories/customers.repository.js";
 import { CustomersService, type NormalizedCustomerInput } from "../services/customers.service.js";
@@ -13,6 +14,7 @@ import { CustomersService, type NormalizedCustomerInput } from "../services/cust
 const userId = randomUUID();
 const prospectId = randomUUID();
 const ids = new Set<string>();
+const subscriptionIds = new Set<string>();
 const phones = new Set<string>();
 const options = { auditHashPepper: "synthetic-integration-pepper-at-least-32-characters" };
 const repository = new DrizzleCustomersRepository(db, options);
@@ -29,6 +31,7 @@ before(async () => {
   await db.insert(users).values({ id: userId, email: `customers-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
 });
 after(async () => {
+  if (subscriptionIds.size) await db.delete(subscriptions).where(inArray(subscriptions.id, [...subscriptionIds]));
   await db.delete(auditEvents).where(eq(auditEvents.actorUserId, userId));
   if (ids.size) await db.delete(customers).where(inArray(customers.id, [...ids]));
   if (phones.size) await db.delete(customers).where(inArray(customers.whatsapp, [...phones]));
@@ -115,4 +118,31 @@ test("PostgreSQL audit insert failure rolls back the inserted customer and relea
   assert.equal(result.status, "ok");
   if (result.status !== "ok") throw new Error("expected retry create");
   assert.equal((await db.select().from(auditEvents).where(eq(auditEvents.entityId, result.customer.id))).length, 1);
+});
+
+test("PostgreSQL customer detail returns the profile with its subscriptions newest first, and null for unknown ids", async () => {
+  const created = await service.createManual(input(), actor);
+  assert.equal(created.status, "ok");
+  if (created.status !== "ok") return;
+  ids.add(created.customer.id);
+  const [catalogueService] = await db.select({ id: services.id, name: services.name, slug: services.slug }).from(services).limit(1);
+  assert.ok(catalogueService, "integration requires at least one seeded catalogue service");
+  const older = { id: randomUUID(), reference: `SUB-IT-${randomUUID()}`, customerId: created.customer.id, serviceId: catalogueService.id, status: "completed", agreedPriceXaf: 1000, createdAt: new Date("2026-01-01T00:00:00Z") };
+  const newer = { id: randomUUID(), reference: `SUB-IT-${randomUUID()}`, customerId: created.customer.id, serviceId: catalogueService.id, status: "onboarding", agreedPriceXaf: 2000, renewedFromSubscriptionId: older.id };
+  subscriptionIds.add(newer.id); subscriptionIds.add(older.id);
+  await db.insert(subscriptions).values(older);
+  await db.insert(subscriptions).values(newer);
+
+  const result = await service.getDetail(created.customer.id);
+  assert.equal(result.status, "ok");
+  if (result.status !== "ok") return;
+  assert.equal(result.detail.customer.id, created.customer.id);
+  assert.deepEqual(result.detail.subscriptions.map((sub) => [sub.id, sub.status, sub.serviceName, sub.serviceSlug, sub.variantId]), [
+    [newer.id, "onboarding", catalogueService.name, catalogueService.slug, null],
+    [older.id, "completed", catalogueService.name, catalogueService.slug, null],
+  ]);
+  assert.equal(result.detail.subscriptions[0]?.renewedFromSubscriptionId, older.id);
+  assert.deepEqual(await service.getDetail(randomUUID()), { status: "not_found" });
+  await db.delete(subscriptions).where(inArray(subscriptions.id, [newer.id, older.id]));
+  subscriptionIds.clear();
 });

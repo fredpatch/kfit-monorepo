@@ -1,7 +1,8 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
-import type { AdminCustomer } from "@kfit/shared";
+import type { AdminCustomer, AdminCustomerDetailResponse } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
-import { customers } from "../../../db/schema/customers.js";
+import { customers, subscriptions } from "../../../db/schema/customers.js";
+import { serviceVariants, services } from "../../../db/schema/catalogue.js";
 import { AuditService } from "../../auth/services/audit.service.js";
 import type { CustomerActorContext, CustomersRepository, NormalizedCustomerInput } from "../services/customers.service.js";
 
@@ -34,6 +35,35 @@ export class DrizzleCustomersRepository implements CustomersRepository {
 
   async listActive(): Promise<AdminCustomer[]> {
     return (await this.database.select(fields).from(customers).where(active).orderBy(desc(customers.createdAt), customers.id)).map(toDto);
+  }
+
+  async getDetail(customerId: string): Promise<AdminCustomerDetailResponse | null> {
+    const [customer] = await this.database.select(fields).from(customers).where(and(active, eq(customers.id, customerId))).limit(1);
+    if (!customer) return null;
+    const rows = await this.database
+      .select({
+        id: subscriptions.id, reference: subscriptions.reference, status: subscriptions.status,
+        serviceId: subscriptions.serviceId, serviceName: services.name, serviceSlug: services.slug,
+        variantId: subscriptions.variantId, variantName: serviceVariants.name, agreedPriceXaf: subscriptions.agreedPriceXaf,
+        plannedStartDate: subscriptions.plannedStartDate, actualStartDate: subscriptions.actualStartDate,
+        plannedEndDate: subscriptions.plannedEndDate, actualEndDate: subscriptions.actualEndDate,
+        renewedFromSubscriptionId: subscriptions.renewedFromSubscriptionId, createdAt: subscriptions.createdAt,
+      })
+      .from(subscriptions)
+      .innerJoin(services, eq(services.id, subscriptions.serviceId))
+      .leftJoin(serviceVariants, eq(serviceVariants.id, subscriptions.variantId))
+      .where(eq(subscriptions.customerId, customerId))
+      .orderBy(desc(subscriptions.createdAt), subscriptions.id);
+    const iso = (value: Date | null) => (value ? value.toISOString() : null);
+    return {
+      customer: toDto(customer),
+      subscriptions: rows.map((row) => ({
+        ...row,
+        plannedStartDate: iso(row.plannedStartDate), actualStartDate: iso(row.actualStartDate),
+        plannedEndDate: iso(row.plannedEndDate), actualEndDate: iso(row.actualEndDate),
+        createdAt: row.createdAt.toISOString(),
+      })),
+    };
   }
 
   async searchActive(whatsapp: string): Promise<AdminCustomer[]> {

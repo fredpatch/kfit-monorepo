@@ -15,7 +15,7 @@ const customer = { id: "33333333-3333-3333-3333-333333333333", fullName: "Synthe
 const csrf = "synthetic-csrf-token";
 const headers = { "content-type": "application/json", cookie: `${authCookieNames.csrfToken}=${csrf}`, "x-csrf-token": csrf };
 async function withServer(run: (url: string) => Promise<void>, auth: AuthenticatedSessionContext | null = session, overrides: Partial<CustomersRepository> = {}) {
-  const repository: CustomersRepository = { async listActive() { return [customer]; }, async searchActive() { return [customer]; }, async createManual() { return { status: "ok", customer }; }, ...overrides };
+  const repository: CustomersRepository = { async listActive() { return [customer]; }, async searchActive() { return [customer]; }, async createManual() { return { status: "ok", customer }; }, async getDetail() { return { customer, subscriptions: [] }; }, ...overrides };
   const app = express();
   app.use(express.json());
   app.use(createExpressCustomersRouter({ controller: new CustomersController(new CustomersService(repository)), resolveSession: () => auth }));
@@ -30,11 +30,11 @@ for (const role of [null, "coach"] as const) {
   test(`all customer routes reject ${role ?? "unauthenticated"} callers before persistence`, async () => {
     const fail = async (): Promise<never> => assert.fail("unauthorized persistence access");
     await withServer(async url => {
-      for (const [path, method] of [["/admin/customers", "GET"], ["/admin/customers/search?whatsapp=123456", "GET"], ["/admin/customers", "POST"]] as const) {
+      for (const [path, method] of [["/admin/customers", "GET"], ["/admin/customers/search?whatsapp=123456", "GET"], ["/admin/customers", "POST"], [`/admin/customers/${customer.id}`, "GET"]] as const) {
         const response = await fetch(url + path, { method, headers, ...(method === "POST" ? { body: "{}" } : {}) });
         assert.equal(response.status, role ? 403 : 401);
       }
-    }, role ? { ...session, role } : null, { listActive: fail, searchActive: fail, createManual: fail });
+    }, role ? { ...session, role } : null, { listActive: fail, searchActive: fail, createManual: fail, getDetail: fail });
   });
 }
 
@@ -85,10 +85,26 @@ test("customer HTTP duplicate is a stable 409 conflict", async () => {
 test("customer HTTP persistence failures do not expose PII or internal causes", async () => {
   const fail = async (): Promise<never> => { throw new Error("secret database detail"); };
   await withServer(async url => {
-    for (const [path, method] of [["/admin/customers", "GET"], ["/admin/customers/search?whatsapp=123456", "GET"], ["/admin/customers", "POST"]] as const) {
+    for (const [path, method] of [["/admin/customers", "GET"], ["/admin/customers/search?whatsapp=123456", "GET"], ["/admin/customers", "POST"], [`/admin/customers/${customer.id}`, "GET"]] as const) {
       const response = await fetch(url + path, { method, headers, ...(method === "POST" ? { body: JSON.stringify(customer) } : {}) });
       assert.equal(response.status, 500);
       assert.deepEqual(await response.json(), { error: "CUSTOMER_ROUTE_UNEXPECTED_FAILURE" });
     }
-  }, session, { listActive: fail, searchActive: fail, createManual: fail });
+  }, session, { listActive: fail, searchActive: fail, createManual: fail, getDetail: fail });
+});
+
+test("customer detail returns the profile, 404 for unknown ids, 400 for malformed ids, and keeps /search routed", async () => {
+  await withServer(async url => {
+    const ok = await fetch(`${url}/admin/customers/${customer.id}`, { headers });
+    assert.equal(ok.status, 200);
+    assert.deepEqual(await ok.json(), { customer, subscriptions: [] });
+    const missing = await fetch(`${url}/admin/customers/44444444-4444-4444-4444-444444444444`, { headers });
+    assert.equal(missing.status, 404);
+    assert.deepEqual(await missing.json(), { error: "CUSTOMER_NOT_FOUND" });
+    const malformed = await fetch(`${url}/admin/customers/not-a-uuid`, { headers });
+    assert.equal(malformed.status, 400);
+    const search = await fetch(`${url}/admin/customers/search?whatsapp=%2B24100000000`, { headers });
+    assert.equal(search.status, 200);
+    assert.deepEqual(await search.json(), { customers: [customer] });
+  }, session, { async getDetail(id) { return id === customer.id ? { customer, subscriptions: [] } : null; } });
 });

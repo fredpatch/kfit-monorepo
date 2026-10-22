@@ -1,0 +1,243 @@
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { NavLink, useParams, useSearchParams } from "react-router";
+import { isAxiosError } from "axios";
+import { Mail, MapPin, MessageCircle, Phone, Plus } from "lucide-react";
+import type { AdminCustomerSubscriptionSummary } from "@kfit/shared";
+import { customersApi } from "../../customers/api/customers-api.js";
+import { SubscriptionLifecyclePanel } from "../../subscriptions/components/AdminSubscriptionPage.js";
+import { OnboardingPanel, isOnboardingEditable } from "../../onboarding/components/AdminOnboardingPage.js";
+import { AdminAppointmentsPanel } from "../../appointments/components/AdminAppointmentsPanel.js";
+import { AdminFollowUpsPanel } from "../../follow-ups/components/AdminFollowUpsPanel.js";
+import { AdminProgressPanel } from "../../progress/components/AdminProgressPanel.js";
+import { AdminConsentPanel } from "../../consents/components/AdminConsentPanel.js";
+import { AdminQuestionnairePanel } from "../../questionnaires/components/AdminQuestionnairePanel.js";
+import { Avatar } from "../../components/ui/avatar.js";
+import { Button } from "../../components/ui/button.js";
+import { EmptyState } from "../../components/ui/empty-state.js";
+import { StatusPill } from "../../components/ui/status-pill.js";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs.js";
+import { Tooltip } from "../../components/ui/tooltip.js";
+import { cn } from "../../lib/utils.js";
+import { describeStatus, subscriptionStatus } from "../../lib/status-map.js";
+import { familyMeta, familyOfSlug } from "../../lib/families.js";
+import { defaultSubscription, deriveClientStatus } from "../../lib/client-status.js";
+import { AdminPage, LegacyEmbed as Legacy } from "../layout/AdminPage.js";
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Tabs of the client profile (board 03). « Analyse » arrives in a later step. */
+export const profileTabs = [
+  { value: "apercu", label: "Aperçu" },
+  { value: "rendez-vous", label: "Rendez-vous" },
+  { value: "suivis", label: "Suivis" },
+  { value: "preparation", label: "Préparation" },
+  { value: "progression", label: "Progression" },
+  { value: "sante", label: "Santé et consentements" },
+] as const;
+type ProfileTab = (typeof profileTabs)[number]["value"];
+
+const dateFr = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+const waLink = (phone: string) => `https://wa.me/${phone.replace(/[^0-9]/g, "")}`;
+
+function SubscriptionChip({ subscription, selected, onSelect }: { subscription: AdminCustomerSubscriptionSummary; selected: boolean; onSelect: () => void }) {
+  const family = familyOfSlug(subscription.serviceSlug);
+  const status = describeStatus(subscriptionStatus, subscription.status);
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onSelect}
+      className={cn(
+        "flex min-h-9 items-center gap-2 rounded-md border px-3 py-1.5 text-left text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        selected ? "border-primary bg-brand-50 ring-1 ring-primary" : "border-border bg-card hover:bg-muted",
+      )}
+    >
+      <span aria-hidden="true" className={cn("size-2 shrink-0 rounded-[2px]", familyMeta[family].dotClass)} />
+      <span className="whitespace-nowrap tabular-nums">{subscription.reference.length > 16 ? subscription.reference.slice(0, 12) + "…" : subscription.reference}</span>
+      <span className="text-muted-foreground">·</span>
+      <span>
+        {subscription.serviceName}
+        {subscription.variantName ? ` · ${subscription.variantName}` : ""}
+      </span>
+      <StatusPill size="sm" status={status} />
+    </button>
+  );
+}
+
+export function ClientProfilePage() {
+  const { id = "" } = useParams();
+  const [params, setParams] = useSearchParams();
+  const valid = uuidPattern.test(id);
+  const query = useQuery({ queryKey: ["customers", "detail", id], queryFn: () => customersApi.detail(id), enabled: valid });
+
+  const subscriptions = query.data?.subscriptions ?? [];
+  const requested = params.get("abonnement");
+  const selected = subscriptions.find((s) => s.id === requested) ?? defaultSubscription(subscriptions);
+  const tab = (profileTabs.some((t) => t.value === params.get("onglet")) ? params.get("onglet") : "apercu") as ProfileTab;
+
+  const update = (next: Record<string, string>) => {
+    const merged = new URLSearchParams(params);
+    for (const [k, v] of Object.entries(next)) merged.set(k, v);
+    setParams(merged, { replace: true });
+  };
+
+  // Keep the selected subscription in the URL so links and reloads land on the same one.
+  useEffect(() => {
+    if (selected && requested !== selected.id) update({ abonnement: selected.id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.id]);
+
+  if (!valid || (query.isError && isAxiosError(query.error) && (query.error.response?.status === 404 || query.error.response?.status === 400))) {
+    return (
+      <AdminPage title="Fiche client">
+        <EmptyState
+          title="Client introuvable"
+          description="Ce lien ne correspond à aucune fiche active."
+          action={
+            <Button asChild variant="secondary">
+              <NavLink to="/admin/clients">Voir les clients</NavLink>
+            </Button>
+          }
+        />
+      </AdminPage>
+    );
+  }
+  if (query.isError) {
+    return (
+      <AdminPage title="Fiche client">
+        <EmptyState title="Impossible de charger la fiche" description="Vérifie ta connexion puis réessaie." action={<Button variant="secondary" onClick={() => void query.refetch()}>Réessayer</Button>} />
+      </AdminPage>
+    );
+  }
+  if (query.isPending || !query.data) {
+    return (
+      <AdminPage title="Fiche client">
+        <p role="status" className="text-sm text-muted-foreground">
+          Chargement de la fiche…
+        </p>
+      </AdminPage>
+    );
+  }
+
+  const { customer } = query.data;
+  const clientStatus = deriveClientStatus(subscriptions);
+  const place = [customer.city, customer.country].filter(Boolean).join(", ");
+
+  return (
+    <AdminPage
+      title={customer.fullName}
+      breadcrumb={
+        <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <NavLink to="/admin/clients" className="font-semibold text-primary hover:underline">
+            Clients
+          </NavLink>
+          <span aria-hidden="true">/</span>
+          <span className="font-semibold text-foreground">{customer.fullName}</span>
+        </nav>
+      }
+    >
+
+      {/* Header (board 03) */}
+      <section className="flex flex-col gap-5 rounded-xl border border-border bg-card p-5 sm:p-6">
+        <div className="flex flex-wrap items-center gap-5">
+          <Avatar name={customer.fullName} size="lg" />
+          <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <StatusPill status={clientStatus} />
+            </div>
+            <ul className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-muted-foreground">
+              <li className="flex items-center gap-1.5 tabular-nums">
+                <Phone className="size-3.5" aria-hidden="true" />
+                {customer.whatsapp}
+                {customer.preferredContactChannel === "whatsapp" ? " · WhatsApp préféré" : ""}
+              </li>
+              {customer.email ? (
+                <li className="flex items-center gap-1.5">
+                  <Mail className="size-3.5" aria-hidden="true" />
+                  {customer.email}
+                </li>
+              ) : null}
+              {place ? (
+                <li className="flex items-center gap-1.5">
+                  <MapPin className="size-3.5" aria-hidden="true" />
+                  {place}
+                </li>
+              ) : null}
+              <li>Fiche créée le {dateFr(customer.createdAt)}</li>
+            </ul>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="whatsapp">
+              <a href={waLink(customer.whatsapp)} target="_blank" rel="noreferrer">
+                <MessageCircle aria-hidden="true" />
+                WhatsApp
+              </a>
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-4">
+          <span className="mr-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Abonnements</span>
+          {subscriptions.map((s) => (
+            <SubscriptionChip key={s.id} subscription={s} selected={s.id === selected?.id} onSelect={() => update({ abonnement: s.id })} />
+          ))}
+          <Tooltip content="Création depuis la fiche : bientôt. Pour l'instant, convertis une demande.">
+            <span>
+              <Button variant="secondary" size="sm" className="border-dashed" disabled>
+                <Plus aria-hidden="true" />
+                Nouvel abonnement
+              </Button>
+            </span>
+          </Tooltip>
+        </div>
+      </section>
+
+      {!selected ? (
+        <EmptyState title="Aucun abonnement" description="Cette fiche n'a pas encore d'abonnement. Il apparaîtra ici après la conversion d'une demande." />
+      ) : (
+        <Tabs value={tab} onValueChange={(value) => update({ onglet: value })}>
+          <TabsList aria-label="Sections de la fiche" className="overflow-x-auto">
+            {profileTabs.map((t) => (
+              <TabsTrigger key={t.value} value={t.value}>
+                {t.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {/* Panels keep their current look in this step; Aperçu and Progression are rebuilt next (board 03 / 08). */}
+          <TabsContent value="apercu">
+            <Legacy>
+              <SubscriptionLifecyclePanel key={selected.id} id={selected.id} sections={false} />
+            </Legacy>
+          </TabsContent>
+          <TabsContent value="rendez-vous">
+            <Legacy>
+              <AdminAppointmentsPanel key={selected.id} subscriptionId={selected.id} />
+            </Legacy>
+          </TabsContent>
+          <TabsContent value="suivis">
+            <Legacy>
+              <AdminFollowUpsPanel key={selected.id} subscriptionId={selected.id} />
+            </Legacy>
+          </TabsContent>
+          <TabsContent value="preparation">
+            <Legacy>
+              <OnboardingPanel key={selected.id} subscriptionId={selected.id} health={false} />
+            </Legacy>
+          </TabsContent>
+          <TabsContent value="progression">
+            <Legacy>
+              <AdminProgressPanel key={selected.id} subscriptionId={selected.id} />
+            </Legacy>
+          </TabsContent>
+          <TabsContent value="sante">
+            <Legacy>
+              <AdminConsentPanel key={`c-${selected.id}`} subscriptionId={selected.id} editable={isOnboardingEditable(selected.status)} />
+              <AdminQuestionnairePanel key={`q-${selected.id}`} subscriptionId={selected.id} editable={isOnboardingEditable(selected.status)} />
+            </Legacy>
+          </TabsContent>
+        </Tabs>
+      )}
+    </AdminPage>
+  );
+}

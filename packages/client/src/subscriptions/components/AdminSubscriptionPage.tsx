@@ -11,7 +11,7 @@ const actions: Record<SubscriptionCommand, string> = { activate: "Démarrer", pa
 const units: Record<string, string> = { day: "jour(s)", week: "semaine(s)", month: "mois" };
 const format = (value: string | null) => value ? new Date(value).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" }) : "Non définie";
 /** Subscription lifecycle (legacy UI until UX-4). Opened from /admin/abonnements/:id. */
-export function SubscriptionLifecyclePanel({ id }: { id: string }) {
+export function SubscriptionLifecyclePanel({ id, sections = true }: { id: string; /** false on the client profile, which shows these sections in their own tabs. */ sections?: boolean }) {
   const client = useQueryClient(), key = ["subscription-lifecycle", id] as const;
   const query = useQuery({ queryKey: key, queryFn: () => subscriptionsApi.get(id) });
   const [action, setAction] = useState<SubscriptionCommand | null>(null), [reason, setReason] = useState(""), [end, setEnd] = useState(""), [start, setStart] = useState(""), [override, setOverride] = useState(false);
@@ -43,6 +43,7 @@ export function SubscriptionLifecyclePanel({ id }: { id: string }) {
     try {
       const response = await mutation.mutateAsync({ command: selected, input }); client.setQueryData(key, response);
       await client.invalidateQueries({ queryKey: ["onboarding", id] });
+      await client.invalidateQueries({ queryKey: ["customers", "detail"] });
       await client.invalidateQueries({ queryKey: ["appointments", id] }); setAction(null); setNotice("Décision enregistrée.");
       await client.invalidateQueries({ queryKey: ["follow-ups", id] });
       await client.invalidateQueries({ queryKey: ["progress", id] });
@@ -73,9 +74,11 @@ export function SubscriptionLifecyclePanel({ id }: { id: string }) {
         <div className="onboarding-actions"><button type="submit" disabled={pending}>{pending ? "Enregistrement…" : "Confirmer la décision"}</button><button type="button" disabled={pending} onClick={() => setAction(null)}>Fermer</button></div>
       </form>}
     </section>
+    {sections && <>
     <AdminAppointmentsPanel subscriptionId={id} />
     <AdminFollowUpsPanel subscriptionId={id} />
     <AdminProgressPanel subscriptionId={id} />
+    </>}
     <section className="customers-panel"><h3>Prestations convenues</h3>{view.components.length === 0 ? <p>Aucune prestation enregistrée.</p> : <ul className="onboarding-items">{view.components.map(c => <li key={c.id}><strong>{c.labelSnapshot}</strong><p>{c.quantityEntitled} prévue(s) · {c.quantityConsumed} réalisée(s) · {c.quantityOwedByCoach} due(s) par le coach</p></li>)}</ul>}</section>
     <section className="customers-panel"><h3>Renouvellements</h3>{view.renewedFromSubscriptionId ? <p>Abonnement précédent : <a href={`/admin/abonnements/${view.renewedFromSubscriptionId}`}>Ouvrir le précédent</a></p> : <p>Aucun abonnement précédent.</p>}
       {view.renewalChild ? <><p>Renouvellement : <a href={`/admin/abonnements/${view.renewalChild.id}`}>{view.renewalChild.reference}</a></p><a href={`/admin/abonnements/${view.renewalChild.id}/preparation`}>Préparer le nouvel abonnement</a></> : <p>Aucun renouvellement créé.</p>}

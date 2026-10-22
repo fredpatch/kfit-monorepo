@@ -1,4 +1,4 @@
-import { normalizeWhatsapp, type AdminCustomer } from "@kfit/shared";
+import { normalizeWhatsapp, type AdminCustomer, type AdminCustomerDetailResponse } from "@kfit/shared";
 
 export type NormalizedCustomerInput = {
   fullName: string;
@@ -22,7 +22,15 @@ export interface CustomersRepository {
   listActive(): Promise<AdminCustomer[]>;
   searchActive(whatsapp: string): Promise<AdminCustomer[]>;
   createManual(input: NormalizedCustomerInput, actor: CustomerActorContext): Promise<Exclude<CreateCustomerResult, { status: "invalid" }>>;
+  /** Active customer with all their subscriptions (any status), newest first. Null when unknown, archived or anonymized. */
+  getDetail(customerId: string): Promise<AdminCustomerDetailResponse | null>;
 }
+export type CustomerDetailResult =
+  | { status: "ok"; detail: AdminCustomerDetailResponse }
+  | { status: "not_found" }
+  | { status: "invalid"; reason: string };
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function text(value: unknown, max: number): string | null {
   return typeof value === "string" && value.trim().length > 0 && value.trim().length <= max ? value.trim() : null;
@@ -43,6 +51,13 @@ export class CustomersService {
 
   listActive(): Promise<AdminCustomer[]> {
     return this.repository.listActive();
+  }
+
+  /** Read-only client profile (UX-4). No business rule changes: it only aggregates existing rows. */
+  async getDetail(customerId: unknown): Promise<CustomerDetailResult> {
+    if (typeof customerId !== "string" || !uuidPattern.test(customerId)) return { status: "invalid", reason: "customer_id_invalid" };
+    const detail = await this.repository.getDetail(customerId.toLowerCase());
+    return detail ? { status: "ok", detail } : { status: "not_found" };
   }
 
   async search(whatsapp: unknown): Promise<{ status: "ok"; customers: AdminCustomer[] } | { status: "invalid"; reason: string }> {

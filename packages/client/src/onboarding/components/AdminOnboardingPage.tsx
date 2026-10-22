@@ -11,7 +11,12 @@ const lifecycle: Record<string, string> = { onboarding: "En préparation", ready
 function date(value: string | null) { return value ? new Date(value).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" }) : "Non définie"; }
 
 /** Subscription preparation (legacy UI until UX-4). Opened from /admin/abonnements/:id/preparation. */
-export function OnboardingPanel({ subscriptionId }: { subscriptionId: string }) {
+/** Consents and questionnaire can be changed only while the subscription is being prepared. */
+export function isOnboardingEditable(subscriptionStatus: string): boolean {
+  return subscriptionStatus === "onboarding";
+}
+
+export function OnboardingPanel({ subscriptionId, health = true }: { subscriptionId: string; /** false on the client profile, which shows consents and questionnaire in their own tab. */ health?: boolean }) {
   const client = useQueryClient(); const key = ["onboarding", subscriptionId] as const;
   const query = useQuery({ queryKey: key, queryFn: () => onboardingApi.get(subscriptionId), refetchInterval: 30_000 });
   const [error, setError] = useState<string | null>(null); const [notice, setNotice] = useState<string | null>(null);
@@ -29,7 +34,7 @@ export function OnboardingPanel({ subscriptionId }: { subscriptionId: string }) 
   if (query.isError || !query.data) return <div role="alert"><p className="error">{onboardingErrorMessage(query.error)}</p><button type="button" onClick={() => void query.refetch()}>Réessayer</button></div>;
   const view = query.data.onboarding; const pending = mutation.isPending;
   const state = view.onboardingState === "ready" ? "Exigences satisfaites" : view.onboardingState === "stalled" ? "Réservation expirée — reprise nécessaire" : "Préparation bloquée";
-  const editable = view.subscription.status === "onboarding";
+  const editable = isOnboardingEditable(view.subscription.status);
   return <div className="onboarding-grid">
     <section className="customers-panel">
       <h2>Abonnement {view.subscription.reference}</h2>
@@ -70,8 +75,10 @@ export function OnboardingPanel({ subscriptionId }: { subscriptionId: string }) 
         </form>}
       </>}
     </section>
+    {health && <>
     <AdminConsentPanel subscriptionId={subscriptionId} editable={editable} />
     <AdminQuestionnairePanel subscriptionId={subscriptionId} editable={editable} />
+    </>}
     <section className="customers-panel"><h3>Prêt à démarrer</h3>
       <p className="muted">Toutes les exigences bloquantes et la capacité doivent être validées avant ce changement d’état.</p>
       <button type="button" disabled={pending || !view.canReady} onClick={() => void change(() => onboardingApi.ready(subscriptionId), "Abonnement prêt à démarrer.")}>Confirmer « Prêt à démarrer »</button>

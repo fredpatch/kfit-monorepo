@@ -4,7 +4,7 @@ import { CustomersService, type CustomersRepository, type NormalizedCustomerInpu
 
 const actor = { userId: "11111111-1111-1111-1111-111111111111", requestId: "customer-test", ipAddress: null, userAgent: null };
 function repository(overrides: Partial<CustomersRepository> = {}): CustomersRepository {
-  return { async listActive() { return []; }, async searchActive() { return []; }, async createManual() { return { status: "duplicate" }; }, ...overrides };
+  return { async listActive() { return []; }, async searchActive() { return []; }, async createManual() { return { status: "duplicate" }; }, async getDetail() { return null; }, ...overrides };
 }
 
 test("customer manual creation trims input, normalizes WhatsApp, defaults channel and ignores caller-owned linkage", async () => {
@@ -39,4 +39,12 @@ test("customer service returns duplicate conflicts and propagates persistence fa
   assert.deepEqual(await new CustomersService(repository()).createManual(input, actor), { status: "duplicate" });
   const service = new CustomersService(repository({ async createManual() { throw new Error("audit failed"); } }));
   await assert.rejects(service.createManual(input, actor), /audit failed/);
+});
+
+test("customer detail validates the id before persistence and maps a missing customer to not_found", async () => {
+  const guarded = new CustomersService(repository({ async getDetail() { assert.fail("invalid id reached repository"); } }));
+  for (const value of [undefined, null, 42, "", "not-a-uuid", "33333333-3333-3333-3333-33333333333"]) assert.equal((await guarded.getDetail(value)).status, "invalid");
+  const id = "33333333-3333-3333-3333-333333333333";
+  const service = new CustomersService(repository({ async getDetail(customerId) { assert.equal(customerId, id); return null; } }));
+  assert.deepEqual(await service.getDetail(id.toUpperCase()), { status: "not_found" });
 });

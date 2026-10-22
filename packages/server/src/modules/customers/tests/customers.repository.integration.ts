@@ -208,3 +208,42 @@ test("PostgreSQL analytics source reads only this customer's rows and feeds the 
     subscriptionIds.clear();
   }
 });
+
+test("PostgreSQL overview returns enriched rows for active customers only, with batched cadence, next appointment and counts", async () => {
+  const created = await service.createManual(input(), actor);
+  const archived = await service.createManual(input(), actor);
+  assert.ok(created.status === "ok" && archived.status === "ok");
+  if (created.status !== "ok" || archived.status !== "ok") return;
+  ids.add(created.customer.id); ids.add(archived.customer.id);
+  await db.update(customers).set({ archivedAt: new Date() }).where(eq(customers.id, archived.customer.id));
+  const [catalogueService] = await db.select({ id: services.id }).from(services).limit(1);
+  assert.ok(catalogueService, "integration requires at least one seeded catalogue service");
+  const day = 86_400_000, now = Date.now();
+  const active = { id: randomUUID(), reference: `SUB-IT-${randomUUID()}`, customerId: created.customer.id, serviceId: catalogueService.id, status: "active", agreedPriceXaf: 1000,
+    actualStartDate: new Date(now - 12 * day), followUpFrequencyDaysOverride: 7, createdAt: new Date(now - 13 * day) };
+  const preparing = { id: randomUUID(), reference: `SUB-IT-${randomUUID()}`, customerId: created.customer.id, serviceId: catalogueService.id, status: "onboarding", agreedPriceXaf: 1000 };
+  const hidden = { id: randomUUID(), reference: `SUB-IT-${randomUUID()}`, customerId: archived.customer.id, serviceId: catalogueService.id, status: "active", agreedPriceXaf: 1000 };
+  subscriptionIds.add(active.id); subscriptionIds.add(preparing.id); subscriptionIds.add(hidden.id);
+  await db.insert(subscriptions).values([active, preparing, hidden]);
+  const [next] = await db.insert(appointments).values({ subscriptionId: active.id, scheduledStart: new Date(now + 2 * day), scheduledEnd: new Date(now + 2 * day + 3_600_000), status: "confirmed" }).returning({ id: appointments.id });
+  assert.ok(next);
+  try {
+    const overview = await service.getOverview();
+    assert.equal(overview.customers.some((row) => row.customer.id === archived.customer.id), false);
+    const row = overview.customers.find((r) => r.customer.id === created.customer.id);
+    assert.ok(row);
+    assert.equal(row.clientStatus, "active");
+    assert.equal(row.currentSubscription?.id, active.id);
+    assert.equal(row.otherOpenSubscriptions, 1);
+    assert.equal(row.cadence?.state, "overdue");
+    assert.equal(row.cadence?.overdueByDays, 5);
+    assert.equal(row.nextAppointment?.id, next.id);
+    assert.equal(row.lastContactAt, active.actualStartDate.toISOString());
+    assert.deepEqual(row.views, ["all", "active", "overdue"]);
+    assert.equal(overview.counts.all, overview.customers.length);
+  } finally {
+    await db.delete(appointments).where(eq(appointments.id, next.id));
+    await db.delete(subscriptions).where(inArray(subscriptions.id, [active.id, preparing.id, hidden.id]));
+    subscriptionIds.clear();
+  }
+});

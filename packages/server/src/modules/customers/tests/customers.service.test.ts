@@ -4,7 +4,7 @@ import { CustomersService, type CustomersRepository, type NormalizedCustomerInpu
 
 const actor = { userId: "11111111-1111-1111-1111-111111111111", requestId: "customer-test", ipAddress: null, userAgent: null };
 function repository(overrides: Partial<CustomersRepository> = {}): CustomersRepository {
-  return { async listActive() { return []; }, async searchActive() { return []; }, async createManual() { return { status: "duplicate" }; }, async getDetail() { return null; }, async getAnalyticsSource() { return null; }, ...overrides };
+  return { async listActive() { return []; }, async searchActive() { return []; }, async createManual() { return { status: "duplicate" }; }, async getDetail() { return null; }, async getAnalyticsSource() { return null; }, async getOverviewSource() { return { customers: [], subscriptions: [], completedAppointments: [], followUps: [], upcomingAppointments: [] }; }, ...overrides };
 }
 
 test("customer manual creation trims input, normalizes WhatsApp, defaults channel and ignores caller-owned linkage", async () => {

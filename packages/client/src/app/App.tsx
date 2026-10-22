@@ -12,7 +12,7 @@ import { LegacySubscriptionRedirect, SubscriptionPreparationRoute, SubscriptionR
 const PublicAppointmentPage = lazy(() => import("../appointments/components/PublicAppointmentPage.js").then((m) => ({ default: m.PublicAppointmentPage })));
 const AdminCatalogueCapacityPage = lazy(() => import("../catalogue/components/AdminCatalogueCapacityPage.js").then((m) => ({ default: m.AdminCatalogueCapacityPage })));
 const PublicConsentPage = lazy(() => import("../consents/components/PublicConsentPage.js").then((m) => ({ default: m.PublicConsentPage })));
-const AdminCustomersPage = lazy(() => import("../customers/components/AdminCustomersPage.js").then((m) => ({ default: m.AdminCustomersPage })));
+const ClientsPage = lazy(() => import("../customers/components/ClientsPage.js").then((m) => ({ default: m.ClientsPage })));
 const AdminFollowUpQueuePage = lazy(() => import("../follow-ups/components/AdminFollowUpQueuePage.js").then((m) => ({ default: m.AdminFollowUpQueuePage })));
 const AdminQuestionnaireTemplatesPage = lazy(() => import("../questionnaires/components/AdminQuestionnaireTemplatesPage.js").then((m) => ({ default: m.AdminQuestionnaireTemplatesPage })));
 const PublicQuestionnairePage = lazy(() => import("../questionnaires/components/PublicQuestionnairePage.js").then((m) => ({ default: m.PublicQuestionnairePage })));
@@ -92,14 +92,7 @@ export function App() {
               </AdminPage>
             }
           />
-          <Route
-            path="clients"
-            element={
-              <AdminPage title="Clients" description="Retrouve un client par WhatsApp ou crée sa fiche." legacy>
-                <AdminCustomersPage />
-              </AdminPage>
-            }
-          />
+          <Route path="clients" element={<ClientsPage />} />
           <Route path="clients/:id" element={<ClientProfilePage />} />
           <Route path="abonnements/:id" element={<SubscriptionRoute />} />
           <Route path="abonnements/:id/preparation" element={<SubscriptionPreparationRoute />} />

@@ -1,5 +1,5 @@
 import axios, { AxiosHeaders } from "axios";
-import { adminCustomersApiRoutes, authCsrfHeaderName, type AdminCustomerDetailResponse, type AdminCustomersResponse, type CreateCustomerInput, type CreateCustomerResponse,
+import { adminCustomersApiRoutes, authCsrfHeaderName, type AdminCustomerDetailResponse, type AdminCustomerOverviewResponse, type AdminCustomersResponse, type CreateCustomerInput, type CreateCustomerResponse,
   type CustomerAnalyticsPeriod, type CustomerAnalyticsResponse } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
 
@@ -17,6 +17,10 @@ http.interceptors.request.use(config => {
 export const customersApi = {
   async list(): Promise<AdminCustomersResponse> {
     return (await http.get<AdminCustomersResponse>(adminCustomersApiRoutes.list)).data;
+  },
+  /** Enriched list with view counts (UX-5). */
+  async overview(): Promise<AdminCustomerOverviewResponse> {
+    return (await http.get<AdminCustomerOverviewResponse>(adminCustomersApiRoutes.overview)).data;
   },
   async search(whatsapp: string): Promise<AdminCustomersResponse> {
     return (await http.get<AdminCustomersResponse>(adminCustomersApiRoutes.search, { params: { whatsapp } })).data;

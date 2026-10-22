@@ -3,13 +3,14 @@ import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/
 import type { CustomersService } from "../services/customers.service.js";
 
 export class CustomersController {
-  constructor(private readonly service: Pick<CustomersService, "listActive" | "search" | "createManual" | "getDetail" | "getAnalytics">) {}
+  constructor(private readonly service: Pick<CustomersService, "listActive" | "search" | "createManual" | "getDetail" | "getAnalytics" | "getOverview">) {}
 
-  async handle(context: AuthHttpRequestContext, action: "list" | "search" | "create" | "detail" | "analytics", input?: unknown): Promise<HttpJsonResponse> {
+  async handle(context: AuthHttpRequestContext, action: "list" | "search" | "create" | "detail" | "analytics" | "overview", input?: unknown): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
     if (auth.session.role !== "admin") return { status: 403, body: { error: "CUSTOMER_ADMIN_FORBIDDEN" } };
     if (action === "list") return { status: 200, body: { customers: await this.service.listActive() } };
+    if (action === "overview") return { status: 200, body: await this.service.getOverview() };
     if (action === "detail") {
       const result = await this.service.getDetail(input);
       if (result.status === "ok") return { status: 200, body: result.detail };

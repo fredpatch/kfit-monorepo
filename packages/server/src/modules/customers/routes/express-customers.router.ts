@@ -7,7 +7,7 @@ import type { ExpressAuthSessionResolver } from "../../auth/routes/express-auth.
 import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js";
 import type { CustomersController } from "../controllers/customers.controller.js";
 
-function input(action: "list" | "search" | "create" | "detail" | "analytics", request: Request): unknown {
+function input(action: "list" | "search" | "create" | "detail" | "analytics" | "overview", request: Request): unknown {
   if (action === "search") return request.query.whatsapp;
   if (action === "detail") return request.params.customerId;
   if (action === "analytics") return { customerId: request.params.customerId, query: { periode: request.query.periode, abonnement: request.query.abonnement } };
@@ -16,7 +16,7 @@ function input(action: "list" | "search" | "create" | "detail" | "analytics", re
 
 export function createExpressCustomersRouter(deps: { controller: CustomersController; resolveSession: ExpressAuthSessionResolver }) {
   const router = Router();
-  function handler(action: "list" | "search" | "create" | "detail" | "analytics") {
+  function handler(action: "list" | "search" | "create" | "detail" | "analytics" | "overview") {
     return async (request: Request, response: Response) => {
       try {
         const headers: Record<string, string | undefined> = {};
@@ -37,8 +37,9 @@ export function createExpressCustomersRouter(deps: { controller: CustomersContro
   }
   router.get(adminCustomersApiRoutes.list, handler("list"));
   router.get(adminCustomersApiRoutes.search, handler("search"));
+  router.get(adminCustomersApiRoutes.overview, handler("overview"));
   router.post(adminCustomersApiRoutes.create, handler("create"));
-  // Registered after /search so the literal path wins over the parameter.
+  // Registered after /search and /overview so the literal paths win over the parameter.
   router.get(adminCustomersApiRoutes.detail, handler("detail"));
   router.get(adminCustomersApiRoutes.analytics, handler("analytics"));
   return router;

@@ -1,5 +1,6 @@
-import { customerAnalyticsPeriods, normalizeWhatsapp, type AdminCustomer, type AdminCustomerDetailResponse, type CustomerAnalytics, type CustomerAnalyticsPeriod } from "@kfit/shared";
+import { customerAnalyticsPeriods, normalizeWhatsapp, type AdminCustomer, type AdminCustomerOverviewResponse, type AdminCustomerDetailResponse, type CustomerAnalytics, type CustomerAnalyticsPeriod } from "@kfit/shared";
 import { computeCustomerAnalytics, selectFocusSubscription, type AnalyticsSource } from "./customer-analytics.policy.js";
+import { computeCustomerOverview, type OverviewSource } from "./customer-overview.policy.js";
 
 export type NormalizedCustomerInput = {
   fullName: string;
@@ -27,6 +28,8 @@ export interface CustomersRepository {
   getDetail(customerId: string): Promise<AdminCustomerDetailResponse | null>;
   /** Raw rows for the client analytics (UX-4c). Null when the customer is unknown, archived or anonymized. */
   getAnalyticsSource(customerId: string): Promise<AnalyticsSource | null>;
+  /** Raw rows for the clients overview (UX-5): active customers and their subscription activity. */
+  getOverviewSource(now: Date): Promise<OverviewSource>;
 }
 export type CustomerAnalyticsResult =
   | { status: "ok"; analytics: CustomerAnalytics }
@@ -55,6 +58,12 @@ function phone(value: unknown): string | null {
 
 export class CustomersService {
   constructor(private readonly repository: CustomersRepository, private readonly clock: () => Date = () => new Date()) {}
+
+  /** Read-only clients overview (UX-5): one row per active client + view counts. */
+  async getOverview(): Promise<AdminCustomerOverviewResponse> {
+    const now = this.clock();
+    return computeCustomerOverview(await this.repository.getOverviewSource(now), now);
+  }
 
   /** Read-only client analytics (UX-4c). Query: periode=30j|abonnement|tout (default 30j), abonnement=<subscription id of this customer>. */
   async getAnalytics(customerId: unknown, query: { periode?: unknown; abonnement?: unknown }): Promise<CustomerAnalyticsResult> {

@@ -1,17 +1,11 @@
-import type { AdminCustomerSubscriptionSummary } from "@kfit/shared";
+import { deriveClientStatusKey, pickDefaultSubscription, type AdminCustomerSubscriptionSummary, type ClientStatusKey } from "@kfit/shared";
 import type { StatusDescriptor } from "./status-map.js";
 
 /**
- * Client-level status derived from subscriptions (board 04).
- * Rule proposed in the backlog task « Liste clients enrichie + statut client dérivé » — pending Fred's validation:
- * - Actif if at least one subscription is active
- * - otherwise the most advanced open subscription: Revue de fin > En pause > Prêt à démarrer > En préparation
- * - Ancien client if every subscription is completed or cancelled
- * - Prospect converti if the client has no subscription
+ * Client-level status (board 04). The rule lives in @kfit/shared (validated by Fred on 2026-10-22)
+ * so the clients list (server overview) and the profile header never drift apart; this file only holds wording.
  */
-const openPriority = ["active", "completion_due", "paused", "ready_to_start", "awaiting_payment", "medical_clearance_required", "onboarding"] as const;
-
-const clientLabels: Record<(typeof openPriority)[number] | "former" | "none", StatusDescriptor> = {
+export const clientStatus: Record<ClientStatusKey, StatusDescriptor> = {
   active: { label: "Cliente active", tone: "success" },
   completion_due: { label: "Revue de fin", tone: "warning" },
   paused: { label: "En pause", tone: "warning" },
@@ -24,16 +18,10 @@ const clientLabels: Record<(typeof openPriority)[number] | "former" | "none", St
 };
 
 export function deriveClientStatus(subscriptions: Pick<AdminCustomerSubscriptionSummary, "status">[]): StatusDescriptor {
-  if (subscriptions.length === 0) return clientLabels.none;
-  for (const status of openPriority) if (subscriptions.some((s) => s.status === status)) return clientLabels[status];
-  return clientLabels.former;
+  return clientStatus[deriveClientStatusKey(subscriptions)];
 }
 
 /** Default subscription shown on the profile: the most advanced open one, else the newest. */
 export function defaultSubscription<T extends Pick<AdminCustomerSubscriptionSummary, "status">>(subscriptions: T[]): T | undefined {
-  for (const status of openPriority) {
-    const match = subscriptions.find((s) => s.status === status);
-    if (match) return match;
-  }
-  return subscriptions[0];
+  return pickDefaultSubscription(subscriptions);
 }

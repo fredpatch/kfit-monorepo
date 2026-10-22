@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { adminCustomersApiRoutes, customerAnalyticsPeriods, customerErrorCodes, normalizeWhatsapp, type AdminCustomer } from "../index.js";
+import { adminCustomersApiRoutes, customerAnalyticsPeriods, customerErrorCodes, customerOverviewViews, deriveClientStatusKey, pickDefaultSubscription, normalizeWhatsapp, type AdminCustomer } from "../index.js";
 
-test("customer routes and stable codes expose the approved S4.1 surface plus the UX-4 read-only profile and analytics", () => {
-  assert.deepEqual(adminCustomersApiRoutes, { list: "/admin/customers", search: "/admin/customers/search", create: "/admin/customers", detail: "/admin/customers/:customerId", analytics: "/admin/customers/:customerId/analytics" });
+test("customer routes and stable codes expose the approved S4.1 surface plus the UX-4 profile/analytics and UX-5 overview", () => {
+  assert.deepEqual(adminCustomersApiRoutes, { list: "/admin/customers", search: "/admin/customers/search", create: "/admin/customers", overview: "/admin/customers/overview", detail: "/admin/customers/:customerId", analytics: "/admin/customers/:customerId/analytics" });
+  assert.deepEqual(customerOverviewViews, ["all", "active", "overdue", "preparation", "paused", "former"]);
   assert.deepEqual(customerAnalyticsPeriods, ["30j", "abonnement", "tout"]);
   assert.ok(customerErrorCodes.includes("CUSTOMER_DUPLICATE_WHATSAPP"));
   assert.ok(customerErrorCodes.includes("CUSTOMER_NOT_FOUND"));
@@ -24,4 +25,21 @@ test("customer DTO serializes only the approved fields with explicit nulls and I
   };
   assert.deepEqual(JSON.parse(JSON.stringify(customer)), customer);
   assert.deepEqual(Object.keys(customer).sort(), ["id", "fullName", "whatsapp", "email", "city", "country", "preferredContactChannel", "prospectId", "createdAt"].sort());
+});
+
+test("client status follows the validated priority (2026-10-22)", () => {
+  const of = (...statuses: string[]) => deriveClientStatusKey(statuses.map((status) => ({ status })));
+  assert.equal(of(), "none");
+  assert.equal(of("completed", "cancelled"), "former");
+  assert.equal(of("onboarding", "active", "paused"), "active");
+  assert.equal(of("onboarding", "paused", "completion_due"), "completion_due");
+  assert.equal(of("onboarding", "paused"), "paused");
+  assert.equal(of("onboarding", "ready_to_start"), "ready_to_start");
+  assert.equal(of("medical_clearance_required", "awaiting_payment"), "awaiting_payment");
+  assert.equal(of("onboarding", "medical_clearance_required"), "medical_clearance_required");
+  assert.equal(of("completed", "onboarding"), "onboarding");
+  const subs = [{ id: "new", status: "completed" }, { id: "open", status: "paused" }, { id: "old", status: "onboarding" }];
+  assert.equal(pickDefaultSubscription(subs)?.id, "open");
+  assert.equal(pickDefaultSubscription([{ id: "a", status: "completed" }, { id: "b", status: "cancelled" }])?.id, "a");
+  assert.equal(pickDefaultSubscription([]), undefined);
 });

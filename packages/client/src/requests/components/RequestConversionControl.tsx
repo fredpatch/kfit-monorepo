@@ -20,7 +20,7 @@ export function RequestConversionControl({ request, onConverted }: { request: Ad
   const subscriptionId = result?.subscription.id ?? request.convertedSubscriptionId;
 
   async function refresh() {
-    await Promise.all([onConverted(), queryClient.invalidateQueries({ queryKey: ["customers", "admin-list"] })]);
+    await Promise.all([onConverted(), queryClient.invalidateQueries({ queryKey: ["customers"] })]);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {

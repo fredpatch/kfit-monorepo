@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, or, sql } from "drizzle-orm";
 import type { AdminCustomer, AdminCustomerDetailResponse } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
 import { componentEvents, customers, subscriptionComponents, subscriptionPauses, subscriptions } from "../../../db/schema/customers.js";
@@ -8,6 +8,7 @@ import { secureAccessTokens } from "../../../db/schema/documents.js";
 import { consumptiveEvents } from "../../appointments/services/appointment.policy.js";
 import { resolveCadence } from "../../follow-ups/services/follow-up-cadence.policy.js";
 import type { AnalyticsSource } from "../services/customer-analytics.policy.js";
+import type { OverviewSource } from "../services/customer-overview.policy.js";
 import { AuditService } from "../../auth/services/audit.service.js";
 import type { CustomerActorContext, CustomersRepository, NormalizedCustomerInput } from "../services/customers.service.js";
 
@@ -69,6 +70,45 @@ export class DrizzleCustomersRepository implements CustomersRepository {
         createdAt: row.createdAt.toISOString(),
       })),
     };
+  }
+
+  /** Read-only snapshot for the clients overview (UX-5). Batched queries, no per-customer loop. */
+  async getOverviewSource(now: Date): Promise<OverviewSource> {
+    return this.database.transaction(async (tx) => {
+      const list = (await tx.select(fields).from(customers).where(active).orderBy(desc(customers.createdAt), customers.id)).map(toDto);
+      if (list.length === 0) return { customers: [], subscriptions: [], completedAppointments: [], followUps: [], upcomingAppointments: [] };
+      const subs = await tx
+        .select({ sub: subscriptions, serviceName: services.name, serviceSlug: services.slug, variantName: serviceVariants.name })
+        .from(subscriptions)
+        .innerJoin(customers, eq(customers.id, subscriptions.customerId))
+        .innerJoin(services, eq(services.id, subscriptions.serviceId))
+        .leftJoin(serviceVariants, eq(serviceVariants.id, subscriptions.variantId))
+        .where(active);
+      const subIds = subs.map((row) => row.sub.id);
+      if (subIds.length === 0) return { customers: list, subscriptions: [], completedAppointments: [], followUps: [], upcomingAppointments: [] };
+      const policies = await tx.select({ serviceId: servicePolicies.serviceId, variantId: servicePolicies.variantId, followUpFrequencyDays: servicePolicies.followUpFrequencyDays })
+        .from(servicePolicies).where(inArray(servicePolicies.serviceId, [...new Set(subs.map((row) => row.sub.serviceId))]));
+      const pauses = await tx.select({ subscriptionId: subscriptionPauses.subscriptionId, startedAt: subscriptionPauses.startedAt, endedAt: subscriptionPauses.endedAt })
+        .from(subscriptionPauses).where(inArray(subscriptionPauses.subscriptionId, subIds));
+      const completedAppointments = await tx.select({ subscriptionId: appointments.subscriptionId, completedAt: appointments.completedAt })
+        .from(appointments).where(and(inArray(appointments.subscriptionId, subIds), eq(appointments.status, "completed")));
+      const follow = await tx.select({ subscriptionId: followUps.subscriptionId, occurredAt: followUps.occurredAt, completedAt: followUps.completedAt, status: followUps.status })
+        .from(followUps).where(inArray(followUps.subscriptionId, subIds));
+      const upcomingAppointments = await tx.select({ id: appointments.id, subscriptionId: appointments.subscriptionId, scheduledStart: appointments.scheduledStart, scheduledEnd: appointments.scheduledEnd, status: appointments.status })
+        .from(appointments).where(and(inArray(appointments.subscriptionId, subIds), inArray(appointments.status, ["scheduled", "confirmed", "reschedule_requested"]), gte(appointments.scheduledEnd, now)));
+      return {
+        customers: list,
+        subscriptions: subs.map(({ sub, serviceName, serviceSlug, variantName }) => ({
+          id: sub.id, customerId: sub.customerId, reference: sub.reference, status: sub.status, serviceName, serviceSlug, variantName: variantName ?? null,
+          createdAt: sub.createdAt, actualStartDate: sub.actualStartDate,
+          cadence: resolveCadence(sub.followUpFrequencyDaysOverride, policies.filter((p) => p.serviceId === sub.serviceId), sub.variantId),
+          pauses: pauses.filter((p) => p.subscriptionId === sub.id).map((p) => ({ startedAt: p.startedAt, endedAt: p.endedAt })),
+        })),
+        completedAppointments,
+        followUps: follow,
+        upcomingAppointments,
+      };
+    }, { isolationLevel: "repeatable read", accessMode: "read only" });
   }
 
   /** Read-only snapshot for the client analytics (UX-4c). One read-only transaction so all rows agree. */

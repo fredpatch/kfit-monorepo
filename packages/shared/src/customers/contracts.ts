@@ -1,7 +1,12 @@
+import type { CadenceState } from "../follow-ups/contracts.js";
+import type { ClientStatusKey } from "./client-status.js";
+
 export const adminCustomersApiRoutes = {
   list: "/admin/customers",
   search: "/admin/customers/search",
   create: "/admin/customers",
+  /** Enriched list (UX-5). Registered before :customerId. */
+  overview: "/admin/customers/overview",
   detail: "/admin/customers/:customerId",
   analytics: "/admin/customers/:customerId/analytics",
 } as const;
@@ -149,3 +154,30 @@ export type CustomerAnalytics = {
   journey: CustomerAnalyticsJourneyLine[];
 };
 export type CustomerAnalyticsResponse = { analytics: CustomerAnalytics };
+
+/* ------------------------------------------------------------------ */
+/* Clients overview (UX-5, board 04). Read-only. Rules validated by    */
+/* Fred on 2026-10-22 (client status, current subscription, worst      */
+/* cadence, next appointment, last contact, views).                    */
+/* ------------------------------------------------------------------ */
+
+export const customerOverviewViews = ["all", "active", "overdue", "preparation", "paused", "former"] as const;
+export type CustomerOverviewView = (typeof customerOverviewViews)[number];
+
+export type AdminCustomerOverviewRow = {
+  customer: AdminCustomer;
+  clientStatus: ClientStatusKey;
+  /** Same subscription the profile opens by default; null without subscription. */
+  currentSubscription: { id: string; reference: string; status: string; serviceName: string; serviceSlug: string; variantName: string | null } | null;
+  /** Other open (not completed/cancelled) subscriptions besides the current one. */
+  otherOpenSubscriptions: number;
+  /** Worst S5.3 cadence state across subscriptions (overdue > due > healthy); null when none applies. */
+  cadence: { subscriptionId: string; state: CadenceState; overdueByDays: number | null } | null;
+  /** Earliest scheduled / confirmed / reschedule-requested appointment that has not ended. */
+  nextAppointment: { id: string; subscriptionId: string; scheduledStart: string; status: string } | null;
+  /** Latest S5.3 meaningful activity across subscriptions. */
+  lastContactAt: string | null;
+  /** Views that include this client (always contains "all"). */
+  views: CustomerOverviewView[];
+};
+export type AdminCustomerOverviewResponse = { asOf: string; customers: AdminCustomerOverviewRow[]; counts: Record<CustomerOverviewView, number> };

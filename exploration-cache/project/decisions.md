@@ -1,3 +1,11 @@
+## 2026-10-22 — Refonte UI: read-only API only, business time zone Africa/Libreville
+
+**Context**: The UI redesign runs on `main` in parallel with Sprint 5 and needs data not exposed by the older UI. Day/week boundaries must not vary with browser/server host timezone.
+
+**Decision**: UI-refonte work may add read-only or presentation-level endpoints only. Any new business mutation or changed business invariant returns to the normal Sprint planning/approval workflow. Business day/week and appointment display use `Africa/Libreville` with Monday week start. Client status is derived centrally in `@kfit/shared`. Dashboard historical series/funnel work remains Sprint 7.
+
+**Impact**: Track A (`sprint-5`) remains authoritative for Sprint 5 business logic. Track B (`main`) currently adds customer/catalogue/dashboard/agenda read models and redesigned screens. Branch reconciliation must be explicit before release.
+
 ## 2026-10-20 — Customer collision serialization uses normalized-WhatsApp advisory locks
 
 **Context**: S4.1 intentionally avoided a hard unique constraint on `customers.whatsapp` because archived/anonymized history and future identity rules may require more nuance than permanent global uniqueness, while concurrent active-customer creation still must not produce duplicate active identities.

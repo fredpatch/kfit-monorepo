@@ -11,9 +11,9 @@ Sprint 5 business work and the UI/UX refonte are unified on `main`. The former `
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
 Active slice      S6.1 — Financial ledger: plans, installments, payments, allocations
-Workflow state    PLANNING / GATE_1_PENDING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    Sprint 5 — closed 2026-10-22
-Next action       Fred: review S6.1 proposed finance invariants and approve/reject Gate 1
+Next action       IDE Implementer: implement S6.1 server-first only; stop before S6.2
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -26,12 +26,12 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 
 ## Sprint 6 execution order
 
-1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — PLANNING / Gate 1 pending.
+1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — APPROVED_FOR_IMPLEMENTATION.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — closed until S6.1 validation.
 3. S6.3 — Customer payment-proof upload and structured coach review workflow — closed until S6.2 validation.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — closed until S6.3 validation.
 
-Planning source: `exploration-cache/tasks/sprint-6.md`. No Sprint 6 implementation is authorized before Fred approves S6.1 Gate 1.
+Planning source: `exploration-cache/tasks/sprint-6.md`. Fred approved S6.1 Gate 1 on 2026-10-22. Implementation is authorized for S6.1 only; S6.2 remains closed.
 
 ## Sprint 5 objective
 

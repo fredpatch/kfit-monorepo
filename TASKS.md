@@ -5,15 +5,15 @@
 
 ## Now
 
-Sprint 6 S6.1 and S6.2 are validated and closed on `main`. S6.3 is implemented and awaiting Fred Gate 2 validation. The former `sprint-5` branch remains historical.
+Sprint 6 S6.1, S6.2 and S6.3 are validated and closed on `main`. The former `sprint-5` branch remains historical.
 
 ```text
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
-Active slice      S6.3 — Customer payment-proof upload + structured coach review
-Workflow state    AWAITING_HUMAN_VALIDATION
-Last validated    S6.2 — 2026-10-22
-Next action       Fred: run S6.3 local commands + browser/private-storage/DBeaver Gate 2
+Active slice      S6.4 — Sequential payment receipts and secure sharing preparation
+Workflow state    PLANNING / GATE_1_PENDING
+Last validated    S6.3 — 2026-10-22
+Next action       Planner: inspect S6.4 receipt numbering/PDF/sharing rules and prepare Gate 1
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -28,8 +28,8 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED, Fred validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED, Fred validated 2026-10-22; implementation commit `9fe7e1b`.
-3. S6.3 — Customer payment-proof upload and structured coach review workflow — IMPLEMENTED; automated review/QA evidence green; Fred Gate 2 pending; implementation commit `8edebc7`.
-4. S6.4 — Sequential payment receipts and secure sharing preparation — planning may begin; implementation requires separate approval.
+3. S6.3 — Customer payment-proof upload and structured coach review workflow — CLOSED, Fred validated 2026-10-22; implementation commit `8edebc7`.
+4. S6.4 — Sequential payment receipts and secure sharing preparation — PLANNING / Gate 1 pending.
 
 Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation commit `1050fcb` is locally validated end-to-end by Fred, including browser and DBeaver Gate 2. S6.1 is closed. Fred's pasted S6.2 request explicitly approves implementation on main; the connected backlog confirms Gate 1. The detailed request is appended to the local sprint spec.
 
@@ -114,20 +114,20 @@ Before production:
 ```text
 Branch            main
 Sprint            6
-Slice             S6.3
-Workflow state    AWAITING_HUMAN_VALIDATION
-Validated         Sprint 5, S6.1 and S6.2; S6.3 pending Fred Gate 2
+Slice             S6.4
+Workflow state    PLANNING / GATE_1_PENDING
+Validated         Sprint 5, S6.1, S6.2 and S6.3
 Approved goal     Secure proof evidence/upload/review; authoritative payments only through S6.1 review transaction
 Done              Contracts, generated/applied migration 0011, server, French client, automated checks, static inspection
-Pending           Fred local commands, browser/mobile/keyboard, real ClamAV/private-storage and DBeaver Gate 2
+Pending           S6.4 planning / Gate 1 only
 Validation        typecheck/build/db:check passed; server 437/437, shared 53/53, PostgreSQL 467/467; real files preflight passed
 Acceptance        S6.3 detailed request and exact-full/positive-partial clarification in sprint-6.md
 Files/layers      shared/payment-proofs; server/payment-proofs/schema/finance internal transaction entry; client/payment-proofs/Finance/App/proxy
-Human acceptance  NOT YET CONFIRMED for S6.3
+Human acceptance  S6.3 browser + DBeaver Gate 2 confirmed green by Fred
 Rules             Evidence is not money; full equals claim; partial positive/lower; no lifecycle mutation/public file download
 Risks             File/DB cleanup compensation, shared finance locks, private-note separation, one active replacement
 Assumptions       No new business assumptions; exact-full/positive-partial rule explicitly approved by Fred
-Next action       Fred: execute S6.3 Gate 2 checklist; S6.4 remains closed
+Next action       Planner: prepare S6.4 Gate 1; no implementation yet
 UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
 Out of scope      S6.4+, receipts, refunds, OCR/provider APIs, notifications, finance analytics and Sprint 7
 ```

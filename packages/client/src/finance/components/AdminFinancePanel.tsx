@@ -7,6 +7,7 @@ import { Dialog, DialogContent } from "../../components/ui/dialog.js";
 import { EmptyState } from "../../components/ui/empty-state.js";
 import { dateTimeFr, fromLocalInput, moneyXaf, toLocalInput } from "../../lib/format.js";
 import { financeApi, financeErrorMessage } from "../api/finance-api.js";
+import { AdminPaymentProofsPanel } from "../../payment-proofs/components/AdminPaymentProofsPanel.js";
 
 const methods: Record<FinancePaymentMethod, string> = { cash: "Espèces", bank_transfer: "Virement bancaire", mobile_money: "Mobile Money" };
 const planStatuses: Record<FinancePlanStatus, string> = { draft: "Brouillon", active: "Actif", superseded: "Remplacé", settled: "Soldé", cancelled: "Annulé" };
@@ -67,6 +68,7 @@ export function AdminFinancePanel({ subscriptionId }: { subscriptionId: string }
       <p className="mt-2 text-xs text-muted-foreground">Confirmation : {dateTimeFr(payment.confirmedAt)}</p>{payment.externalReference && <p className="mt-2 break-all text-sm">Référence externe : {payment.externalReference}</p>}{payment.correctionOfEventId && <p className="mt-2 break-all text-xs text-muted-foreground">Correction du paiement {payment.correctionOfEventId}. Le paiement initial reste conservé.</p>}
       <details className="mt-3 text-sm"><summary className="cursor-pointer font-semibold">Répartition enregistrée</summary><ul className="mt-2 space-y-1">{payment.allocations.map(allocation => <li key={allocation.id} className="break-all">{moneyXaf(allocation.amountXaf)} · échéance {view.plans.flatMap(plan => plan.installments).find(item => item.id === allocation.installmentId)?.sequenceNumber ?? "historique"}{allocation.paymentPlanId !== active?.id ? " · échéancier historique" : ""}</li>)}</ul></details>
     </li>)}</ol>}</section>
+    <AdminPaymentProofsPanel subscriptionId={subscriptionId} />
     <Dialog open={Boolean(mode)} onOpenChange={open => { if (!open && !busy) setMode(null); }}>
       {mode && <DialogContent title={titles[mode.kind]} description="Montants en XAF entiers. Les opérations sont contrôlées et confirmées par le serveur." className="max-h-[90dvh] max-w-xl overflow-y-auto" onCloseAutoFocus={event => { event.preventDefault(); (opener.current?.isConnected ? opener.current : refreshButton.current)?.focus(); }}>
         <form onSubmit={submit} className="space-y-4"><fieldset disabled={busy} className="space-y-4">

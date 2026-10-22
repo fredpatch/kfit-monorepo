@@ -102,7 +102,21 @@ export class DrizzleFinanceRepository implements FinanceRepository {
         const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, id));
         return sub ? { ok: true, body: { finance: await this.read(tx, sub, this.clock()) } } : financeFailure("FINANCE_NOT_FOUND");
       }, { isolationLevel: "repeatable read", accessMode: "read only" });
-      return await this.database.transaction(async tx => {
+      return await this.database.transaction(tx => this.executeMutation(tx, id, command, actor));
+    } catch (error) {
+      if (error instanceof FinanceInvariantError) return financeFailure("FINANCE_INVALID_STATE");
+      const failure = databaseFailure(error);
+      if (failure?.code === "23505" && failure.constraint === "payment_events_command_key_uq") return financeFailure("FINANCE_DUPLICATE_PAYMENT");
+      if (failure?.code === "23505" && failure.constraint === "payment_plans_one_active_uq") return financeFailure("FINANCE_PLAN_ALREADY_ACTIVE");
+      if (failure?.code === "40001" || failure?.code === "40P01") return financeFailure("FINANCE_CONCURRENCY_CONFLICT");
+      throw error;
+    }
+  }
+  // Internal transaction participation: proof review supplies the outer atomic boundary.
+  recordPaymentInTransaction(tx: Tx, subscriptionId: string, command: Extract<FinanceCommand, { action: "record" }>, actor: FinanceActor) {
+    return this.executeMutation(tx, subscriptionId, command, actor);
+  }
+  private async executeMutation(tx: Tx, id: string, command: Exclude<FinanceCommand, { action: "read" }>, actor: FinanceActor): Promise<FinanceResult> {
         let subscriptionId = id;
         if (command.action === "activate" || command.action === "revise" || command.action === "cancel") {
           const [plan] = await tx.select({ subscriptionId: paymentPlans.subscriptionId }).from(paymentPlans).where(eq(paymentPlans.id, id));
@@ -192,14 +206,5 @@ export class DrizzleFinanceRepository implements FinanceRepository {
         }
         view = await this.read(tx, sub, now);
         return { ok: true, body: { finance: view } };
-      });
-    } catch (error) {
-      if (error instanceof FinanceInvariantError) return financeFailure("FINANCE_INVALID_STATE");
-      const failure = databaseFailure(error);
-      if (failure?.code === "23505" && failure.constraint === "payment_events_command_key_uq") return financeFailure("FINANCE_DUPLICATE_PAYMENT");
-      if (failure?.code === "23505" && failure.constraint === "payment_plans_one_active_uq") return financeFailure("FINANCE_PLAN_ALREADY_ACTIVE");
-      if (failure?.code === "40001" || failure?.code === "40P01") return financeFailure("FINANCE_CONCURRENCY_CONFLICT");
-      throw error;
-    }
   }
 }

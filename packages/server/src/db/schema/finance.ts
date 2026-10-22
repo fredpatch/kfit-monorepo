@@ -66,15 +66,38 @@ export const paymentProofs = pgTable("payment_proofs", {
   id: idColumn(),
   customerId: uuid("customer_id").notNull().references(() => customers.id, { onDelete: "restrict" }),
   subscriptionId: uuid("subscription_id").notNull().references(() => subscriptions.id, { onDelete: "restrict" }),
-  documentId: uuid("document_id").notNull(),
+  documentId: uuid("document_id").notNull().references(() => documents.id, { onDelete: "restrict" }),
   status: text("status").notNull().default("pending_review"),
   submittedVia: text("submitted_via").notNull(),
   submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   reviewedByUserId: uuid("reviewed_by_user_id").references(() => users.id, { onDelete: "set null" }),
-  supersedesProofId: uuid("supersedes_proof_id"),
+  supersedesProofId: uuid("supersedes_proof_id").references((): AnyPgColumn => paymentProofs.id, { onDelete: "restrict" }),
+  paymentEventId: uuid("payment_event_id").references(() => paymentEvents.id, { onDelete: "restrict" }),
+  claimedAmountXaf: integer("claimed_amount_xaf").notNull(),
+  claimedPaymentMethod: text("claimed_payment_method").notNull(),
+  claimedOccurredAt: timestamp("claimed_occurred_at", { withTimezone: true }).notNull(),
+  claimedExternalReference: text("claimed_external_reference"),
+  confirmedAmountXaf: integer("confirmed_amount_xaf"),
+  confirmedPaymentMethod: text("confirmed_payment_method"),
+  confirmedOccurredAt: timestamp("confirmed_occurred_at", { withTimezone: true }),
+  customerMessage: text("customer_message"),
   reviewNote: text("review_note"),
-}, (t) => [index("payment_proofs_queue_idx").on(t.status, t.submittedAt), index("payment_proofs_subscription_idx").on(t.subscriptionId)]);
+}, (t) => [index("payment_proofs_queue_idx").on(t.status, t.submittedAt), index("payment_proofs_subscription_idx").on(t.subscriptionId),
+  uniqueIndex("payment_proofs_replacement_uq").on(t.supersedesProofId),
+  check("payment_proofs_claim_valid", sql`${t.claimedAmountXaf} > 0 AND ${t.claimedPaymentMethod} IN ('cash','bank_transfer','mobile_money') AND ${t.submittedVia} = 'public_link'`),
+  check("payment_proofs_status_valid", sql`${t.status} IN ('pending_review','confirmed','partially_confirmed','correction_requested','rejected','duplicate','superseded')`),
+  check("payment_proofs_confirmation_valid", sql`(
+    ${t.status} IN ('confirmed','partially_confirmed') AND ${t.paymentEventId} IS NOT NULL
+    AND ${t.confirmedAmountXaf} IS NOT NULL AND ${t.confirmedAmountXaf} > 0
+    AND ${t.confirmedPaymentMethod} IS NOT NULL AND ${t.confirmedPaymentMethod} IN ('cash','bank_transfer','mobile_money') AND ${t.confirmedOccurredAt} IS NOT NULL
+    AND ${t.reviewedAt} IS NOT NULL
+    AND ((${t.status} = 'confirmed' AND ${t.confirmedAmountXaf} = ${t.claimedAmountXaf}) OR (${t.status} = 'partially_confirmed' AND ${t.confirmedAmountXaf} < ${t.claimedAmountXaf}))
+  ) OR (
+    ${t.status} NOT IN ('confirmed','partially_confirmed') AND ${t.paymentEventId} IS NULL
+    AND ${t.confirmedAmountXaf} IS NULL AND ${t.confirmedPaymentMethod} IS NULL AND ${t.confirmedOccurredAt} IS NULL
+  )`),
+]);
 
 export const quotes = pgTable("quotes", {
   id: idColumn(),

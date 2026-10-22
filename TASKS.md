@@ -5,15 +5,15 @@
 
 ## Now
 
-Sprint 6 S6.1 and S6.2 are validated and closed on `main`. The former `sprint-5` branch remains historical.
+Sprint 6 S6.1 and S6.2 are closed on `main`; Fred has validated S6.3 and authorized commit/push. The former `sprint-5` branch remains historical.
 
 ```text
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
 Active slice      S6.3 — Customer payment-proof upload + structured coach review
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Last validated    S6.2 — 2026-10-22
-Next action       IDE Implementer: implement S6.3 server-first only; stop before S6.4
+Workflow state    VALIDATED
+Last validated    S6.3 — 2026-10-22
+Next action       Authorized S6.3 commit and push; no S6.4 implementation
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -28,10 +28,28 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED, Fred validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED, Fred validated 2026-10-22; implementation commit `9fe7e1b`.
-3. S6.3 — Customer payment-proof upload and structured coach review workflow — APPROVED_FOR_IMPLEMENTATION.
+3. S6.3 — Customer payment-proof upload and structured coach review workflow — VALIDATED by Fred; commit/push authorized.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — closed until S6.3 validation.
 
 Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation commit `1050fcb` is locally validated end-to-end by Fred, including browser and DBeaver Gate 2. S6.1 is closed. Fred's pasted S6.2 request explicitly approves implementation on main; the connected backlog confirms Gate 1. The detailed request is appended to the local sprint spec.
+
+### S6.3 execution evidence — 2026-10-22
+
+- Fred authorized the detailed pasted S6.3 request on main; appended it to `exploration-cache/tasks/sprint-6.md`. S6.4 remains out of scope. Baseline typecheck passed; tree was clean before this slice.
+- Relevant API/database/security/frontend skills and reusable Payment Event and Allocation, Atomic Business Operation, Hard Commit Point and Secure External Document Sharing invariants inspected. Evidence remains separate from money; proof confirmation will reuse S6.1 within one transaction, not copy FIFO logic.
+- Approved read-only `preflight:payment-proofs` passed using root `.env` guarded localhost:5433/kfit_dev: zero proofs/documents/upload tokens, invalid references or branched lineages. No backfill needed.
+- Fred clarified full confirmation must exactly equal the claimed amount; partial confirmation must be positive and strictly lower. Shared contracts and schema checks reflect that rule.
+- Fred approved generation and application of `0011_motionless_molly_hayes.sql`; generated SQL inspected and applied successfully against verified server `.env` localhost:5433/kfit_dev. Nine proof fields, three RESTRICT FKs, replacement uniqueness and consistency checks only; no backfill. Preserve claims/files/reviews/payment linkage before any rollback after use.
+- Shared contracts, repository/service/controller/protected routes and internal transaction-scoped S6.1 reuse implemented. Manual finance mutation body is unchanged behind the extracted transaction entry point. No duplicated FIFO path or nested finance commit.
+- Unit/HTTP/shared validation passed: 437/437 server and 53/53 shared. Added 37 server unit/HTTP, 2 shared and 39 PostgreSQL cases. No existing S6.1/S6.2 test was weakened.
+- Approved PostgreSQL invocation passed 467/467, zero failures/skips, against verified server `.env` localhost:5433/kfit_dev. Includes double-review and manual-payment-versus-proof-confirmation races, FIFO, physical-file SHA/size, immutable correction lineage, evidence-only upload and audit-failure rollbacks. Fixtures use physical temporary storage and a synthetic local scanner protocol endpoint; these do not claim real antivirus detection.
+- Separately approved `npm run preflight:files` passed with the server `.env`/default scanner endpoint verified local: clean file OK, real EICAR signature FOUND, private storage/SHA/size/signature/random naming and temporary purge verified.
+- French admin Finance section and public `/justificatif/:token` page implemented with existing components. Customer claims travel in a bounded URI-encoded JSON header alongside raw file bytes. Admin review explicitly captures authoritative facts, separates private notes/customer messages, and refreshes server finance/proof data. Link creation/revocation, correction links, lineage, private download and exact pending-review success message included. No public proof download.
+- Final typecheck (all three packages), production build and db:check passed; tracked whitespace check passed. Existing Vite main-chunk-size warning remains. No dependencies/lockfile changes. Implementer static inspection found no remaining blocker; this is not an independent Reviewer/QA verdict or Fred acceptance. No S6.3 validated changelog entry, commit or push.
+- Fred requested sequential independent Reviewer then QA. Reviewer returned REVIEW PASSED WITH NOTES on 2026-10-22 after inspecting actual tracked/untracked code, generated SQL/schema, consumers, tests and logs; no confirmed BLOCKER/MAJOR/MINOR findings. Reviewer ran git diff --check successfully; prior 437 server + 53 shared and 467 PostgreSQL results were inspected, not rerun. Coverage note: expiry is rechecked after proof/subscription locks, but no proof-specific expiry-during-lock-wait regression exists. Live browser/mobile/keyboard and combined UI-to-real-scanner/storage/DB flow remain NOT VALIDATED. Entry state advanced to AWAITING_QA; no files modified by Reviewer.
+- Independent QA then returned QA PASSED WITH LIMITATIONS on 2026-10-22. Fresh QA npm test passed 437/437 server + 53/53 shared; fresh git diff --check passed with existing LF-to-CRLF advisories. QA mapped all 12 unit/HTTP and 28 PostgreSQL acceptance criteria to actual assertions; inspected prior 467/467 database log (39 new proof cases), typecheck/build/schema and real files-preflight evidence without rerunning those commands. No confirmed feature failure/regression; no source/test/doc edits or servers started by QA. No new database/preflight/container/seed commands were run. Browser tools unavailable: live upload/download/forms, mobile/keyboard/focus/console/network and combined browser-to-real-scanner/storage/DB remain NOT VALIDATED. Reviewer coverage note retained. State is AWAITING_HUMAN_VALIDATION; Fred Gate 2, validated changelog, commit/push and S6.4 remain gated.
+
+- Fred subsequently confirmed "all green", explicitly including browser and DBeaver, on 2026-10-22 and authorized commit/push. Gate 2 is accepted on developer-reported evidence; agent counts remain separately recorded above. No additional runtime assertions or coverage are invented. The expiry-during-lock-wait test gap remains documented. S6.4 implementation requires separate authorization.
 
 ### S6.2 execution evidence — 2026-10-22
 
@@ -96,25 +114,43 @@ Before production:
 Branch            main
 Sprint            6
 Slice             S6.3
-Workflow state    PLANNING / GATE_1_PENDING
-Validated         Sprint 5, S6.1 and S6.2 (Fred, 2026-10-22)
-Approved goal     Versioned quotes/PDFs, secure explicit responses, coach synchronization
-Done              Contracts, schema/migration, server, French client and static inspection
-Implementation    9fe7e1b — feat(quotes): add versioned quotes and secure acceptance
-Pending           No S6.2 implementation/acceptance work; publication explicitly authorized
-Review            REVIEW PASSED WITH NOTES; no confirmed blocker/major/minor defects
-QA                QA PASSED WITH LIMITATIONS; fresh npm test 400 server + 51 shared; no regression confirmed
-Validation        typecheck/build/schema/diff passed; server 400, shared 51, PostgreSQL 428 (34 quote cases)
-Acceptance        S6.2 pasted spec in exploration-cache/tasks/sprint-6.md
-Files/layers      shared/quotes; server/quotes/schema/documents guard; client/quotes/profile/router/proxy
-Human acceptance  Fred confirmed Gate 2 checklist all green; command/browser/mobile/keyboard/scan-storage/DBeaver
-Coverage note     Direct synchronization-versus-finance race has no dedicated automated regression
-Assumptions       Current issued version is public-response eligible; obsolete links cannot respond
-Risks             PDF render/scan holds issuance locks; fixed process-local rate limit; preserve history on rollback
-Next action       Planner: prepare S6.3 Gate 1; no implementation yet
+Workflow state    VALIDATED
+Validated         Sprint 5, S6.1, S6.2 and S6.3 (Fred, 2026-10-22)
+Approved goal     Secure proof evidence/upload/review; authoritative payments only through S6.1 review transaction
+Done              Contracts, generated/applied migration 0011, server, French client, automated checks, static inspection
+Pending           Authorized commit and push
+Validation        typecheck/build/db:check passed; server 437/437, shared 53/53, PostgreSQL 467/467; real files preflight passed
+Acceptance        S6.3 detailed request and exact-full/positive-partial clarification in sprint-6.md
+Files/layers      shared/payment-proofs; server/payment-proofs/schema/finance internal transaction entry; client/payment-proofs/Finance/App/proxy
+Human acceptance  Fred reported all green, including browser and DBeaver; no new per-check counts claimed
+Rules             Evidence is not money; full equals claim; partial positive/lower; no lifecycle mutation/public file download
+Risks             File/DB cleanup compensation, shared finance locks, private-note separation, one active replacement
+Assumptions       No new business assumptions; exact-full/positive-partial rule explicitly approved by Fred
+Next action       Commit and push S6.3 as explicitly authorized; no S6.4 implementation
 UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
-Out of scope      S6.3+, refunds, credits, extras, finance analytics and Sprint 7
+Out of scope      S6.4+, receipts, refunds, OCR/provider APIs, notifications, finance analytics and Sprint 7
 ```
+
+### S6.3 Fred Gate 2 checklist (after Reviewer and QA)
+
+Commands from repository root, with local PostgreSQL/ClamAV available and server `.env` verified against localhost:5433/kfit_dev:
+
+```text
+npm run typecheck
+npm test
+npm run build
+npm run db:check
+npm run test:integration
+npm run preflight:files
+```
+
+Agent reruns of database/preflight commands still require a new per-invocation approval; Fred may execute his own checks. Migration `0011_motionless_molly_hayes.sql` is already applied locally; no reset/backfill/reapplication is requested.
+
+- Browser: open a subscription's Finance area, create a link with explicit expiry, and open it without admin cookies. Verify claimed amount/method/date/reference, accepted formats and the mobile file selector. Successful upload must say “Justificatif envoyé. Il sera vérifié par votre coach.”; no payment/balance/lifecycle change yet.
+- Review: download the private proof, explicitly confirm full or partial payment facts, and verify the resulting exact payment reference/FIFO in Finance. Reject/duplicate/correction must create no money. Try an overpayment and repeated/concurrent review; failures must leave evidence and balances consistent. Keyboard focus, dialogs, disabled in-flight controls, error recovery and narrow screens require live checks.
+- Correction: add distinct private reviewNote/customerMessage; create a correction link and verify only customerMessage appears publicly. Submit a different file; verify new proof/document and supersedesProofId, old proof superseded with original claims/review/file intact. Same-lineage identical file must reject without consuming the link. Expired/revoked/used links must reject safely. No public proof-file download is available.
+- DBeaver/storage: inspect synthetic/manual test rows only. Check token hashes (no bearer), maxUses/useCount, scoped subscription/context; proof/document ownerType=payment_proof and ownerId=proof.id; scanned clean version SHA/size against physical private file. Confirm pending/negative proof payment_event_id is null, confirmed proof links the exact event/allocations, and subscription lifecycle stays unchanged. Check external access events and structural audits exclude references, notes, messages, filenames and bearer. Later S6.1 payment correction must retain proof evidence.
+- Reviewer should inspect the finance transaction extraction, deterministic lock order, audit rollback, file compensation and separation from generic document-sharing routes. QA should map spec criteria to actual assertions and report live UI checks as NOT VALIDATED until executed. S6.3 remains open until Fred accepts Gate 2.
 
 ## Refonte UI — suivi
 

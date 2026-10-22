@@ -1,5 +1,8 @@
 import { createServerApp } from "./app.js";
 import { FinanceController } from "./modules/finance/controllers/finance.controller.js";
+import { PaymentProofsController } from "./modules/payment-proofs/controllers/payment-proofs.controller.js";
+import { PaymentProofsService } from "./modules/payment-proofs/services/payment-proofs.service.js";
+import { DrizzlePaymentProofsRepository } from "./modules/payment-proofs/repositories/payment-proofs.repository.js";
 import { QuotesController } from "./modules/quotes/controllers/quotes.controller.js";
 import { QuotesService } from "./modules/quotes/services/quotes.service.js";
 import { DrizzleQuotesRepository } from "./modules/quotes/repositories/quotes.repository.js";
@@ -170,7 +173,10 @@ export function createDevelopmentApp() {
     new PuppeteerProgressSummaryRenderer(),
   ));
 
+  const proofStorage = new PrivateDocumentStorage();
   return createServerApp({
+    paymentProofsController: new PaymentProofsController(new PaymentProofsService(new DrizzlePaymentProofsRepository(db,
+      { auditHashPepper: authConfig.auditHashPepper, tokenPepper: authConfig.otpPepper }, proofStorage), proofStorage)),
     financeController: new FinanceController(new FinanceService(new DrizzleFinanceRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     quotesController: new QuotesController(new QuotesService(new DrizzleQuotesRepository(db,
       { auditHashPepper: authConfig.auditHashPepper, tokenPepper: authConfig.otpPepper }, {

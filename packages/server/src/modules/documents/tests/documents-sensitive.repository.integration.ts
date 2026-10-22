@@ -22,7 +22,10 @@ before(async()=>{
  await db.insert(users).values({id:userId,email:`docs-sensitive-${userId}@example.invalid`,passwordHash:"x",role:"admin",status:"active"});
  await db.insert(customers).values({id:customerId,fullName:"Sensitive Docs Test",whatsapp:"+241000000002"});
  await db.insert(services).values({id:serviceId,name:"Sensitive Docs Service",slug:`docs-sensitive-${serviceId}`,pricingMode:"quote",deliveryType:"time_based",capacityMode:"unlimited"});
- for(const [id,type] of [[healthId,"health_data"],[photoId,"progress_photo_storage"]] as const){const content="Synthetic "+type;await db.insert(consentDefinitions).values({id,consentType:type,version:"2147483646",title:content,content,contentHash:createHash("sha256").update(content).digest("hex"),status:"published",publishedAt:new Date(now.getTime()-10000)});}
+ for(const [id,type] of [[healthId,"health_data"],[photoId,"progress_photo_storage"]] as const){
+  const existing=await db.select({version:consentDefinitions.version}).from(consentDefinitions).where(eq(consentDefinitions.consentType,type));
+  const version=(existing.reduce((highest,row)=>/^[1-9][0-9]*$/.test(row.version)&&BigInt(row.version)>highest?BigInt(row.version):highest,0n)+1n).toString();
+  const content="Synthetic "+type;await db.insert(consentDefinitions).values({id,consentType:type,version,title:content,content,contentHash:createHash("sha256").update(content).digest("hex"),status:"published",publishedAt:new Date(now.getTime()-10000)});}
 });
 after(async()=>{try{
  const ds=subs.length?await db.select({id:documents.id}).from(documents).where(inArray(documents.ownerId,subs)):[],dids=ds.map(x=>x.id);

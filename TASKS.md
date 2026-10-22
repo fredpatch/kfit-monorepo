@@ -13,7 +13,7 @@ Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
 Active slice      S5.5 — Personalized document versioning and secure temporary delivery links
 Workflow state    AWAITING_HUMAN_VALIDATION
 Last validated    S5.4 — 2026-10-21
-Next action       Fred: run S5.5 local automated suite, browser/mobile/keyboard flow, ClamAV/PDF preflights and DBeaver/storage checks
+Next action       Fred: confirm remaining DBeaver/private-storage acceptance; browser flow confirmed operational 2026-10-22
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -35,6 +35,17 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 S5.1–S5.4 are locally validated and closed. Fred approved S5.5 Gate 1 on 2026-10-22. Implement S5.5 only; do not open Sprint 6 before S5.5 Gate 2 and Sprint 5 closure.
 
 ## Blockers
+
+### S5.5 Gate 2 corrective evidence — 2026-10-22 (agent-run)
+
+- Missing Documents navigation: the profile already mounted the lazy panel, but `profileTabs` omitted `documents`, hiding its trigger and rejecting its URL selection. Added the existing tab and an explicit no-subscription empty state; preserved selected-subscription binding.
+- Browser-flow corrections: allow choosing an existing version for a delivery link; remove the duplicate public download button after verification. No server contracts or business rules changed.
+- Fred approved a synthetic local photo-consent/customer/subscription/measurement fixture for positive photo QA; it remains available for inspection. Its definition is marked synthetic and is not production legal text.
+- Fred approved the S5.5 integration-fixture exception: derive consent versions above existing definitions instead of assuming a hard-coded version is latest. Assertions remain unchanged.
+- Local Chromium: 17 document/security/photo/mobile/keyboard/persistence checks passed; separate Aperçu/Progression/Analyse/Documents smoke passed. No uncaught page errors. Final persisted scenario verified 3 documents, 4 versions/files, 8 tokens, 1 photo linkage and 19 structural audits; file sizes and SHA-256 matched storage. Security edge cases were exercised through live HTTP; normal document, summary and photo operations through the UI.
+- Agent regression evidence: typecheck passed; server 332/332 and shared 47/47; real PostgreSQL 348/348; files/ClamAV and PDF preflights passed; diff check passed. Temporary QA servers are no longer listening. Browser harness reports are under ignored `tmp/`.
+- Fred confirmed the browser flow operational and authorized pushing the corrective changes on 2026-10-22.
+- Remaining Gate 2: Fred's DBeaver/private-storage acceptance. S5.5 remains AWAITING_HUMAN_VALIDATION; no validated changelog entry or Sprint 6 work.
 
 Before production:
 - Legal validation for the applicable Gabon context.

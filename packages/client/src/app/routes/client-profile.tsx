@@ -39,6 +39,7 @@ export const profileTabs = [
   { value: "suivis", label: "Suivis" },
   { value: "preparation", label: "Préparation" },
   { value: "progression", label: "Progression" },
+  { value: "documents", label: "Documents" },
   { value: "sante", label: "Santé et consentements" },
 ] as const;
 type ProfileTab = (typeof profileTabs)[number]["value"];
@@ -200,9 +201,6 @@ export function ClientProfilePage() {
         </div>
       </section>
 
-      {!selected ? (
-        <EmptyState title="Aucun abonnement" description="Cette fiche n'a pas encore d'abonnement. Il apparaîtra ici après la conversion d'une demande." />
-      ) : (
         <Tabs value={tab} onValueChange={(value) => update({ onglet: value })}>
           <TabsList aria-label="Sections de la fiche" className="overflow-x-auto">
             {profileTabs.map((t) => (
@@ -211,6 +209,16 @@ export function ClientProfilePage() {
               </TabsTrigger>
             ))}
           </TabsList>
+          {!selected ? (
+            <TabsContent value={tab}>
+              <EmptyState
+                title={tab === "documents" ? "Documents indisponibles" : "Aucun abonnement"}
+                description={tab === "documents"
+                  ? "Cette fiche n'a pas encore d'abonnement auquel associer des documents. Convertis une demande, puis sélectionne l'abonnement à consulter."
+                  : "Cette fiche n'a pas encore d'abonnement. Il apparaîtra ici après la conversion d'une demande."}
+              />
+            </TabsContent>
+          ) : <>
           {/* Aperçu and Progression use the new design (board 03); the other tabs keep their current look until their own step. */}
           <TabsContent value="apercu">
             <OverviewTab key={selected.id} subscriptionId={selected.id} openTab={(onglet) => update({ onglet })} />
@@ -258,8 +266,8 @@ export function ClientProfilePage() {
               <AdminQuestionnairePanel key={`q-${selected.id}`} subscriptionId={selected.id} editable={isOnboardingEditable(selected.status)} />
             </Legacy>
           </TabsContent>
+          </>}
         </Tabs>
-      )}
     </AdminPage>
   );
 }

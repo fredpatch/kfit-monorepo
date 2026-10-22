@@ -21,7 +21,6 @@ export function PublicDocumentPage(){
     <h1 className="text-2xl font-extrabold">{labels[d.documentType]??"Document K'FIT"}</h1><p className="mt-1 text-sm text-muted-foreground">Version {d.versionNumber} · lien temporaire</p>
     {needs?<div className="mt-6"><label className="text-sm font-semibold" htmlFor="code">Code de vérification</label><p className="mb-2 text-xs text-muted-foreground">Saisis le code communiqué séparément par ton coach.</p><Input id="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,"").slice(0,6))}/><Button className="mt-3 w-full" disabled={code.length!==6||verify.isPending} onClick={()=>verify.mutate()}>Vérifier</Button></div>
     :<Button className="mt-6 w-full" disabled={download.isPending} onClick={()=>download.mutate()}><Download/>Télécharger le document</Button>}
-    {verified?<Button className="mt-6 w-full" disabled={download.isPending} onClick={()=>download.mutate()}><Download/>Télécharger le document</Button>:null}
     {error?<p role="alert" className="mt-3 text-sm text-danger">{error}</p>:null}
     <p className="mt-5 text-xs text-muted-foreground">Ce lien est personnel, limité dans le temps et peut être révoqué par le coach.</p>
   </section></main>;

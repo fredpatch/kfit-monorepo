@@ -8,8 +8,8 @@ Deliver the V1 Core finance workflow for subscription obligations, payments, quo
 
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED / validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED / validated 2026-10-22.
-3. S6.3 — Customer payment-proof upload and structured coach review workflow — IMPLEMENTED / Fred Gate 2 pending.
-4. S6.4 — Sequential payment receipts and secure sharing preparation — CLOSED until S6.3 validation.
+3. S6.3 — Customer payment-proof upload and structured coach review workflow — CLOSED / validated 2026-10-22.
+4. S6.4 — Sequential payment receipts and secure sharing preparation — PLANNING / Gate 1 pending.
 
 Backlog rows labelled coach sign-off / bug list / full UAT are not Sprint 6 finance implementation slices; final V1 Core UAT remains a later sprint gate.
 
@@ -2078,3 +2078,38 @@ Important validation boundary:
 - Browser/mobile/keyboard, end-to-end proof upload/review flow and DBeaver/private-storage acceptance remain human validation gates.
 - No validated S6.3 changelog entry is allowed before Fred confirms those checks.
 - S6.4 remains closed.
+
+
+## S6.3 closure — 2026-10-22
+
+Status: **CLOSED / LOCALLY VALIDATED**.
+
+Implementation:
+- `8edebc7` — `feat(payment-proofs): add secure upload and coach review`.
+
+Validation evidence:
+- typecheck green;
+- server 437/437;
+- shared 53/53;
+- PostgreSQL 467/467 including 39 S6.3 cases;
+- production build and db:check green;
+- real files/ClamAV preflight green;
+- Reviewer PASSED WITH NOTES;
+- QA PASSED WITH LIMITATIONS;
+- Fred explicitly confirmed browser/mobile/keyboard, end-to-end proof upload/review, private storage and DBeaver acceptance green.
+
+Key validated invariants:
+- proof evidence never creates money on upload;
+- full/partial coach review creates the authoritative S6.1 payment and FIFO allocations atomically;
+- negative outcomes create no money;
+- proof -> payment_event linkage is exact;
+- correction creates immutable replacement lineage;
+- concurrent double-review creates one payment;
+- manual payment vs proof confirmation cannot over-allocate;
+- subscription lifecycle remains unchanged;
+- generic audit excludes external reference, private review note, customer message and customer PII.
+
+Known non-blocking coverage note:
+- no dedicated expiry-during-lock-wait regression; expiry is rechecked after locks.
+
+S6.3 is Terminé. S6.4 is now the active planning slice; no S6.4 implementation before Gate 1.

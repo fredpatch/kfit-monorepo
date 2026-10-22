@@ -10,7 +10,7 @@ import { LegacySubscriptionRedirect, SubscriptionPreparationRoute, SubscriptionR
 
 /* Screens load on demand: keeps the first load small (charts, tables, legacy screens). */
 const PublicAppointmentPage = lazy(() => import("../appointments/components/PublicAppointmentPage.js").then((m) => ({ default: m.PublicAppointmentPage })));
-const AdminCatalogueCapacityPage = lazy(() => import("../catalogue/components/AdminCatalogueCapacityPage.js").then((m) => ({ default: m.AdminCatalogueCapacityPage })));
+const CataloguePage = lazy(() => import("../catalogue/components/CataloguePage.js").then((m) => ({ default: m.CataloguePage })));
 const PublicConsentPage = lazy(() => import("../consents/components/PublicConsentPage.js").then((m) => ({ default: m.PublicConsentPage })));
 const ClientsPage = lazy(() => import("../customers/components/ClientsPage.js").then((m) => ({ default: m.ClientsPage })));
 const AdminFollowUpQueuePage = lazy(() => import("../follow-ups/components/AdminFollowUpQueuePage.js").then((m) => ({ default: m.AdminFollowUpQueuePage })));
@@ -89,14 +89,7 @@ export function App() {
           <Route path="clients/:id" element={<ClientProfilePage />} />
           <Route path="abonnements/:id" element={<SubscriptionRoute />} />
           <Route path="abonnements/:id/preparation" element={<SubscriptionPreparationRoute />} />
-          <Route
-            path="offres"
-            element={
-              <AdminPage title="Catalogue" description="Pilote la disponibilité des offres publiques." legacy>
-                <AdminCatalogueCapacityPage />
-              </AdminPage>
-            }
-          />
+          <Route path="offres" element={<CataloguePage />} />
           <Route
             path="questionnaires"
             element={

@@ -145,6 +145,12 @@ class FakeCatalogueRepository implements CatalogueRepository {
     return this.services;
   }
 
+  claims: Array<{ serviceId: string; variantId: string | null; onboarding: boolean; count: number }> = [];
+  waitlist: Array<{ serviceId: string; active: number; oldestEnteredAt: Date | null }> = [];
+  async getAdminOverviewSnapshot() {
+    return { services: this.services, variants: snapshot.variants, components: snapshot.components, policies: snapshot.policies, claims: this.claims, waitlist: this.waitlist };
+  }
+
   async getAdminService(serviceId: string) {
     return this.services.find((service) => service.id === serviceId) ?? null;
   }
@@ -208,6 +214,9 @@ test("CatalogueService returns public services with variants, components and pol
     },
     async listAdminServices() {
       return [];
+    },
+    async getAdminOverviewSnapshot() {
+      return { services: [], variants: [], components: [], policies: [], claims: [], waitlist: [] };
     },
     async getAdminService() {
       return null;
@@ -354,4 +363,29 @@ test("CatalogueService updates, publishes, archives and reorders admin services"
   assert.equal(archived.status, "ok");
   assert.equal(archived.status === "ok" ? archived.response.service.availabilityStatus : null, "archived");
   assert.equal(archived.status === "ok" ? archived.response.service.isPublic : null, false);
+});
+
+test("CatalogueService admin overview sums S4 claims per service and variant, waitlist and lowest price", async () => {
+  const repository = new FakeCatalogueRepository();
+  repository.services = [adminRecord({ id: "service-1", basePriceXaf: 75000 }), adminRecord({ id: "service-2", slug: "other", basePriceXaf: null })];
+  repository.claims = [
+    { serviceId: "service-1", variantId: "variant-premium", onboarding: false, count: 2 },
+    { serviceId: "service-1", variantId: "variant-premium", onboarding: true, count: 1 },
+    { serviceId: "service-1", variantId: null, onboarding: false, count: 1 },
+  ];
+  repository.waitlist = [{ serviceId: "service-1", active: 2, oldestEnteredAt: new Date("2026-10-13T08:00:00Z") }];
+  const result = await new CatalogueService(repository).listAdminOverview(new Date("2026-10-22T08:00:00Z"));
+  const one = result.services.find((s) => s.id === "service-1");
+  assert.ok(one);
+  assert.equal(one.occupancy.occupied, 4);
+  assert.equal(one.occupancy.reservedOnboarding, 1);
+  assert.deepEqual(one.occupancy.byVariant.find((v) => v.variantId === "variant-premium"), { variantId: "variant-premium", occupied: 3, reservedOnboarding: 1 });
+  assert.deepEqual(one.waitlist, { active: 2, oldestEnteredAt: "2026-10-13T08:00:00.000Z" });
+  assert.equal(one.minPriceXaf, 75000);
+  assert.deepEqual(one.variants.map((v) => v.id).sort(), ["variant-premium", "variant-standard"]);
+  const two = result.services.find((s) => s.id === "service-2");
+  assert.deepEqual(two?.occupancy, { occupied: 0, reservedOnboarding: 0, byVariant: [] });
+  assert.deepEqual(two?.waitlist, { active: 0, oldestEnteredAt: null });
+  assert.equal(two?.minPriceXaf, null);
+  assert.equal(result.asOf, "2026-10-22T08:00:00.000Z");
 });

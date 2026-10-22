@@ -6,6 +6,8 @@ export const catalogueApiRoutes = {
   adminServiceArchive: "/admin/catalogue/services/:serviceId/archive",
   adminServiceCapacity: "/admin/catalogue/services/:serviceId/capacity",
   adminServiceOrder: "/admin/catalogue/services/order",
+  /** Enriched admin list (UX-7): occupancy, waitlist, variants, rules. Read-only. */
+  adminServicesOverview: "/admin/catalogue/services/overview",
 } as const;
 
 export type CatalogueApiRoute = (typeof catalogueApiRoutes)[keyof typeof catalogueApiRoutes];
@@ -155,3 +157,27 @@ export type CatalogueApiResponse =
   | CatalogueAdminServicesResponse
   | CatalogueAdminServiceResponse
   | CatalogueErrorResponse;
+
+/* ------------------------------------------------------------------ */
+/* Catalogue overview (UX-7, board 06). Read-only. Decisions by Fred   */
+/* on 2026-10-22: occupancy = S4 capacity-claim rule; a capacity limit */
+/* below the occupied places is allowed with a warning (no block).     */
+/* ------------------------------------------------------------------ */
+
+export type CatalogueOccupancy = {
+  /** Places held under the S4 rule (ready to start, active, paused, end review, onboarding with a valid reservation). */
+  occupied: number;
+  /** Of which onboarding subscriptions holding a reservation. */
+  reservedOnboarding: number;
+};
+
+export type CatalogueAdminServiceOverview = CatalogueAdminService & {
+  occupancy: CatalogueOccupancy & { byVariant: Array<CatalogueOccupancy & { variantId: string }> };
+  waitlist: { active: number; oldestEnteredAt: string | null };
+  /** Lowest price among the service base price and non-archived variants; null when none. */
+  minPriceXaf: number | null;
+  components: CatalogueServiceComponent[];
+  policy: CatalogueServicePolicy | null;
+  variants: CatalogueServiceVariant[];
+};
+export type CatalogueAdminServicesOverviewResponse = { asOf: string; services: CatalogueAdminServiceOverview[] };

@@ -1,6 +1,8 @@
 import type {
   CatalogueAdminService,
+  CatalogueAdminServiceOverview,
   CatalogueAdminServiceResponse,
+  CatalogueAdminServicesOverviewResponse,
   CatalogueAdminServicesResponse,
   CatalogueAvailabilityStatus,
   CatalogueCapacityMode,
@@ -72,6 +74,13 @@ export type CatalogueSnapshot = {
   policies: CatalogueServicePolicyRecord[];
 };
 
+/** Raw rows for the admin overview (UX-7). Claims follow capacityClaimCondition (S4). */
+export type CatalogueAdminOverviewSnapshot = Pick<CatalogueSnapshot, "variants" | "components" | "policies"> & {
+  services: CatalogueAdminServiceRecord[];
+  claims: Array<{ serviceId: string; variantId: string | null; onboarding: boolean; count: number }>;
+  waitlist: Array<{ serviceId: string; active: number; oldestEnteredAt: Date | null }>;
+};
+
 export type CatalogueServiceWriteInput = {
   name: string;
   slug: string;
@@ -94,6 +103,7 @@ export type CatalogueServicePatchInput = Partial<CatalogueServiceWriteInput>;
 export type CatalogueRepository = {
   listPublicServices(): Promise<CatalogueSnapshot>;
   listAdminServices(): Promise<CatalogueAdminServiceRecord[]>;
+  getAdminOverviewSnapshot(now: Date): Promise<CatalogueAdminOverviewSnapshot>;
   getAdminService(serviceId: string): Promise<CatalogueAdminServiceRecord | null>;
   createService(input: CatalogueServiceWriteInput): Promise<CatalogueAdminServiceRecord | "slug_conflict">;
   updateService(serviceId: string, input: CatalogueServicePatchInput): Promise<CatalogueAdminServiceRecord | "not_found" | "slug_conflict">;
@@ -364,82 +374,103 @@ function validatePublishable(service: CatalogueAdminServiceRecord): string | nul
   return null;
 }
 
+/** Groups a snapshot by service / variant scope. Shared by the public list and the admin overview (UX-7). */
+function assembleSnapshot(snapshot: Pick<CatalogueSnapshot, "variants" | "components" | "policies">) {
+  const variantsByService = new Map<string, CatalogueServiceVariantRecord[]>();
+  for (const variant of snapshot.variants) {
+    const variants = variantsByService.get(variant.serviceId) ?? [];
+    variants.push(variant);
+    variantsByService.set(variant.serviceId, variants);
+  }
+
+  const componentsByScope = new Map<string, CatalogueServiceComponentRecord[]>();
+  for (const component of snapshot.components) {
+    const key = `${component.serviceId}:${component.variantId ?? "service"}`;
+    const components = componentsByScope.get(key) ?? [];
+    components.push(component);
+    componentsByScope.set(key, components);
+  }
+
+  const policyByScope = new Map<string, CatalogueServicePolicyRecord>();
+  for (const policy of snapshot.policies) {
+    policyByScope.set(`${policy.serviceId}:${policy.variantId ?? "service"}`, policy);
+  }
+
+  const componentsOf = (serviceId: string, variantId?: string) =>
+    [...(componentsByScope.get(`${serviceId}:${variantId ?? "service"}`) ?? [])].sort(byComponentLabel).map(toComponent);
+  const policyOf = (serviceId: string, variantId?: string) => toPolicy(policyByScope.get(`${serviceId}:${variantId ?? "service"}`));
+  const variantsOf = (serviceId: string): CatalogueServiceVariant[] =>
+    [...(variantsByService.get(serviceId) ?? [])].sort(bySortThenName).map((variant) => ({
+      id: variant.id,
+      name: variant.name,
+      slug: variant.slug,
+      priceXaf: variant.priceXaf,
+      durationValue: variant.durationValue,
+      durationUnit: variant.durationUnit,
+      capacityLimit: variant.capacityLimit,
+      availabilityStatus: variant.availabilityStatus,
+      components: componentsOf(serviceId, variant.id),
+      policy: policyOf(serviceId, variant.id),
+    }));
+  return { componentsOf, policyOf, variantsOf };
+}
+
 export class CatalogueService {
   constructor(private readonly repository: CatalogueRepository) {}
 
   async listPublicServices(): Promise<CataloguePublicServicesResponse> {
     const snapshot = await this.repository.listPublicServices();
-
-    const variantsByService = new Map<string, CatalogueServiceVariantRecord[]>();
-    for (const variant of snapshot.variants) {
-      const variants = variantsByService.get(variant.serviceId) ?? [];
-      variants.push(variant);
-      variantsByService.set(variant.serviceId, variants);
-    }
-
-    const componentsByScope = new Map<string, CatalogueServiceComponentRecord[]>();
-    for (const component of snapshot.components) {
-      const key = `${component.serviceId}:${component.variantId ?? "service"}`;
-      const components = componentsByScope.get(key) ?? [];
-      components.push(component);
-      componentsByScope.set(key, components);
-    }
-
-    const policyByScope = new Map<string, CatalogueServicePolicyRecord>();
-    for (const policy of snapshot.policies) {
-      policyByScope.set(`${policy.serviceId}:${policy.variantId ?? "service"}`, policy);
-    }
+    const { componentsOf, policyOf, variantsOf } = assembleSnapshot(snapshot);
 
     const services: CataloguePublicService[] = [...snapshot.services]
       .sort(bySortThenName)
-      .map((service) => {
-        const serviceComponents = [...(componentsByScope.get(`${service.id}:service`) ?? [])]
-          .sort(byComponentLabel)
-          .map(toComponent);
-
-        const variants: CatalogueServiceVariant[] = [...(variantsByService.get(service.id) ?? [])]
-          .sort(bySortThenName)
-          .map((variant) => {
-            const variantComponents = [...(componentsByScope.get(`${service.id}:${variant.id}`) ?? [])]
-              .sort(byComponentLabel)
-              .map(toComponent);
-
-            return {
-              id: variant.id,
-              name: variant.name,
-              slug: variant.slug,
-              priceXaf: variant.priceXaf,
-              durationValue: variant.durationValue,
-              durationUnit: variant.durationUnit,
-              capacityLimit: variant.capacityLimit,
-              availabilityStatus: variant.availabilityStatus,
-              components: variantComponents,
-              policy: toPolicy(policyByScope.get(`${service.id}:${variant.id}`)),
-            };
-          });
-
-        return {
-          id: service.id,
-          name: service.name,
-          slug: service.slug,
-          description: service.description,
-          pricingMode: service.pricingMode,
-          basePriceXaf: service.basePriceXaf,
-          deliveryType: service.deliveryType,
-          defaultDurationValue: service.defaultDurationValue,
-          defaultDurationUnit: service.defaultDurationUnit,
-          availabilityStatus: service.availabilityStatus,
-          capacityMode: service.capacityMode,
-          capacityLimit: service.capacityLimit,
-          waitlistEnabled: service.waitlistEnabled,
-          publishedAt: service.publishedAt.toISOString(),
-          components: serviceComponents,
-          policy: toPolicy(policyByScope.get(`${service.id}:service`)),
-          variants,
-        };
-      });
+      .map((service) => ({
+        id: service.id,
+        name: service.name,
+        slug: service.slug,
+        description: service.description,
+        pricingMode: service.pricingMode,
+        basePriceXaf: service.basePriceXaf,
+        deliveryType: service.deliveryType,
+        defaultDurationValue: service.defaultDurationValue,
+        defaultDurationUnit: service.defaultDurationUnit,
+        availabilityStatus: service.availabilityStatus,
+        capacityMode: service.capacityMode,
+        capacityLimit: service.capacityLimit,
+        waitlistEnabled: service.waitlistEnabled,
+        publishedAt: service.publishedAt.toISOString(),
+        components: componentsOf(service.id),
+        policy: policyOf(service.id),
+        variants: variantsOf(service.id),
+      }));
 
     return { services };
+  }
+
+  /** Admin overview (UX-7): every service with occupancy (S4 claim rule), active waitlist, variants and rules. Read-only. */
+  async listAdminOverview(now = new Date()): Promise<CatalogueAdminServicesOverviewResponse> {
+    const snapshot = await this.repository.getAdminOverviewSnapshot(now);
+    const { componentsOf, policyOf, variantsOf } = assembleSnapshot(snapshot);
+    const services = [...snapshot.services].sort(bySortThenName).map((service): CatalogueAdminServiceOverview => {
+      const claims = snapshot.claims.filter((c) => c.serviceId === service.id);
+      const sum = (rows: typeof claims) => ({
+        occupied: rows.reduce((total, c) => total + c.count, 0),
+        reservedOnboarding: rows.filter((c) => c.onboarding).reduce((total, c) => total + c.count, 0),
+      });
+      const variants = variantsOf(service.id);
+      const waitlist = snapshot.waitlist.find((w) => w.serviceId === service.id);
+      const prices = [service.basePriceXaf, ...variants.map((v) => v.priceXaf)].filter((p): p is number => p !== null);
+      return {
+        ...toAdminService(service),
+        occupancy: { ...sum(claims), byVariant: variants.map((v) => ({ variantId: v.id, ...sum(claims.filter((c) => c.variantId === v.id)) })) },
+        waitlist: { active: waitlist?.active ?? 0, oldestEnteredAt: waitlist?.oldestEnteredAt?.toISOString() ?? null },
+        minPriceXaf: prices.length ? Math.min(...prices) : null,
+        components: componentsOf(service.id),
+        policy: policyOf(service.id),
+        variants,
+      };
+    });
+    return { asOf: now.toISOString(), services };
   }
 
   async listAdminServices(): Promise<CatalogueAdminServicesResponse> {

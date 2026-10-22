@@ -72,6 +72,15 @@ export function createExpressCatalogueRouter(deps: ExpressCatalogueRouterDeps): 
     }
   });
 
+  router.get(catalogueApiRoutes.adminServicesOverview, async (request: Request, response: Response) => {
+    try {
+      const context = await toAuthContext(request, deps.resolveSession);
+      applyJsonResponse(response, await deps.controller.listAdminOverview(context));
+    } catch {
+      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+    }
+  });
+
   router.post(catalogueApiRoutes.adminServices, async (request: Request, response: Response) => {
     try {
       const context = await toAuthContext(request, deps.resolveSession);

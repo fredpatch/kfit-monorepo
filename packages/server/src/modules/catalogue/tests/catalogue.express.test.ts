@@ -74,6 +74,9 @@ function makeService(overrides: Partial<CatalogueServiceFake> = {}): CatalogueSe
     async listAdminServices() {
       return { services: [adminService] };
     },
+    async listAdminOverview() {
+      return { asOf: "2026-10-22T08:00:00.000Z", services: [{ ...adminService, occupancy: { occupied: 3, reservedOnboarding: 1, byVariant: [] }, waitlist: { active: 2, oldestEnteredAt: "2026-10-13T08:00:00.000Z" }, minPriceXaf: 75000, components: [], policy: null, variants: [] }] };
+    },
     async createAdminService() {
       return { status: "ok", response: { service: { ...adminService, id: "service-created", isPublic: false, publishedAt: null } } };
     },
@@ -165,12 +168,14 @@ test("catalogue admin routes require an authenticated admin session", async () =
     const missing = await fetch(`${baseUrl}${catalogueApiRoutes.adminServices}`);
     assert.equal(missing.status, 401);
     assert.deepEqual(await missing.json(), { error: "AUTH_SESSION_REQUIRED" });
+    assert.equal((await fetch(`${baseUrl}${catalogueApiRoutes.adminServicesOverview}`)).status, 401);
   });
 
   await withTestServer(controller, async (baseUrl) => {
     const forbidden = await fetch(`${baseUrl}${catalogueApiRoutes.adminServices}`);
     assert.equal(forbidden.status, 403);
     assert.deepEqual(await forbidden.json(), { error: "CATALOGUE_ADMIN_FORBIDDEN" });
+    assert.equal((await fetch(`${baseUrl}${catalogueApiRoutes.adminServicesOverview}`)).status, 403);
   }, () => coachSession);
 });
 
@@ -180,6 +185,11 @@ test("catalogue admin routes list and mutate services with CSRF", async () => {
   await withTestServer(controller, async (baseUrl) => {
     const list = await fetch(`${baseUrl}${catalogueApiRoutes.adminServices}`);
     assert.equal(list.status, 200);
+    const overview = await fetch(`${baseUrl}${catalogueApiRoutes.adminServicesOverview}`);
+    assert.equal(overview.status, 200);
+    const overviewBody = await overview.json() as { services: Array<{ occupancy: { occupied: number }; waitlist: { active: number } }> };
+    assert.equal(overviewBody.services[0]?.occupancy.occupied, 3);
+    assert.equal(overviewBody.services[0]?.waitlist.active, 2);
     assert.equal((await list.json() as { services: Array<{ slug: string }> }).services[0]?.slug, "coaching-nutrition");
 
     const missingCsrf = await fetch(`${baseUrl}${catalogueApiRoutes.adminServices}`, {

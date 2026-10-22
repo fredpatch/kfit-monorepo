@@ -1,4 +1,4 @@
-import type { CadenceState, GoalStatus, ServiceRequestStatus, WaitlistEntryStatus } from "@kfit/shared";
+import type { CadenceState, CatalogueAvailabilityStatus, GoalStatus, ServiceRequestStatus, WaitlistEntryStatus } from "@kfit/shared";
 
 /**
  * Single source of truth for status wording and colour (board 01).
@@ -104,6 +104,13 @@ export function describeStatus<K extends string>(map: Record<K, StatusDescriptor
   if (value && Object.prototype.hasOwnProperty.call(map, value)) return map[value as K];
   return unknownStatus;
 }
+
+export const availabilityStatus: Record<CatalogueAvailabilityStatus, StatusDescriptor> = {
+  open: { label: "Ouverte", tone: "success" },
+  waitlist_only: { label: "Liste d'attente", tone: "waitlist" },
+  temporarily_closed: { label: "Fermée", tone: "neutral" },
+  archived: { label: "Archivée", tone: "neutral" },
+};
 
 /** "En retard · 4 j" style label for overdue cadence. */
 export function overdueLabel(days: number | null | undefined): string {

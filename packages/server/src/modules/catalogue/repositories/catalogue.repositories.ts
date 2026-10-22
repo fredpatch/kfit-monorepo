@@ -1,6 +1,9 @@
-import { and, asc, eq, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNotNull, isNull, min, ne, sql } from "drizzle-orm";
 import type { db as appDb } from "../../../db/client.js";
 import { serviceComponents, servicePolicies, services, serviceVariants } from "../../../db/schema/catalogue.js";
+import { subscriptions } from "../../../db/schema/customers.js";
+import { waitlistEntries } from "../../../db/schema/prospects.js";
+import { capacityClaimCondition } from "../../onboarding/repositories/capacity-claims.js";
 import type {
   CatalogueAdminServiceRecord,
   CatalogueRepository,
@@ -182,6 +185,39 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
       components: componentRows.map(mapComponent),
       policies: policyRows.map(mapPolicy),
     };
+  }
+
+  /** Read-only snapshot for the admin overview (UX-7). One read-only transaction so counts and services agree. */
+  async getAdminOverviewSnapshot(now: Date) {
+    return this.database.transaction(async (tx) => {
+      const serviceRows = await tx.select().from(services).orderBy(asc(services.sortOrder), asc(services.name));
+      const serviceIds = serviceRows.map((service) => service.id);
+      if (serviceIds.length === 0) return { services: [], variants: [], components: [], policies: [], claims: [], waitlist: [] };
+      const onboarding = sql<boolean>`${subscriptions.status} = 'onboarding'`;
+      const [variantRows, componentRows, policyRows, claimRows, waitlistRows] = await Promise.all([
+        tx.select().from(serviceVariants)
+          .where(and(inArray(serviceVariants.serviceId, serviceIds), isNull(serviceVariants.archivedAt), ne(serviceVariants.availabilityStatus, "archived")))
+          .orderBy(asc(serviceVariants.sortOrder), asc(serviceVariants.name)),
+        tx.select().from(serviceComponents).where(inArray(serviceComponents.serviceId, serviceIds)),
+        tx.select().from(servicePolicies).where(inArray(servicePolicies.serviceId, serviceIds)),
+        tx.select({ serviceId: subscriptions.serviceId, variantId: subscriptions.variantId, onboarding, count: count() })
+          .from(subscriptions)
+          .where(and(inArray(subscriptions.serviceId, serviceIds), capacityClaimCondition(now)))
+          .groupBy(subscriptions.serviceId, subscriptions.variantId, onboarding),
+        tx.select({ serviceId: waitlistEntries.serviceId, active: count(), oldestEnteredAt: min(waitlistEntries.enteredAt) })
+          .from(waitlistEntries)
+          .where(and(inArray(waitlistEntries.serviceId, serviceIds), eq(waitlistEntries.status, "active"), isNull(waitlistEntries.leftAt)))
+          .groupBy(waitlistEntries.serviceId),
+      ]);
+      return {
+        services: serviceRows.map(mapAdminService),
+        variants: variantRows.map(mapVariant),
+        components: componentRows.map(mapComponent),
+        policies: policyRows.map(mapPolicy),
+        claims: claimRows.map((row) => ({ serviceId: row.serviceId, variantId: row.variantId, onboarding: Boolean(row.onboarding), count: Number(row.count) })),
+        waitlist: waitlistRows.map((row) => ({ serviceId: row.serviceId, active: Number(row.active), oldestEnteredAt: row.oldestEnteredAt ? new Date(row.oldestEnteredAt) : null })),
+      };
+    }, { isolationLevel: "repeatable read", accessMode: "read only" });
   }
 
   async listAdminServices() {

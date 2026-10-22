@@ -16,6 +16,7 @@ test("catalogue shared contracts expose stable public and admin routes", () => {
     adminServiceArchive: "/admin/catalogue/services/:serviceId/archive",
     adminServiceCapacity: "/admin/catalogue/services/:serviceId/capacity",
     adminServiceOrder: "/admin/catalogue/services/order",
+    adminServicesOverview: "/admin/catalogue/services/overview",
   });
 
   assert.deepEqual(catalogueErrorCodes, [

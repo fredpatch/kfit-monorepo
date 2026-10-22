@@ -1,6 +1,7 @@
 import type {
   CatalogueAdminServiceResponse,
   CatalogueAdminServicesResponse,
+  CatalogueAdminServicesOverviewResponse,
   CataloguePublicServicesResponse,
   CatalogueServiceCapacityInput,
   CatalogueServiceMutationInput,
@@ -42,6 +43,7 @@ export class CatalogueController {
     CatalogueService,
     | "listPublicServices"
     | "listAdminServices"
+    | "listAdminOverview"
     | "createAdminService"
     | "updateAdminService"
     | "publishAdminService"
@@ -61,6 +63,13 @@ export class CatalogueController {
     const forbidden = requireAdminSession(context);
     if (forbidden) return forbidden;
     return { status: 200, body: await this.catalogueService.listAdminServices() };
+  }
+
+  /** UX-7 read-only overview (occupancy, waitlist, variants, rules). */
+  async listAdminOverview(context: AuthHttpRequestContext): Promise<HttpJsonResponse<CatalogueAdminServicesOverviewResponse | { error: string }>> {
+    const forbidden = requireAdminSession(context);
+    if (forbidden) return forbidden;
+    return { status: 200, body: await this.catalogueService.listAdminOverview() };
   }
 
   async createAdminService(

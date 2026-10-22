@@ -1,9 +1,10 @@
-import { and, count, eq, gt, inArray, isNull, ne, or } from "drizzle-orm";
+import { and, count, eq, isNull, ne, or } from "drizzle-orm";
 import type { OnboardingDetail } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
 import { servicePolicies, services, serviceVariants } from "../../../db/schema/catalogue.js";
 import { subscriptions, subscriptionStatusHistory } from "../../../db/schema/customers.js";
 import { onboardingItems } from "../../../db/schema/onboarding.js";
+import { capacityClaimCondition } from "./capacity-claims.js";
 import { lockConsentDefinitions, readConsentEvidence } from "../../consents/repositories/consent.repository.js";
 import { AuditService, type AuditMetadata } from "../../auth/services/audit.service.js";
 import { checklistDefinition, deriveOnboarding, itemPermissions, resolveCapacity, resolveEffectivePolicy,
@@ -51,7 +52,7 @@ export class DrizzleOnboardingRepository implements OnboardingRepository {
         const [claims] = capacity.mode === "limited" ? await tx.select({ value: count() }).from(subscriptions).where(and(
           eq(subscriptions.serviceId, service.id), ne(subscriptions.id, subscriptionId),
           capacity.scope === "variant" ? eq(subscriptions.variantId, subscription.variantId!) : undefined,
-          or(inArray(subscriptions.status, ["ready_to_start", "active", "paused", "completion_due"]), and(eq(subscriptions.status, "onboarding"), gt(subscriptions.capacityReservedUntil, now))),
+          capacityClaimCondition(now),
         )) : [];
         const occupied = claims?.value ?? 0;
         const derived = deriveOnboarding({ status: subscription.status, plannedStartDate: subscription.plannedStartDate,

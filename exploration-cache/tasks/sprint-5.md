@@ -10,7 +10,7 @@ Deliver the authoritative post-onboarding subscription/coaching lifecycle: activ
 2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — VALIDATED.
 3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — VALIDATED.
 4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — VALIDATED.
-5. S5.5 — Personalized document versioning and secure temporary delivery links — PLANNING.
+5. S5.5 — Personalized document versioning and secure temporary delivery links — VALIDATED.
 
 ## S5.1 — planning
 
@@ -1387,3 +1387,30 @@ Static review/QA found and corrected:
 No migration is required: S5.5 reuses documents, document_versions, secure_access_tokens.context_json, external_access_events and progress_photos.
 
 Runtime is NOT yet validated. Fred must run the full automated suite/preflights and perform browser/DBeaver/private-storage Gate 2 before S5.5/Sprint 5 can close.
+
+
+## Sprint 5 closure — 2026-10-22
+
+Status: **CLOSED / LOCALLY VALIDATED**.
+
+S5.5 validation evidence:
+- typecheck and diff checks green;
+- server unit tests 332/332;
+- shared tests 47/47;
+- PostgreSQL integration 348/348;
+- private-file/ClamAV preflight passed, including EICAR detection;
+- PDF/Puppeteer preflight passed;
+- browser Gate 2 validated document upload, immutable versions, exact-version delivery links, generated progress summary, sensitive verification, link expiry/revocation/max-use behavior and private progress photos;
+- DBeaver/private-storage inspection validated document/version/token/photo/audit persistence, opaque storage names and stored hashes without raw bearer/verification secrets;
+- corrective UI commit `0f39eb2` exposed the Documents profile tab, version-specific sharing and corrected sensitive public download UX.
+
+Sprint 5 acceptance is complete across S5.1–S5.5.
+
+Production blockers remain:
+- legal validation for the applicable Gabon context;
+- true encrypted off-server backup destination;
+- device-OTP/trusted-device login contract before production.
+
+Next sprint: **Sprint 6 — Paiements, échéances, devis, reçus et justificatifs**.
+First dependency-ordered task: **Financial ledger: charges, installments, transactions and allocations**.
+Sprint 6 remains planning-only until Gate 1.

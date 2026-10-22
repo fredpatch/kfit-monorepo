@@ -1,139 +1,127 @@
-import { useState } from "react";
-import { AdminFollowUpQueuePage } from "../follow-ups/components/AdminFollowUpQueuePage.js";
+import { Suspense, lazy, type ReactNode } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import { AuthProvider } from "../auth/state/auth-context.js";
 import { PublicAppointmentPage } from "../appointments/components/PublicAppointmentPage.js";
-import { AdminSubscriptionPage } from "../subscriptions/components/AdminSubscriptionPage.js";
-import { BootstrapForm } from "../auth/components/BootstrapForm.js";
-import { LoginForm } from "../auth/components/LoginForm.js";
-import { SessionPanel } from "../auth/components/SessionPanel.js";
-import { AuthProvider, useAuth } from "../auth/state/auth-context.js";
 import { AdminCatalogueCapacityPage } from "../catalogue/components/AdminCatalogueCapacityPage.js";
 import { PublicCataloguePage } from "../catalogue/components/PublicCataloguePage.js";
-import { AdminRequestsQueuePage } from "../requests/components/AdminRequestsQueuePage.js";
-import { AdminCustomersPage } from "../customers/components/AdminCustomersPage.js";
-import { AdminOnboardingPage } from "../onboarding/components/AdminOnboardingPage.js";
 import { PublicConsentPage } from "../consents/components/PublicConsentPage.js";
-import { PublicQuestionnairePage } from "../questionnaires/components/PublicQuestionnairePage.js";
+import { AdminCustomersPage } from "../customers/components/AdminCustomersPage.js";
+import { AdminFollowUpQueuePage } from "../follow-ups/components/AdminFollowUpQueuePage.js";
 import { AdminQuestionnaireTemplatesPage } from "../questionnaires/components/AdminQuestionnaireTemplatesPage.js";
+import { PublicQuestionnairePage } from "../questionnaires/components/PublicQuestionnairePage.js";
+import { AdminRequestsQueuePage } from "../requests/components/AdminRequestsQueuePage.js";
+import { EmptyState } from "../components/ui/empty-state.js";
+import { AuthGate } from "./AuthGate.js";
+import { AdminLayout } from "./layout/AdminLayout.js";
+import { AdminPage } from "./layout/AdminPage.js";
+import { LegacySubscriptionRedirect, SubscriptionPreparationRoute, SubscriptionRoute } from "./routes/subscription-routes.js";
 
-type AdminTab = "catalogue" | "requests" | "customers" | "onboarding" | "questionnaires" | "subscriptions" | "follow-ups";
+// DEV-only component gallery (UX-1). The condition is static in production builds, so the module is dropped.
+const UiGallery = import.meta.env.DEV ? lazy(() => import("../dev/UiGallery.js").then((m) => ({ default: m.UiGallery }))) : null;
 
-function AdminApp() {
-  const auth = useAuth();
-  const onboardingId = /^\/admin\/onboarding\/([0-9a-f-]{36})$/i.exec(window.location.pathname)?.[1] ?? "";
-  const subscriptionId = /^\/admin\/subscription\/([0-9a-f-]{36})$/i.exec(window.location.pathname)?.[1] ?? "";
-  const [activeTab, setActiveTab] = useState<AdminTab>(window.location.pathname === "/admin/follow-up-queue" ? "follow-ups" : subscriptionId ? "subscriptions" : onboardingId ? "onboarding" : "catalogue");
+/** Public pages keep their current look until UX-11 / UX-12. */
+function Legacy({ children }: { children: ReactNode }) {
+  return <div className="legacy">{children}</div>;
+}
 
-  if (auth.isLoading) {
-    return (
-      <main className="auth-shell">
-        <section className="auth-card">
-          <p className="eyebrow">K'FIT Admin</p>
-          <h1>Accès sécurisé</h1>
-          <p className="status">Vérification de la session...</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (auth.bootstrapStatusError) {
-    return (
-      <main className="auth-shell">
-        <section className="auth-card">
-          <p className="eyebrow">K'FIT Admin</p>
-          <h1>API locale indisponible</h1>
-          <p className="error">
-            Impossible de vérifier si l’initialisation K'FIT est requise. Vérifie que l’API locale et PostgreSQL sont démarrés.
-          </p>
-          <button type="button" onClick={() => void auth.retryBootstrapStatus()}>
-            Réessayer
-          </button>
-        </section>
-      </main>
-    );
-  }
-
-  if (auth.bootstrapRequired) {
-    return (
-      <main className="auth-shell">
-        <section className="auth-card">
-          <p className="eyebrow">K'FIT Admin</p>
-          <h1>Initialisation sécurisée</h1>
-          <BootstrapForm />
-        </section>
-      </main>
-    );
-  }
-
-  if (!auth.session) {
-    return (
-      <main className="auth-shell">
-        <section className="auth-card">
-          <p className="eyebrow">K'FIT Admin</p>
-          <h1>Accès sécurisé</h1>
-          <p className="muted">
-            Connecte-toi pour gérer les abonnements, clients et opérations K'FIT.
-          </p>
-          <LoginForm />
-        </section>
-      </main>
-    );
-  }
-
+function AdminRoot() {
   return (
-    <main className="admin-shell">
-      <header className="admin-topbar">
-        <div>
-          <p className="eyebrow">K'FIT Admin</p>
-          <h1>{activeTab === "follow-ups" ? "Suivis et échéances" : activeTab === "subscriptions" ? "Cycle de vie des abonnements" : activeTab === "catalogue" ? "Gestion du catalogue" : activeTab === "customers" ? "Gestion des clients" : activeTab === "onboarding" ? "Préparation des abonnements" : activeTab === "questionnaires" ? "Modèles de questionnaires" : "Demandes et contacts"}</h1>
-          <p className="muted">
-            {activeTab === "follow-ups" ? "Priorise les suivis selon la cadence active et les prochaines actions." : activeTab === "subscriptions" ? "Consulte les dates et prestations, puis enregistre chaque décision du cycle de vie." : activeTab === "catalogue"
-              ? "Pilote la disponibilité des offres publiques depuis un espace authentifié."
-              : activeTab === "customers" ? "Retrouve un client par WhatsApp ou crée sa fiche." : activeTab === "onboarding" ? "Vérifie les exigences et la capacité avant le démarrage." : activeTab === "questionnaires" ? "Prépare et publie les versions des questionnaires d’évaluation et de santé." : "Suis les demandes reçues et enregistre les tentatives de contact."}
-          </p>
-        </div>
-        <SessionPanel />
-      </header>
+    <AuthProvider>
+      <AuthGate>
+        <AdminLayout />
+      </AuthGate>
+    </AuthProvider>
+  );
+}
 
-      <nav className="admin-tabs">
-        <button type="button" className={activeTab === "follow-ups" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"} onClick={() => setActiveTab("follow-ups")}>Suivis</button>
-        <button type="button" className={activeTab === "subscriptions" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"} onClick={() => setActiveTab("subscriptions")}>Abonnements</button>
-        <button
-          type="button"
-          className={activeTab === "catalogue" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"}
-          onClick={() => setActiveTab("catalogue")}
-        >
-          Catalogue
-        </button>
-        <button
-          type="button"
-          className={activeTab === "requests" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"}
-          onClick={() => setActiveTab("requests")}
-        >
-          Demandes
-        </button>
-        <button type="button" className={activeTab === "customers" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"} onClick={() => setActiveTab("customers")}>
-          Clients
-        </button>
-        <button type="button" className={activeTab === "onboarding" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"} onClick={() => setActiveTab("onboarding")}>Onboarding</button>
-        <button type="button" className={activeTab === "questionnaires" ? "admin-tabs__tab admin-tabs__tab--active" : "admin-tabs__tab"} onClick={() => setActiveTab("questionnaires")}>Questionnaires</button>
-      </nav>
-
-      {activeTab === "follow-ups" ? <AdminFollowUpQueuePage /> : activeTab === "subscriptions" ? <AdminSubscriptionPage initialSubscriptionId={subscriptionId} /> : activeTab === "catalogue" ? <AdminCatalogueCapacityPage /> : activeTab === "customers" ? <AdminCustomersPage /> : activeTab === "onboarding" ? <AdminOnboardingPage initialSubscriptionId={onboardingId} /> : activeTab === "questionnaires" ? <AdminQuestionnaireTemplatesPage /> : <AdminRequestsQueuePage />}
-    </main>
+function AdminNotFound() {
+  return (
+    <AdminPage title="Page introuvable">
+      <EmptyState title="Cette page n'existe pas" description="Utilise le menu pour revenir à un écran de l'espace coach." />
+    </AdminPage>
   );
 }
 
 export function App() {
-  if (window.location.pathname === "/appointment") return <PublicAppointmentPage />;
-  if (window.location.pathname === "/consent") return <PublicConsentPage />;
-  if (window.location.pathname === "/questionnaire") return <PublicQuestionnairePage />;
-  if (window.location.pathname.startsWith("/admin")) {
-    return (
-      <AuthProvider>
-        <AdminApp />
-      </AuthProvider>
-    );
-  }
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Legacy><PublicCataloguePage /></Legacy>} />
+        <Route path="/appointment" element={<Legacy><PublicAppointmentPage /></Legacy>} />
+        <Route path="/consent" element={<Legacy><PublicConsentPage /></Legacy>} />
+        <Route path="/questionnaire" element={<Legacy><PublicQuestionnairePage /></Legacy>} />
 
-  return <PublicCataloguePage />;
+        {UiGallery ? (
+          <Route
+            path="/__ui"
+            element={
+              <Suspense fallback={null}>
+                <UiGallery />
+              </Suspense>
+            }
+          />
+        ) : null}
+
+        {/*
+          Admin screen URLs must never start with an API prefix proxied in vite.config.ts
+          (/admin/catalogue, /admin/requests, /admin/customers, /admin/subscriptions…): a reload would hit the API.
+        */}
+        <Route path="/admin" element={<AdminRoot />}>
+          {/* « Aujourd'hui » replaces this redirect in UX-9. */}
+          <Route index element={<Navigate replace to="suivis" />} />
+          <Route
+            path="suivis"
+            element={
+              <AdminPage title="Suivis" description="Priorise les suivis selon la cadence active et les prochaines actions." legacy>
+                <AdminFollowUpQueuePage />
+              </AdminPage>
+            }
+          />
+          <Route
+            path="demandes"
+            element={
+              <AdminPage title="Demandes" description="Suis les demandes reçues, enregistre les tentatives de contact et fais progresser leur statut." legacy>
+                <AdminRequestsQueuePage />
+              </AdminPage>
+            }
+          />
+          <Route
+            path="clients"
+            element={
+              <AdminPage title="Clients" description="Retrouve un client par WhatsApp ou crée sa fiche." legacy>
+                <AdminCustomersPage />
+              </AdminPage>
+            }
+          />
+          <Route path="abonnements/:id" element={<SubscriptionRoute />} />
+          <Route path="abonnements/:id/preparation" element={<SubscriptionPreparationRoute />} />
+          <Route
+            path="offres"
+            element={
+              <AdminPage title="Catalogue" description="Pilote la disponibilité des offres publiques." legacy>
+                <AdminCatalogueCapacityPage />
+              </AdminPage>
+            }
+          />
+          <Route
+            path="questionnaires"
+            element={
+              <AdminPage title="Questionnaires" description="Prépare et publie les versions des questionnaires d’évaluation et de santé." legacy>
+                <AdminQuestionnaireTemplatesPage />
+              </AdminPage>
+            }
+          />
+
+          {/* Former URLs, still used in e-mails or bookmarks. */}
+          <Route path="follow-up-queue" element={<Navigate replace to="/admin/suivis" />} />
+          <Route path="subscription/:id" element={<LegacySubscriptionRedirect section="lifecycle" />} />
+          <Route path="onboarding/:id" element={<LegacySubscriptionRedirect section="preparation" />} />
+
+          <Route path="*" element={<AdminNotFound />} />
+        </Route>
+
+        <Route path="*" element={<Navigate replace to="/" />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }

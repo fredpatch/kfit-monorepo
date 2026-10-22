@@ -58,6 +58,6 @@ export function RequestConversionControl({ request, onConverted }: { request: Ad
         <button type="submit" disabled={convert.isPending}>{convert.isPending ? "Conversion…" : "Convertir en abonnement"}</button>
       </form>}
     </>}
-    {locked && subscriptionId && <a href={`/admin/onboarding/${encodeURIComponent(subscriptionId)}`}>Ouvrir l’onboarding de l’abonnement</a>}
+    {locked && subscriptionId && <a href={`/admin/abonnements/${encodeURIComponent(subscriptionId)}/preparation`}>Ouvrir l’onboarding de l’abonnement</a>}
   </section>;
 }

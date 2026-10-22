@@ -10,7 +10,8 @@ const statuses: Record<string, string> = { pending: "À compléter", blocked: "B
 const lifecycle: Record<string, string> = { onboarding: "En préparation", ready_to_start: "Prêt à démarrer", active: "Actif", cancelled: "Annulé", completed: "Terminé", awaiting_payment: "En attente de paiement", medical_clearance_required: "Validation médicale requise" };
 function date(value: string | null) { return value ? new Date(value).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" }) : "Non définie"; }
 
-function OnboardingPanel({ subscriptionId }: { subscriptionId: string }) {
+/** Subscription preparation (legacy UI until UX-4). Opened from /admin/abonnements/:id/preparation. */
+export function OnboardingPanel({ subscriptionId }: { subscriptionId: string }) {
   const client = useQueryClient(); const key = ["onboarding", subscriptionId] as const;
   const query = useQuery({ queryKey: key, queryFn: () => onboardingApi.get(subscriptionId), refetchInterval: 30_000 });
   const [error, setError] = useState<string | null>(null); const [notice, setNotice] = useState<string | null>(null);
@@ -32,7 +33,7 @@ function OnboardingPanel({ subscriptionId }: { subscriptionId: string }) {
   return <div className="onboarding-grid">
     <section className="customers-panel">
       <h2>Abonnement {view.subscription.reference}</h2>
-      <a href={`/admin/subscription/${subscriptionId}`}>Ouvrir le cycle de vie de l’abonnement</a>
+      <a href={`/admin/abonnements/${subscriptionId}`}>Ouvrir le cycle de vie de l’abonnement</a>
       <p>{view.service.name}{view.service.variantName ? ` — ${view.service.variantName}` : ""}</p>
       <p>{lifecycle[view.subscription.status] ?? "Autre état"}</p>
       <p className={view.onboardingState === "stalled" ? "error" : "status"} role="status">{state}</p>
@@ -76,15 +77,4 @@ function OnboardingPanel({ subscriptionId }: { subscriptionId: string }) {
       <button type="button" disabled={pending || !view.canReady} onClick={() => void change(() => onboardingApi.ready(subscriptionId), "Abonnement prêt à démarrer.")}>Confirmer « Prêt à démarrer »</button>
     </section>
   </div>;
-}
-
-export function AdminOnboardingPage({ initialSubscriptionId = "" }: { initialSubscriptionId?: string }) {
-  const [input, setInput] = useState(initialSubscriptionId); const [selected, setSelected] = useState(initialSubscriptionId); const [error, setError] = useState(false);
-  return <section aria-label="Onboarding des abonnements">
-    <form className="customers-search customers-panel" onSubmit={event => { event.preventDefault(); const valid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.trim()); setError(!valid); if (valid) setSelected(input.trim()); }}>
-      <label htmlFor="onboarding-subscription-id">Identifiant de l’abonnement</label><div className="customers-search-controls"><input id="onboarding-subscription-id" required maxLength={36} value={input} onChange={event => setInput(event.target.value)} /><button type="submit">Ouvrir l’onboarding</button></div>
-      {error && <p className="error" role="alert">Saisis un identifiant d’abonnement valide.</p>}
-    </form>
-    {selected && <OnboardingPanel key={selected} subscriptionId={selected} />}
-  </section>;
 }

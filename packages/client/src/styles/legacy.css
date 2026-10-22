@@ -1156,3 +1156,9 @@
 .legacy {
   min-height: 100vh;
 }
+
+/* Legacy screen embedded in the new admin frame (UX-2): no full-page background or height. */
+.legacy.legacy-embedded {
+  min-height: 0;
+  background: transparent;
+}

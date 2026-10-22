@@ -20,7 +20,7 @@ export function AdminFollowUpsPanel({ subscriptionId }: { subscriptionId: string
   if (query.isError || !query.data) return <section className="customers-panel follow-up-panel"><h3>Suivis</h3><p className="error" role="alert">{followUpErrorMessage(query.error)}</p><button type="button" onClick={() => void query.refetch()}>Réessayer</button></section>;
   const view = query.data.detail, cadence = view.cadence, editableCadence = view.subscriptionStatus === "active" || view.subscriptionStatus === "paused";
   return <section className="customers-panel follow-up-panel" id="follow-ups"><h3>Suivis</h3>
-    <div className="onboarding-actions"><a href="/admin/follow-up-queue">Ouvrir la file des suivis</a><button type="button" disabled={busy || query.isFetching} onClick={() => void query.refetch()}>Actualiser les suivis</button></div>
+    <div className="onboarding-actions"><a href="/admin/suivis">Ouvrir la file des suivis</a><button type="button" disabled={busy || query.isFetching} onClick={() => void query.refetch()}>Actualiser les suivis</button></div>
     <p><strong>{cadence.monitoringDisabled ? "Cadence désactivée" : cadence.clockFrozen ? "Horloge de cadence suspendue" : cadence.cadenceState ? cadenceStates[cadence.cadenceState] : "Cadence non applicable dans cet état"}</strong></p>
     <p>Cadence effective : {cadence.effectiveCadenceDays === null ? "Non configurée" : `tous les ${cadence.effectiveCadenceDays} jours`} · {cadenceSources[cadence.cadenceSource]}</p>
     <p>Dernière activité significative : {followUpDate(cadence.latestMeaningfulActivityAt)}{cadence.latestActivityType ? ` · ${activityTypes[cadence.latestActivityType]}` : ""}</p>

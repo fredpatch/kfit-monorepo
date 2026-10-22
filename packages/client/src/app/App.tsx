@@ -14,7 +14,7 @@ const CataloguePage = lazy(() => import("../catalogue/components/CataloguePage.j
 const PublicConsentPage = lazy(() => import("../consents/components/PublicConsentPage.js").then((m) => ({ default: m.PublicConsentPage })));
 const ClientsPage = lazy(() => import("../customers/components/ClientsPage.js").then((m) => ({ default: m.ClientsPage })));
 const AdminFollowUpQueuePage = lazy(() => import("../follow-ups/components/AdminFollowUpQueuePage.js").then((m) => ({ default: m.AdminFollowUpQueuePage })));
-const AdminQuestionnaireTemplatesPage = lazy(() => import("../questionnaires/components/AdminQuestionnaireTemplatesPage.js").then((m) => ({ default: m.AdminQuestionnaireTemplatesPage })));
+const QuestionnairesPage = lazy(() => import("../questionnaires/components/QuestionnairesPage.js").then((m) => ({ default: m.QuestionnairesPage })));
 const PublicQuestionnairePage = lazy(() => import("../questionnaires/components/PublicQuestionnairePage.js").then((m) => ({ default: m.PublicQuestionnairePage })));
 const RequestsPage = lazy(() => import("../requests/components/RequestsPage.js").then((m) => ({ default: m.RequestsPage })));
 const ClientProfilePage = lazy(() => import("./routes/client-profile.js").then((m) => ({ default: m.ClientProfilePage })));
@@ -90,14 +90,7 @@ export function App() {
           <Route path="abonnements/:id" element={<SubscriptionRoute />} />
           <Route path="abonnements/:id/preparation" element={<SubscriptionPreparationRoute />} />
           <Route path="offres" element={<CataloguePage />} />
-          <Route
-            path="questionnaires"
-            element={
-              <AdminPage title="Questionnaires" description="Prépare et publie les versions des questionnaires d’évaluation et de santé." legacy>
-                <AdminQuestionnaireTemplatesPage />
-              </AdminPage>
-            }
-          />
+          <Route path="questionnaires" element={<QuestionnairesPage />} />
 
           {/* Former URLs, still used in e-mails or bookmarks. */}
           <Route path="follow-up-queue" element={<Navigate replace to="/admin/suivis" />} />

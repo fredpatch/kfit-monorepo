@@ -2,6 +2,22 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-22 — Refonte UI UX-1 → UX-9b (admin screens)
+
+- Track B on `main`, parallel to Sprint 5. Business logic unchanged; only read-only API endpoints were added. Each step was delivered as a diff and applied/pushed by Fred. Live tracking: `TASKS.md` § Refonte UI — suivi.
+- UX-1 (88235de): Tailwind v4 + shadcn primitives, design tokens, shared status map; legacy screens isolated under `legacy.css`.
+- UX-2 (141175f): admin shell with React Router, sidebar and mobile navigation.
+- UX-3 (c2d4497): data kit — DataTable, read-only tables, KPI tile, sparkline, bar and stacked charts.
+- UX-4a/b/c (477650a, f92e7cb, 972dc22): client profile shell, Aperçu, Progression and Analyse tabs; added `GET /admin/customers/:id` and `GET /admin/customers/:id/analytics` (attendance, cadence, pace and responsiveness rules validated by Fred).
+- UX-5 (b8a1135): clients list and creation; added `GET /admin/customers/overview`; client status derived once in `@kfit/shared`.
+- UX-6 (f21120f): requests queue views and detail.
+- UX-7 (86362d5): catalogue and capacity; added `GET /admin/catalogue/services/overview`; capacity limit below occupied places warns instead of blocking.
+- UX-8 (309294d): questionnaires screen (families, versions, editor).
+- UX-9 (a122ccd): « Aujourd'hui » coach dashboard as `/admin` home; added `GET /admin/today` and `GET /admin/appointments` (max 62 days); business time zone Africa/Libreville in `@kfit/shared` `time/`.
+- UX-9b (8a4e435): Aujourd'hui layout aligned with board 02; weekly requests chart, KPI sparklines/deltas and first-name greeting deferred to Sprint 7 (UX-9c) with a placeholder.
+- Agent validation per step: client typecheck/build, server tsc + unit tests, shared tests; PostgreSQL integration test added for the UX-9 dashboard repository. Full UI recette (desktop + 390 px) pending in UX-13.
+- Open: UX-10 scope decision; auth contract gap (no device OTP at login) recorded as a pre-prod blocker; prod reverse proxy must list `/admin/today` and `/admin/appointments`.
+
 ## 2026-10-21 — Sprint 5.4 progress measurements and structured goals
 
 - Fred locally validated S5.4 end-to-end.

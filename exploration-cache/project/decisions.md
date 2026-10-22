@@ -1,3 +1,13 @@
+## 2026-10-22 — Refonte UI: read-only API only, business time zone Africa/Libreville
+
+**Context**: The UI redesign (UX-1 → UX-13) runs on `main` in parallel with Sprint 5 and needed data the existing endpoints did not expose (customer overview, analytics, catalogue occupancy, daily dashboard, cross-subscription agenda). Day and week boundaries were computed in UTC or in the device time zone depending on the screen.
+
+**Decision**: Redesign steps may add read-only or presentation-level endpoints only; any business rule is validated by Fred before implementation, and anything needing a business change is deferred to the backlog. Business day/week (Monday start) and all appointment/datetime display use Africa/Libreville through `@kfit/shared` `time/business-time.ts` (client: `lib/format.ts`). Client status is derived once in `@kfit/shared` `customers/client-status.ts`. Dashboard KPIs show current values only until the Sprint 7 time-series API exists.
+
+**Rationale**: Keeps Sprint 5 business logic the single source of truth while letting the UI ship, and removes day-boundary drift between server, browser and coach location.
+
+**Impact**: New admin read endpoints under `/admin/customers`, `/admin/catalogue`, `/admin/today`, `/admin/appointments`. Legacy screens and the Analyse tab still need migration to business time (UX-10…13, V1.1). Sprint 7 series/funnel work must use the same week boundaries.
+
 ## 2026-10-20 — Customer collision serialization uses normalized-WhatsApp advisory locks
 
 **Context**: S4.1 intentionally avoided a hard unique constraint on `customers.whatsapp` because archived/anonymized history and future identity rules may require more nuance than permanent global uniqueness, while concurrent active-customer creation still must not produce duplicate active identities.

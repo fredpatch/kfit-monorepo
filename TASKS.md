@@ -5,13 +5,23 @@
 
 ## Now
 
+Two tracks run in parallel. Business logic changes only in Track A; Track B is UI plus read-only API additions.
+
 ```text
+Track A — Sprint 5 (business features)
 Branch            sprint-5
 Sprint            5 — Abonnements, rendez-vous, suivi, objectifs et documents
 Active slice      S5.5 — Personalized document versioning and secure temporary delivery links
 Workflow state    PLANNING
 Last validated    S5.4 — 2026-10-21
 Next action       Planner: inspect S5.5 personalized document workflow; no implementation before Gate 1
+
+Track B — Refonte UI (admin + public screens)
+Branch            main
+Active step       UX-10 — Connexion (board 09)
+Workflow state    PLANNING — scope decision pending (see Refonte UI § Open decisions)
+Last delivered    UX-9b — 2026-10-22 — 8a4e435
+Next action       Fred: answer UX-10 scope question; Claude: rules list → diff
 ```
 
 ## Sprint 5 objective
@@ -33,6 +43,7 @@ Gate 1 approved by Fred. Implement S5.1 only. Do not open S5.2 while S5.1 is unv
 Before production:
 - Legal validation for the applicable Gabon context.
 - True encrypted off-server backup destination.
+- Device-OTP login + trusted device per the Sprint 1 auth contract (today `/auth/login` issues a session on any device).
 
 ## Environment constraints
 
@@ -51,22 +62,103 @@ Validation done   Gate 2 green; browser/DBeaver lifecycle acceptance green
 Next action       Planner: inspect S5.5 only
 ```
 
+Refonte UI handoff:
 
-## Refonte UI — besoins Sprint 7 (fidélité maquette)
+```text
+Branch            main
+Step              UX-10 — Connexion
+Workflow state    PLANNING
+Done              UX-1 → UX-9b applied and pushed by Fred (last 8a4e435)
+Finding           Board 09 shows a new-device OTP step + "Faire confiance à cet appareil";
+                  the server has no suspicious-device login flow (trusted_devices table unused at login)
+Proposed scope    Client-only: login redesign, password recovery on existing /auth/recovery/*,
+                  bootstrap restyle, legacy auth CSS removed; device OTP → backlog server slice
+Pending           Fred: scope yes/no + 6 rules (error wording, anti-enumeration, reset → login,
+                  60 s resend, password reasons, device OTP deferred)
+Risks             Login weaker than the Sprint 1 auth contract until device OTP ships (pre-prod blocker)
+Next action       Claude: implement after Fred's answer; one .diff + commit message
+```
 
-> Canvas « K'FIT — Refonte UI ». Items the redesign could not reproduce for lack of API/rules; review them when planning Sprint 7.
-> Notion backlog: UX-9c, [API·UX] Séries temporelles, Endpoint agrégé des KPI, Statistiques de l'entonnoir, Prénom dans la session.
 
-### Board 02 — Aujourd'hui (UX-9 + UX-9b on `main`; reserved slots in place)
+## Refonte UI — suivi
+
+> Goal: rebuild the admin and public screens to the validated mockups without changing business logic.
+> Mockups: canvas « K'FIT — Refonte UI » (boards 01–11). Plan: Notion « 🎨 K'FIT - Refonte UI · Plan d'implémentation ». Backlog: Notion « K'FIT — Development Backlog » (UX-* and [API·UX] items).
+
+### Process (agreed)
+
+1. Check repo state on `main` before each step (repo = source of truth).
+2. Read current code + board; list API gaps; any business rule → short numbered list for Fred (yes/no) before code.
+3. API additions allowed only when read-only or presentation-level; business rules untouched. Every gap goes to the Notion backlog; anything needing another sprint is deferred there.
+4. Deliver one `.diff` per step (`git diff --cached --binary`, checked with `git apply --check` on a fresh `origin/main` worktree) + commit message. **Fred applies and pushes; Claude never commits/pushes.**
+5. Checks per step: client `tsc --noEmit`, client build, server tsc + unit tests, shared tests, browser check desktop + 390 px when the dev env is up.
+6. After push: update this section, `changelog.md`, Notion backlog status.
+
+UI conventions: French UI, explicit business rules, one primary action per view, charts only for a tracked indicator, no invented data in placeholders.
+
+### Status
+
+| Step | Board | Scope | API added (read-only) | Status | Commit |
+| --- | --- | --- | --- | --- | --- |
+| UX-1 | 01 | Foundation: Tailwind v4, shadcn primitives, tokens, status map; legacy CSS isolated | — | Done | 88235de |
+| UX-2 | 01 | Admin shell, React Router routes, sidebar, mobile nav | — | Done | 141175f |
+| UX-3 | 01b | Data kit: DataTable, read-only tables, charts (KPI tile, sparkline, bars, stacked) | — | Done | c2d4497 |
+| UX-4a | 03 | Client profile shell | `GET /admin/customers/:id` | Done | 477650a |
+| UX-4b | 03, 08 | Profile Aperçu + Progression | — | Done | f92e7cb |
+| UX-4c | 03b | Profile Analyse tab | `GET /admin/customers/:id/analytics` | Done | 972dc22 |
+| UX-5 | 04 | Clients list + creation | `GET /admin/customers/overview` | Done | b8a1135 |
+| UX-6 | 05 | Requests queue + detail | — | Done | f21120f |
+| UX-7 | 06 | Catalogue + capacity | `GET /admin/catalogue/services/overview` | Done | 86362d5 |
+| UX-8 | 07 | Questionnaires (families, versions, editor) | — | Done | 309294d |
+| UX-9 | 02 | Aujourd'hui dashboard; `/admin` opens it; business time zone | `GET /admin/today`, `GET /admin/appointments` | Done | a122ccd |
+| UX-9b | 02 | Layout aligned to mockup; requests chart placeholder | — | Done | 8a4e435 |
+| UX-9c | 02 | Charts, sparklines, deltas, first name | needs Sprint 7 series API | Sprint 7 | — |
+| UX-10 | 09 | Connexion, recovery, bootstrap | none expected (device OTP deferred, see below) | Planning | — |
+| UX-11 | 10, 11a | Public page + mobile request | — | To do — prod blocked by brand assets | — |
+| UX-12 | 11b–d | Customer pages (questionnaire, consent, appointment) | — | To do | — |
+| UX-13 | — | Cleanup: legacy CSS removal, a11y, reduced motion, mobile pass, full UI recette | — | To do | — |
+
+### Locked decisions (2026-10-22)
+
+- Business time zone **Africa/Libreville (UTC+1)** for today, week (Monday start), appointment display and datetime inputs — `@kfit/shared` `time/business-time.ts`, client `lib/format.ts`.
+- Client status derived in one place: `@kfit/shared` `customers/client-status.ts`.
+- Capacity limit below occupied places → warn, don't block. Occupancy = S4 capacity-claim rule.
+- Analytics rules (attendance, cadence, pace, responsiveness) validated in UX-4c.
+- Aujourd'hui « À traiter » order: follow-ups overdue → due → new requests → request follow-ups → preparation expired → ready → waiting → completion due. KPIs show current values only until Sprint 7.
+- Slug frozen after publication (UI). CSV export out of V1 (V1.1, compliance).
+
+### Open decisions (Fred)
+
+- [ ] UX-10 scope: client-only with device OTP deferred, or server slice first?
+- [ ] Currency display: FCFA on public pages vs XAF in admin?
+- [ ] Multi-subscription progress: exclude measurements taken without health consent?
+- [ ] Client test framework (Vitest + Testing Library)?
+- [ ] Funnel counting rules (Sprint 7).
+
+### Risks / pre-prod items
+
+- **Auth contract gap (compliance):** Sprint 1 contract requires OTP on unknown devices before a session is issued; `/auth/login` always issues one. Pre-prod blocker until the device-OTP server slice ships.
+- **Prod reverse proxy:** if it lists API paths, add `/admin/today` and `/admin/appointments` (Vite dev proxy done).
+- **Brand assets:** logo and coach photo missing → UX-11 cannot go to prod.
+- Legacy screens still format dates in the device time zone → migrate to `lib/format.ts` during UX-10…13.
+- Server `npm test` glob runs only 4 tests → run `node --test $(find dist -name "*.test.js")` (Fred to fix the script).
+
+### Sprint 7 needs for mockup fidelity (board 02 — Aujourd'hui)
+
+> Notion: UX-9c, [API·UX] Séries temporelles, Endpoint agrégé des KPI, Statistiques de l'entonnoir, Prénom dans la session.
 
 - [ ] **Weekly requests chart** — requests received per business week (Mon–Sun, Africa/Libreville); periods 4 sem. / 8 sem. / 12 mois (monthly buckets for 12 mois); current week highlighted; tooltip `N demandes · 6–12 oct.`. Replaces the « Historique disponible au Sprint 7 » card.
-- [ ] **Conversion rate** in that chart's header (`47 sur 8 semaines · taux de conversion 38 %`) — depends on funnel counting rules (still open, Fred).
+- [ ] **Conversion rate** in that chart's header (`47 sur 8 semaines · taux de conversion 38 %`) — depends on funnel counting rules.
 - [ ] **KPI sparklines** — 8 weekly points for: clientes actives (end-of-week value), suivis en retard (end-of-week value), nouvelles demandes, séances réalisées. `KpiTile` already takes `trend` + `trendLabel`.
 - [ ] **KPI delta vs previous period** (`+12 % vs période précédente`) — define the reference period and the favourable direction per KPI (fewer overdue follow-ups = good). `KpiTile` already takes `delta`.
 - [ ] **Greeting with first name** (`Bonjour Konny`) — `/auth/session` returns id + role only; needs a display name on the user (small migration).
-- [x] Section order matches the mockup: KPIs → charts row (Nouvelles demandes + Clientes actives par offre) → À traiter | Rendez-vous du jour + Capacité (UX-9b).
+- [x] Section order matches the mockup (UX-9b).
 
-Rule: no invented data in placeholders; real current values only until the series API exists.
+### Other deferred items from the redesign (Notion backlog)
+
+- Analyse tab still splits days/weeks in UTC → Libreville (V1.1).
+- Manual request endpoint (`POST /admin/requests`), readable sequential references (SUB-0042), questionnaire draft update/retire, service family field, duplicate-request signal, admin subscriptions list, server-side pagination.
+- Device-OTP login + trusted device (server slice + board 09 OTP screen).
 
 ## S5.1 Gate 2 corrective note — questionnaire policy consistency
 

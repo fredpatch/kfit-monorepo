@@ -6,9 +6,9 @@ Deliver the V1 Core finance workflow for subscription obligations, payments, quo
 
 ## Ordered tasks
 
-1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — IMPLEMENTED / Gate 2 DB acceptance pending.
-2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED until S6.1 validation.
-3. S6.3 — Customer payment-proof upload and structured coach review workflow — CLOSED until S6.2 validation.
+1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED / validated 2026-10-22.
+2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED / validated 2026-10-22.
+3. S6.3 — Customer payment-proof upload and structured coach review workflow — PLANNING / Gate 1 pending.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — CLOSED until S6.3 validation.
 
 Backlog rows labelled coach sign-off / bug list / full UAT are not Sprint 6 finance implementation slices; final V1 Core UAT remains a later sprint gate.
@@ -434,9 +434,9 @@ Agent validation reported green:
 Fred validation:
 - browser flow approved on 2026-10-22.
 
-Remaining Gate 2:
-- Fred DBeaver inspection of `payment_plans`, `installments`, `payment_events`, `payment_allocations` and related `audit_events`.
-- Until that is green, S6.1 is not Terminé and no validated S6.1 changelog entry is allowed.
+Gate 2 completed:
+- Fred confirmed DBeaver finance/audit inspection green on 2026-10-22.
+- S6.1 is locally validated and closed.
 
 Repository merge note:
 - merge commit `ee793c2` accidentally persisted literal conflict markers in `TASKS.md` and this file;
@@ -1069,3 +1069,27 @@ Applicable reusable patterns:
 - Audit Event System
 - Shared API Contracts
 - Domain Error Taxonomy
+
+
+## S6.2 closure — 2026-10-22
+
+Status: **CLOSED / LOCALLY VALIDATED**.
+
+Implementation:
+- `9fe7e1b` — `feat(quotes): add versioned quotes and secure acceptance`.
+
+Validation evidence:
+- typecheck green;
+- server 400/400;
+- shared 51/51;
+- PostgreSQL 428/428 including 34 S6.2 cases;
+- production build, schema check and diff check green;
+- real Chromium quote PDF determinism green;
+- Reviewer: PASSED WITH NOTES;
+- QA: PASSED WITH LIMITATIONS;
+- Fred confirmed browser/mobile/keyboard, ClamAV/private-storage issuance and DBeaver acceptance green.
+
+Known non-blocking gap:
+- direct synchronization-versus-finance race has no dedicated automated regression; lock ordering was reviewed and no defect was confirmed.
+
+S6.2 is Terminé. S6.3 is now the active planning slice; no S6.3 implementation before Gate 1.

@@ -1,4 +1,4 @@
-import { check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { idColumn, timestamps } from "./_helpers.js";
 import { users } from "./auth.js";
@@ -9,9 +9,10 @@ export const paymentPlans = pgTable("payment_plans", {
   subscriptionId: uuid("subscription_id").notNull().references(() => subscriptions.id, { onDelete: "restrict" }),
   totalExpectedXaf: integer("total_expected_xaf").notNull(),
   status: text("status").notNull().default("draft"),
-  revisedFromPlanId: uuid("revised_from_plan_id"),
+  revisedFromPlanId: uuid("revised_from_plan_id").references((): AnyPgColumn => paymentPlans.id, { onDelete: "restrict" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [check("payment_plans_total_nonnegative", sql`${t.totalExpectedXaf} >= 0`), index("payment_plans_subscription_idx").on(t.subscriptionId, t.status)]);
+}, (t) => [check("payment_plans_total_nonnegative", sql`${t.totalExpectedXaf} >= 0`), index("payment_plans_subscription_idx").on(t.subscriptionId, t.status),
+  uniqueIndex("payment_plans_one_active_uq").on(t.subscriptionId).where(sql`${t.status} = 'active'`)]);
 
 export const installments = pgTable("installments", {
   id: idColumn(),
@@ -38,13 +39,15 @@ export const paymentEvents = pgTable("payment_events", {
   occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
   confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
   confirmedByUserId: uuid("confirmed_by_user_id").references(() => users.id, { onDelete: "set null" }),
-  correctionOfEventId: uuid("correction_of_event_id"),
+  correctionOfEventId: uuid("correction_of_event_id").references((): AnyPgColumn => paymentEvents.id, { onDelete: "restrict" }),
+  commandKey: uuid("command_key"),
   metadataJson: jsonb("metadata_json"),
 }, (t) => [
   check("payment_events_amount_positive", sql`${t.amountXaf} > 0`),
   check("payment_events_currency_xaf", sql`${t.currency} = 'XAF'`),
   index("payment_events_customer_idx").on(t.customerId, t.occurredAt),
   index("payment_events_confirmed_idx").on(t.confirmedAt),
+  uniqueIndex("payment_events_command_key_uq").on(t.commandKey),
 ]);
 
 export const paymentAllocations = pgTable("payment_allocations", {

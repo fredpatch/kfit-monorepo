@@ -28,6 +28,7 @@ import { AdminPage, LegacyEmbed as Legacy } from "../layout/AdminPage.js";
 const AnalysisTab = lazy(() => import("../../profile/analysis/AnalysisTab.js").then((m) => ({ default: m.AnalysisTab })));
 const ProgressTab = lazy(() => import("../../profile/progress/ProgressTab.js").then((m) => ({ default: m.ProgressTab })));
 const AdminDocumentsPanel = lazy(() => import("../../documents/components/AdminDocumentsPanel.js").then((m) => ({ default: m.AdminDocumentsPanel })));
+const AdminFinancePanel = lazy(() => import("../../finance/components/AdminFinancePanel.js").then((m) => ({ default: m.AdminFinancePanel })));
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -40,6 +41,7 @@ export const profileTabs = [
   { value: "preparation", label: "Préparation" },
   { value: "progression", label: "Progression" },
   { value: "documents", label: "Documents" },
+  { value: "finance", label: "Finance" },
   { value: "sante", label: "Santé et consentements" },
 ] as const;
 type ProfileTab = (typeof profileTabs)[number]["value"];
@@ -258,6 +260,11 @@ export function ClientProfilePage() {
           <TabsContent value="documents">
             <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement des documents…</p>}>
               <AdminDocumentsPanel key={selected.id} subscriptionId={selected.id} />
+            </Suspense>
+          </TabsContent>
+          <TabsContent value="finance">
+            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement de la finance…</p>}>
+              <AdminFinancePanel key={selected.id} subscriptionId={selected.id} />
             </Suspense>
           </TabsContent>
           <TabsContent value="sante">

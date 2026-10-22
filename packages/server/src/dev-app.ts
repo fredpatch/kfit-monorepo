@@ -1,4 +1,7 @@
 import { createServerApp } from "./app.js";
+import { FinanceController } from "./modules/finance/controllers/finance.controller.js";
+import { FinanceService } from "./modules/finance/services/finance.service.js";
+import { DrizzleFinanceRepository } from "./modules/finance/repositories/finance.repository.js";
 import { DocumentsController } from "./modules/documents/controllers/documents.controller.js";
 import { DrizzleDocumentsRepository } from "./modules/documents/repositories/documents.repository.js";
 import { DocumentsService } from "./modules/documents/services/documents.service.js";
@@ -164,6 +167,7 @@ export function createDevelopmentApp() {
   ));
 
   return createServerApp({
+    financeController: new FinanceController(new FinanceService(new DrizzleFinanceRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     documentsController,
     progressController: new ProgressController(new ProgressService(new DrizzleProgressRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     followUpsController: new FollowUpsController(followUpsService),

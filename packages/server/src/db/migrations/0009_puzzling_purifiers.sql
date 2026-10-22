@@ -1,0 +1,5 @@
+ALTER TABLE "payment_events" ADD COLUMN "command_key" uuid;--> statement-breakpoint
+ALTER TABLE "payment_events" ADD CONSTRAINT "payment_events_correction_of_event_id_payment_events_id_fk" FOREIGN KEY ("correction_of_event_id") REFERENCES "public"."payment_events"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "payment_plans" ADD CONSTRAINT "payment_plans_revised_from_plan_id_payment_plans_id_fk" FOREIGN KEY ("revised_from_plan_id") REFERENCES "public"."payment_plans"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "payment_events_command_key_uq" ON "payment_events" USING btree ("command_key");--> statement-breakpoint
+CREATE UNIQUE INDEX "payment_plans_one_active_uq" ON "payment_plans" USING btree ("subscription_id") WHERE "payment_plans"."status" = 'active';

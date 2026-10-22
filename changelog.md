@@ -4,6 +4,7 @@
 
 ## 2026-10-22 — Sprint 6.2 versioned quotes and secure acceptance
 
+- Implementation commit: `9fe7e1b` — `feat(quotes): add versioned quotes and secure acceptance`.
 - Fred confirmed the S6.2 Gate 2 validation checklist "all green": local commands, browser/mobile/keyboard, real scan/storage issuance and DBeaver acceptance.
 - Added versioned subscription/customer-owned quotes with official DEV-YYYY-NNNN numbering allocated under an annual PostgreSQL counter lock at first issuance.
 - Issued commercial snapshots and private PDF artifacts remain immutable; later versions preserve the quote number and historical responses/documents.

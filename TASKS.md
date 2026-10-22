@@ -5,15 +5,15 @@
 
 ## Now
 
-Sprint 6 S6.1 is closed; Fred validated S6.2 on `main`. The former `sprint-5` branch remains historical.
+Sprint 6 S6.1 and S6.2 are validated and closed on `main`. The former `sprint-5` branch remains historical.
 
 ```text
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
-Active slice      S6.2 — Versioned quotes + secure customer acceptance
-Workflow state    VALIDATED
+Active slice      S6.2 — Closed; versioned quotes + secure customer acceptance
+Workflow state    CLOSED
 Last validated    S6.2 — 2026-10-22
-Next action       Execute Fred-authorized S6.2 commit/push; do not start S6.3
+Next action       Await separately approved S6.3 scope; no implementation started
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -27,7 +27,7 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 ## Sprint 6 execution order
 
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED, Fred validated 2026-10-22.
-2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — VALIDATED by Fred 2026-10-22; commit/push explicitly authorized.
+2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED, Fred validated 2026-10-22; implementation commit `9fe7e1b`.
 3. S6.3 — Customer payment-proof upload and structured coach review workflow — not started; requires its own approved scope.
 4. S6.4 — Sequential payment receipts and secure sharing preparation — closed until S6.3 validation.
 
@@ -50,6 +50,7 @@ Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation com
 - QA mapped all 12 shared/unit/HTTP and 20 PostgreSQL criteria to actual assertions. Invalid lifecycle/issued immutability/sync-conflict policy are primarily established through prior PostgreSQL evidence. Live browser/mobile/keyboard, real Chromium-to-ClamAV-to-private-storage issuance and human DB acceptance remain NOT VALIDATED; no browser tools exposed. The direct synchronization-versus-finance race has no dedicated runtime regression; static subscription-lock evidence does not claim one.
 - Fred subsequently confirmed "all green" for the presented Gate 2 checklist on 2026-10-22. S6.2 is VALIDATED: developer-reported local commands, browser/mobile/keyboard, scan/storage and DBeaver acceptance are recorded separately from agent evidence. No new per-command counts or direct synchronization-versus-finance race regression are claimed. Await explicit commit instruction; no commit/push or S6.3 work authorized by this acceptance.
 - Fred subsequently instructed "commit and push" on 2026-10-22, explicitly authorizing Gate 3 and publication of the validated S6.2 changes to main. S6.3 remains outside this authorization.
+- Implementation committed as `9fe7e1b` — `feat(quotes): add versioned quotes and secure acceptance`. S6.2 is closed after Fred validation and Gate 3; this documentation update records the implementation hash. S6.3 remains unstarted and requires separate approval.
 - Not validated: live S6.2 UI/mobile/keyboard flows, real end-to-end ClamAV/storage issuance and Fred's DBeaver acceptance. No S6.2 dev server, fixture seed, commit, push, validated changelog entry or S6.3 work.
 
 ## Sprint 5 objective
@@ -95,11 +96,12 @@ Before production:
 Branch            main
 Sprint            6
 Slice             S6.2
-Workflow state    VALIDATED
+Workflow state    CLOSED
 Validated         Sprint 5, S6.1 and S6.2 (Fred, 2026-10-22)
 Approved goal     Versioned quotes/PDFs, secure explicit responses, coach synchronization
 Done              Contracts, schema/migration, server, French client and static inspection
-Pending           Execute authorized commit/push and record resulting commit
+Implementation    9fe7e1b — feat(quotes): add versioned quotes and secure acceptance
+Pending           No S6.2 implementation/acceptance work; publication explicitly authorized
 Review            REVIEW PASSED WITH NOTES; no confirmed blocker/major/minor defects
 QA                QA PASSED WITH LIMITATIONS; fresh npm test 400 server + 51 shared; no regression confirmed
 Validation        typecheck/build/schema/diff passed; server 400, shared 51, PostgreSQL 428 (34 quote cases)
@@ -109,7 +111,7 @@ Human acceptance  Fred confirmed Gate 2 checklist all green; command/browser/mob
 Coverage note     Direct synchronization-versus-finance race has no dedicated automated regression
 Assumptions       Current issued version is public-response eligible; obsolete links cannot respond
 Risks             PDF render/scan holds issuance locks; fixed process-local rate limit; preserve history on rollback
-Next action       Execute authorized S6.2 commit/push; S6.3 remains unstarted
+Next action       Await separately approved S6.3 scope; no implementation started
 UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
 Out of scope      S6.3+, refunds, credits, extras, finance analytics and Sprint 7
 ```

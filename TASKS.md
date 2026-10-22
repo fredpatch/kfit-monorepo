@@ -11,9 +11,9 @@ Sprint 6 S6.1, S6.2 and S6.3 are validated and closed on `main`. The former `spr
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
 Active slice      S6.4 — Sequential payment receipts and secure sharing preparation
-Workflow state    PLANNING / GATE_1_PENDING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    S6.3 — 2026-10-22
-Next action       Planner: inspect S6.4 receipt numbering/PDF/sharing rules and prepare Gate 1
+Next action       IDE Implementer: implement S6.4 server-first only; stop before next sprint
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -29,7 +29,7 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED, Fred validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED, Fred validated 2026-10-22; implementation commit `9fe7e1b`.
 3. S6.3 — Customer payment-proof upload and structured coach review workflow — CLOSED, Fred validated 2026-10-22; implementation commit `8edebc7`.
-4. S6.4 — Sequential payment receipts and secure sharing preparation — PLANNING / Gate 1 pending.
+4. S6.4 — Sequential payment receipts and secure sharing preparation — APPROVED_FOR_IMPLEMENTATION.
 
 Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation commit `1050fcb` is locally validated end-to-end by Fred, including browser and DBeaver Gate 2. S6.1 is closed. Fred's pasted S6.2 request explicitly approves implementation on main; the connected backlog confirms Gate 1. The detailed request is appended to the local sprint spec.
 
@@ -1381,3 +1381,24 @@ Locked decisions:
 - S6.4 remains closed until Fred locally validates S6.3.
 
 Implementation is authorized for S6.3 only.
+
+
+## S6.4 Gate 1 — approved 2026-10-22
+
+Fred approved all 12 S6.4 receipt decisions.
+
+Locked rules:
+1. One receipt represents one confirmed `payment_received` event only.
+2. Exactly one official receipt per payment event; repeated issuance is idempotent/conflict-safe.
+3. Official number format is `REC-YYYY-NNNN`, allocated from the existing annual business-document counter under PostgreSQL row lock and DB uniqueness.
+4. Issuance freezes a historical snapshot including receipt number, minimal customer display identity, subscription reference, payment amount/method/date, issue date, exact allocations and balance-after-payment-at-issuance.
+5. Receipt PDF is immutable private scanned storage linked through `pdf_document_id`; historical rendering never uses mutable live data.
+6. Secure sharing reuses hash-only scoped tokens with expiry, revocation, usage limit, rate limiting and external access audit.
+7. Later payment corrections never rewrite receipt number, snapshot or PDF.
+8. Receipt void is explicit and allowed only when the source payment has been fully corrected; partial correction leaves the receipt issued but exposes correction state.
+9. Voided receipts are never deleted and sequence numbers are never reused.
+10. Public access to a voided receipt remains historical but clearly displays Annulé/corrected status.
+11. Receipt issuance is an explicit coach action; S6.1/S6.3 payment confirmation does not depend on PDF/ClamAV.
+12. Invoices, refunds, credit notes, VAT/tax logic, provider APIs, email/WhatsApp sending and accounting exports remain outside S6.4.
+
+Implementation is authorized for S6.4 only. Sprint 6 closure still requires Fred local validation of S6.4.

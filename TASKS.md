@@ -19,9 +19,9 @@ Next action       Planner: inspect S5.5 personalized document workflow; no imple
 Track B — Refonte UI (admin + public screens)
 Branch            main
 Active step       UX-10 — Connexion (board 09)
-Workflow state    PLANNING — scope decision pending (see Refonte UI § Open decisions)
+Workflow state    AWAITING_HUMAN_VALIDATION — diff delivered, rules validated 2026-10-22
 Last delivered    UX-9b — 2026-10-22 — 8a4e435
-Next action       Fred: answer UX-10 scope question; Claude: rules list → diff
+Next action       Fred: apply ux-10-connexion.diff, check login/recovery locally (Mailpit), push; then UX-11
 ```
 
 ## Sprint 5 objective
@@ -67,16 +67,16 @@ Refonte UI handoff:
 ```text
 Branch            main
 Step              UX-10 — Connexion
-Workflow state    PLANNING
-Done              UX-1 → UX-9b applied and pushed by Fred (last 8a4e435)
-Finding           Board 09 shows a new-device OTP step + "Faire confiance à cet appareil";
-                  the server has no suspicious-device login flow (trusted_devices table unused at login)
-Proposed scope    Client-only: login redesign, password recovery on existing /auth/recovery/*,
-                  bootstrap restyle, legacy auth CSS removed; device OTP → backlog server slice
-Pending           Fred: scope yes/no + 6 rules (error wording, anti-enumeration, reset → login,
-                  60 s resend, password reasons, device OTP deferred)
-Risks             Login weaker than the Sprint 1 auth contract until device OTP ships (pre-prod blocker)
-Next action       Claude: implement after Fred's answer; one .diff + commit message
+Workflow state    AWAITING_HUMAN_VALIDATION
+Done              Connexion, Mot de passe oublié (3 steps), Initialisation, password meter,
+                  recovery bound in dev-app.ts when SMTP_HOST is set, legacy auth CSS removed
+Rules             8 rules validated by Fred 2026-10-22 (Refonte UI § Status, UX-10)
+Validation done   Agent: client tsc + build, server tsc + 326 tests, shared 45 tests,
+                  browser pass desktop + 390 px (errors, wrong code, reset, re-login, no h-scroll)
+                  against a throwaway SMTP sink
+Not validated     Fred local run with Mailpit; staging/prod SMTP configuration
+Out of scope      New-device OTP + trusted device (Notion « Session security », pre-prod blocker)
+Next action       Fred: apply + check + push; Claude: UX-11 planning (brand assets still missing)
 ```
 
 
@@ -113,7 +113,7 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 | UX-9 | 02 | Aujourd'hui dashboard; `/admin` opens it; business time zone | `GET /admin/today`, `GET /admin/appointments` | Done | a122ccd |
 | UX-9b | 02 | Layout aligned to mockup; requests chart placeholder | — | Done | 8a4e435 |
 | UX-9c | 02 | Charts, sparklines, deltas, first name | needs Sprint 7 series API | Sprint 7 | — |
-| UX-10 | 09 | Connexion, recovery, bootstrap | none expected (device OTP deferred, see below) | Planning | — |
+| UX-10 | 09 | Connexion, Mot de passe oublié, Initialisation, password meter; recovery service bound in `dev-app.ts` (SMTP) | none (existing `/auth/recovery/*`) | Delivered — awaiting push | — |
 | UX-11 | 10, 11a | Public page + mobile request | — | To do — prod blocked by brand assets | — |
 | UX-12 | 11b–d | Customer pages (questionnaire, consent, appointment) | — | To do | — |
 | UX-13 | — | Cleanup: legacy CSS removal, a11y, reduced motion, mobile pass, full UI recette | — | To do | — |
@@ -129,7 +129,7 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 
 ### Open decisions (Fred)
 
-- [ ] UX-10 scope: client-only with device OTP deferred, or server slice first?
+- [x] UX-10 scope: client-only, device OTP deferred (Fred 2026-10-22, 8 rules validated).
 - [ ] Currency display: FCFA on public pages vs XAF in admin?
 - [ ] Multi-subscription progress: exclude measurements taken without health consent?
 - [ ] Client test framework (Vitest + Testing Library)?
@@ -138,6 +138,7 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 ### Risks / pre-prod items
 
 - **Auth contract gap (compliance):** Sprint 1 contract requires OTP on unknown devices before a session is issued; `/auth/login` always issues one. Pre-prod blocker until the device-OTP server slice ships.
+- **Recovery needs SMTP:** `/auth/recovery/*` answers 501 unless `SMTP_HOST`/`SMTP_FROM` are set; staging/prod env must define them (UI then shows « Récupération indisponible »).
 - **Prod reverse proxy:** if it lists API paths, add `/admin/today` and `/admin/appointments` (Vite dev proxy done).
 - **Brand assets:** logo and coach photo missing → UX-11 cannot go to prod.
 - Legacy screens still format dates in the device time zone → migrate to `lib/format.ts` during UX-10…13.

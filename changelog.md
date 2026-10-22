@@ -2,6 +2,17 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-22 — Refonte UI UX-10 Connexion
+
+- Board 09 rebuilt: two-panel auth shell (text-only brand panel, hidden below lg), Connexion with show/hide password and DEV-only demo button, « Mot de passe oublié » in three steps (e-mail → 6-digit code → new password), Initialisation restyled.
+- Rules validated by Fred: one message for invalid credentials / unavailable account; neutral code request; « Code invalide ou expiré. » with 5-minute hint; 60 s resend cooldown; reset returns to Connexion without auto-login.
+- Password policy (12 characters, a letter, a number) now exported from `@kfit/shared` and shown upfront with an advisory strength meter; a server test asserts parity with `validatePasswordStrength`.
+- Sprint 1 password-recovery service is now bound in `dev-app.ts` when `SMTP_HOST` is set (it was never composed; routes answered 501). Service code unchanged.
+- Full-screen loader now covers only the initial session check, so login errors are no longer lost during submit.
+- Legacy auth CSS removed.
+- Deferred: new-device OTP + trusted device (pre-prod blocker, Notion « Session security »).
+- Agent validation: client tsc/build, server 326 tests, shared 45 tests, browser pass desktop + 390 px. Fred local validation pending.
+
 ## 2026-10-22 — Refonte UI UX-1 → UX-9b (admin screens)
 
 - Track B on `main`, parallel to Sprint 5. Business logic unchanged; only read-only API endpoints were added. Each step was delivered as a diff and applied/pushed by Fred. Live tracking: `TASKS.md` § Refonte UI — suivi.

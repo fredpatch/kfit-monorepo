@@ -8,8 +8,11 @@ import {
   DrizzleAuthUserRepository,
   DrizzleBootstrapRepository,
   DrizzleOtpChallengeRepository,
+  DrizzlePasswordRecoveryRepository,
   DrizzleSessionRepository,
 } from "./modules/auth/repositories/auth.repositories.js";
+import { loadSmtpAuthMailConfig, NodemailerAuthMailDelivery } from "./modules/auth/services/auth-mail.delivery.js";
+import { InMemoryRecoveryRateLimiter, PasswordRecoveryService } from "./modules/auth/services/password-recovery.service.js";
 import { AccessTokenSessionResolver } from "./modules/auth/services/access-token-session.resolver.js";
 import { AuditService } from "./modules/auth/services/audit.service.js";
 import { AuthRouteService } from "./modules/auth/services/auth-route.service.js";
@@ -82,10 +85,32 @@ export function createDevelopmentApp() {
     },
   );
 
+  /*
+   * Password recovery (Sprint 1 service, unchanged) is bound only when SMTP is configured (UX-10, Fred 2026-10-22).
+   * Without SMTP_HOST the /auth/recovery/* routes keep answering 501 and the UI shows « Récupération indisponible ».
+   */
+  const passwordRecoveryService = process.env.SMTP_HOST
+    ? new PasswordRecoveryService(
+        new DrizzlePasswordRecoveryRepository(db),
+        otpChallengeService,
+        passwords,
+        new NodemailerAuthMailDelivery(loadSmtpAuthMailConfig(process.env)),
+        audit,
+        new InMemoryRecoveryRateLimiter({
+          windowMs: authConfig.recoveryRateLimitWindowMs,
+          requestMax: authConfig.recoveryRequestMax,
+          verifyMax: authConfig.recoveryVerifyMax,
+          resetMax: authConfig.recoveryResetMax,
+        }),
+        { recoveryTokenSecret: authConfig.recoveryTokenSecret, recoveryGrantTtlMs: authConfig.recoveryGrantTtlMs },
+      )
+    : undefined;
+
   const authController = new AuthController({
     otpChallengeService,
     authRouteService,
     bootstrapService,
+    ...(passwordRecoveryService ? { passwordRecoveryService } : {}),
   });
 
   const resolver = new AccessTokenSessionResolver(sessionRepository, {

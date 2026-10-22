@@ -1,4 +1,5 @@
 export * from "./auth/contracts.js";
+export * from "./auth/password-policy.js";
 export * from "./catalogue/contracts.js";
 export * from "./requests/contracts.js";
 export * from "./customers/contracts.js";

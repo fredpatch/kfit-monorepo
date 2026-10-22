@@ -1,31 +1,23 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { Button } from "../components/ui/button.js";
+import { AuthHeading, AuthShell } from "../auth/components/AuthShell.js";
 import { BootstrapForm } from "../auth/components/BootstrapForm.js";
 import { LoginForm } from "../auth/components/LoginForm.js";
+import { RecoveryFlow } from "../auth/components/RecoveryFlow.js";
 import { useAuth } from "../auth/state/auth-context.js";
 
-/* Auth screens keep their current look (legacy) until UX-10 rebuilds them. */
-function AuthShell({ children }: { children: ReactNode }) {
-  return (
-    <div className="legacy">
-      <main className="auth-shell">
-        <section className="auth-card">
-          <p className="eyebrow">K'FIT Admin</p>
-          {children}
-        </section>
-      </main>
-    </div>
-  );
-}
-
-/** Shows the right auth step; renders the admin app only with an active session. */
+/**
+ * Shows the right auth step (board 09); renders the admin app only with an active session.
+ * New-device OTP + « Faire confiance à cet appareil » are deferred to a server slice (pre-prod blocker, TASKS.md).
+ */
 export function AuthGate({ children }: { children: ReactNode }) {
   const auth = useAuth();
+  const [view, setView] = useState<{ name: "login" } | { name: "recovery"; email: string }>({ name: "login" });
 
-  if (auth.isLoading) {
+  if (auth.isCheckingSession) {
     return (
       <AuthShell>
-        <h1>Accès sécurisé</h1>
-        <p className="status">Vérification de la session...</p>
+        <p role="status" className="text-sm text-muted-foreground">Vérification de la session…</p>
       </AuthShell>
     );
   }
@@ -33,13 +25,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (auth.bootstrapStatusError) {
     return (
       <AuthShell>
-        <h1>API locale indisponible</h1>
-        <p className="error">
-          Impossible de vérifier si l’initialisation K'FIT est requise. Vérifie que l’API locale et PostgreSQL sont démarrés.
-        </p>
-        <button type="button" onClick={() => void auth.retryBootstrapStatus()}>
+        <AuthHeading title="Serveur indisponible" description="Impossible de vérifier l'état du compte. Vérifie que l'API et PostgreSQL sont démarrés, puis réessaie." />
+        <Button type="button" size="lg" onClick={() => void auth.retryBootstrapStatus()}>
           Réessayer
-        </button>
+        </Button>
       </AuthShell>
     );
   }
@@ -47,7 +36,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (auth.bootstrapRequired) {
     return (
       <AuthShell>
-        <h1>Initialisation sécurisée</h1>
         <BootstrapForm />
       </AuthShell>
     );
@@ -56,9 +44,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!auth.session) {
     return (
       <AuthShell>
-        <h1>Accès sécurisé</h1>
-        <p className="muted">Connecte-toi pour gérer les abonnements, clients et opérations K'FIT.</p>
-        <LoginForm />
+        {view.name === "recovery" ? (
+          <RecoveryFlow initialEmail={view.email} onDone={() => setView({ name: "login" })} onCancel={() => setView({ name: "login" })} />
+        ) : (
+          <LoginForm onForgotPassword={(email) => setView({ name: "recovery", email })} />
+        )}
       </AuthShell>
     );
   }

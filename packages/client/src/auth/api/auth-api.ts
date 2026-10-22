@@ -9,6 +9,9 @@ import {
   type LoginRequest,
   type LoginResponse,
   type LogoutResponse,
+  type PasswordRecoveryRequestResponse,
+  type PasswordRecoveryResetResponse,
+  type PasswordRecoveryVerifyResponse,
   type RefreshResponse,
 } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "./csrf.js";
@@ -27,6 +30,9 @@ export type AuthApiClient = {
   currentSession(): Promise<AuthSession | null>;
   refresh(): Promise<RefreshResponse>;
   logout(): Promise<LogoutResponse>;
+  requestPasswordRecovery(email: string): Promise<PasswordRecoveryRequestResponse>;
+  verifyPasswordRecovery(email: string, code: string): Promise<PasswordRecoveryVerifyResponse>;
+  resetPassword(resetToken: string, password: string): Promise<PasswordRecoveryResetResponse>;
 };
 
 function createDefaultHttpClient(baseUrl: string | undefined): AxiosInstance {
@@ -80,6 +86,18 @@ export function createAuthApiClient(options: AuthApiClientOptions = {}): AuthApi
     },
     async logout() {
       const response = await http.post<LogoutResponse>(authApiRoutes.logout);
+      return response.data;
+    },
+    async requestPasswordRecovery(email) {
+      const response = await http.post<PasswordRecoveryRequestResponse>(authApiRoutes.requestPasswordRecovery, { email });
+      return response.data;
+    },
+    async verifyPasswordRecovery(email, code) {
+      const response = await http.post<PasswordRecoveryVerifyResponse>(authApiRoutes.verifyPasswordRecovery, { email, code });
+      return response.data;
+    },
+    async resetPassword(resetToken, password) {
+      const response = await http.post<PasswordRecoveryResetResponse>(authApiRoutes.resetPassword, { resetToken, password });
       return response.data;
     },
   };

@@ -8,6 +8,8 @@ type AuthContextValue = {
   bootstrapRequired: boolean;
   bootstrapStatusError: boolean;
   isLoading: boolean;
+  /** Initial bootstrap-status / session check only (not login or logout in flight): drives the full-screen loader. */
+  isCheckingSession: boolean;
   login(input: LoginRequest): Promise<void>;
   bootstrap(input: BootstrapRequest): Promise<void>;
   logout(): Promise<void>;
@@ -56,6 +58,7 @@ export function AuthProvider({ children, api = authApiClient }: { children: Reac
     bootstrapRequired: bootstrapStatus.data?.required ?? false,
     bootstrapStatusError: bootstrapStatus.isError,
     isLoading: bootstrapStatus.isLoading || session.isLoading || login.isPending || bootstrap.isPending || logout.isPending,
+    isCheckingSession: bootstrapStatus.isLoading || session.isLoading,
     async login(input) {
       await login.mutateAsync(input);
     },

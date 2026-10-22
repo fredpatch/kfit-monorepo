@@ -337,22 +337,6 @@
   opacity: .65;
 }
 
-.legacy .auth-shell {
-  place-items: center;
-  min-height: 100vh;
-  padding: 24px;
-  display: grid;
-}
-
-.legacy .auth-card {
-  background: #fff;
-  border: 1px solid #dde7d5;
-  border-radius: 24px;
-  width: min(100%, 460px);
-  padding: 32px;
-  box-shadow: 0 24px 60px #1720191a;
-}
-
 .legacy .eyebrow {
   color: #4d7c2f;
   letter-spacing: .08em;
@@ -365,19 +349,9 @@
   color: #62705d;
 }
 
-.legacy .auth-form {
-  gap: 16px;
-  margin-top: 24px;
-  display: grid;
-}
 
-.legacy .auth-form label {
-  gap: 8px;
-  font-weight: 600;
-  display: grid;
-}
 
-.legacy .auth-form input, .legacy .capacity-form input, .legacy .capacity-form select {
+.legacy .capacity-form input, .legacy .capacity-form select {
   box-sizing: border-box;
   border: 1px solid #cdd8c5;
   border-radius: 12px;

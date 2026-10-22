@@ -29,7 +29,7 @@ export class PuppeteerProgressSummaryRenderer implements ProgressSummaryRenderer
     const browser=await puppeteer.launch({headless:true});
     try{
       const page=await browser.newPage();
-      await page.setContent(html,{waitUntil:"networkidle0"});
+      await page.setContent(html,{waitUntil:"load"});
       return Buffer.from(await page.pdf({format:"A4",printBackground:true,preferCSSPageSize:true}));
     } finally { await browser.close(); }
   }

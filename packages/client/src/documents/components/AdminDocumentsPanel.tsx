@@ -13,7 +13,8 @@ import { documentErrorMessage, documentsApi } from "../api/documents-api.js";
 const labels:Record<PersonalizedDocumentType,string>={meal_plan:"Plan alimentaire",workout_plan:"Plan d'entraînement",progress_summary:"Bilan de progression",progress_photo:"Photo de progression",other_personalized:"Document personnalisé"};
 type UploadType="meal_plan"|"workout_plan"|"other_personalized";
 
-function extensionFor(mime:string){return mime==="application/pdf"?"pdf":mime==="image/png"?"png":mime==="image/webp"?"webp":"jpg";}\nfunction downloadBlob(blob:Blob,filename:string){const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
+function extensionFor(mime:string){return mime==="application/pdf"?"pdf":mime==="image/png"?"png":mime==="image/webp"?"webp":"jpg";}
+function downloadBlob(blob:Blob,filename:string){const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
 
 function DocumentCard({doc,onChanged}:{doc:PersonalizedDocument;onChanged:()=>void}){
   const [file,setFile]=useState<File|null>(null);
@@ -21,7 +22,7 @@ function DocumentCard({doc,onChanged}:{doc:PersonalizedDocument;onChanged:()=>vo
   const current=doc.versions.find(v=>v.id===doc.currentVersionId)??doc.versions.at(-1);
   const versionMutation=useMutation({mutationFn:()=>file?documentsApi.addVersion(doc.id,file):Promise.reject(new Error("file")),onSuccess:()=>{setFile(null);toast.success("Nouvelle version enregistrée");onChanged();},onError:e=>toast.error(documentErrorMessage(e))});
   const linkMutation=useMutation({mutationFn:()=>current?documentsApi.issueLink(current.id,{expiresAt:new Date(Date.now()+24*60*60_000).toISOString(),maxUses:3}):Promise.reject(new Error("version")),
-    onSuccess:r=>{setIssued({url:window.location.origin+"/document/"+r.token,code:r.verificationCode});onChanged();},onError:e=>toast.error(documentErrorMessage(e))});
+    onSuccess:r=>{setIssued({url:window.location.origin+"/document/"+r.token,...(r.verificationCode!==undefined?{code:r.verificationCode}:{})});onChanged();},onError:e=>toast.error(documentErrorMessage(e))});
   const revokeMutation=useMutation({mutationFn:()=>documentsApi.revoke(doc.id),onSuccess:()=>{toast.success("Document révoqué");onChanged();},onError:e=>toast.error(documentErrorMessage(e))});
   const archiveMutation=useMutation({mutationFn:()=>documentsApi.archive(doc.id),onSuccess:()=>{toast.success("Document archivé");onChanged();},onError:e=>toast.error(documentErrorMessage(e))});
   return <article className="rounded-xl border border-border bg-card p-4">

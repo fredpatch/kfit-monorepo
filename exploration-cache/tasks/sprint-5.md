@@ -1067,3 +1067,316 @@ Current refonte state:
 - Any eventual branch reconciliation must be deliberate and reviewed before release.
 
 S5.5 planning must inspect both the current `sprint-5` document/storage implementation and any relevant UI/navigation patterns from `main`, without assuming Track B code is already merged.
+
+
+## S5.5 — planning brief
+
+Goal: turn the Sprint 0 private-file/document foundation into an authoritative V1 document workflow for personalized coaching artifacts, immutable versions and secure temporary customer delivery.
+
+V1 document types:
+- meal_plan
+- workout_plan
+- progress_summary
+- progress_photo
+- other_personalized
+
+Creation modes:
+- meal_plan / workout_plan / other_personalized: coach uploads an already-produced supported private file; S5.5 does not invent structured meal/workout authoring models.
+- progress_summary: may be generated as PDF from authoritative subscription/progress/goal/follow-up data using a deterministic server-side print model and template version.
+- progress_photo: private image upload/linkage using the same storage pipeline; no publication workflow.
+
+Document ownership:
+- personalized coaching documents are owned by subscription: ownerType=subscription, ownerId=subscriptionId.
+- progress_photo document also belongs to the subscription and is linked through progress_photos after storage succeeds.
+- validate polymorphic ownership in service layer.
+
+Document lifecycle:
+- draft
+- available
+- revoked
+- archived
+- pending_purge / purged remain retention-layer states and are not actively implemented by S5.5 commands.
+
+Named commands only:
+- create/upload first version;
+- add version;
+- revoke;
+- archive;
+- issue delivery link.
+No generic status PATCH.
+
+Versioning:
+- document_versions are immutable;
+- version numbers are monotonically increasing per document;
+- current_version_id must belong to same document;
+- new version never overwrites/deletes old file/version;
+- public delivery token targets the immutable document_version, NOT logical document/current version;
+- old links therefore keep referring to the exact version originally shared until expiry/revocation.
+
+Allowed upload policy from Sprint 0:
+- max 10 MB;
+- PDF, JPG/JPEG, PNG, WebP;
+- binary signature must match declared type/extension;
+- internal storage name random/opaque and never includes customer/business identifiers;
+- private storage outside public web root;
+- SHA-256 persisted;
+- malware scan mandatory before DB business record becomes available;
+- infected/scan_failed file is never externally deliverable.
+
+Hard commit / file transaction boundary:
+1. receive file to controlled temporary/private staging;
+2. validate size + signature;
+3. compute SHA-256;
+4. scan with ClamAV;
+5. only CLEAN files may proceed;
+6. move/write to opaque final private storage key;
+7. DB transaction locks logical document as applicable, assigns version number, inserts document/version, sets currentVersionId/status and audit;
+8. if DB transaction fails, delete the just-finalized orphan file;
+9. if file finalization fails, create no business row.
+Never leave a document row pointing to a missing/unscanned file.
+
+First version:
+- create logical document + clean version 1 atomically after successful scan;
+- status becomes available;
+- sensitivity set server-side from type, not client-controlled.
+
+Sensitivity:
+- meal_plan, workout_plan, other_personalized => private;
+- progress_summary, progress_photo => sensitive_health;
+- client cannot downgrade sensitivity.
+
+Consent:
+- generating a NEW progress_summary requires current health_data grant because it is a new derived health/progress artifact;
+- uploading/linking a NEW progress_photo requires current progress_photo_storage grant;
+- consent refusal/revocation blocks new generation/storage of those sensitive artifacts;
+- historical document/version rows are preserved;
+- publication/marketing consent is separate and never inferred;
+- S5.5 creates no public progress-photo publication path.
+
+Progress summary generation:
+- deterministic PDF via Puppeteer/local-only assets;
+- authoritative input only from selected subscription and its validated progress/goals/follow-ups;
+- no diagnosis, BMI, risk score, AI interpretation or invented coaching conclusion;
+- print model may include customer display name, subscription reference/service label, chronological measurements, goals/status/suggestions confirmed as data, and follow-up summary facts;
+- body/health values belong inside the sensitive document itself, never generic audit metadata;
+- fixed template identifier/version stored with the generated version metadata/context (schema field or safe metadata approach decided during implementation without changing business rules);
+- generation does not mutate goals/progress/subscription state.
+
+Progress photos:
+- narrow S5.5 private upload/link path only;
+- progress_photo_storage grant required;
+- create private sensitive-health document/version through same validated storage/scan pipeline;
+- insert progress_photos link only after document/version is clean/committed;
+- measurementId optional but if supplied must belong to same subscription;
+- publication/marketingAuthorizationId remains null in S5.5;
+- no customer/public photo URL.
+
+Admin download:
+- authenticated admin can download a clean current or historical document version after ownership authorization;
+- stream from private storage using server route;
+- storage_key is never exposed to client;
+- safe Content-Type and Content-Disposition filename;
+- admin download is audited structurally.
+
+Secure customer delivery:
+- issue link against one clean, available immutable document version;
+- resourceType=document_version;
+- action=document_download;
+- random bearer token, hash only;
+- explicit expiry;
+- revocable;
+- successful/failed access appended to external_access_events;
+- access route never exposes storage key;
+- rate-limited;
+- expired/revoked/exhausted token rejected with no file bytes.
+
+Use semantics:
+- document links are download links, so unlike one-shot form links they may allow limited repeated access until expiry;
+- default maxUses proposed: 3;
+- successful file stream increments useCount atomically before/at hard commit of access authorization;
+- once maxUses reached, token is exhausted;
+- admin can explicitly revoke an issued link.
+
+Stricter sensitive-link verification:
+- existing requires_otp column is unused and customer OTP delivery does not exist;
+- do NOT reuse admin OTP or invent SMS/WhatsApp delivery.
+- For sensitive_health documents, S5.5 proposes a separate short verification code generated when link is issued and communicated manually by the coach through an independent channel.
+- store only a salted/peppered hash, never raw code;
+- public GET may show a minimal verification page but returns no document bytes/content;
+- POST code verification is rate-limited with a small maximum attempt count (proposed 5) and short verification/session lifetime;
+- after successful verification, download for that token may proceed under its maxUses/expiry policy.
+- Implementation may add document-specific verification fields/table rather than broadening admin OTP semantics.
+- Standard private meal/workout documents do not require the second code by default.
+This is the proposed interpretation of the backlog rule “sensitive links require stricter verification” and needs Gate 1 approval.
+
+Revocation:
+- document revoke blocks new public/admin-as-current delivery but preserves versions/history;
+- revoking document also revokes all active secure_access_tokens for its versions atomically;
+- archived document is read-only historical/admin-visible and cannot issue new public links;
+- existing active links are revoked when archive occurs.
+- no physical deletion/purge in S5.5.
+
+New version:
+- allowed for available/draft logical document;
+- same documentType/owner/sensitivity;
+- clean scan required;
+- lock document and compute next version number;
+- insert immutable version, update currentVersionId;
+- existing links to old versions remain valid unless explicitly revoked by coach; creating v2 does NOT silently revoke v1 links because they were intentionally version-bound.
+- UI clearly shows which version each active link targets.
+
+API proposal — admin:
+- GET /admin/subscriptions/:subscriptionId/documents
+- POST /admin/subscriptions/:subscriptionId/documents
+- GET /admin/documents/:documentId
+- POST /admin/documents/:documentId/versions
+- GET /admin/document-versions/:versionId/download
+- POST /admin/document-versions/:versionId/delivery-links
+- POST /admin/document-delivery-links/:tokenId/revoke
+- POST /admin/documents/:documentId/revoke
+- POST /admin/documents/:documentId/archive
+- POST /admin/subscriptions/:subscriptionId/progress-summary/generate
+- POST /admin/progress-measurements/:measurementId/photos only if multipart route design remains within approved file pipeline.
+
+API proposal — public:
+- GET /public/documents/:token
+- POST /public/documents/:token/verify for sensitive-health challenge
+- GET /public/documents/:token/download after authorization/verification
+
+Public response exposes only:
+- safe document label/type;
+- version number;
+- optional expiry;
+- whether verification is required.
+No customer phone/email, health values, storage key or unrelated subscription data.
+
+Audit events:
+- document.created
+- document.version_added
+- document.progress_summary_generated
+- document.progress_photo_added
+- document.delivery_link_created
+- document.delivery_link_revoked
+- document.downloaded_admin
+- document.revoked
+- document.archived
+Generic audit metadata only: documentId, versionId, documentType, sensitivity, versionNumber, tokenId, actor/source. Never file bytes, raw token/code, storage key, body/health values, filenames if they contain customer-entered sensitive content, or consent details.
+
+External access events:
+- document.view
+- document.verify
+- document.download
+with result values such as success/invalid/expired/revoked/exhausted/verification_failed.
+IP/UA remain hashed through existing audit context mechanism.
+
+Schema impact — reuse first:
+Existing tables already support most of S5.5:
+- documents
+- document_versions
+- secure_access_tokens
+- external_access_events
+- progress_photos
+
+Likely additive schema only for sensitive document challenge / generated-template metadata if no existing safe field fits.
+Do not add a new generic file table.
+
+Concurrency/idempotency:
+- document version number allocated under document row lock;
+- concurrent version additions produce distinct ordered versions, never same version number;
+- duplicate/replayed upload request must not create duplicate version after hard commit;
+- public token use/maxUses updated under token lock;
+- revocation vs download race resolves under authoritative token/document checks;
+- progress-photo linkage exactly once per created document/version operation.
+
+Client/UI:
+- Track A implementation on sprint-5 must first use the existing client patterns available on that branch.
+- Track B main is UI reference: client profile should eventually surface Documents in the refonte pattern, but do not copy/merge unrelated Track B commits inside S5.5.
+- French admin document panel:
+  - type, status, sensitivity, current version;
+  - versions/history;
+  - upload new version;
+  - generate progress summary;
+  - secure-link creation with expiry/max uses;
+  - sensitive link shows verification code ONCE to coach after issue;
+  - active/revoked/exhausted links;
+  - revoke/archive actions.
+- Public page is mobile-friendly and minimal.
+
+Out of scope:
+- structured meal-plan editor;
+- structured workout-plan editor;
+- AI-generated plans or summaries;
+- electronic signature;
+- public progress-photo publication;
+- marketing/testimonial authorization;
+- document comments/approval workflow;
+- arbitrary document sharing between customers;
+- retention purge jobs;
+- S3/S4/S5 lifecycle changes;
+- financial quotes/receipts (Sprint 6);
+- merging Track B main into sprint-5.
+
+Applicable patterns:
+- Secure External Document Sharing
+- Business Document PDF Generation
+- Historical Business Snapshot
+- Atomic Business Operation
+- Idempotent Business Command
+- Hard Commit Point
+- Audit Event System
+- Shared API Contracts
+- Domain Error Taxonomy
+
+Validation target:
+1. valid supported clean PDF upload creates document + v1;
+2. extension/signature mismatch rejected with zero DB business rows;
+3. >10 MB rejected;
+4. infected EICAR rejected with zero available document/version;
+5. opaque storage key never contains original/business identifiers;
+6. SHA-256 persisted;
+7. first clean version becomes current;
+8. v2 appends, preserves v1 and becomes current;
+9. concurrent v2 attempts allocate unique versions;
+10. old version links remain version-bound after v2;
+11. admin historical-version download works;
+12. storage key never appears in API response;
+13. progress summary generation requires health_data grant;
+14. revoked/absent health_data blocks new summary while old docs remain;
+15. generated progress summary contains authoritative facts and no diagnostic interpretation;
+16. progress photo requires progress_photo_storage grant;
+17. progress photo link uses same subscription/measurement ownership;
+18. publication authorization remains null/no public photo path;
+19. standard delivery token stored hash-only;
+20. public GET non-consuming/no file bytes;
+21. clean available version download succeeds;
+22. useCount/maxUses enforced exactly once under concurrency;
+23. expired token rejects;
+24. revoked token rejects;
+25. exhausted token rejects;
+26. document revoke revokes active version links;
+27. archive prevents new links and revokes active links;
+28. sensitive-health link requires verification challenge;
+29. wrong sensitive verification code rejected and attempts limited;
+30. raw verification code never stored;
+31. correct sensitive verification permits download;
+32. public output contains no unrelated PII/health data;
+33. external_access_events record safe success/failure evidence;
+34. generic audits contain no raw token/code/storage key/health values;
+35. representative DB/audit failure cleans newly finalized orphan file or prevents authoritative row;
+36. duplicate/replayed command does not create duplicate document/version.
+
+Fred Gate 2:
+- upload meal/workout PDF;
+- add version and verify history/current pointer;
+- generate progress summary;
+- create standard temporary link and download;
+- hit max use/revoke/expiry fixtures;
+- create sensitive progress-summary link, verify wrong code then correct code;
+- upload private progress photo after progress_photo_storage grant;
+- revoke document and confirm existing link stops working;
+- DBeaver inspect documents, document_versions, secure_access_tokens, external_access_events, progress_photos, consent_records, audit_events;
+- inspect storage/private to verify opaque filenames and no rejected/orphan files.
+
+Gate 1 pending Fred approval.
+
+S5.5 is the final Sprint 5 slice. Sprint 5 closure occurs only after Fred Gate 2, tracker/docs/changelog reconciliation, recette update and explicit closure review.

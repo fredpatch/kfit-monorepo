@@ -53,6 +53,19 @@ export class DrizzleFinanceRepository implements FinanceRepository {
       dto.allocations.push({ id: allocation.id, subscriptionId: sub.id, installmentId: item.id, paymentPlanId: item.paymentPlanId, amountXaf: allocation.amountXaf, createdAt: allocation.createdAt.toISOString() });
     }
     const history = [...events.values()];
+    // Allocation insertion timestamps are identical inside one payment transaction, while
+    // allocation UUIDs are random. Expose allocations in authoritative obligation order
+    // instead of leaking that nondeterministic storage order into API/read-model consumers.
+    for (const event of history) event.allocations.sort((left, right) => {
+      const a = itemMap.get(left.installmentId), b = itemMap.get(right.installmentId);
+      if (!a || !b) throw new FinanceInvariantError();
+      const due = a.dueDate.getTime() - b.dueDate.getTime();
+      if (due !== 0) return due;
+      const sequence = a.sequenceNumber - b.sequenceNumber;
+      if (sequence !== 0) return sequence;
+      const installment = a.id.localeCompare(b.id);
+      return installment !== 0 ? installment : left.id.localeCompare(right.id);
+    });
     for (const event of history) {
       if (sumXaf(event.allocations.map(a => a.amountXaf)) !== event.amountXaf) throw new FinanceInvariantError();
       if (event.eventType === "payment_correction") {

@@ -6,8 +6,8 @@ Deliver the V1 Core operational layer: dashboard KPIs and alert workspaces, noti
 
 ## Ordered tasks
 
-1. S7.1 — Core dashboard KPIs and operational alert workspaces — IMPLEMENTED / AWAITING_VALIDATION; implementation `ed1c7d0`.
-2. S7.2 — Dashboard and email notification engine with configurable reminders — CLOSED until S7.1 validation.
+1. S7.1 — Core dashboard KPIs and operational alert workspaces — CLOSED / validated 2026-10-23.
+2. S7.2 — Dashboard and email notification engine with configurable reminders — PLANNING / Gate 1 pending.
 3. S7.3 — Retention, anonymization, soft-delete purge and privacy-action replay — CLOSED until S7.2 validation.
 4. S7.4 — Backup/restore and production-hardening acceptance — CLOSED until S7.3 validation.
 
@@ -352,3 +352,29 @@ S7.2 remains closed until S7.1 local validation.
 - Implementation commit: `ed1c7d0` — `feat(dashboard): add historical analytics and operational alerts`.
 - Full PostgreSQL suite remains 541/542 because of the existing payment-proof allocation-order assertion. S7.1 cannot be closed until that suite is green and Fred completes human Gate 2.
 - S7.2 remains closed.
+
+
+## S7.1 closure — 2026-10-23
+
+Status: **CLOSED / LOCALLY VALIDATED**.
+
+Implementation:
+- `ed1c7d0` dashboard analytics/alerts;
+- `bb3ba76` deterministic finance allocation read ordering.
+
+Evidence:
+- server 523/523;
+- shared 56/56;
+- PostgreSQL 542/542;
+- typecheck/build/db:check green;
+- Reviewer PASSED WITH NOTES;
+- QA PASSED WITH LIMITATIONS;
+- Fred browser/mobile/keyboard and DBeaver checks all green.
+
+The cadence-history amendment is validated:
+- prospective initialization only;
+- no invented legacy cadence;
+- unknown historical follow-up points remain unavailable/null;
+- no overlap/multiple-open interval issue observed in DBeaver.
+
+S7.1 acceptance is satisfied. S7.2 planning may begin; implementation requires separate Gate 1 approval.

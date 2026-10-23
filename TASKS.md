@@ -5,15 +5,15 @@
 
 ## Now
 
-Sprint 6 S6.1–S6.4 are validated and closed as individual slices on `main`. Sprint 6 closure remains a separate Fred decision. The former `sprint-5` branch remains historical.
+Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former `sprint-5` branch remains historical.
 
 ```text
 Branch            main
-Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
-Active slice      S6.4 — Sequential payment receipts and secure sharing preparation
-Workflow state    CLOSED
-Last validated    S6.4 — 2026-10-23
-Next action       Publish authorized S6.4 commits; await separate Sprint 6 closure decision
+Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
+Active slice      S7.1 — Core dashboard KPIs and operational alert workspaces
+Workflow state    PLANNING / GATE_1_PENDING
+Last validated    Sprint 6 — closed 2026-10-23
+Next action       Planner: inspect S7.1 dashboard KPI/alert patterns and prepare Gate 1
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -1430,3 +1430,33 @@ Locked rules:
 12. Invoices, refunds, credit notes, VAT/tax logic, provider APIs, email/WhatsApp sending and accounting exports remain outside S6.4.
 
 Implementation is authorized for S6.4 only. Sprint 6 closure still requires Fred local validation of S6.4.
+
+
+## Sprint 6 closure — 2026-10-23
+
+Status: **CLOSED / LOCALLY VALIDATED**.
+
+Validated slices:
+- S6.1 — authoritative financial ledger;
+- S6.2 — versioned quotes and secure customer acceptance;
+- S6.3 — secure payment-proof evidence and coach review;
+- S6.4 — sequential receipts and secure sharing.
+
+Final S6.4 implementation:
+- `a38901a` — `feat(receipts): add sequential receipts and secure sharing`.
+
+Final S6.4 validation:
+- server 470/470;
+- shared 55/55;
+- PostgreSQL 507/507 including 40 receipt cases;
+- typecheck/build/db:check green;
+- real PDF/files/ClamAV preflights green;
+- Reviewer PASSED WITH NOTES;
+- QA PASSED WITH LIMITATIONS;
+- Fred browser/mobile/keyboard and DBeaver Gate 2: all green.
+
+Sprint 6 acceptance is satisfied for the V1 Core finance chain: payment plans/installments, confirmed payments/allocations, versioned quotes, payment proofs, sequential receipts and secure sharing.
+
+Next sprint: Sprint 7 — Dashboard, notifications, rétention, sauvegardes et durcissement.
+First implementation slice: **S7.1 — Core dashboard KPIs and operational alert workspaces**.
+No Sprint 7 implementation before Gate 1.

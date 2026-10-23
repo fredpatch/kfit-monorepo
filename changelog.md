@@ -2,6 +2,19 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-23 — Sprint 7.1 dashboard analytics and operational alerts
+
+- S7.1 is locally validated and closed.
+- Implementation: `ed1c7d0` — `feat(dashboard): add historical analytics and operational alerts`.
+- Corrective fix: `bb3ba76` — deterministic finance allocation read ordering by authoritative installment order.
+- Added 4w/8w/12m request analytics, cumulative submitted-cohort funnel, eight-week KPI trends/deltas, five distinct authoritative finance values and derived operational-alert workspaces.
+- Added prospective effective follow-up cadence history. Legacy cadence before the authority boundary is never fabricated; unavailable historical points remain null/unavailable and suppress misleading deltas.
+- Current `GET /admin/today` semantics remain unchanged.
+- Validation: server 523/523, shared 56/56, PostgreSQL 542/542, typecheck/build/db:check green.
+- Fred confirmed browser/mobile/keyboard and DBeaver Gate 2 all green.
+- Known non-blocking coverage note: actual catalogue-seed concurrency against simultaneous override/activation was inspected but not directly runtime-tested; transaction helpers and database overlap constraints are covered.
+- S7.2 may now enter planning; no notification/email implementation before its Gate 1.
+
 ## 2026-10-23 — Sprint 6 closed
 
 - Sprint 6 is locally validated and closed across S6.1–S6.4.

@@ -6,7 +6,7 @@ Deliver the V1 Core operational layer: dashboard KPIs and alert workspaces, noti
 
 ## Ordered tasks
 
-1. S7.1 — Core dashboard KPIs and operational alert workspaces — APPROVED_FOR_IMPLEMENTATION.
+1. S7.1 — Core dashboard KPIs and operational alert workspaces — BLOCKED / Gate 1 amendment required.
 2. S7.2 — Dashboard and email notification engine with configurable reminders — CLOSED until S7.1 validation.
 3. S7.3 — Retention, anonymization, soft-delete purge and privacy-action replay — CLOSED until S7.2 validation.
 4. S7.4 — Backup/restore and production-hardening acceptance — CLOSED until S7.3 validation.
@@ -197,3 +197,28 @@ At minimum:
 - no sensitive health/private-document content in dashboard payloads.
 
 Fred approved this complete Gate 1. Implementation is authorized for S7.1 only. S7.2 remains closed until local validation.
+
+
+## S7.1 feasibility blocker — cadence history
+
+Status: **BLOCKED / GATE 1 AMENDMENT REQUIRED**.
+
+The Reviewer confirmed that historical overdue-follow-up stock cannot always be reconstructed safely.
+
+Why:
+- effective cadence may resolve from mutable variant/service fallback policy;
+- those policy values can be overwritten without preserved history;
+- override audit is insufficient when the historical source was service/variant fallback;
+- historical cadence cannot be inferred from the current fallback without risking false data.
+
+No S7.1 implementation/migration/tests were performed after the blocker was found.
+
+Recommended amendment:
+1. add prospective effective-cadence history;
+2. do not invent/backfill overwritten legacy fallback values;
+3. return explicit historical availability metadata for overdue-follow-up series;
+4. buckets whose cadence provenance is incomplete must be `unavailable`, not 0 and not computed from today's cadence;
+5. current `/admin/today` overdue KPI remains unchanged and available;
+6. once complete cadence history exists for a bucket, historical overdue stock is computed using the proven historical cadence.
+
+S7.2 remains closed.

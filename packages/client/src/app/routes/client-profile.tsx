@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NavLink, useParams, useSearchParams } from "react-router";
 import { isAxiosError } from "axios";
@@ -6,8 +6,6 @@ import { Mail, MapPin, MessageCircle, Phone, Plus } from "lucide-react";
 import { customerAnalyticsPeriods, type AdminCustomerSubscriptionSummary, type CustomerAnalyticsPeriod } from "@kfit/shared";
 import { customersApi } from "../../customers/api/customers-api.js";
 import { OnboardingPanel, isOnboardingEditable } from "../../onboarding/components/AdminOnboardingPage.js";
-import { AdminAppointmentsPanel } from "../../appointments/components/AdminAppointmentsPanel.js";
-import { AdminFollowUpsPanel } from "../../follow-ups/components/AdminFollowUpsPanel.js";
 import { OverviewTab } from "../../profile/overview/OverviewTab.js";
 import { AdminConsentPanel } from "../../consents/components/AdminConsentPanel.js";
 import { AdminQuestionnairePanel } from "../../questionnaires/components/AdminQuestionnairePanel.js";
@@ -29,6 +27,8 @@ import { AdminPage, LegacyEmbed as Legacy } from "../layout/AdminPage.js";
 const AnalysisTab = lazy(() => import("../../profile/analysis/AnalysisTab.js").then((m) => ({ default: m.AnalysisTab })));
 const ProgressTab = lazy(() => import("../../profile/progress/ProgressTab.js").then((m) => ({ default: m.ProgressTab })));
 const DocumentsTab = lazy(() => import("../../profile/documents/DocumentsTab.js").then((m) => ({ default: m.DocumentsTab })));
+const AppointmentsTab = lazy(() => import("../../profile/appointments/AppointmentsTab.js").then((m) => ({ default: m.AppointmentsTab })));
+const FollowUpsTab = lazy(() => import("../../profile/follow-ups/FollowUpsTab.js").then((m) => ({ default: m.FollowUpsTab })));
 const PaymentsTab = lazy(() => import("../../profile/payments/PaymentsTab.js").then((m) => ({ default: m.PaymentsTab })));
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -89,6 +89,11 @@ export function ClientProfilePage() {
   const period = customerAnalyticsPeriods.find((p) => p === params.get("periode")) ?? "30j";
   const requestedTab = params.get("onglet") ?? "";
   const tab = (tabAliases[requestedTab] ?? (profileTabs.some((t) => t.value === requestedTab) ? requestedTab : "apercu")) as ProfileTab;
+
+  /** « nouveau=suivi » (Suivis page, Aujourd'hui) opens the follow-up form once, then leaves the URL. */
+  const clearNew = useCallback(() => {
+    setParams((current) => { const next = new URLSearchParams(current); next.delete("nouveau"); return next; }, { replace: true });
+  }, [setParams]);
 
   const update = (next: Record<string, string>) => {
     const merged = new URLSearchParams(params);
@@ -243,14 +248,14 @@ export function ClientProfilePage() {
             </Suspense>
           </TabsContent>
           <TabsContent value="rendez-vous">
-            <Legacy>
-              <AdminAppointmentsPanel key={selected.id} subscriptionId={selected.id} />
-            </Legacy>
+            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement des rendez-vous…</p>}>
+              <AppointmentsTab key={selected.id} subscriptionId={selected.id} />
+            </Suspense>
           </TabsContent>
           <TabsContent value="suivis">
-            <Legacy>
-              <AdminFollowUpsPanel key={selected.id} subscriptionId={selected.id} />
-            </Legacy>
+            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement des suivis…</p>}>
+              <FollowUpsTab key={selected.id} subscriptionId={selected.id} openRecord={params.get("nouveau") === "suivi"} onRecordOpened={clearNew} />
+            </Suspense>
           </TabsContent>
           <TabsContent value="preparation">
             <Legacy>

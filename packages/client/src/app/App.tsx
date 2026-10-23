@@ -81,7 +81,7 @@ export function App() {
           <Route
             path="suivis"
             element={
-              <AdminPage title="Suivis" description="Priorise les suivis selon la cadence active et les prochaines actions." legacy>
+              <AdminPage title="Suivis" description="Les clientes à recontacter selon leur rythme de suivi, en retard d'abord.">
                 <AdminFollowUpQueuePage />
               </AdminPage>
             }

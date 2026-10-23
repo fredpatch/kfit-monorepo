@@ -30,9 +30,9 @@ function describe(t: TodayTask): { status: StatusDescriptor; meta: string; actio
   const profile = (onglet: string) => `/admin/clients/${t.customerId}?abonnement=${t.subscriptionId}&onglet=${onglet}`;
   switch (t.kind) {
     case "follow_up_overdue":
-      return { status: { label: `En retard · ${t.days ?? 0} j`, tone: "danger" }, meta: `${t.offer} · dernier contact ${dateFr(t.at)}`, action: "Enregistrer le suivi", to: profile("suivis") };
+      return { status: { label: `En retard · ${t.days ?? 0} j`, tone: "danger" }, meta: `${t.offer} · dernier contact ${dateFr(t.at)}`, action: "Enregistrer le suivi", to: `${profile("suivis")}&nouveau=suivi` };
     case "follow_up_due":
-      return { status: { label: "Suivi à faire", tone: "warning" }, meta: `${t.offer} · prévu ${dateTimeFr(t.at)}`, action: "Enregistrer le suivi", to: profile("suivis") };
+      return { status: { label: "Suivi à faire", tone: "warning" }, meta: `${t.offer} · prévu ${dateTimeFr(t.at)}`, action: "Enregistrer le suivi", to: `${profile("suivis")}&nouveau=suivi` };
     case "request_new":
       return { status: { label: "Nouvelle demande", tone: "info" }, meta: `${t.offer} · reçue ${relativeDaysFr(t.at)} (${dateTimeFr(t.at)})`, action: "Contacter", to: `/admin/demandes?vue=nouvelles&demande=${t.requestId}` };
     case "request_follow_up":

@@ -20,8 +20,8 @@ UI refonte        UX-1 → UX-9c validated
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
 UX-9d/9e          Aujourd'hui fidelity fixes + alerts dedupe pushed (1d3a476, 6ca2a2f)
 UX-16             notification-centre boards validated → referenced in sprint-7.md § S7.2 UI
-UX-12a            customer link pages on the shared public shell — diff delivered 2026-10-23
-UX next           UX-12b (legacy customer pages) → UX-15 boards → UX-14 boards; UX-11 buildable (board 10 approved)
+UX-12a/12b        all 7 customer token pages on the public shell (12a pushed 4288d46; 12b delivered 2026-10-23)
+UX next           UX-15 boards → UX-14 boards; UX-11 buildable (board 10 approved)
 ```
 
 ## S7.1 — closed 2026-10-23
@@ -195,13 +195,13 @@ Agent reruns of database/preflight commands still require a new per-invocation a
 
 ```text
 Branch            main (Track B runs beside Sprint 7; S7.2 owns the admin shell/header until it lands)
-Step              UX-12a delivered (4 link pages on the public shell); UX-12b next
+Step              UX-12b delivered (questionnaire, consent, appointment); UX-15 boards next
 Workflow state    AWAITING_HUMAN_VALIDATION (UX-9d, UX-10) · PLANNING (boards)
 Validation done   UX-9d: client tsc + build, browser pass desktop + 390 px on scratch data
 Not validated     Fred local check of UX-9d and UX-10 (Mailpit)
 Pending decisions Alerts vs À traiter duplication; « ton/ta coach » wording; currency label (Refonte UI § Open decisions)
 Risks             Any edit to AdminLayout/header conflicts with S7.2 until it is merged
-Next action       Fred: apply UX-12a, check the 4 links locally; Claude: UX-12b
+Next action       Fred: apply UX-12b, check the 3 links locally; Claude: UX-15 boards
 ```
 
 ## Refonte UI — suivi
@@ -241,8 +241,8 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 | UX-9e | 02 | Alerts on Aujourd'hui limited to payments and quotes (no duplicate of À traiter) | — | Pushed | 6ca2a2f |
 | UX-10 | 09 | Connexion, Mot de passe oublié, Initialisation, password meter; recovery service bound in `dev-app.ts` (SMTP) | none (existing `/auth/recovery/*`) | Pushed — awaiting Fred local validation | e0ae7f1 |
 | UX-11 | 10, 11a | Public page + mobile request | — | Board 10 approved 2026-10-23 — to build; prod blocked by brand assets | — |
-| UX-12a | 11e–h | Shared public shell (`components/public/PublicShell.tsx`, one no-referrer hook) + /document, /devis, /recu, /justificatif restyled; logic unchanged | — | Delivered — awaiting push | — |
-| UX-12b | 11b–d | Legacy customer pages on the same shell: questionnaire, consent, appointment | — | To do (boards validated) | — |
+| UX-12a | 11e–h | Shared public shell (`components/public/PublicShell.tsx`, one no-referrer hook) + /document, /devis, /recu, /justificatif restyled; logic unchanged | — | Pushed | 4288d46 |
+| UX-12b | 11b–d | /questionnaire (one question per screen, health consent step), /consent, /appointment on the public shell; customer-only forms, coach forms untouched (UX-14); appointment times in Libreville; legacy wrapper removed | — | Delivered — awaiting push | — |
 | UX-14 | 03 | Legacy admin tabs: Rendez-vous, Suivis, Préparation, Santé et consentements + Suivis page | — | Design first | — |
 | UX-15 | new | Screens added in S5.5/S6 without a board: Documents, Finance (échéancier, paiements, justificatifs, reçus), Devis | — | Design first | — |
 | UX-16 | 12, 12b, 12c | S7.2 notification centre (bell panel, mobile sheet, Réglages) — board only, implemented inside S7.2 | — | Boards validated 2026-10-23 → S7.2 implementer (`sprint-7.md` § S7.2 UI) | — |

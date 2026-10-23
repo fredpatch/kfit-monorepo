@@ -27,7 +27,7 @@ const ClientProfilePage = lazy(() => import("./routes/client-profile.js").then((
 // DEV-only component gallery (UX-1). The condition is static in production builds, so the module is dropped.
 const UiGallery = import.meta.env.DEV ? lazy(() => import("../dev/UiGallery.js").then((m) => ({ default: m.UiGallery }))) : null;
 
-/** Public pages keep their current look until UX-11 / UX-12. */
+/** Only the public landing page keeps its legacy look, until UX-11. */
 function Legacy({ children }: { children: ReactNode }) {
   return (
     <div className="legacy">
@@ -59,13 +59,13 @@ export function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Legacy><PublicCataloguePage /></Legacy>} />
-        <Route path="/appointment" element={<Legacy><PublicAppointmentPage /></Legacy>} />
+        <Route path="/appointment" element={<Suspense fallback={null}><PublicAppointmentPage /></Suspense>} />
         <Route path="/document/:token" element={<Suspense fallback={null}><PublicDocumentPage /></Suspense>} />
         <Route path="/devis/:token" element={<Suspense fallback={null}><PublicQuotePage /></Suspense>} />
         <Route path="/recu/:token" element={<Suspense fallback={null}><PublicReceiptPage /></Suspense>} />
         <Route path="/justificatif/:token" element={<Suspense fallback={null}><PublicPaymentProofPage /></Suspense>} />
-        <Route path="/consent" element={<Legacy><PublicConsentPage /></Legacy>} />
-        <Route path="/questionnaire" element={<Legacy><PublicQuestionnairePage /></Legacy>} />
+        <Route path="/consent" element={<Suspense fallback={null}><PublicConsentPage /></Suspense>} />
+        <Route path="/questionnaire" element={<Suspense fallback={null}><PublicQuestionnairePage /></Suspense>} />
 
         {UiGallery ? (
           <Route

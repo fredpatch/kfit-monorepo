@@ -11,9 +11,9 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
 Active slice      S7.1 — Core dashboard KPIs and operational alert workspaces
-Workflow state    PLANNING / GATE_1_PENDING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    Sprint 6 — closed 2026-10-23
-Next action       Planner: inspect S7.1 dashboard KPI/alert patterns and prepare Gate 1
+Next action       IDE Implementer: implement S7.1 read-only dashboard analytics/alerts only; stop before S7.2
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -1460,3 +1460,41 @@ Sprint 6 acceptance is satisfied for the V1 Core finance chain: payment plans/in
 Next sprint: Sprint 7 — Dashboard, notifications, rétention, sauvegardes et durcissement.
 First implementation slice: **S7.1 — Core dashboard KPIs and operational alert workspaces**.
 No Sprint 7 implementation before Gate 1.
+
+
+## S7.1 Gate 1 — approved 2026-10-23
+
+Fred approved all 18 S7.1 dashboard/alert decisions.
+
+Locked rules:
+1. Keep `GET /admin/today` as the validated current operational snapshot; do not rewrite existing current-day rules.
+2. Add a separate read-only analytics endpoint: `GET /admin/dashboard/analytics?periode=4w|8w|12m`.
+3. All periods use Africa/Libreville business time; weeks are Monday–Sunday; 12m uses calendar-month buckets.
+4. KPI sparklines use 8 weekly points:
+   - active clients = end-of-week stock;
+   - overdue follow-ups = end-of-week stock;
+   - new requests = weekly flow;
+   - completed sessions = weekly flow.
+5. KPI delta compares current business week vs immediately previous business week. Favourable direction is metric-specific; previous zero uses absolute change, never fake infinite percentage.
+6. Requests chart supports exactly 4w / 8w / 12m, with weekly buckets for 4w/8w and monthly buckets for 12m.
+7. Requests funnel is cohort-based on requests submitted inside the selected period:
+   received -> contacted -> qualified -> converted.
+8. Conversion attribution remains with the original submitted-period cohort even when conversion occurs later; analytics is evaluated as-of-now.
+9. Finance exposes separate authoritative values:
+   collectedXaf, dueXaf, futureXaf, overdueXaf, outstandingXaf.
+   For current authoritative schedules, outstanding = overdue + due + future.
+10. Finance analytics use S6.1 ledger only. Quotes/proofs/receipts may contribute operational alerts but never financial truth.
+11. S7.1 alerts are derived dashboard read models, not persisted notifications. S7.2 owns notification records/email reminders.
+12. Each alert deep-links to the authoritative owner workspace/action.
+13. Dashboard must reuse owner-module policies/derived rules and must not duplicate business-state logic.
+14. Historical KPI computation is read-only; no snapshot table/migration unless implementation proves reconstruction impossible or unsafe.
+15. UX-9c is completed in S7.1 except coach first name. Keep `Bonjour`; displayName/session migration remains V1.1.
+16. No notification/email engine in S7.1.
+17. No mutation endpoints in S7.1. Proposed read surface:
+   - GET /admin/today
+   - GET /admin/appointments
+   - GET /admin/dashboard/analytics?periode=4w|8w|12m
+   - GET /admin/dashboard/alerts
+18. Validation must prove time boundaries, historical stock/flow correctness, request cohort conversion, finance correction/due semantics, read-only behavior and privacy.
+
+Implementation is authorized for S7.1 only. S7.2 remains closed until Fred locally validates S7.1.

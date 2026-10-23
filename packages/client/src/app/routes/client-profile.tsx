@@ -16,6 +16,7 @@ import { Button } from "../../components/ui/button.js";
 import { EmptyState } from "../../components/ui/empty-state.js";
 import { StatusPill } from "../../components/ui/status-pill.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs.js";
+import { paymentProofsApi } from "../../payment-proofs/api/payment-proofs-api.js";
 import { Tooltip } from "../../components/ui/tooltip.js";
 import { cn } from "../../lib/utils.js";
 import { dateFr } from "../../lib/format.js";
@@ -28,8 +29,7 @@ import { AdminPage, LegacyEmbed as Legacy } from "../layout/AdminPage.js";
 const AnalysisTab = lazy(() => import("../../profile/analysis/AnalysisTab.js").then((m) => ({ default: m.AnalysisTab })));
 const ProgressTab = lazy(() => import("../../profile/progress/ProgressTab.js").then((m) => ({ default: m.ProgressTab })));
 const AdminDocumentsPanel = lazy(() => import("../../documents/components/AdminDocumentsPanel.js").then((m) => ({ default: m.AdminDocumentsPanel })));
-const AdminFinancePanel = lazy(() => import("../../finance/components/AdminFinancePanel.js").then((m) => ({ default: m.AdminFinancePanel })));
-const AdminQuotesPanel = lazy(() => import("../../quotes/components/AdminQuotesPanel.js").then((m) => ({ default: m.AdminQuotesPanel })));
+const PaymentsTab = lazy(() => import("../../profile/payments/PaymentsTab.js").then((m) => ({ default: m.PaymentsTab })));
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -42,11 +42,12 @@ export const profileTabs = [
   { value: "preparation", label: "Préparation" },
   { value: "progression", label: "Progression" },
   { value: "documents", label: "Documents" },
-  { value: "finance", label: "Finance" },
-  { value: "devis", label: "Devis" },
+  { value: "paiements", label: "Paiements" },
   { value: "sante", label: "Santé et consentements" },
 ] as const;
 type ProfileTab = (typeof profileTabs)[number]["value"];
+/** Former tab ids (UX-15a merged Finance + Devis): deep links from alerts and notifications keep landing on « Paiements ». */
+const tabAliases: Record<string, ProfileTab> = { finance: "paiements", devis: "paiements" };
 
 
 const waLink = (phone: string) => `https://wa.me/${phone.replace(/[^0-9]/g, "")}`;
@@ -86,7 +87,8 @@ export function ClientProfilePage() {
   const requested = params.get("abonnement");
   const selected = subscriptions.find((s) => s.id === requested) ?? defaultSubscription(subscriptions);
   const period = customerAnalyticsPeriods.find((p) => p === params.get("periode")) ?? "30j";
-  const tab = (profileTabs.some((t) => t.value === params.get("onglet")) ? params.get("onglet") : "apercu") as ProfileTab;
+  const requestedTab = params.get("onglet") ?? "";
+  const tab = (tabAliases[requestedTab] ?? (profileTabs.some((t) => t.value === requestedTab) ? requestedTab : "apercu")) as ProfileTab;
 
   const update = (next: Record<string, string>) => {
     const merged = new URLSearchParams(params);
@@ -210,6 +212,7 @@ export function ClientProfilePage() {
             {profileTabs.map((t) => (
               <TabsTrigger key={t.value} value={t.value}>
                 {t.label}
+                {t.value === "paiements" && selected ? <PendingProofsBadge subscriptionId={selected.id} /> : null}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -264,14 +267,9 @@ export function ClientProfilePage() {
               <AdminDocumentsPanel key={selected.id} subscriptionId={selected.id} />
             </Suspense>
           </TabsContent>
-          <TabsContent value="finance">
-            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement de la finance…</p>}>
-              <AdminFinancePanel key={selected.id} subscriptionId={selected.id} />
-            </Suspense>
-          </TabsContent>
-          <TabsContent value="devis">
-            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement des devis…</p>}>
-              <AdminQuotesPanel key={selected.id} subscriptionId={selected.id} />
+          <TabsContent value="paiements">
+            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement des paiements…</p>}>
+              <PaymentsTab key={selected.id} subscriptionId={selected.id} />
             </Suspense>
           </TabsContent>
           <TabsContent value="sante">
@@ -283,5 +281,18 @@ export function ClientProfilePage() {
           </>}
         </Tabs>
     </AdminPage>
+  );
+}
+
+/** Count of payment proofs waiting for the coach (board 15a tab badge). Shares the proof list query of the tab. */
+function PendingProofsBadge({ subscriptionId }: { subscriptionId: string }) {
+  const query = useQuery({ queryKey: ["payment-proofs", subscriptionId], queryFn: () => paymentProofsApi.list(subscriptionId), refetchInterval: 30000 });
+  const count = query.data?.proofs.filter((p) => p.status === "pending_review").length ?? 0;
+  if (count === 0) return null;
+  return (
+    <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-waitlist px-1.5 text-[11px] font-bold text-white">
+      {count}
+      <span className="sr-only"> justificatif{count > 1 ? "s" : ""} à vérifier</span>
+    </span>
   );
 }

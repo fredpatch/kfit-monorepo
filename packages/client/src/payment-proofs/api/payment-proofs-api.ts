@@ -37,7 +37,7 @@ const messages: Record<PaymentProofErrorCode, string> = {
   PAYMENT_PROOF_MALWARE_DETECTED: "Ce fichier a été refusé par le contrôle antivirus. Choisis un autre fichier.",
   PAYMENT_PROOF_REVIEW_CONFLICT: "Une autre opération a modifié ces informations. Actualise avant de réessayer.",
   PAYMENT_PROOF_AMOUNT_INVALID: "La confirmation complète doit égaler le montant déclaré ; une confirmation partielle doit être positive et inférieure.",
-  PAYMENT_PROOF_FINANCE_CONFLICT: "Le paiement ne peut pas être enregistré. Vérifie le reste à payer et l’échéancier actif dans Finance.",
+  PAYMENT_PROOF_FINANCE_CONFLICT: "Le paiement ne peut pas être enregistré. Vérifie le reste à payer et l’échéancier actif dans Paiements.",
   PAYMENT_PROOF_ADMIN_FORBIDDEN: "Cet espace est réservé à l’administrateur.",
   PAYMENT_PROOF_RATE_LIMITED: "Trop de tentatives. Patiente une minute avant de réessayer.",
   PAYMENT_PROOF_ROUTE_UNEXPECTED_FAILURE: "L’opération n’a pas pu être confirmée. Vérifie son état avant de réessayer.",

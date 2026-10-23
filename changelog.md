@@ -2,6 +2,17 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-23 — Sprint 6 closed
+
+- Sprint 6 is locally validated and closed across S6.1–S6.4.
+- Delivered the V1 Core finance chain: payment plans/installments, confirmed payment events and FIFO allocations, versioned quotes and secure acceptance, customer payment-proof evidence/review, and sequential payment receipts with secure sharing.
+- Financial state remains independent from subscription lifecycle throughout the sprint.
+- Historical financial/documents evidence is append-only or immutable at the appropriate business point; corrections never rewrite source payment or receipt history.
+- Final S6.4 implementation: `a38901a`; server 470/470, shared 55/55, PostgreSQL 507/507, typecheck/build/db:check and real PDF/files/ClamAV preflights green.
+- Fred confirmed S6.4 browser/mobile/keyboard and DBeaver Gate 2 all green.
+- Next sprint: Sprint 7 — Dashboard, notifications, retention, backups and hardening.
+- First task: S7.1 — Core dashboard KPIs and operational alert workspaces; Gate 1 required before implementation.
+
 ## 2026-10-23 — Sprint 6.4 sequential receipts and secure sharing
 
 - Implementation commit: `a38901a` — `feat(receipts): add sequential receipts and secure sharing`.

@@ -2,18 +2,6 @@
 
 > Only locally validated changes are recorded here.
 
-## 2026-10-23 — Sprint 7.1 dashboard analytics and operational alerts
-
-- Implementation commit: `ed1c7d0` — `feat(dashboard): add historical analytics and operational alerts`.
-- Fred confirmed "All green" after the Reviewer/QA handoff and authorized documentation, commit and push. Developer acceptance is recorded separately from the agent-run results below.
-- Added admin-only GET analytics/alerts, eight weekly KPI trends/deltas, Libreville weekly/calendar-month request buckets and a cumulative submitted-cohort funnel. Later-stage reach implies earlier stages under Fred's explicit decision.
-- Added distinct collected/due/future/overdue/outstanding XAF summaries using the existing authoritative S6.1 ledger read model; alerts link to source workspaces and expose no private health/document/note/reference content.
-- Completed French TodayPage UX-9c using existing chart components, period selection, finance and separate operational alerts. Current Today/agenda semantics and greeting remain unchanged; unknown historical cadence renders as an accessible gap with no delta.
-- Approved generated migration `0013_orange_metal_master.sql` adds prospective resolved subscription cadence history with RESTRICT linkage, value/range checks, one-open uniqueness and the approved btree_gist/GiST no-overlap guard. Separately approved local initialization created exactly 2 rows at execution time, never backdated. Source/history changes share atomic transactions, including catalogue seeds.
-- Agent checks: typecheck/build/schema/diff passed; **523/523 server + 56/56 shared**. PostgreSQL **541/542 passed**, zero skips; all **35 new S7.1 cases passed**. The unchanged payment-proof allocation-order assertion remains failed; full integration validation is not green, and the three-attempt loop breaker was respected.
-- Reviewer passed with notes; QA passed with limitations. Agents had no live browser tools. Actual catalogue-seed/override/activation races were inspected but not directly runtime-tested. Fred's acceptance does not replace these measured evidence limits with invented passes.
-- No dependency/lockfile changes or S7.2 work. S7.1 is closed after Fred's validation and authorized commit; S7.2 requires its own Gate 1. Sprint 7 remains open.
-
 ## 2026-10-23 — Sprint 6 closed
 
 - Sprint 6 is locally validated and closed across S6.1–S6.4.

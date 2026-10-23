@@ -6,7 +6,7 @@ Deliver the V1 Core operational layer: dashboard KPIs and alert workspaces, noti
 
 ## Ordered tasks
 
-1. S7.1 — Core dashboard KPIs and operational alert workspaces — BLOCKED / Gate 1 amendment required.
+1. S7.1 — Core dashboard KPIs and operational alert workspaces — APPROVED_FOR_IMPLEMENTATION.
 2. S7.2 — Dashboard and email notification engine with configurable reminders — CLOSED until S7.1 validation.
 3. S7.3 — Retention, anonymization, soft-delete purge and privacy-action replay — CLOSED until S7.2 validation.
 4. S7.4 — Backup/restore and production-hardening acceptance — CLOSED until S7.3 validation.
@@ -222,3 +222,120 @@ Recommended amendment:
 6. once complete cadence history exists for a bucket, historical overdue stock is computed using the proven historical cadence.
 
 S7.2 remains closed.
+
+
+## S7.1 Gate 1 amendment — cadence history approved 2026-10-23
+
+Status: **APPROVED_FOR_IMPLEMENTATION**.
+
+### Reason for amendment
+
+The original Gate 1 required historical overdue-follow-up stock to be reconstructed authoritatively. Review proved that mutable service/variant fallback cadence values were not historically preserved, so some legacy weekly states are unknowable.
+
+### Approved cadence-history design
+
+Add an append-only effective-cadence history for subscriptions.
+
+Conceptual fields:
+- id;
+- subscriptionId;
+- effectiveFrequencyDays nullable;
+- source: override | variant | service | none;
+- sourceServicePolicyId nullable when useful;
+- effectiveFrom;
+- effectiveTo nullable;
+- createdAt.
+
+The history records the resolved effective cadence at that time.
+
+Do not merely reference mutable service/variant values.
+
+### History writes
+
+Create/transition cadence history whenever the effective cadence changes because of:
+- subscription cadence override update;
+- service/variant fallback policy update that changes the resolved cadence for a subscription;
+- variant assignment change if such a path exists/is introduced;
+- initial activation/initialization when cadence first becomes applicable;
+- renewal/new subscription initialization.
+
+Use explicit deterministic transitions and prevent overlapping effective ranges.
+
+### Legacy treatment
+
+Do not infer old fallback values from today's catalogue policy.
+
+Migration may initialize one current row for existing applicable subscriptions from the current resolved cadence with:
+- effectiveFrom = migration/application initialization time.
+
+This establishes authoritative history only from that instant forward.
+
+No historical backfill before that instant unless evidence already stored elsewhere proves the value.
+
+### Historical KPI availability
+
+Overdue-follow-up trend points change from plain number to availability-aware data.
+
+Conceptual point:
+- value: number | null;
+- availability: complete | unavailable.
+
+A historical bucket is `complete` only if the effective cadence can be proven for every subscription whose eligibility/activity could affect that bucket's overdue stock.
+
+If cadence provenance is incomplete:
+- value = null;
+- availability = unavailable.
+
+Never use:
+- 0;
+- today's cadence;
+- nearest-known cadence;
+as substitutes for missing history.
+
+### Delta behavior
+
+If current or previous comparison point is unavailable:
+- delta is unavailable/null;
+- client must not show a fabricated percentage/direction.
+
+### Current dashboard
+
+`GET /admin/today` current overdue-follow-up KPI remains unchanged and continues using the current authoritative S5.3 cadence resolution.
+
+### UI
+
+Sparkline:
+- known points render normally;
+- unavailable historical points render as gaps;
+- tooltip/accessible label communicates `Historique indisponible`.
+
+As authoritative history accumulates, unavailable legacy points naturally age out of the 8-week view.
+
+### Migration authorization
+
+The original zero-migration preference is amended.
+
+One additive migration is authorized only for:
+- effective follow-up cadence history;
+- constraints/indexes required to preserve append-only/non-overlapping history.
+
+No dashboard snapshot/cache/alert persistence table is authorized.
+
+### Validation additions
+
+Must prove:
+- migration does not invent pre-migration history;
+- initialization starts authority from the initialization timestamp;
+- service fallback change closes old history and opens new resolved cadence history;
+- variant fallback change likewise;
+- override supersedes fallback correctly;
+- clearing override returns to the then-current fallback and records a new history segment;
+- `none` cadence is historically representable;
+- historical overdue uses the correct cadence segment;
+- legacy unknown bucket returns unavailable, not zero;
+- delta involving unavailable point is unavailable;
+- no overlapping history intervals per subscription;
+- current S5.3 behavior is unchanged.
+
+All other S7.1 Gate 1 rules remain locked.
+S7.2 remains closed until S7.1 local validation.

@@ -9,7 +9,7 @@ Deliver the V1 Core finance workflow for subscription obligations, payments, quo
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED / validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED / validated 2026-10-22.
 3. S6.3 — Customer payment-proof upload and structured coach review workflow — CLOSED / validated 2026-10-22.
-4. S6.4 — Sequential payment receipts and secure sharing preparation — APPROVED_FOR_IMPLEMENTATION.
+4. S6.4 — Sequential payment receipts and secure sharing preparation — CLOSED / validated 2026-10-23.
 
 Backlog rows labelled coach sign-off / bug list / full UAT are not Sprint 6 finance implementation slices; final V1 Core UAT remains a later sprint gate.
 
@@ -3153,3 +3153,29 @@ Return:
 19. exact Fred Gate 2 checklist
 
 Stop after S6.4 implementation.
+
+
+## Sprint 6 closure — 2026-10-23
+
+Status: **CLOSED / LOCALLY VALIDATED**.
+
+Acceptance summary:
+- S6.1 authoritative ledger validated;
+- S6.2 quotes/versioning/PDF/secure acceptance validated;
+- S6.3 proof evidence/review/payment integration validated;
+- S6.4 receipts/numbering/PDF/secure sharing/void validated.
+
+S6.4 evidence:
+- implementation `a38901a`;
+- server 470/470;
+- shared 55/55;
+- PostgreSQL 507/507;
+- PDF/files/ClamAV preflights green;
+- browser/mobile/keyboard and DBeaver green by Fred.
+
+Sprint 6 V1 Core objective is satisfied. No further Sprint 6 implementation is open.
+
+Next dependency-ordered sprint:
+- Sprint 7 — Dashboard, notifications, rétention, sauvegardes et durcissement.
+- First slice: S7.1 — Core dashboard KPIs and operational alert workspaces.
+- State: planning / Gate 1 pending.

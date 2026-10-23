@@ -10,13 +10,13 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 ```text
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
-Active slice      S7.1 — Core dashboard KPIs and operational alert workspaces
-Workflow state    AWAITING_AUTOMATED_FIX_AND_HUMAN_VALIDATION
-Last validated    Sprint 6 — closed 2026-10-23
+Active slice      S7.2 — Dashboard and email notification engine with configurable reminders
+Workflow state    PLANNING / GATE_1_PENDING
+Last validated    S7.1 — locally validated 2026-10-23
 Implementation    ed1c7d0 — feat(dashboard): add historical analytics and operational alerts
-Next action       Fix existing payment-proof integration ordering failure, rerun integration, then Fred browser/DBeaver Gate 2
+Next action       Planner: prepare S7.2 notification/reminder Gate 1; no implementation yet
 
-UI refonte        UX-1 → UX-9b pushed; UX-9c implemented with S7.1, human validation pending
+UI refonte        UX-1 → UX-9c validated
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
 UX next           close UX-10 locally, then UX-11
 ```
@@ -1564,3 +1564,36 @@ Locked amendment:
 
 S7.1 is unblocked and APPROVED_FOR_IMPLEMENTATION.
 S7.2 remains closed until Fred locally validates S7.1.
+
+
+## S7.1 closure — 2026-10-23
+
+Status: **CLOSED / LOCALLY VALIDATED**.
+
+Implementation:
+- `ed1c7d0` — `feat(dashboard): add historical analytics and operational alerts`.
+- `bb3ba76` — `fix(finance): stabilize payment allocation read order`.
+
+Validation:
+- typecheck green;
+- build green;
+- db:check green;
+- server 523/523;
+- shared 56/56;
+- PostgreSQL 542/542 after deterministic allocation-read ordering fix;
+- all 35 new S7.1 PostgreSQL cases green;
+- Fred confirmed browser/mobile/keyboard and DBeaver Gate 2 all green.
+
+Validated S7.1 scope:
+- historical KPI series and deltas;
+- 4w/8w/12m request chart;
+- cohort funnel;
+- authoritative five-part finance summary;
+- operational alerts/deep links;
+- prospective cadence history with truthful legacy-unavailable points;
+- current /admin/today semantics unchanged.
+
+Known coverage note:
+- actual catalogue-seed concurrency with simultaneous override/activation remains not directly runtime-tested; helper atomicity and DB overlap constraints are covered.
+
+S7.1 is closed. S7.2 is now the active planning slice; no S7.2 implementation before Gate 1.

@@ -11,9 +11,9 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
 Active slice      S7.1 — Core dashboard KPIs and operational alert workspaces
-Workflow state    BLOCKED / GATE_1_AMENDMENT_REQUIRED
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    Sprint 6 — closed 2026-10-23
-Next action       Fred/Planner: approve cadence-history capture + legacy-unavailable handling before S7.1 resumes
+Next action       IDE Implementer: resume S7.1 with cadence-history amendment; stop before S7.2
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -1527,3 +1527,25 @@ Planner recommendation:
 - capture effective cadence history prospectively;
 - legacy historical KPI buckets return unavailable when cadence provenance cannot be proven;
 - never backfill unknown historical cadence from today's configuration.
+
+
+## S7.1 Gate 1 amendment — cadence history approved 2026-10-23
+
+Fred approved the cadence-history amendment after the historical-feasibility blocker.
+
+Locked amendment:
+- add prospective append-only history of the resolved effective follow-up cadence;
+- store the resolved value itself, not only a pointer to mutable catalogue policy;
+- capture source: override | variant | service | none;
+- no invented legacy backfill from today's service/variant values;
+- initialize current effective cadence from migration time onward;
+- historical overdue-follow-up buckets are `complete` only when cadence provenance is provable for all contributing subscriptions;
+- otherwise the bucket value is null with `availability = unavailable`;
+- unavailable is never represented as zero;
+- KPI delta is unavailable when either compared point is unavailable;
+- current `GET /admin/today` overdue-follow-up KPI remains unchanged;
+- one additive migration is explicitly authorized for cadence history;
+- all other S7.1 Gate 1 decisions remain unchanged.
+
+S7.1 is unblocked and APPROVED_FOR_IMPLEMENTATION.
+S7.2 remains closed until Fred locally validates S7.1.

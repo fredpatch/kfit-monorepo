@@ -11,9 +11,9 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
 Active slice      S7.1 — Core dashboard KPIs and operational alert workspaces
-Workflow state    APPROVED_FOR_IMPLEMENTATION
+Workflow state    BLOCKED / GATE_1_AMENDMENT_REQUIRED
 Last validated    Sprint 6 — closed 2026-10-23
-Next action       IDE Implementer: implement S7.1 read-only dashboard analytics/alerts only; stop before S7.2
+Next action       Fred/Planner: approve cadence-history capture + legacy-unavailable handling before S7.1 resumes
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -1498,3 +1498,32 @@ Locked rules:
 18. Validation must prove time boundaries, historical stock/flow correctness, request cohort conversion, finance correction/due semantics, read-only behavior and privacy.
 
 Implementation is authorized for S7.1 only. S7.2 remains closed until Fred locally validates S7.1.
+
+
+## S7.1 feasibility blocker — historical cadence
+
+Independent Reviewer confirmed S7.1 cannot safely reconstruct historical overdue-follow-up stock from current data.
+
+Root cause:
+- cadence resolution may fall back to mutable service/variant `followUpFrequencyDays`;
+- catalogue policy updates/seeding can overwrite those fallback values;
+- subscription override audit/history cannot reconstruct a fallback value that was overwritten;
+- therefore an old weekly endpoint may be impossible to classify deterministically as healthy/due/overdue.
+
+Example:
+- 10 active days since meaningful activity;
+- historical cadence 7 days => overdue;
+- current cadence 14 days => healthy.
+
+Using today's policy for historical weeks is prohibited because it would fabricate history.
+
+Current state:
+- S7.1 BLOCKED at historical-feasibility gate;
+- no implementation files changed;
+- no migration/tests run for S7.1;
+- S7.2 remains closed.
+
+Planner recommendation:
+- capture effective cadence history prospectively;
+- legacy historical KPI buckets return unavailable when cadence provenance cannot be proven;
+- never backfill unknown historical cadence from today's configuration.

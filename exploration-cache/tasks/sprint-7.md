@@ -6,8 +6,8 @@ Deliver the V1 Core operational layer: dashboard KPIs and alert workspaces, noti
 
 ## Ordered tasks
 
-1. S7.1 — Core dashboard KPIs and operational alert workspaces — CLOSED; Fred validated 2026-10-23; implementation `ed1c7d0`, publication authorized.
-2. S7.2 — Dashboard and email notification engine with configurable reminders — eligible for planning after S7.1 acceptance; separate Gate 1 required, no implementation authorized.
+1. S7.1 — Core dashboard KPIs and operational alert workspaces — IMPLEMENTED / AWAITING_VALIDATION; implementation `ed1c7d0`.
+2. S7.2 — Dashboard and email notification engine with configurable reminders — CLOSED until S7.1 validation.
 3. S7.3 — Retention, anonymization, soft-delete purge and privacy-action replay — CLOSED until S7.2 validation.
 4. S7.4 — Backup/restore and production-hardening acceptance — CLOSED until S7.3 validation.
 
@@ -348,6 +348,7 @@ S7.2 remains closed until S7.1 local validation.
 - Resolved cadence values/sources are captured transactionally for override changes, lifecycle initialization/resumption, renewal, conversion and catalogue seeds. Writer fencing precedes owner row locks. No historical lookup substitutes today's policy for an unavailable interval.
 - Agent-run typecheck/build/db:check/diff passed; server **523/523**, shared **56/56**. Latest PostgreSQL **541/542 passed, 1 failed, zero skips**; all **35 new cases passed** (17 cadence, 18 dashboard). The unchanged S6.3 payment-proof assertion at `payment-proofs.repository.integration.ts:152` assumes FIFO array order where the existing query breaks timestamp ties by UUID. This full-suite failure remains open; no test weakening or further retry after three actual failures. Earlier new fixture errors were corrected at the business-week boundary without changing assertions.
 - Independent Reviewer: **REVIEW PASSED WITH NOTES**. Independent QA: **QA PASSED WITH LIMITATIONS**. No confirmed S7.1 defect. Agent browser/mobile/keyboard/navigation/tooltips were not runtime-validated. Actual catalogue-seed execution/concurrent seed-versus-override/activation paths were inspected but not directly exercised; helper atomicity and DB concurrency were tested.
-- Fred confirmed **"All green"** after this handoff and authorized documentation, commit and push. Gate 2 is accepted on developer-reported evidence; no additional exact human command results or resolution of the recorded agent failure is claimed.
-- Gate 3 implementation commit: `ed1c7d0` — `feat(dashboard): add historical analytics and operational alerts`.
-- S7.1 is closed after Fred's validation and authorized commit. Sprint 7 remains open, and S7.2 requires a separately approved plan/Gate 1.
+- Fred Gate 2 is NOT yet confirmed in this chat. Browser/mobile/keyboard and DBeaver checks remain pending.
+- Implementation commit: `ed1c7d0` — `feat(dashboard): add historical analytics and operational alerts`.
+- Full PostgreSQL suite remains 541/542 because of the existing payment-proof allocation-order assertion. S7.1 cannot be closed until that suite is green and Fred completes human Gate 2.
+- S7.2 remains closed.

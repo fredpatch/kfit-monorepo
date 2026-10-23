@@ -11,12 +11,12 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
 Active slice      S7.1 — Core dashboard KPIs and operational alert workspaces
-Workflow state    CLOSED
-Last validated    S7.1 — Fred accepted 2026-10-23
+Workflow state    AWAITING_AUTOMATED_FIX_AND_HUMAN_VALIDATION
+Last validated    Sprint 6 — closed 2026-10-23
 Implementation    ed1c7d0 — feat(dashboard): add historical analytics and operational alerts
-Next action       Await a separately approved S7.2 plan/Gate 1; Sprint 7 remains open
+Next action       Fix existing payment-proof integration ordering failure, rerun integration, then Fred browser/DBeaver Gate 2
 
-UI refonte        UX-1 → UX-9b pushed; UX-9c validated with S7.1
+UI refonte        UX-1 → UX-9b pushed; UX-9c implemented with S7.1, human validation pending
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
 UX next           close UX-10 locally, then UX-11
 ```
@@ -29,9 +29,9 @@ UX next           close UX-10 locally, then UX-11
 - Fred explicitly chose cumulative funnel reach: qualification/conversion implies earlier stages even without a recorded contact attempt. Finance reuses S6.1's existing read model through batched reads; no payment mutation behavior or S6 tests changed.
 - Agent-run typecheck/build/db:check/diff checks passed. Unit/HTTP/shared: **523/523 server + 56/56 shared**, zero skips. Latest PostgreSQL: **541/542 passed, 1 failed, zero skips**; all **35 new S7.1 cases passed** (17 cadence-history + 18 dashboard). The full suite remains failed: the unchanged payment-proof allocation-order assertion expects [8000,12000] but receives [12000,8000]. Existing equal-timestamp ordering falls back to UUID. Three actual runs reached the loop breaker; no assertion was weakened or further retry performed. An intermediate invocation stopped at compilation before DB tests and supplies no PostgreSQL evidence. The two new Sunday-fixture errors were corrected to the exact Monday boundary with assertions unchanged before the latest run.
 - Independent Reviewer: **REVIEW PASSED WITH NOTES**, no S7.1 blocker/major/minor. Independent QA: **QA PASSED WITH LIMITATIONS**, with fresh unit/typecheck/schema/diff checks and inspection of PostgreSQL/build evidence. Browser tools were unavailable to agents. Actual catalogue-seed execution/races with override or activation were inspected but not directly runtime-tested; helper transactions and database overlap concurrency were tested.
-- Fred subsequently confirmed **"All green"**, accepted Gate 2, and explicitly authorized documentation, commit and push. This records developer-reported acceptance separately from the measured agent failures/limitations; no additional per-check browser/DBeaver execution or full PostgreSQL pass is invented.
-- No dependency/lockfile changes, notification persistence, S7.2 implementation, Sprint 7 closure or deployment. S7.2's validation prerequisite is satisfied, but its own plan/Gate 1 is still required.
-- Gate 3 implementation committed as `ed1c7d0` — `feat(dashboard): add historical analytics and operational alerts`. S7.1 is closed on Fred's acceptance; publication of implementation and closure notes is explicitly authorized. The existing integration failure and runtime coverage notes remain open and documented.
+- Fred has NOT yet completed S7.1 Gate 2 in this chat. Browser/mobile/keyboard and DBeaver checks remain pending.
+- S7.1 implementation is committed as `ed1c7d0`, but closure is not valid while PostgreSQL remains 541/542 and human checks are pending.
+- S7.2 remains closed.
 
 ## Sprint 6 objective
 

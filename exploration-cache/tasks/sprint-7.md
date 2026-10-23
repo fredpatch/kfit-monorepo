@@ -7,7 +7,7 @@ Deliver the V1 Core operational layer: dashboard KPIs and alert workspaces, noti
 ## Ordered tasks
 
 1. S7.1 — Core dashboard KPIs and operational alert workspaces — CLOSED / validated 2026-10-23.
-2. S7.2 — Dashboard and email notification engine with configurable reminders — PLANNING / Gate 1 pending.
+2. S7.2 — Dashboard and email notification engine with configurable reminders — APPROVED_FOR_IMPLEMENTATION.
 3. S7.3 — Retention, anonymization, soft-delete purge and privacy-action replay — CLOSED until S7.2 validation.
 4. S7.4 — Backup/restore and production-hardening acceptance — CLOSED until S7.3 validation.
 
@@ -378,3 +378,355 @@ The cadence-history amendment is validated:
 - no overlap/multiple-open interval issue observed in DBeaver.
 
 S7.1 acceptance is satisfied. S7.2 planning may begin; implementation requires separate Gate 1 approval.
+
+
+## S7.2 Gate 1 — approved 2026-10-23
+
+Goal: persist internal operational notifications from authoritative source conditions and deliver privacy-safe optional email reminders/digests through a durable retryable outbox.
+
+### Reused mechanisms
+- S7.1 operational alert/source-condition derivation;
+- Scheduled Business Jobs (KNW-45);
+- Typed Settings (KNW-42);
+- Sprint 0 node-cron/advisory-lock/scheduled_job_runs preflight;
+- Nodemailer/SMTP/Mailpit foundation;
+- Audit Event System;
+- Shared API Contracts;
+- Domain Error Taxonomy;
+- Idempotent Business Command.
+
+### Architectural ownership
+- source module = business truth;
+- notification = durable operational delivery/history;
+- email = optional external side effect.
+
+Notification processing never mutates the owner business state.
+
+### Persistence
+
+Proposed notification fields:
+- id;
+- recipientUserId;
+- kind;
+- severity;
+- resourceType;
+- resourceId;
+- subscriptionId nullable;
+- customerId nullable;
+- title;
+- summary;
+- deepLink;
+- dedupeKey;
+- occurredAt;
+- firstDetectedAt;
+- lastDetectedAt;
+- readAt nullable;
+- resolvedAt nullable;
+- createdAt;
+- updatedAt.
+
+Stable unique identity must prevent multiple open logical notifications for the same active condition.
+
+Prefer a DB-level uniqueness strategy compatible with preserving resolved history.
+
+### Notification lifecycle
+
+Derived lifecycle:
+- unread + unresolved;
+- read + unresolved;
+- resolved.
+
+Read does not resolve.
+Resolution occurs when authoritative condition is no longer active.
+Historical resolved rows are preserved.
+
+No V1 Core dismiss-forever semantics.
+
+### Initial kinds
+Closed vocabulary:
+- follow_up_overdue;
+- request_to_contact;
+- installment_overdue;
+- payment_proof_pending;
+- preparation_blocked;
+- completion_due.
+
+Add quote_action_required only if implementation proves a single precise authoritative quote condition already exists. Otherwise leave it out.
+
+### Dedupe examples
+- follow_up_overdue:<subscriptionId>
+- request_to_contact:<requestId>
+- installment_overdue:<installmentId>
+- payment_proof_pending:<proofId>
+- preparation_blocked:<subscriptionId>
+- completion_due:<subscriptionId>
+
+Stable condition identity must not include mutable display strings.
+
+### Recipients
+V1 Core notifications target internal active admin/coach users who are authorized to use the operational workspace.
+
+Internal email uses users.email only.
+
+Do not send operational reminder emails to customer/prospect emails in S7.2.
+
+### Email outbox
+
+Proposed fields:
+- id;
+- notificationId nullable when message is digest-level;
+- recipientUserId;
+- toEmail;
+- subject;
+- bodyText;
+- bodyHtml nullable;
+- messageKind;
+- dedupeKey;
+- status;
+- attemptCount;
+- nextAttemptAt;
+- lastAttemptAt nullable;
+- sentAt nullable;
+- providerMessageId nullable;
+- lastErrorCode nullable;
+- createdAt;
+- updatedAt.
+
+States:
+- pending;
+- sending;
+- sent;
+- failed;
+- dead_letter.
+
+Freeze exact delivery recipient/content in the row.
+
+### SMTP failure semantics
+Notification durability is independent of SMTP.
+
+SMTP failure:
+- notification remains present/unresolved as applicable;
+- outbox records failure and retry schedule;
+- no source business mutation.
+
+Notification persistence/reconciliation failure:
+- scheduled job records failed;
+- do not silently send a standalone email without durable notification history.
+
+### Retry policy
+Use typed configuration.
+
+Recommended bounded defaults:
+- initial eligible delivery immediately/at digest schedule;
+- retry +5m;
+- +30m;
+- +2h;
+- +12h;
+- then dead_letter.
+
+The exact implementation may model these as retry delay list/max attempts, but must stay typed/validated.
+
+### Settings
+Use a closed typed registry.
+
+Candidate keys:
+- notifications.email.enabled
+- notifications.follow_up_overdue.email_enabled
+- notifications.request_to_contact.email_enabled
+- notifications.installment_overdue.email_enabled
+- notifications.payment_proof_pending.email_enabled
+- notifications.preparation_blocked.email_enabled
+- notifications.completion_due.email_enabled
+- notifications.follow_up_overdue.reminder_days
+- notifications.installment_overdue.reminder_days
+- notifications.daily_digest.enabled
+- notifications.daily_digest.hour
+- notifications.email.max_attempts / retry policy configuration if exposed.
+
+Every setting:
+- declared type;
+- default;
+- validator;
+- sensitivity;
+- scope/owner.
+
+Unknown keys rejected.
+
+V1 Core uses global operational settings. No per-user preference matrix unless implementation proves it is required.
+
+### Default delivery policy
+Dashboard/in-app notification center is primary.
+
+Normal operational alerts should preferentially be summarized in one daily digest rather than create email spam.
+
+Default digest:
+- enabled;
+- 08:00 Africa/Libreville;
+- French;
+- safe counts/summaries + K'FIT deep links.
+
+Repeated unresolved reminders may become email-eligible again only according to configured reminder_days and stable reminder-window dedupe.
+
+A 15-minute reconciliation job must not create repeated emails for the same logical reminder window.
+
+### Privacy
+Email/notification safe fields may include:
+- customer display name where operationally necessary;
+- subscription/reference;
+- alert kind;
+- safe date/due time;
+- deep link.
+
+Exclude:
+- health questionnaires;
+- progress measurements;
+- private documents;
+- payment external references;
+- proof filenames/content;
+- coach private notes;
+- legal consent text;
+- secure bearer tokens.
+
+### Scheduled jobs
+Use coordinated jobs, not uncoordinated cron side effects in each API replica.
+
+Jobs:
+- notifications.reconcile
+- notifications.email-delivery
+
+Suggested wake cadence:
+- reconcile every 15 minutes;
+- delivery every 5 minutes.
+
+Each logical run:
+- stable runKey;
+- PostgreSQL advisory ownership;
+- scheduled_job_runs outcome/attempt/error metrics;
+- retry-safe effects.
+
+### Reconciliation behavior
+One reconciliation:
+1. discover current authoritative source conditions using owner policies/read models;
+2. compute target internal recipients;
+3. upsert/open notification by stable dedupe;
+4. update lastDetectedAt;
+5. resolve prior open notifications whose conditions disappeared;
+6. determine whether digest/reminder delivery is newly due;
+7. create outbox rows using stable delivery dedupe keys;
+8. commit durable changes.
+
+Do not send SMTP inside the reconciliation transaction.
+
+### Email delivery worker
+1. claim due pending/failed rows safely;
+2. prevent two workers from sending same row concurrently;
+3. mark sending;
+4. send through generic notification mail delivery;
+5. mark sent + provider message ID;
+6. on safe/transient error mark failed + nextAttemptAt;
+7. after bounded attempts mark dead_letter.
+
+A sent row is never automatically resent.
+
+### Digest
+Daily digest groups active unresolved notifications for one recipient.
+
+Suggested subject:
+K'FIT — Actions à traiter
+
+Example safe body:
+- 3 suivis en retard
+- 2 demandes à contacter
+- 1 échéance en retard
+- 2 justificatifs à vérifier
+
+Prefer counts/links and minimal display data.
+
+Digest delivery dedupe must be stable per recipient + Libreville business date.
+
+### API
+Admin:
+- GET /admin/notifications
+- GET /admin/notifications/unread-count
+- POST /admin/notifications/:notificationId/read
+- POST /admin/notifications/read-all
+- GET /admin/notification-settings
+- PUT /admin/notification-settings
+
+Optional scoped operations if implementation remains small:
+- GET /admin/notification-email-outbox
+- POST /admin/notification-email-outbox/:outboxId/retry
+
+No generic notification content/status PATCH.
+
+### UI
+Add notification center/bell to existing admin shell.
+
+Required UX:
+- unread badge;
+- unresolved/recent list;
+- mark one read;
+- mark all read;
+- resolved/history pagination;
+- deep-link navigation;
+- French labels;
+- keyboard/mobile/focus support.
+
+Add small notification settings UI for approved typed keys.
+
+If an outbox troubleshooting surface is added, keep it operational/simple; do not build a full mail administration application.
+
+### Audit
+Generic structural audit candidates:
+- notification.read
+- notification.read_all
+- notification.settings_updated
+- notification.email_retry_requested
+
+Avoid flooding generic audit with every scheduled reconciliation/send outcome; scheduled_job_runs/outbox are their durable operational evidence.
+
+Never audit:
+- full email body;
+- bearer;
+- private customer notes;
+- health content;
+- payment external reference.
+
+### Expected migration
+Additive S7.2 migration is expected for:
+- notifications;
+- notification email outbox;
+- notification settings storage if no generic typed-setting store exists;
+- required unique/index/check/FK constraints.
+
+Do not alter business-domain tables just to support notifications.
+
+### Validation
+Mandatory:
+- duplicate reconciliation -> one open logical notification;
+- condition disappearance -> resolvedAt, history preserved;
+- read does not resolve;
+- rereconcile read/unresolved notification does not duplicate;
+- new logical recurrence after prior resolution follows deterministic dedupe/generation rule;
+- email disabled -> notification still created;
+- category email disabled -> notification still created;
+- SMTP failure -> notification preserved + retry row;
+- retry sends once and transitions sent;
+- concurrent delivery workers do not double-send;
+- sent row not resent;
+- bounded attempts -> dead_letter;
+- scheduler advisory lock prevents duplicate replica logical execution;
+- stable job/run outcomes;
+- daily digest runs for 08:00 Africa/Libreville business date;
+- digest one per recipient/date;
+- reminder-days dedupe;
+- unknown settings rejected;
+- invalid hour/retry/reminder values rejected;
+- inactive/archived recipients excluded;
+- privacy-safe notification/email payload;
+- no business state mutation;
+- existing S7.1 derived alerts remain valid;
+- Mailpit runtime acceptance receives expected French digest/reminder;
+- browser notification center/settings responsive + keyboard accessible.
+
+Fred approved this complete Gate 1. Implementation is authorized for S7.2 only. S7.3 remains closed until Fred local validation.

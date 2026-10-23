@@ -18,8 +18,9 @@ Next action       IDE Implementer: implement S7.2 notification/digest/outbox onl
 
 UI refonte        UX-1 → UX-9c validated
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
-UX-9d/9e          Aujourd'hui fidelity fixes pushed (1d3a476); alerts dedupe (9e) delivered 2026-10-23
-UX next           design-first boards (notification centre → UX-12 → UX-15 → UX-14), Fred validates before code
+UX-9d/9e          Aujourd'hui fidelity fixes + alerts dedupe pushed (1d3a476, 6ca2a2f)
+UX-16             notification-centre boards validated → referenced in sprint-7.md § S7.2 UI
+UX next           design-first boards UX-12 → UX-15 → UX-14, Fred validates before code
 ```
 
 ## S7.1 — closed 2026-10-23
@@ -193,13 +194,13 @@ Agent reruns of database/preflight commands still require a new per-invocation a
 
 ```text
 Branch            main (Track B runs beside Sprint 7; S7.2 owns the admin shell/header until it lands)
-Step              UX-9d delivered (diff); boards for UX-16 → UX-12 → UX-15 → UX-14 next, design first
+Step              UX-16 boards validated and handed to S7.2; UX-12 boards next, then UX-15 → UX-14
 Workflow state    AWAITING_HUMAN_VALIDATION (UX-9d, UX-10) · PLANNING (boards)
 Validation done   UX-9d: client tsc + build, browser pass desktop + 390 px on scratch data
 Not validated     Fred local check of UX-9d and UX-10 (Mailpit)
 Pending decisions Alerts vs À traiter duplication; « ton/ta coach » wording; currency label (Refonte UI § Open decisions)
 Risks             Any edit to AdminLayout/header conflicts with S7.2 until it is merged
-Next action       Fred: apply UX-9d, answer open decisions; Claude: notification-centre board (UX-16)
+Next action       Fred: check UX-9d/9e and UX-10 locally; Claude: UX-12 boards (8 customer pages, one public shell)
 ```
 
 ## Refonte UI — suivi
@@ -236,13 +237,13 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 | UX-9b | 02 | Layout aligned to mockup; requests chart placeholder | — | Done | 8a4e435 |
 | UX-9c | 02 | Weekly requests chart + conversion, KPI sparklines/deltas, finance summary, operational alerts (built in S7.1) | `GET /admin/dashboard/*` (S7.1) | Done — first-name greeting still open | ed1c7d0 |
 | UX-9d | 02 | Fidelity fixes: board 02 order (À traiter under the charts), 8-week default, segmented period switch, header wording, compact funnel, « Stable » deltas, XAF, business-date label, task list capped at 8 | — | Pushed — awaiting Fred check | 1d3a476 |
-| UX-9e | 02 | Alerts on Aujourd'hui limited to payments and quotes (no duplicate of À traiter) | — | Delivered — awaiting push | — |
+| UX-9e | 02 | Alerts on Aujourd'hui limited to payments and quotes (no duplicate of À traiter) | — | Pushed | 6ca2a2f |
 | UX-10 | 09 | Connexion, Mot de passe oublié, Initialisation, password meter; recovery service bound in `dev-app.ts` (SMTP) | none (existing `/auth/recovery/*`) | Pushed — awaiting Fred local validation | e0ae7f1 |
 | UX-11 | 10, 11a | Public page + mobile request | — | To do — prod blocked by brand assets | — |
 | UX-12 | 11b–d + new | All customer pages on one public shell: questionnaire, consent, appointment, plus document, devis, reçu, justificatif (added in S5.5/S6) | — | Design first (boards to validate) | — |
 | UX-14 | 03 | Legacy admin tabs: Rendez-vous, Suivis, Préparation, Santé et consentements + Suivis page | — | Design first | — |
 | UX-15 | new | Screens added in S5.5/S6 without a board: Documents, Finance (échéancier, paiements, justificatifs, reçus), Devis | — | Design first | — |
-| UX-16 | new | S7.2 notification centre (bell, list, settings) — board only, implemented inside S7.2 | — | Design first | — |
+| UX-16 | 12, 12b, 12c | S7.2 notification centre (bell panel, mobile sheet, Réglages) — board only, implemented inside S7.2 | — | Boards validated 2026-10-23 → S7.2 implementer (`sprint-7.md` § S7.2 UI) | — |
 | UX-13 | — | Cleanup: legacy CSS removal, a11y, reduced motion, mobile pass, full UI recette | — | To do (last) | — |
 
 ### Locked decisions (2026-10-22)

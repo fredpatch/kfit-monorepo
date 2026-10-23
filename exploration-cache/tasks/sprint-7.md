@@ -676,6 +676,8 @@ Add small notification settings UI for approved typed keys.
 
 If an outbox troubleshooting surface is added, keep it operational/simple; do not build a full mail administration application.
 
+Design reference (validated by Fred 2026-10-23, UI only — no scope change): canvas « K'FIT — Refonte UI », boards 12 (desktop panel from the bell, tabs « À traiter » / « Résolues », « Tout marquer comme lu », no dismiss), 12b (mobile full-screen sheet) and 12c (« Réglages » page under Configuration in the sidebar: in-app always on, e-mail master switch, daily digest + hour, per-kind reminders with « tous les N jours » only where a reminder_days key exists). Rows show only the safe fields above; until readable references exist, show the offer name instead of the raw reference. Board switch states and day values are examples: defaults come from the settings registry. Badge = unread unresolved count. Reuse the kit (`Button`, `SegmentedControl`, `Switch`, `Field`, `Dialog`/popover, toasts). Notion: UX-16.
+
 ### Audit
 Generic structural audit candidates:
 - notification.read

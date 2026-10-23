@@ -18,20 +18,13 @@ Next action       IDE Implementer: implement S7.2 notification/digest/outbox onl
 
 UI refonte        UX-1 → UX-9c validated
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
-UX next           close UX-10 locally, then UX-11
+UX-9d             Aujourd'hui fidelity fixes vs board 02 — diff delivered 2026-10-23, awaiting Fred
+UX next           design-first boards (notification centre → UX-12 → UX-15 → UX-14), Fred validates before code
 ```
 
-## S7.1 execution evidence — 2026-10-23
+## S7.1 — closed 2026-10-23
 
-- Delivered admin-only read-only analytics and alerts, eight weekly KPI points/deltas, Libreville weekly/monthly request buckets, cumulative submitted-cohort funnel, distinct authoritative XAF finance summaries and owner-workspace deep links. Existing Today/agenda business semantics remain unchanged. French UX-9c replaces the placeholder chart and adds gap-aware sparklines, finance and separate operational alerts; the greeting remains `Bonjour`.
-- Fred approved prospective resolved cadence history after the independent feasibility blocker. Approved preflight found 8 subscriptions, 2 applicable legacy subscriptions, 0 overrides, 4 policies, no invalid/duplicate sources and no history. Separately approved Drizzle generation/application of `0013_orange_metal_master.sql` adds one history table, RESTRICT subscription FK, source/value/range checks, one-open index, lookup index and the approved btree_gist/GiST overlap guard. Root/server environment targets were verified as localhost:5433/kfit_dev without printing secrets.
-- Separately approved guarded initialization created exactly 2 legacy rows at the actual execution timestamp; no earlier cadence was invented. Override, activation/resumption, renewal, conversion and catalogue-seed changes capture resolved source/value in the source transaction. Cadence writers share a transaction advisory fence before owner row locks. Unchanged resolution creates no extra transition; unknown historical cadence produces unavailable/null and no delta.
-- Fred explicitly chose cumulative funnel reach: qualification/conversion implies earlier stages even without a recorded contact attempt. Finance reuses S6.1's existing read model through batched reads; no payment mutation behavior or S6 tests changed.
-- Agent-run typecheck/build/db:check/diff checks passed. Unit/HTTP/shared: **523/523 server + 56/56 shared**, zero skips. Latest PostgreSQL: **541/542 passed, 1 failed, zero skips**; all **35 new S7.1 cases passed** (17 cadence-history + 18 dashboard). The full suite remains failed: the unchanged payment-proof allocation-order assertion expects [8000,12000] but receives [12000,8000]. Existing equal-timestamp ordering falls back to UUID. Three actual runs reached the loop breaker; no assertion was weakened or further retry performed. An intermediate invocation stopped at compilation before DB tests and supplies no PostgreSQL evidence. The two new Sunday-fixture errors were corrected to the exact Monday boundary with assertions unchanged before the latest run.
-- Independent Reviewer: **REVIEW PASSED WITH NOTES**, no S7.1 blocker/major/minor. Independent QA: **QA PASSED WITH LIMITATIONS**, with fresh unit/typecheck/schema/diff checks and inspection of PostgreSQL/build evidence. Browser tools were unavailable to agents. Actual catalogue-seed execution/races with override or activation were inspected but not directly runtime-tested; helper transactions and database overlap concurrency were tested.
-- Fred has NOT yet completed S7.1 Gate 2 in this chat. Browser/mobile/keyboard and DBeaver checks remain pending.
-- S7.1 implementation is committed as `ed1c7d0`, but closure is not valid while PostgreSQL remains 541/542 and human checks are pending.
-- S7.2 remains closed.
+Validated by Fred (PostgreSQL 542/542 after `bb3ba76`, browser/mobile/keyboard and DBeaver green). Full evidence: `exploration-cache/tasks/sprint-7.md` § S7.1 execution and closure.
 
 ## Sprint 6 objective
 
@@ -196,6 +189,19 @@ Agent reruns of database/preflight commands still require a new per-invocation a
 - DBeaver/storage: inspect synthetic/manual test rows only. Check token hashes (no bearer), maxUses/useCount, scoped subscription/context; proof/document ownerType=payment_proof and ownerId=proof.id; scanned clean version SHA/size against physical private file. Confirm pending/negative proof payment_event_id is null, confirmed proof links the exact event/allocations, and subscription lifecycle stays unchanged. Check external access events and structural audits exclude references, notes, messages, filenames and bearer. Later S6.1 payment correction must retain proof evidence.
 - Reviewer should inspect the finance transaction extraction, deterministic lock order, audit rollback, file compensation and separation from generic document-sharing routes. QA should map spec criteria to actual assertions and report live UI checks as NOT VALIDATED until executed. S6.3 remains open until Fred accepts Gate 2.
 
+### Refonte UI handoff (Track B)
+
+```text
+Branch            main (Track B runs beside Sprint 7; S7.2 owns the admin shell/header until it lands)
+Step              UX-9d delivered (diff); boards for UX-16 → UX-12 → UX-15 → UX-14 next, design first
+Workflow state    AWAITING_HUMAN_VALIDATION (UX-9d, UX-10) · PLANNING (boards)
+Validation done   UX-9d: client tsc + build, browser pass desktop + 390 px on scratch data
+Not validated     Fred local check of UX-9d and UX-10 (Mailpit)
+Pending decisions Alerts vs À traiter duplication; « ton/ta coach » wording; currency label (Refonte UI § Open decisions)
+Risks             Any edit to AdminLayout/header conflicts with S7.2 until it is merged
+Next action       Fred: apply UX-9d, answer open decisions; Claude: notification-centre board (UX-16)
+```
+
 ## Refonte UI — suivi
 
 > Goal: rebuild the admin and public screens to the validated mockups without changing business logic.
@@ -228,11 +234,15 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 | UX-8 | 07 | Questionnaires (families, versions, editor) | — | Done | 309294d |
 | UX-9 | 02 | Aujourd'hui dashboard; `/admin` opens it; business time zone | `GET /admin/today`, `GET /admin/appointments` | Done | a122ccd |
 | UX-9b | 02 | Layout aligned to mockup; requests chart placeholder | — | Done | 8a4e435 |
-| UX-9c | 02 | Charts, sparklines, deltas, first name | needs Sprint 7 series API | Sprint 7 | — |
+| UX-9c | 02 | Weekly requests chart + conversion, KPI sparklines/deltas, finance summary, operational alerts (built in S7.1) | `GET /admin/dashboard/*` (S7.1) | Done — first-name greeting still open | ed1c7d0 |
+| UX-9d | 02 | Fidelity fixes: board 02 order (À traiter under the charts), 8-week default, segmented period switch, header wording, compact funnel, « Stable » deltas, XAF, business-date label, task list capped at 8 | — | Delivered — awaiting push | — |
 | UX-10 | 09 | Connexion, Mot de passe oublié, Initialisation, password meter; recovery service bound in `dev-app.ts` (SMTP) | none (existing `/auth/recovery/*`) | Pushed — awaiting Fred local validation | e0ae7f1 |
 | UX-11 | 10, 11a | Public page + mobile request | — | To do — prod blocked by brand assets | — |
-| UX-12 | 11b–d | Customer pages (questionnaire, consent, appointment) | — | To do | — |
-| UX-13 | — | Cleanup: legacy CSS removal, a11y, reduced motion, mobile pass, full UI recette | — | To do | — |
+| UX-12 | 11b–d + new | All customer pages on one public shell: questionnaire, consent, appointment, plus document, devis, reçu, justificatif (added in S5.5/S6) | — | Design first (boards to validate) | — |
+| UX-14 | 03 | Legacy admin tabs: Rendez-vous, Suivis, Préparation, Santé et consentements + Suivis page | — | Design first | — |
+| UX-15 | new | Screens added in S5.5/S6 without a board: Documents, Finance (échéancier, paiements, justificatifs, reçus), Devis | — | Design first | — |
+| UX-16 | new | S7.2 notification centre (bell, list, settings) — board only, implemented inside S7.2 | — | Design first | — |
+| UX-13 | — | Cleanup: legacy CSS removal, a11y, reduced motion, mobile pass, full UI recette | — | To do (last) | — |
 
 ### Locked decisions (2026-10-22)
 
@@ -249,7 +259,9 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 - [ ] Currency display: FCFA on public pages vs XAF in admin?
 - [ ] Multi-subscription progress: exclude measurements taken without health consent?
 - [ ] Client test framework (Vitest + Testing Library)?
-- [ ] Funnel counting rules (Sprint 7).
+- [x] Funnel counting rules: cumulative reach (Fred, S7.1).
+- [ ] Aujourd'hui: « Alertes opérationnelles » repeats 4 « À traiter » kinds (follow-up overdue, request to contact, preparation blocked, completion due). Show only the alerts not already in « À traiter » (unpaid installments, payment proofs, quotes)?
+- [ ] Customer wording: public pages say « ton coach »; confirm « ta coach » / « ton coach » / « K'FIT ».
 
 ### Risks / pre-prod items
 
@@ -258,16 +270,17 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 - **Prod reverse proxy:** if it lists API paths, add `/admin/today` and `/admin/appointments` (Vite dev proxy done).
 - **Brand assets:** logo and coach photo missing → UX-11 cannot go to prod.
 - Legacy screens still format dates in the device time zone → migrate to `lib/format.ts` during UX-10…13.
+- **Docs hygiene:** closed S5/S6 briefs are still in this file (~1,400 lines); archive them to `exploration-cache/tasks/completed/` per WORKFLOW.
 - Server `npm test` glob runs only 4 tests → run `node --test $(find dist -name "*.test.js")` (Fred to fix the script).
 
-### Sprint 7 needs for mockup fidelity (board 02 — Aujourd'hui)
+### Sprint 7 needs for mockup fidelity (board 02 — Aujourd'hui) — delivered by S7.1 except the first name
 
 > Notion: UX-9c, [API·UX] Séries temporelles, Endpoint agrégé des KPI, Statistiques de l'entonnoir, Prénom dans la session.
 
-- [ ] **Weekly requests chart** — requests received per business week (Mon–Sun, Africa/Libreville); periods 4 sem. / 8 sem. / 12 mois (monthly buckets for 12 mois); current week highlighted; tooltip `N demandes · 6–12 oct.`. Replaces the « Historique disponible au Sprint 7 » card.
-- [ ] **Conversion rate** in that chart's header (`47 sur 8 semaines · taux de conversion 38 %`) — depends on funnel counting rules.
-- [ ] **KPI sparklines** — 8 weekly points for: clientes actives (end-of-week value), suivis en retard (end-of-week value), nouvelles demandes, séances réalisées. `KpiTile` already takes `trend` + `trendLabel`.
-- [ ] **KPI delta vs previous period** (`+12 % vs période précédente`) — define the reference period and the favourable direction per KPI (fewer overdue follow-ups = good). `KpiTile` already takes `delta`.
+- [x] **Weekly requests chart** — requests received per business week (Mon–Sun, Africa/Libreville); periods 4 sem. / 8 sem. / 12 mois (monthly buckets for 12 mois); current week highlighted; tooltip `N demandes · 6–12 oct.`. Replaces the « Historique disponible au Sprint 7 » card.
+- [x] **Conversion rate** in that chart's header (`47 sur 8 semaines · taux de conversion 38 %`) — depends on funnel counting rules.
+- [x] **KPI sparklines** — 8 weekly points for: clientes actives (end-of-week value), suivis en retard (end-of-week value), nouvelles demandes, séances réalisées. `KpiTile` already takes `trend` + `trendLabel`.
+- [x] **KPI delta vs previous period** (`+12 % vs période précédente`) — define the reference period and the favourable direction per KPI (fewer overdue follow-ups = good). `KpiTile` already takes `delta`.
 - [ ] **Greeting with first name** (`Bonjour Konny`) — `/auth/session` returns id + role only; needs a display name on the user (small migration).
 - [x] Section order matches the mockup (UX-9b).
 

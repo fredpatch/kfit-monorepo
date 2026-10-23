@@ -48,6 +48,15 @@ function describe(t: TodayTask): { status: StatusDescriptor; meta: string; actio
   }
 }
 
+/** Board 02 shows a short list; longer queues expand on demand. */
+const TASKS_PREVIEW = 8;
+
+/** « Vendredi 23 octobre » from the server business date (Africa/Libreville), not the device clock. */
+function businessDayLabel(businessDate: string | undefined): string {
+  const label = longDayFr(businessDate ? new Date(`${businessDate}T12:00:00Z`) : new Date());
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 function duration(start: string, end: string) {
   const minutes = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60_000);
   return minutes >= 60 ? `${Math.floor(minutes / 60)} h${minutes % 60 ? ` ${minutes % 60}` : ""}` : `${minutes} min`;
@@ -57,7 +66,9 @@ function duration(start: string, end: string) {
 export function TodayPage() {
   const query = useQuery({ queryKey: ["dashboard", "today"], queryFn: () => dashboardApi.today(), refetchInterval: 60_000 });
   const [filter, setFilter] = useState<Filter>("all");
-  const [periode, setPeriode] = useState<DashboardPeriod>("4w");
+  // 8 weeks by default, like board 02 and the KPI sparklines.
+  const [periode, setPeriode] = useState<DashboardPeriod>("8w");
+  const [showAllTasks, setShowAllTasks] = useState(false);
   const analytics = useDashboardAnalytics(periode);
   const data = query.data;
   const counts = useMemo(() => {
@@ -66,13 +77,14 @@ export function TodayPage() {
     return result;
   }, [data]);
   const tasks = (data?.tasks ?? []).filter((t) => filter === "all" || filterOf[t.kind] === filter);
-  const day = longDayFr(new Date());
+  const visibleTasks = showAllTasks ? tasks : tasks.slice(0, TASKS_PREVIEW);
+  const day = businessDayLabel(data?.businessDate);
   const overdue = data?.kpis.followUpsOverdue ?? 0;
 
   return (
     <AdminPage
       title="Bonjour"
-      breadcrumb={<span className="text-[13px] font-semibold capitalize text-muted-foreground">{day}</span>}
+      breadcrumb={<span className="text-[13px] font-semibold text-muted-foreground">{day}</span>}
       description={data ? (counts.all ? `${counts.all} action(s) à traiter aujourd'hui${overdue ? `, dont ${overdue} suivi(s) en retard` : ""}.` : "Rien d'urgent à traiter aujourd'hui.") : "Ta journée en un coup d'œil."}
     >
       {query.isPending ? (
@@ -108,16 +120,13 @@ export function TodayPage() {
             </section>
           </div>
 
-          <DashboardFinance query={analytics} />
-          <DashboardAlerts />
-
           <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-base font-bold">À traiter</h2>
                 <div role="group" aria-label="Filtrer" className="flex flex-wrap gap-1.5">
                   {(Object.keys(filterLabels) as Filter[]).map((f) => (
-                    <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}
+                    <button key={f} type="button" aria-pressed={filter === f} onClick={() => { setFilter(f); setShowAllTasks(false); }}
                       className={cn("rounded-full border px-2.5 py-1 text-xs font-bold", filter === f ? "border-primary bg-primary text-white" : "border-border text-muted-foreground hover:text-foreground")}>
                       {filterLabels[f]} · {counts[f]}
                     </button>
@@ -125,10 +134,11 @@ export function TodayPage() {
                 </div>
               </div>
               {tasks.length === 0 ? (
-                <p className="py-8 text-center text-[13px] text-muted-foreground">Rien à traiter ici. 🎉</p>
+                <p className="py-8 text-center text-[13px] text-muted-foreground">Rien à traiter ici.</p>
               ) : (
+                <>
                 <ul className="flex flex-col">
-                  {tasks.map((t) => {
+                  {visibleTasks.map((t) => {
                     const d = describe(t);
                     return (
                       <li key={`${t.kind}:${t.subscriptionId ?? t.requestId}`} className="flex flex-wrap items-center gap-3 border-b border-border-subtle py-3 last:border-0">
@@ -147,6 +157,12 @@ export function TodayPage() {
                     );
                   })}
                 </ul>
+                {tasks.length > TASKS_PREVIEW ? (
+                  <Button type="button" variant="ghost" size="sm" className="self-center" aria-expanded={showAllTasks} onClick={() => setShowAllTasks((v) => !v)}>
+                    {showAllTasks ? "Réduire la liste" : `Afficher les ${tasks.length - TASKS_PREVIEW} autres`}
+                  </Button>
+                ) : null}
+                </>
               )}
             </section>
 
@@ -206,6 +222,10 @@ export function TodayPage() {
               </section>
             </div>
           </div>
+
+          {/* Not on board 02: S7.1 additions, kept below the daily work. */}
+          <DashboardFinance query={analytics} />
+          <DashboardAlerts />
         </div>
       )}
     </AdminPage>

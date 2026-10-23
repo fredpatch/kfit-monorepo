@@ -11,9 +11,10 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
 Active slice      S7.1 — Core dashboard KPIs and operational alert workspaces
-Workflow state    VALIDATED
+Workflow state    CLOSED
 Last validated    S7.1 — Fred accepted 2026-10-23
-Next action       Commit/push S7.1 and closure notes as authorized; S7.2 requires a separate Gate 1
+Implementation    ed1c7d0 — feat(dashboard): add historical analytics and operational alerts
+Next action       Await a separately approved S7.2 plan/Gate 1; Sprint 7 remains open
 
 UI refonte        UX-1 → UX-9b pushed; UX-9c validated with S7.1
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -30,6 +31,7 @@ UX next           close UX-10 locally, then UX-11
 - Independent Reviewer: **REVIEW PASSED WITH NOTES**, no S7.1 blocker/major/minor. Independent QA: **QA PASSED WITH LIMITATIONS**, with fresh unit/typecheck/schema/diff checks and inspection of PostgreSQL/build evidence. Browser tools were unavailable to agents. Actual catalogue-seed execution/races with override or activation were inspected but not directly runtime-tested; helper transactions and database overlap concurrency were tested.
 - Fred subsequently confirmed **"All green"**, accepted Gate 2, and explicitly authorized documentation, commit and push. This records developer-reported acceptance separately from the measured agent failures/limitations; no additional per-check browser/DBeaver execution or full PostgreSQL pass is invented.
 - No dependency/lockfile changes, notification persistence, S7.2 implementation, Sprint 7 closure or deployment. S7.2's validation prerequisite is satisfied, but its own plan/Gate 1 is still required.
+- Gate 3 implementation committed as `ed1c7d0` — `feat(dashboard): add historical analytics and operational alerts`. S7.1 is closed on Fred's acceptance; publication of implementation and closure notes is explicitly authorized. The existing integration failure and runtime coverage notes remain open and documented.
 
 ## Sprint 6 objective
 
@@ -144,11 +146,12 @@ Before production:
 Branch            main
 Sprint            7
 Slice             S7.1
-Workflow state    VALIDATED
+Workflow state    CLOSED
 Validated         Sprint 6 closed; S7.1 accepted by Fred on 2026-10-23
 Approved goal     Historical dashboard analytics and derived alerts; approved prospective cadence-history amendment
 Done              Migration 0013, prospective two-row initialization, atomic cadence writers, analytics/alerts, French UX-9c, Reviewer and QA
-Pending           Authorized commit/push and commit-hash sync; separate S7.2 Gate 1
+Implementation    ed1c7d0
+Pending           Separate S7.2 Gate 1; existing integration-order investigation and recorded runtime coverage limits
 Validation        typecheck/build/schema/diff passed; server 523/523, shared 56/56; PostgreSQL 541/542, all 35 new cases passed
 Acceptance        sprint-7.md S7.1 Gate 1 and cadence-history amendment; Fred's cumulative-funnel decision
 Files/layers      shared/dashboard; server/dashboard/cadence/schema/seed/finance read model; client/TodayPage/charts/API/proxy
@@ -157,7 +160,7 @@ Rules             No invented legacy cadence, gap/null semantics, owner finance 
 Risks             Existing payment-proof ordering assertion still fails; actual catalogue-seed concurrency not runtime-tested
 Not validated     No agent browser/mobile/keyboard run; no separately observed human per-check counts
 Assumptions       No new business rule; accepted limitations remain documented
-Next action       Publish as authorized; await a separately approved S7.2 plan
+Next action       Await a separately approved S7.2 plan; publication is authorized
 UI state          UX-9c accepted; UX-10 local validation remains separately pending
 Out of scope      S7.2 notifications/email, retention, backup/hardening, Sprint 8/V1.1 and deployment
 ```

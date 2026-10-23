@@ -37,7 +37,7 @@ export function Field({ label, optionalHint, hint, error, className, children }:
     <div data-slot="field" className={cn("flex flex-col gap-1.5", className)}>
       <label htmlFor={id} className="text-[13px] font-semibold">
         {label}
-        {optionalHint ? <span className="ml-1 font-medium text-muted-foreground">{optionalHint}</span> : null}
+        {optionalHint ? <>{" "}<span className="font-medium text-muted-foreground">{optionalHint}</span></> : null}
       </label>
       {children(control)}
       {hint && !error ? (

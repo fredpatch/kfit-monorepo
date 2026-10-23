@@ -20,8 +20,9 @@ UI refonte        UX-1 → UX-9c validated
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
 UX-9d/9e          Aujourd'hui fidelity fixes + alerts dedupe pushed (1d3a476, 6ca2a2f)
 UX-16             notification-centre boards validated → referenced in sprint-7.md § S7.2 UI
-UX-12a/12b        all 7 customer token pages on the public shell (12a pushed 4288d46; 12b delivered 2026-10-23)
-UX next           UX-15 boards → UX-14 boards; UX-11 buildable (board 10 approved)
+UX-12a/12b        all 7 customer token pages on the public shell (4288d46, 57e5613)
+UX-11             landing + request page — diff delivered 2026-10-23
+UX next           UX-15 boards → UX-14 boards
 ```
 
 ## S7.1 — closed 2026-10-23
@@ -195,13 +196,13 @@ Agent reruns of database/preflight commands still require a new per-invocation a
 
 ```text
 Branch            main (Track B runs beside Sprint 7; S7.2 owns the admin shell/header until it lands)
-Step              UX-12b delivered (questionnaire, consent, appointment); UX-15 boards next
+Step              UX-11 delivered (landing + request page); UX-15 boards next
 Workflow state    AWAITING_HUMAN_VALIDATION (UX-9d, UX-10) · PLANNING (boards)
 Validation done   UX-9d: client tsc + build, browser pass desktop + 390 px on scratch data
 Not validated     Fred local check of UX-9d and UX-10 (Mailpit)
 Pending decisions Alerts vs À traiter duplication; « ton/ta coach » wording; currency label (Refonte UI § Open decisions)
 Risks             Any edit to AdminLayout/header conflicts with S7.2 until it is merged
-Next action       Fred: apply UX-12b, check the 3 links locally; Claude: UX-15 boards
+Next action       Fred: apply UX-11, set VITE_PUBLIC_WHATSAPP/INSTAGRAM locally, submit one request; Claude: UX-15 boards
 ```
 
 ## Refonte UI — suivi
@@ -240,9 +241,9 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 | UX-9d | 02 | Fidelity fixes: board 02 order (À traiter under the charts), 8-week default, segmented period switch, header wording, compact funnel, « Stable » deltas, XAF, business-date label, task list capped at 8 | — | Pushed — awaiting Fred check | 1d3a476 |
 | UX-9e | 02 | Alerts on Aujourd'hui limited to payments and quotes (no duplicate of À traiter) | — | Pushed | 6ca2a2f |
 | UX-10 | 09 | Connexion, Mot de passe oublié, Initialisation, password meter; recovery service bound in `dev-app.ts` (SMTP) | none (existing `/auth/recovery/*`) | Pushed — awaiting Fred local validation | e0ae7f1 |
-| UX-11 | 10, 11a | Public page + mobile request | — | Board 10 approved 2026-10-23 — to build; prod blocked by brand assets | — |
+| UX-11 | 10, 11a | Landing `/` (offers from the public catalogue, family filter, plans, steps, FAQ, CTA) + request page `/demande/:offre`; intake rules unchanged; legacy wrapper removed | — | Delivered — awaiting push; prod blocked by coach onboarding (name/logo/photo) + legal pages | — |
 | UX-12a | 11e–h | Shared public shell (`components/public/PublicShell.tsx`, one no-referrer hook) + /document, /devis, /recu, /justificatif restyled; logic unchanged | — | Pushed | 4288d46 |
-| UX-12b | 11b–d | /questionnaire (one question per screen, health consent step), /consent, /appointment on the public shell; customer-only forms, coach forms untouched (UX-14); appointment times in Libreville; legacy wrapper removed | — | Delivered — awaiting push | — |
+| UX-12b | 11b–d | /questionnaire (one question per screen, health consent step), /consent, /appointment on the public shell; customer-only forms, coach forms untouched (UX-14); appointment times in Libreville; legacy wrapper removed | — | Pushed | 57e5613 |
 | UX-14 | 03 | Legacy admin tabs: Rendez-vous, Suivis, Préparation, Santé et consentements + Suivis page | — | Design first | — |
 | UX-15 | new | Screens added in S5.5/S6 without a board: Documents, Finance (échéancier, paiements, justificatifs, reçus), Devis | — | Design first | — |
 | UX-16 | 12, 12b, 12c | S7.2 notification centre (bell panel, mobile sheet, Réglages) — board only, implemented inside S7.2 | — | Boards validated 2026-10-23 → S7.2 implementer (`sprint-7.md` § S7.2 UI) | — |
@@ -261,6 +262,7 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 
 - [x] UX-10 scope: client-only, device OTP deferred (Fred 2026-10-22, 8 rules validated).
 - [x] Currency display: FCFA on customer pages, XAF in admin (Fred 2026-10-23).
+- [x] UX-11 rules (Fred 2026-10-23): WhatsApp free entry (no auto +241); start « Dès que possible » / date; links from env, legal links hidden; text-only brand + « ta coach »; 4 FAQ answers approved.
 - [ ] Multi-subscription progress: exclude measurements taken without health consent?
 - [ ] Client test framework (Vitest + Testing Library)?
 - [x] Funnel counting rules: cumulative reach (Fred, S7.1).
@@ -272,7 +274,9 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 - **Auth contract gap (compliance):** Sprint 1 contract requires OTP on unknown devices before a session is issued; `/auth/login` always issues one. Pre-prod blocker until the device-OTP server slice ships.
 - **Recovery needs SMTP:** `/auth/recovery/*` answers 501 unless `SMTP_HOST`/`SMTP_FROM` are set; staging/prod env must define them (UI then shows « Récupération indisponible »).
 - **Prod reverse proxy:** if it lists API paths, add `/admin/today` and `/admin/appointments` (Vite dev proxy done).
-- **Brand assets:** logo and coach photo missing → UX-11 cannot go to prod.
+- **Brand assets:** coach name, logo and photo will come from a coach onboarding (Fred 2026-10-23, Notion backlog). Until then the public pages say « ta coach » and use the text mark; UX-11 is not production-ready without it.
+- **Public commitments to confirm with the coach:** « Réponse sous 24 h » (board 10 hero) and the FAQ health answer (check against the privacy notice during legal validation).
+- **Public contact links:** `VITE_PUBLIC_WHATSAPP` / `VITE_PUBLIC_INSTAGRAM` must be set at build time for staging/prod, else the WhatsApp/Instagram buttons are hidden.
 - Legacy screens still format dates in the device time zone → migrate to `lib/format.ts` during UX-10…13.
 - **Docs hygiene:** closed S5/S6 briefs are still in this file (~1,400 lines); archive them to `exploration-cache/tasks/completed/` per WORKFLOW.
 - Server `npm test` glob runs only 4 tests → run `node --test $(find dist -name "*.test.js")` (Fred to fix the script).

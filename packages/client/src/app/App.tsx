@@ -1,4 +1,4 @@
-import { Suspense, lazy, type ReactNode } from "react";
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { AuthProvider } from "../auth/state/auth-context.js";
 import { PublicCataloguePage } from "../catalogue/components/PublicCataloguePage.js";
@@ -20,21 +20,13 @@ const ClientsPage = lazy(() => import("../customers/components/ClientsPage.js").
 const AdminFollowUpQueuePage = lazy(() => import("../follow-ups/components/AdminFollowUpQueuePage.js").then((m) => ({ default: m.AdminFollowUpQueuePage })));
 const TodayPage = lazy(() => import("../dashboard/components/TodayPage.js").then((m) => ({ default: m.TodayPage })));
 const QuestionnairesPage = lazy(() => import("../questionnaires/components/QuestionnairesPage.js").then((m) => ({ default: m.QuestionnairesPage })));
+const PublicRequestPage = lazy(() => import("../requests/components/PublicRequestForm.js").then((m) => ({ default: m.PublicRequestPage })));
 const PublicQuestionnairePage = lazy(() => import("../questionnaires/components/PublicQuestionnairePage.js").then((m) => ({ default: m.PublicQuestionnairePage })));
 const RequestsPage = lazy(() => import("../requests/components/RequestsPage.js").then((m) => ({ default: m.RequestsPage })));
 const ClientProfilePage = lazy(() => import("./routes/client-profile.js").then((m) => ({ default: m.ClientProfilePage })));
 
 // DEV-only component gallery (UX-1). The condition is static in production builds, so the module is dropped.
 const UiGallery = import.meta.env.DEV ? lazy(() => import("../dev/UiGallery.js").then((m) => ({ default: m.UiGallery }))) : null;
-
-/** Only the public landing page keeps its legacy look, until UX-11. */
-function Legacy({ children }: { children: ReactNode }) {
-  return (
-    <div className="legacy">
-      <Suspense fallback={null}>{children}</Suspense>
-    </div>
-  );
-}
 
 function AdminRoot() {
   return (
@@ -58,7 +50,8 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Legacy><PublicCataloguePage /></Legacy>} />
+        <Route path="/" element={<PublicCataloguePage />} />
+        <Route path="/demande/:offre" element={<Suspense fallback={null}><PublicRequestPage /></Suspense>} />
         <Route path="/appointment" element={<Suspense fallback={null}><PublicAppointmentPage /></Suspense>} />
         <Route path="/document/:token" element={<Suspense fallback={null}><PublicDocumentPage /></Suspense>} />
         <Route path="/devis/:token" element={<Suspense fallback={null}><PublicQuotePage /></Suspense>} />

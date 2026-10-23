@@ -13,6 +13,8 @@ import {
   type PasswordRecoveryResetResponse,
   type PasswordRecoveryVerifyResponse,
   type RefreshResponse,
+  type SensitiveActionOtpRequestResponse,
+  type SensitiveActionOtpVerifyResponse,
 } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "./csrf.js";
 
@@ -33,6 +35,9 @@ export type AuthApiClient = {
   requestPasswordRecovery(email: string): Promise<PasswordRecoveryRequestResponse>;
   verifyPasswordRecovery(email: string, code: string): Promise<PasswordRecoveryVerifyResponse>;
   resetPassword(resetToken: string, password: string): Promise<PasswordRecoveryResetResponse>;
+  /** Step-up for sensitive reads (UX-14c): a code is e-mailed to the signed-in coach. */
+  requestSensitiveActionOtp(): Promise<SensitiveActionOtpRequestResponse>;
+  verifySensitiveActionOtp(code: string): Promise<SensitiveActionOtpVerifyResponse>;
 };
 
 function createDefaultHttpClient(baseUrl: string | undefined): AxiosInstance {
@@ -98,6 +103,14 @@ export function createAuthApiClient(options: AuthApiClientOptions = {}): AuthApi
     },
     async resetPassword(resetToken, password) {
       const response = await http.post<PasswordRecoveryResetResponse>(authApiRoutes.resetPassword, { resetToken, password });
+      return response.data;
+    },
+    async requestSensitiveActionOtp() {
+      const response = await http.post<SensitiveActionOtpRequestResponse>(authApiRoutes.requestSensitiveActionOtp, {});
+      return response.data;
+    },
+    async verifySensitiveActionOtp(code) {
+      const response = await http.post<SensitiveActionOtpVerifyResponse>(authApiRoutes.verifySensitiveActionOtp, { code });
       return response.data;
     },
   };

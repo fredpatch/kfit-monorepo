@@ -155,11 +155,41 @@ export class DrizzleQuestionnaireRepository implements QuestionnaireRepository {
     if (risk.riskDetected) await this.audit(tx, actor, subscription.id, "questionnaire.risk_flagged", { submissionId: submission.id, riskDetected: true, matchedQuestionCount: risk.matchedQuestionKeys.length });
     return { ok: true, body: { result: { outcome: "submitted", submissionId: submission.id, revisionNumber } } };
   }
+  /**
+   * UX-14c (Fred 2026-10-23): one revision with its answers, any subscription status.
+   * Health answers need the client's current health-data consent; every view is audited in the same transaction
+   * (revision ids only, never answer content) — if the audit write fails, nothing is returned.
+   */
+  private async viewAnswers(tx: ConsentTransaction, subscription: Subscription, submissionId: string, actor: QuestionnaireActor): Promise<QuestionnaireResult> {
+    const [submission] = await tx.select().from(questionnaireSubmissions)
+      .where(and(eq(questionnaireSubmissions.id, submissionId), eq(questionnaireSubmissions.subscriptionId, subscription.id), eq(questionnaireSubmissions.status, "submitted")));
+    if (!submission || !submission.submittedAt || !["public_link", "coach_assisted"].includes(submission.source)) return questionnaireFailure("QUESTIONNAIRE_NOT_FOUND");
+    const template = await loadQuestionnaireTemplate(tx, submission.templateId);
+    if (!template) return questionnaireFailure("QUESTIONNAIRE_HISTORY_INVALID");
+    if (template.category === "health") {
+      const evidence = await readConsentEvidence(tx, subscription.id);
+      const health = evidence.current?.find(r => r.consentType === "health_data");
+      if (health?.decision !== "granted") return questionnaireFailure("QUESTIONNAIRE_HEALTH_CONSENT_WITHDRAWN");
+    }
+    const rows = await tx.select().from(questionnaireAnswers).where(eq(questionnaireAnswers.submissionId, submission.id));
+    const order = new Map(template.questions.map(q => [q.id, q.sortOrder]));
+    const answers = rows.map(row => ({ questionId: row.questionId, value: row.answerJson as import("@kfit/shared").QuestionValue }))
+      .sort((a, b) => (order.get(a.questionId) ?? 0) - (order.get(b.questionId) ?? 0));
+    const viewedAt = new Date();
+    await this.audit(tx, actor, subscription.id, "questionnaire.answers_viewed", { submissionId: submission.id, revisionNumber: submission.revisionNumber,
+      templateId: template.id, templateVersion: template.version, category: template.category });
+    return { ok: true, body: { answers: {
+      revision: { id: submission.id, revisionNumber: submission.revisionNumber, templateVersion: submission.templateVersion, submittedAt: submission.submittedAt.toISOString(), source: submission.source as "public_link" | "coach_assisted" },
+      template: { id: template.id, name: template.name, version: template.version, category: template.category },
+      questions: template.questions.map(q => ({ id: q.id, label: q.label, questionType: q.questionType, optionsJson: q.optionsJson, sortOrder: q.sortOrder })),
+      answers, viewedAt: viewedAt.toISOString() } } };
+  }
   async execute(subscriptionId: string, command: QuestionnaireCommand, actor: QuestionnaireActor): Promise<QuestionnaireResult> {
     return this.database.transaction(async tx => {
       const [subscription] = await tx.select().from(subscriptions).where(eq(subscriptions.id, subscriptionId)).for("update");
       if (!subscription) return questionnaireFailure("QUESTIONNAIRE_NOT_FOUND");
-      if (command.action !== "read" && command.action !== "revoke_link" && subscription.status !== "onboarding") return questionnaireFailure("QUESTIONNAIRE_INVALID_STATE");
+      if (command.action !== "read" && command.action !== "revoke_link" && command.action !== "view_answers" && subscription.status !== "onboarding") return questionnaireFailure("QUESTIONNAIRE_INVALID_STATE");
+      if (command.action === "view_answers") return this.viewAnswers(tx, subscription, command.submissionId, actor);
       if (command.action === "revoke_link") {
         const [token] = await tx.select().from(secureAccessTokens).where(and(eq(secureAccessTokens.id, command.tokenId), eq(secureAccessTokens.resourceId, subscriptionId),
           eq(secureAccessTokens.resourceType, questionnaireTokenScope.resourceType), eq(secureAccessTokens.action, questionnaireTokenScope.action))).for("update");

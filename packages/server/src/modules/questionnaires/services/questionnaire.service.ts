@@ -4,14 +4,15 @@ import { exactKeys, parseQuestionnaireAnswers, parseQuestionnaireTemplate, quest
 import { uuidPattern, type ConsentActor } from "../../consents/services/consent.service.js";
 export type QuestionnaireActor = ConsentActor;
 export type QuestionnaireBody = { templates: QuestionnaireTemplate[] } | { template: QuestionnaireTemplate } | { assignments: QuestionnaireAssignmentScope[] } | { assignment: QuestionnaireAssignmentScope } | { questionnaire: QuestionnaireDetail } | { revoked: true }
-  | { document: QuestionnaireDocument } | { result: QuestionnaireSubmitResult } | { token: string; link: import("@kfit/shared").ConsentLinkState };
+  | { document: QuestionnaireDocument } | { result: QuestionnaireSubmitResult } | { token: string; link: import("@kfit/shared").ConsentLinkState }
+  | { answers: import("@kfit/shared").QuestionnaireRevisionAnswers };
 export type QuestionnaireResult = { ok: true; body: QuestionnaireBody } | { ok: false; error: QuestionnaireErrorCode };
 export const questionnaireFailure = (error: QuestionnaireErrorCode): QuestionnaireResult => ({ ok: false, error });
 export type TemplateCommand = { action: "list" } | { action: "create"; input: QuestionnaireTemplateInput } | { action: "publish"; templateId: string }
   | { action: "new_version"; templateId: string; input: QuestionnaireTemplateInput } | { action: "assignment_list" } | { action: "assignment_set"; input: QuestionnaireAssignmentInput };
 export interface TemplateRepository { execute(command: TemplateCommand, actor: QuestionnaireActor): Promise<QuestionnaireResult> }
 export type QuestionnaireCommand = { action: "read" } | { action: "issue"; expiresAt: Date } | { action: "revoke_link"; tokenId: string }
-  | { action: "submit"; input: QuestionnaireSubmitInput };
+  | { action: "submit"; input: QuestionnaireSubmitInput } | { action: "view_answers"; submissionId: string };
 export interface QuestionnaireRepository {
   execute(subscriptionId: string, command: QuestionnaireCommand, actor: QuestionnaireActor): Promise<QuestionnaireResult>;
   publicAccess(token: string, input: PublicQuestionnaireSubmitInput | null, actor: QuestionnaireActor, rejectedInput?: boolean): Promise<QuestionnaireResult>;
@@ -40,6 +41,8 @@ export class QuestionnaireService {
     const invalid = () => questionnaireFailure("QUESTIONNAIRE_INVALID_INPUT");
     if (!uuidPattern.test(id) || !questionnaireObject(body)) return invalid();
     if (action === "read") return this.repository.execute(id, { action }, actor);
+    // UX-14c: the controller has already checked the admin role and a fresh OTP.
+    if (action === "view_answers") return selector && uuidPattern.test(selector) && Object.keys(body).length === 0 ? this.repository.execute(id, { action, submissionId: selector }, actor) : invalid();
     if (action === "revoke_link") return selector && uuidPattern.test(selector) && Object.keys(body).length === 0 ? this.repository.execute(id, { action, tokenId: selector }, actor) : invalid();
     if (action === "issue") {
       if (!exactKeys(body, ["expiresAt"]) || typeof body.expiresAt !== "string" || !/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(body.expiresAt)) return invalid();

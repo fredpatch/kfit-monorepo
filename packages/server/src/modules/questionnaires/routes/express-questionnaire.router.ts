@@ -23,7 +23,7 @@ export function createExpressQuestionnaireRouter(deps: { controller: Questionnai
         if (isPublic && !limiter.allow(request.ip ?? "unknown")) { res.status(429).json({ error: "QUESTIONNAIRE_RATE_LIMITED" }); return; }
         const guard = request.method === "GET" ? null : requireSameOrigin(context) ?? (isPublic ? null : requireCsrf(context));
         const result = guard ?? (isPublic ? await deps.controller.publicAccess(param(request, "token"), request.body, action === "public_submit", { userId: null, requestId: context.requestId, ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null })
-          : await deps.controller.admin(context, action, request.body ?? {}, param(request, "subscriptionId"), param(request, action === "revoke_link" ? "tokenId" : "templateId")));
+          : await deps.controller.admin(context, action, request.body ?? {}, param(request, "subscriptionId"), param(request, action === "revoke_link" ? "tokenId" : action === "view_answers" ? "submissionId" : "templateId")));
         res.status(result.status).json(result.body);
       } catch { res.status(500).json({ error: "QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE" }); }
     };
@@ -31,7 +31,7 @@ export function createExpressQuestionnaireRouter(deps: { controller: Questionnai
   router.get(questionnaireApiRoutes.templates, handle("list")); router.post(questionnaireApiRoutes.templates, handle("create"));
   router.get(questionnaireApiRoutes.assignments, handle("assignment_list")); router.post(questionnaireApiRoutes.assignments, handle("assignment_set"));
   router.post(questionnaireApiRoutes.publish, handle("publish")); router.post(questionnaireApiRoutes.newVersion, handle("new_version"));
-  router.get(questionnaireApiRoutes.detail, handle("read")); router.post(questionnaireApiRoutes.coachSubmit, handle("submit"));
+  router.get(questionnaireApiRoutes.detail, handle("read")); router.get(questionnaireApiRoutes.revisionAnswers, handle("view_answers")); router.post(questionnaireApiRoutes.coachSubmit, handle("submit"));
   router.post(questionnaireApiRoutes.link, handle("issue")); router.post(questionnaireApiRoutes.revokeLink, handle("revoke_link"));
   router.get(questionnaireApiRoutes.public, handle("public_read")); router.post(questionnaireApiRoutes.public, handle("public_submit"));
   return router;

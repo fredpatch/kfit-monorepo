@@ -7,7 +7,7 @@ import test from "node:test";
 import express from "express";
 import { authCookieNames, questionnaireApiRoutes } from "@kfit/shared";
 import type { AuthenticatedSessionContext } from "../../auth/types/auth.http.types.js";
-import { QuestionnaireController } from "../controllers/questionnaire.controller.js";
+import { QuestionnaireController, type FreshOtpCheck } from "../controllers/questionnaire.controller.js";
 import { createExpressQuestionnaireRouter } from "../routes/express-questionnaire.router.js";
 import { QuestionnaireService, QuestionnaireTemplateService, type QuestionnaireRepository, type TemplateRepository, type QuestionnaireResult } from "../services/questionnaire.service.js";
 import { IpRateLimiter } from "../../requests/services/ip-rate-limiter.js";
@@ -19,12 +19,12 @@ const ok: QuestionnaireResult = { ok: true, body: { result: { outcome: "submitte
 const repository: QuestionnaireRepository = { async execute() { return ok; }, async publicAccess(_token, _input, _actor, rejected) { return rejected ? { ok: false, error: "QUESTIONNAIRE_INVALID_INPUT" } : ok; } };
 const templateRepository: TemplateRepository = { async execute() { return ok; } };
 const routes = [
-  ...Object.entries(questionnaireApiRoutes).filter(([key]) => key !== "public").map(([action, route]) => ({ action, path: route.replace(":subscriptionId", id).replace(":templateId", id).replace(":tokenId", id), method: ["templates", "detail", "assignments"].includes(action) ? "GET" : "POST" })),
+  ...Object.entries(questionnaireApiRoutes).filter(([key]) => key !== "public").map(([action, route]) => ({ action, path: route.replace(":subscriptionId", id).replace(":templateId", id).replace(":tokenId", id).replace(":submissionId", id), method: ["templates", "detail", "assignments", "revisionAnswers"].includes(action) ? "GET" : "POST" })),
   { action: "create", path: questionnaireApiRoutes.templates, method: "POST" },
   { action: "assignmentSet", path: questionnaireApiRoutes.assignments, method: "POST" },
 ];
-async function withServer(run: (base: string) => Promise<void>, repo = repository, templates = templateRepository, auth: AuthenticatedSessionContext | null = session, max = 100) {
-  const app = express(); app.use(express.json()); app.use(createExpressQuestionnaireRouter({ controller: new QuestionnaireController(new QuestionnaireService(repo), new QuestionnaireTemplateService(templates)), resolveSession: () => auth,
+async function withServer(run: (base: string) => Promise<void>, repo = repository, templates = templateRepository, auth: AuthenticatedSessionContext | null = session, max = 100, freshOtp?: FreshOtpCheck) {
+  const app = express(); app.use(express.json()); app.use(createExpressQuestionnaireRouter({ controller: new QuestionnaireController(new QuestionnaireService(repo), new QuestionnaireTemplateService(templates), freshOtp), resolveSession: () => auth,
     rateLimiter: new IpRateLimiter({ windowMs: 60000, maxPerWindow: max }) }));
   const server = createServer(app); server.listen(0, "127.0.0.1"); await once(server, "listening");
   try { await run(`http://127.0.0.1:${(server.address() as AddressInfo).port}`); }
@@ -47,7 +47,7 @@ test("authorized questionnaire routes transport caller-owned fields and authenti
       : route.action === "coachSubmit" ? { templateId: id, templateVersion: 1, schemaHash: "0".repeat(64), expectedHeadId: null, answers: [] } : {};
     const response = await fetch(base + route.path, { method: route.method, headers: { ...headers, origin: base }, ...(route.method === "POST" ? { body: JSON.stringify(body) } : {}) }); assert.equal(response.status, 200);
   } }, { ...repository, async execute(_id, command, actor) { assert.equal(actor.userId, id); seen.push(command.action); return ok; } },
-    { async execute(command, actor) { assert.equal(actor.userId, id); seen.push(command.action); return ok; } });
+    { async execute(command, actor) { assert.equal(actor.userId, id); seen.push(command.action); return ok; } }, session, 100, { lastConsumedAt: async () => new Date(), windowMs: 600000 });
   assert.equal(seen.length, routes.length);
 });
 test("public questionnaire endpoints need no session/CSRF but forbid foreign origin", async () => {
@@ -72,4 +72,26 @@ test("questionnaire public errors are typed and internal details are redacted", 
     { ...repository, async publicAccess() { return { ok: false, error: "QUESTIONNAIRE_LINK_CONSUMED" }; } });
   await withServer(async base => { const response = await fetch(base + "/public/questionnaires/synthetic"); assert.equal(response.status, 500); assert.deepEqual(await response.json(), { error: "QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE" }); },
     { ...repository, async publicAccess() { throw new Error("SYNTHETIC PRIVATE ANSWER / SQL / token"); } });
+});
+
+/* UX-14c — answers view: fresh OTP checked by the controller before any repository call (fail closed). */
+const answersPath = questionnaireApiRoutes.revisionAnswers.replace(":subscriptionId", id).replace(":submissionId", id);
+const now = new Date("2026-10-23T10:00:00Z");
+test("answers view without an OTP checker, or with a stale OTP, is refused before the repository", async () => {
+  const forbidden: QuestionnaireRepository = { ...repository, async execute() { assert.fail("answers read without fresh OTP"); } };
+  for (const freshOtp of [undefined, { lastConsumedAt: async () => null, windowMs: 600000, now: () => now }, { lastConsumedAt: async () => new Date(now.getTime() - 11 * 60000), windowMs: 600000, now: () => now }] as (FreshOtpCheck | undefined)[]) {
+    await withServer(async base => {
+      const response = await fetch(base + answersPath, { headers }); assert.equal(response.status, 403); assert.deepEqual(await response.json(), { error: "AUTH_FRESH_OTP_REQUIRED" });
+    }, forbidden, templateRepository, session, 100, freshOtp);
+  }
+});
+test("answers view with a fresh OTP reaches the repository with the revision id and is not cached", async () => {
+  let seen: unknown = null;
+  const repo: QuestionnaireRepository = { ...repository, async execute(subscriptionId, command) { seen = { subscriptionId, command }; return { ok: false, error: "QUESTIONNAIRE_HEALTH_CONSENT_WITHDRAWN" }; } };
+  await withServer(async base => {
+    const response = await fetch(base + answersPath, { headers }); assert.equal(response.status, 403); assert.deepEqual(await response.json(), { error: "QUESTIONNAIRE_HEALTH_CONSENT_WITHDRAWN" });
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    const invalid = await fetch(base + questionnaireApiRoutes.revisionAnswers.replace(":subscriptionId", id).replace(":submissionId", "not-a-uuid"), { headers }); assert.equal(invalid.status, 400);
+  }, repo, templateRepository, session, 100, { lastConsumedAt: async () => new Date(now.getTime() - 60000), windowMs: 600000, now: () => now });
+  assert.deepEqual(seen, { subscriptionId: id, command: { action: "view_answers", submissionId: id } });
 });

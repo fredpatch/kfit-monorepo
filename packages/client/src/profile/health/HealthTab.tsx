@@ -16,6 +16,7 @@ import { consentApi, consentErrorMessage } from "../../consents/api/consent-api.
 import { questionnaireApi, questionnaireErrorMessage } from "../../questionnaires/api/questionnaire-api.js";
 import { OneTimeLink } from "../payments/OneTimeLink.js";
 import { CoachQuestionnaireForm } from "./CoachQuestionnaireForm.js";
+import { AnswersSheet } from "./AnswersSheet.js";
 
 /**
  * « Santé et consentements » tab (board 14d, UX-14b). Rules unchanged from S5: links and coach-assisted
@@ -39,6 +40,7 @@ export function HealthTab({ subscriptionId, editable }: { subscriptionId: string
   const questionnaire = useQuery({ queryKey: ["questionnaire", subscriptionId], queryFn: () => questionnaireApi.get(subscriptionId), refetchInterval: 30_000 });
   const [dialog, setDialog] = useState<Dialogs | null>(null);
   const [sheet, setSheet] = useState<"consents" | "questionnaire" | null>(null);
+  const [answersFor, setAnswersFor] = useState<{ id: string; revisionNumber: number } | null>(null);
   const opener = useRef<HTMLElement | null>(null);
 
   const refresh = () => Promise.allSettled([
@@ -148,9 +150,12 @@ export function HealthTab({ subscriptionId, editable }: { subscriptionId: string
                 {q.history.length === 0 ? <p className="text-[13px] text-muted-foreground">Aucune réponse enregistrée.</p> : (
                   <ul className="flex flex-col divide-y divide-border-subtle">
                     {q.history.map((r) => (
-                      <li key={r.id} className="flex flex-col gap-0.5 py-2 text-[13px]">
-                        <span className="font-semibold">Révision {r.revisionNumber} · questionnaire version {r.templateVersion}{r.isCurrent ? " · actuelle" : " · remplacée"}</span>
-                        <span className="text-muted-foreground">{dateTimeFr(r.submittedAt)} · {r.source === "public_link" ? "lien client" : "saisie par le coach"}</span>
+                      <li key={r.id} className="flex flex-wrap items-center gap-2 py-2 text-[13px]">
+                        <span className="flex min-w-0 flex-1 basis-48 flex-col gap-0.5">
+                          <span className="font-semibold">Révision {r.revisionNumber} · questionnaire version {r.templateVersion}{r.isCurrent ? " · actuelle" : " · remplacée"}</span>
+                          <span className="text-muted-foreground">{dateTimeFr(r.submittedAt)} · {r.source === "public_link" ? "lien client" : "saisie par le coach"}</span>
+                        </span>
+                        <Button size="sm" variant="secondary" onClick={() => { remember(); setAnswersFor({ id: r.id, revisionNumber: r.revisionNumber }); }}>Voir les réponses</Button>
                       </li>
                     ))}
                   </ul>
@@ -175,6 +180,7 @@ export function HealthTab({ subscriptionId, editable }: { subscriptionId: string
         />
       ) : null}
       {sheet === "consents" && definitions.length ? <ConsentCaptureSheet subscriptionId={subscriptionId} definitions={definitions} onClose={() => setSheet(null)} onDone={refresh} restoreFocus={restoreFocus} /> : null}
+      {answersFor ? <AnswersSheet key={answersFor.id} subscriptionId={subscriptionId} revision={answersFor} onClose={() => setAnswersFor(null)} restoreFocus={restoreFocus} /> : null}
       {sheet === "questionnaire" && doc ? (
         <QuestionnaireSheet subscriptionId={subscriptionId} document={doc} onClose={() => setSheet(null)} onDone={refresh} restoreFocus={restoreFocus} />
       ) : null}

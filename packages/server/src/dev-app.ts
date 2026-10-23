@@ -27,6 +27,7 @@ import { ProgressController } from "./modules/progress/controllers/progress.cont
 import { ProgressService } from "./modules/progress/services/progress.service.js";
 import { DrizzleProgressRepository } from "./modules/progress/repositories/progress.repository.js";
 import { db } from "./db/client.js";
+import { createFreshOtpLookup } from "./modules/auth/services/fresh-otp.lookup.js";
 import { AuthController } from "./modules/auth/controllers/auth.controller.js";
 import {
   DrizzleAuthUserRepository,
@@ -210,7 +211,8 @@ export function createDevelopmentApp() {
     followUpsController: new FollowUpsController(followUpsService),
     appointmentsController: new AppointmentsController(new AppointmentsService(new DrizzleAppointmentsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     subscriptionsController: new SubscriptionsController(new SubscriptionsService(new DrizzleSubscriptionsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
-    questionnaireController: new QuestionnaireController(new QuestionnaireService(new DrizzleQuestionnaireRepository(db, { auditHashPepper: authConfig.auditHashPepper })), new QuestionnaireTemplateService(new DrizzleQuestionnaireTemplateRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
+    questionnaireController: new QuestionnaireController(new QuestionnaireService(new DrizzleQuestionnaireRepository(db, { auditHashPepper: authConfig.auditHashPepper })), new QuestionnaireTemplateService(new DrizzleQuestionnaireTemplateRepository(db, { auditHashPepper: authConfig.auditHashPepper })),
+      { lastConsumedAt: createFreshOtpLookup(db), windowMs: authConfig.freshOtpWindowMs }),
     consentController: new ConsentController(new ConsentService(new DrizzleConsentRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     authController,
     resolveAuthSession: (request) => resolver.resolveFromRequest(request),

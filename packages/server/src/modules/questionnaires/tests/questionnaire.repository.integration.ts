@@ -286,3 +286,39 @@ test("PostgreSQL changed health definition rejects pinned token without question
   assert.deepEqual(await repo.publicAccess(link.token, { answers: inputFor(doc).answers, healthDataDecision: "granted" }, anonymous), { ok: false, error: "QUESTIONNAIRE_LINK_STALE" });
   assert.equal((await records(id)).length, 0); assert.equal((await db.select().from(consentRecords).where(eq(consentRecords.subscriptionId, id))).length, 0);
 });
+/* UX-14c — reading one revision's answers (Fred 2026-10-23: audited, health answers need a current health-data grant). */
+async function grantedHealthSubmission() {
+  const { id } = await setup({ category: "health" }); const doc = await document(id); const link = await issue(id);
+  assert.ok((await repo.publicAccess(link.token, { answers: inputFor(doc).answers, healthDataDecision: "granted" }, anonymous)).ok);
+  const submission = (await records(id))[0]; assert.ok(submission); return { id, submission: submission!, doc };
+}
+test("PostgreSQL answers view returns the revision answers and audits ids only", async () => {
+  const { id, submission, doc } = await grantedHealthSubmission();
+  const before = (await audit(id)).filter(e => e.eventType === "questionnaire.answers_viewed").length;
+  const result = await repo.execute(id, { action: "view_answers", submissionId: submission.id }, actor);
+  assert.ok(result.ok); if (!result.ok || !("answers" in result.body)) throw new Error("expected answers");
+  const view = result.body.answers;
+  assert.equal(view.revision.id, submission.id); assert.equal(view.template.category, "health"); assert.equal(view.answers.length, inputFor(doc).answers.length);
+  assert.deepEqual(view.answers[0]?.value, inputFor(doc).answers[0]?.value); assert.ok(view.questions.some(q => q.id === view.answers[0]?.questionId));
+  const events = (await audit(id)).filter(e => e.eventType === "questionnaire.answers_viewed");
+  assert.equal(events.length, before + 1);
+  const metadata = JSON.stringify(events.at(-1)?.metadataJson ?? {});
+  assert.ok(metadata.includes(submission.id)); assert.ok(!metadata.includes(JSON.stringify(inputFor(doc).answers[0]?.value)), "audit must not carry answer content");
+});
+test("PostgreSQL answers view is refused after the health-data consent is withdrawn, without audit of a view", async () => {
+  const { id, submission } = await grantedHealthSubmission();
+  assert.ok((await consents.execute(id, { action: "revoke", consentType: "health_data" }, actor)).ok);
+  const before = (await audit(id)).filter(e => e.eventType === "questionnaire.answers_viewed").length;
+  assert.deepEqual(await repo.execute(id, { action: "view_answers", submissionId: submission.id }, actor), { ok: false, error: "QUESTIONNAIRE_HEALTH_CONSENT_WITHDRAWN" });
+  assert.equal((await audit(id)).filter(e => e.eventType === "questionnaire.answers_viewed").length, before);
+});
+test("PostgreSQL answers view rejects a revision of another subscription", async () => {
+  const { submission } = await grantedHealthSubmission(); const other = await setup();
+  assert.deepEqual(await repo.execute(other.id, { action: "view_answers", submissionId: submission.id }, actor), { ok: false, error: "QUESTIONNAIRE_NOT_FOUND" });
+});
+test("PostgreSQL assessment answers need no health consent and stay readable outside preparation", async () => {
+  const { id } = await setup(); assert.ok((await coach(id)).ok); const submission = (await records(id))[0]!;
+  await db.update(subscriptions).set({ status: "active" }).where(eq(subscriptions.id, id));
+  const result = await repo.execute(id, { action: "view_answers", submissionId: submission.id }, actor);
+  assert.ok(result.ok);
+});

@@ -6,7 +6,7 @@ Deliver the V1 Core operational layer: dashboard KPIs and alert workspaces, noti
 
 ## Ordered tasks
 
-1. S7.1 — Core dashboard KPIs and operational alert workspaces — PLANNING / Gate 1 pending.
+1. S7.1 — Core dashboard KPIs and operational alert workspaces — APPROVED_FOR_IMPLEMENTATION.
 2. S7.2 — Dashboard and email notification engine with configurable reminders — CLOSED until S7.1 validation.
 3. S7.3 — Retention, anonymization, soft-delete purge and privacy-action replay — CLOSED until S7.2 validation.
 4. S7.4 — Backup/restore and production-hardening acceptance — CLOSED until S7.3 validation.
@@ -40,3 +40,160 @@ Related deferred UX/API work to reconcile during Gate 1:
 - existing UX-9c dashboard fidelity work.
 
 No S7.1 implementation before Fred approves Gate 1.
+
+
+## S7.1 Gate 1 — approved 2026-10-23
+
+Goal: complete the V1 Core coach dashboard with historical KPI series, request-funnel analytics, authoritative finance summaries and derived operational-alert workspaces without creating a duplicate business-state or notification system.
+
+### Existing foundation to preserve
+- UX-9 / UX-9b `GET /admin/today`, `GET /admin/appointments` and TodayPage layout;
+- existing KpiTile/Sparkline/chart primitives;
+- Africa/Libreville shared business-time helpers;
+- authoritative Requests, Subscription, Follow-up, Appointment and S6.1 Finance modules;
+- existing queues/read models from owner modules.
+
+### API split
+Current operational snapshot stays:
+- `GET /admin/today`
+- `GET /admin/appointments`
+
+New read-only S7.1 endpoints:
+- `GET /admin/dashboard/analytics?periode=4w|8w|12m`
+- `GET /admin/dashboard/alerts`
+
+No mutation endpoint.
+
+### Time model
+- timezone: Africa/Libreville;
+- business week: Monday 00:00 through next Monday 00:00;
+- 4w / 8w use weekly buckets;
+- 12m uses calendar-month buckets;
+- exact bucket boundaries returned to client for labels/tooltips;
+- all historical/as-of logic must be deterministic at boundary instants.
+
+### KPI time-series semantics
+Eight weekly sparkline points:
+- activeClients: count active at end of each business week;
+- followUpsOverdue: count overdue at end of each business week;
+- newRequests: submitted during each business week;
+- sessionsCompleted: completed during each business week.
+
+Current TodayPage numbers remain owned by `/admin/today`.
+
+### KPI deltas
+Compare current business week with the immediately preceding business week.
+Direction/tone:
+- active clients: increase favourable;
+- overdue follow-ups: decrease favourable;
+- new requests: increase favourable;
+- completed sessions: increase favourable.
+
+If prior value = 0:
+- return absolute change / semantic delta;
+- never emit an infinite or misleading percentage.
+
+### Requests chart
+Periods:
+- 4w: four weekly buckets;
+- 8w: eight weekly buckets;
+- 12m: twelve calendar-month buckets.
+
+Return:
+- bucket start/end;
+- count;
+- whether current bucket;
+- total selected-period requests;
+- selected-period funnel/conversion summary.
+
+### Funnel cohort
+Cohort = requests whose submittedAt falls inside selected period.
+
+For that cohort:
+- received = all cohort requests;
+- contacted = request has at least one recorded contact attempt;
+- qualified = qualification result is qualified or qualified_with_conditions;
+- converted = request has been converted to a subscription.
+
+The stages are cumulative.
+Global conversionRate = converted / received.
+A request received in the selected period remains attributed to that cohort when it converts later; endpoint is evaluated as-of-now.
+
+### Finance analytics
+Server returns distinct authoritative XAF values:
+- collectedXaf;
+- dueXaf;
+- futureXaf;
+- overdueXaf;
+- outstandingXaf.
+
+Definitions:
+- collectedXaf: effective net confirmed payment_received amount collected in the selected period after authoritative payment_correction effects;
+- dueXaf: current active-plan remaining amount due exactly on current business date;
+- futureXaf: current active-plan remaining amount due after current business date;
+- overdueXaf: current active-plan remaining amount due before current business date;
+- outstandingXaf: all current remaining obligation on authoritative active schedules.
+
+Invariant:
+- outstandingXaf = overdueXaf + dueXaf + futureXaf for current authoritative active schedules.
+
+Exclude superseded/cancelled schedules.
+Quotes, proofs and receipts never determine financial truth.
+
+### Operational alerts
+Derived read model only. No alerts table and no persisted notification.
+
+Candidate groups:
+- overdue follow-ups;
+- requests still to contact;
+- overdue installments;
+- pending payment-proof review;
+- quote/customer commercial action requiring coach attention where current quote state supports it;
+- onboarding/preparation blockers;
+- completion_due subscriptions.
+
+Every alert:
+- has stable kind/severity;
+- contains safe display fields only;
+- deep-links to the owner workspace/action;
+- derives state from owner module policy/read model.
+
+S7.2 remains responsible for persisted notifications and email reminders.
+
+### UX-9c completion
+Complete:
+- requests chart;
+- 4w/8w/12m selector;
+- conversion header;
+- four KPI sparklines;
+- KPI period deltas;
+- finance summary/workspace;
+- operational alerts.
+
+Do not add coach first name in S7.1.
+Keep title `Bonjour`; displayName/session work remains V1.1.
+
+### Persistence
+Prefer zero schema change.
+No KPI snapshot table unless current authoritative history cannot reconstruct a required historical stock safely. If such a blocker is discovered, stop and report before schema expansion.
+
+### Validation requirements
+At minimum:
+- Africa/Libreville Monday/Sunday boundaries;
+- current-week and previous-week delta boundaries;
+- month/year rollover for 12m;
+- end-of-week active-client stock;
+- end-of-week overdue-follow-up stock;
+- weekly request/session flows;
+- cohort funnel stages;
+- late conversion remains in original cohort;
+- zero-denominator conversion and zero prior-period delta;
+- payment corrections affect collectedXaf correctly;
+- exact due-date boundary;
+- superseded/cancelled plans excluded;
+- outstanding = overdue + due + future;
+- alerts reuse source state and deep-link correctly;
+- no dashboard read writes to DB;
+- no sensitive health/private-document content in dashboard payloads.
+
+Fred approved this complete Gate 1. Implementation is authorized for S7.1 only. S7.2 remains closed until local validation.

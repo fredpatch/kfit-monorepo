@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { NavLink } from "react-router";
-import { businessTimeZone, dashboardPeriods, type DashboardAnalyticsResponse, type DashboardKpiTrend, type DashboardPeriod } from "@kfit/shared";
+import { businessTimeZone, dashboardPeriods, type DashboardAlertKind, type DashboardAnalyticsResponse, type DashboardKpiTrend, type DashboardPeriod } from "@kfit/shared";
 import { dashboardApi, dashboardErrorMessage } from "../api/dashboard-api.js";
 import { SimpleBarChart } from "../../components/charts/bar-chart.js";
 import { KpiTile } from "../../components/charts/kpi-tile.js";
@@ -60,15 +60,22 @@ export function DashboardFinance({ query }: { query: AnalyticsQuery }) {
     </dl>}
   </section>;
 }
+/*
+ * Fred 2026-10-23: Aujourd'hui shows only the alerts « À traiter » does not already list
+ * (follow-ups, requests, preparations and end reviews are there). The S7.2 notification centre keeps the full set.
+ */
+const todayOnlyAlertKinds: ReadonlySet<DashboardAlertKind> = new Set(["installment_overdue", "payment_proof_pending", "quote_action_required"]);
+
 export function DashboardAlerts() {
   const query = useQuery({ queryKey: ["dashboard", "alerts"], queryFn: () => dashboardApi.alerts(), staleTime: 60_000, refetchInterval: 60_000 });
+  const alerts = (query.data?.alerts ?? []).filter((alert) => todayOnlyAlertKinds.has(alert.kind));
   return <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5" aria-labelledby="dashboard-alerts-heading">
-    <h2 id="dashboard-alerts-heading" className="text-base font-bold">Alertes opérationnelles</h2>
-    {query.isPending ? <p role="status" className="text-sm text-muted-foreground">Chargement des alertes…</p> : query.isError ? <div role="alert" className="flex flex-wrap items-center gap-3 text-sm"><p>{dashboardErrorMessage(query.error)}</p><Button variant="secondary" onClick={() => void query.refetch()}>Réessayer</Button></div> : query.data?.alerts.length ? <ul className="divide-y divide-border">
-      {query.data.alerts.map(alert => <li key={`${alert.kind}-${alert.resourceId ?? alert.subscriptionId ?? alert.requestId}`} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <h2 id="dashboard-alerts-heading" className="text-base font-bold">Paiements et devis à suivre</h2>
+    {query.isPending ? <p role="status" className="text-sm text-muted-foreground">Chargement des alertes…</p> : query.isError ? <div role="alert" className="flex flex-wrap items-center gap-3 text-sm"><p>{dashboardErrorMessage(query.error)}</p><Button variant="secondary" onClick={() => void query.refetch()}>Réessayer</Button></div> : alerts.length ? <ul className="divide-y divide-border">
+      {alerts.map(alert => <li key={`${alert.kind}-${alert.resourceId ?? alert.subscriptionId ?? alert.requestId}`} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0"><p className="break-words text-sm font-bold">{alert.title} · {alert.customerDisplayName}</p><p className="break-words text-[13px] text-muted-foreground">{alert.summary}{alert.referenceAt ? ` · ${dateFr(alert.referenceAt)}` : ""}</p></div>
         <Button asChild size="sm" variant="secondary"><NavLink to={alert.deepLink} aria-label={`Ouvrir : ${alert.title} · ${alert.customerDisplayName}`}>Ouvrir le dossier</NavLink></Button>
       </li>)}
-    </ul> : <p className="text-sm text-muted-foreground">Aucune alerte opérationnelle pour le moment.</p>}
+    </ul> : <p className="text-sm text-muted-foreground">Aucun paiement ni devis à suivre pour le moment.</p>}
   </section>;
 }

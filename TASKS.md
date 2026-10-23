@@ -18,7 +18,7 @@ Next action       IDE Implementer: implement S7.2 notification/digest/outbox onl
 
 UI refonte        UX-1 → UX-9c validated
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
-UX-9d             Aujourd'hui fidelity fixes vs board 02 — diff delivered 2026-10-23, awaiting Fred
+UX-9d/9e          Aujourd'hui fidelity fixes pushed (1d3a476); alerts dedupe (9e) delivered 2026-10-23
 UX next           design-first boards (notification centre → UX-12 → UX-15 → UX-14), Fred validates before code
 ```
 
@@ -235,7 +235,8 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 | UX-9 | 02 | Aujourd'hui dashboard; `/admin` opens it; business time zone | `GET /admin/today`, `GET /admin/appointments` | Done | a122ccd |
 | UX-9b | 02 | Layout aligned to mockup; requests chart placeholder | — | Done | 8a4e435 |
 | UX-9c | 02 | Weekly requests chart + conversion, KPI sparklines/deltas, finance summary, operational alerts (built in S7.1) | `GET /admin/dashboard/*` (S7.1) | Done — first-name greeting still open | ed1c7d0 |
-| UX-9d | 02 | Fidelity fixes: board 02 order (À traiter under the charts), 8-week default, segmented period switch, header wording, compact funnel, « Stable » deltas, XAF, business-date label, task list capped at 8 | — | Delivered — awaiting push | — |
+| UX-9d | 02 | Fidelity fixes: board 02 order (À traiter under the charts), 8-week default, segmented period switch, header wording, compact funnel, « Stable » deltas, XAF, business-date label, task list capped at 8 | — | Pushed — awaiting Fred check | 1d3a476 |
+| UX-9e | 02 | Alerts on Aujourd'hui limited to payments and quotes (no duplicate of À traiter) | — | Delivered — awaiting push | — |
 | UX-10 | 09 | Connexion, Mot de passe oublié, Initialisation, password meter; recovery service bound in `dev-app.ts` (SMTP) | none (existing `/auth/recovery/*`) | Pushed — awaiting Fred local validation | e0ae7f1 |
 | UX-11 | 10, 11a | Public page + mobile request | — | To do — prod blocked by brand assets | — |
 | UX-12 | 11b–d + new | All customer pages on one public shell: questionnaire, consent, appointment, plus document, devis, reçu, justificatif (added in S5.5/S6) | — | Design first (boards to validate) | — |
@@ -260,8 +261,8 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 - [ ] Multi-subscription progress: exclude measurements taken without health consent?
 - [ ] Client test framework (Vitest + Testing Library)?
 - [x] Funnel counting rules: cumulative reach (Fred, S7.1).
-- [ ] Aujourd'hui: « Alertes opérationnelles » repeats 4 « À traiter » kinds (follow-up overdue, request to contact, preparation blocked, completion due). Show only the alerts not already in « À traiter » (unpaid installments, payment proofs, quotes)?
-- [ ] Customer wording: public pages say « ton coach »; confirm « ta coach » / « ton coach » / « K'FIT ».
+- [x] Aujourd'hui shows only the alerts « À traiter » does not list (unpaid installments, payment proofs, quotes), as « Paiements et devis à suivre »; the S7.2 notification centre keeps the full set (Fred 2026-10-23, UX-9e).
+- [ ] Customer wording: public pages say « ton coach » — deferred, will use the coach's real name later (Fred 2026-10-23); settle in the UX-12 board.
 
 ### Risks / pre-prod items
 

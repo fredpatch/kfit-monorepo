@@ -11,10 +11,10 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
 Active slice      S7.2 — Dashboard and email notification engine with configurable reminders
-Workflow state    PLANNING / GATE_1_PENDING
+Workflow state    APPROVED_FOR_IMPLEMENTATION
 Last validated    S7.1 — locally validated 2026-10-23
 Implementation    ed1c7d0 — feat(dashboard): add historical analytics and operational alerts
-Next action       Planner: prepare S7.2 notification/reminder Gate 1; no implementation yet
+Next action       IDE Implementer: implement S7.2 notification/digest/outbox only; stop before S7.3
 
 UI refonte        UX-1 → UX-9c validated
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -1597,3 +1597,44 @@ Known coverage note:
 - actual catalogue-seed concurrency with simultaneous override/activation remains not directly runtime-tested; helper atomicity and DB overlap constraints are covered.
 
 S7.1 is closed. S7.2 is now the active planning slice; no S7.2 implementation before Gate 1.
+
+
+## S7.2 Gate 1 — approved 2026-10-23
+
+Fred approved all 32 S7.2 notification/reminder decisions.
+
+Locked rules:
+1. Business condition remains owned by source modules/S7.1 derivation; notification never invents business state.
+2. Durable in-app notification is primary; email is optional secondary delivery.
+3. Persist notifications with recipient/kind/severity/resource/deep-link/dedupe/read/resolved timestamps.
+4. One logical open notification per active condition through stable dedupe_key.
+5. Read/unread is separate from resolved/unresolved; read never resolves business work.
+6. Source-condition disappearance resolves notification while preserving history.
+7. No arbitrary dismiss-forever in V1 Core.
+8. Initial closed kinds mirror proven S7.1 alerts: follow_up_overdue, request_to_contact, installment_overdue, payment_proof_pending, preparation_blocked, completion_due. quote_action_required only if authoritative condition is precise.
+9. S7.2 recipients are internal active admin/coach users only; no customer-facing reminder system is introduced.
+10. Email uses a durable outbox with frozen recipient/content.
+11. Outbox states: pending, sending, sent, failed, dead_letter.
+12. SMTP retries are bounded and configured, not scattered literals.
+13. Reminder/digest behavior uses Typed Settings with closed keys/validation/audit.
+14. V1 Core uses global operational notification settings rather than per-user preference complexity.
+15. Reminder discovery runs as Scheduled Business Jobs with advisory locking + scheduled_job_runs idempotency.
+16. Jobs: notifications.reconcile and notifications.email-delivery.
+17. Proposed cadence: reconcile every 15 minutes; delivery worker every 5 minutes.
+18. Reminder email cadence is separate from source-state mutation; repeated emails reuse one in-app notification.
+19. Email is enabled for proven alert categories subject to settings.
+20. Prefer one daily digest for normal operational alerts instead of one email per alert.
+21. Default digest time: 08:00 Africa/Libreville, configurable.
+22. Internal email recipients come from users.email only.
+23. Email content is privacy-minimal; exclude health/private-doc/payment-reference/notes/bearers.
+24. Deep links reuse authoritative owner workspaces.
+25. Admin UI adds notification center/bell + settings; no notification-specific business actions.
+26. Resolved notifications remain in paginated history; unresolved/recent first.
+27. Outbox has simple admin troubleshooting/history; manual retry allowed only where scope remains small.
+28. Generic audit is structural only; job/outbox results stay primarily in their durable records.
+29. Additive schema is expected for notifications/outbox/settings if no generic settings store exists.
+30. Email failure never removes notification; notification persistence failure prevents silent email-only delivery.
+31. Reading/emailing never executes business commands.
+32. Validation must cover dedupe/resolution/read semantics, SMTP failure/retry/exact-once behavior, scheduler locking, Africa/Libreville digest time, settings validation, recipient/privacy rules, no source mutation, stable error codes and Mailpit acceptance.
+
+Implementation is authorized for S7.2 only. S7.3 remains closed until Fred locally validates S7.2.

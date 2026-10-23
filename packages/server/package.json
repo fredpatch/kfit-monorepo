@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "seed:cadence-history": "npm run build && node ./scripts/dev/initialize-cadence-history.mjs",
+    "db:generate:cadence-history": "node ./scripts/db/generate-cadence-history.mjs",
+    "preflight:cadence-history": "node ./scripts/preflight/cadence-history.mjs",
     "preflight:receipts": "node ./scripts/preflight/receipts.mjs",
     "preflight:finance": "node ./scripts/preflight/finance.mjs",
     "preflight:quotes": "node ./scripts/preflight/quotes.mjs",

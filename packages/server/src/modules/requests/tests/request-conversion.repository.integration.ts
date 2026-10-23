@@ -10,6 +10,7 @@ import { customers, subscriptionComponents, subscriptions, subscriptionStatusHis
 import { prospects, qualificationReviews, serviceRequests } from "../../../db/schema/prospects.js";
 import { DrizzleCustomersRepository } from "../../customers/repositories/customers.repository.js";
 import { DrizzleRequestConversionRepository } from "../repositories/request-conversion.repository.js";
+import { subscriptionFollowUpCadenceHistory } from "../../../db/schema/coaching.js";
 import { RequestConversionService } from "../services/request-conversion.service.js";
 
 const userId = randomUUID();
@@ -55,6 +56,7 @@ after(async () => {
       if (rows.length) {
         const ids = rows.map(row => row.id);
         await db.delete(subscriptionComponents).where(inArray(subscriptionComponents.subscriptionId, ids));
+        await db.delete(subscriptionFollowUpCadenceHistory).where(inArray(subscriptionFollowUpCadenceHistory.subscriptionId, ids));
         await db.delete(subscriptionStatusHistory).where(inArray(subscriptionStatusHistory.subscriptionId, ids));
         await db.update(serviceRequests).set({ convertedSubscriptionId: null }).where(inArray(serviceRequests.id, requestIds));
         await db.delete(subscriptions).where(inArray(subscriptions.id, ids));

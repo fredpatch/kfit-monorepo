@@ -1,5 +1,19 @@
 # Technical Gotchas
 
+## S7.1 cadence migration generation and legacy authority
+
+- Use the separately approved `npm run db:generate:cadence-history` wrapper for the initial cadence-history migration: Drizzle's current schema API cannot express the PostgreSQL GiST exclusion guard. The wrapper generates the table/checks/indexes normally, then deterministically emits approved btree_gist extension and half-open no-overlap SQL. Never hand-edit generated migration/snapshot output.
+- `seed:cadence-history` is a guarded, one-off local helper for the reviewed two-subscription scope, not a general historical backfill. It loads root `.env`, rejects inherited DATABASE_URL and unexpected targets/counts, starts authority only at execution time, and skips existing history. Any new initialization scope needs its own review/approval; never backdate from subscription start/creation.
+- Catalogue seed and cadence source writers share transaction advisory fence key `7247001` before owner row locks. Future cadence/variant writers must join the same protocol and atomic history boundary. Current history may have gaps before prospective authority; such weekly overdue points are unavailable, not zero.
+
+## Existing payment-proof allocation-order assertion
+
+During S7.1, three real PostgreSQL runs failed the unchanged full-confirmation assertion in `payment-proofs.repository.integration.ts:152`: expected allocation amounts `[8000,12000]`, actual `[12000,8000]`. The existing finance reader orders equal-createdAt allocations by UUID, not FIFO installment sequence; S7.1 preserves that query and ledger calculation. Reviewer/QA confirmed no S7.1 regression from this evidence. Latest run: **541/542**, all **35 new S7.1 cases passed**.
+
+The full integration suite remains failed. The three-attempt loop breaker stopped retries; no assertion was weakened or S6 test changed. Investigate/harden the allocation-order contract or assert FIFO allocation-to-installment facts in a separately authorized change. Fred's S7.1 acceptance is separate from these measured agent results and does not establish that this failure was fixed.
+
+Actual catalogue-seed-versus-override/activation races were code-inspected but not directly runtime-tested in S7.1; helper atomicity and database exclusion concurrency were tested. Preserve this coverage distinction in future validation reports.
+
 ## PostgreSQL host-port ambiguity on Windows dev
 
 K'FIT can coexist with a native PostgreSQL installation, but they must not share the same host endpoint.

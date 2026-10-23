@@ -6,6 +6,9 @@
     "packages/*"
   ],
   "scripts": {
+    "seed:cadence-history": "npm run seed:cadence-history --workspace @kfit/server",
+    "db:generate:cadence-history": "npm run db:generate:cadence-history --workspace @kfit/server",
+    "preflight:cadence-history": "npm run preflight:cadence-history --workspace @kfit/server",
     "preflight:receipts": "npm run preflight:receipts --workspace @kfit/server",
     "preflight:finance": "npm run preflight:finance --workspace @kfit/server",
     "preflight:quotes": "npm run preflight:quotes --workspace @kfit/server",

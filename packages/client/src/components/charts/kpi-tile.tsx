@@ -32,7 +32,7 @@ type KpiTileProps = {
   noteTone?: StatusTone;
   /** Change vs previous period; direction drives the arrow, not the colour. */
   delta?: { text: string; direction: "up" | "down" | "flat"; tone?: StatusTone };
-  trend?: number[];
+  trend?: Array<number | null>;
   trendLabel?: string;
   className?: string;
 };
@@ -61,7 +61,12 @@ export function KpiTile({ label, value, unit, icon: Icon, tone = "neutral", note
         </span>
         {trend && trend.length > 1 ? <Sparkline values={trend} label={trendLabel ?? `${label} : évolution`} /> : null}
       </div>
+      {Icon && delta ? <span className={cn("inline-flex items-center gap-1 text-xs font-semibold", toneText[delta.tone ?? "neutral"])}>
+        {delta.direction === "up" ? <ArrowUp className="size-3" aria-hidden="true" /> : delta.direction === "down" ? <ArrowDown className="size-3" aria-hidden="true" /> : null}
+        {delta.text}
+      </span> : null}
       {note ? <span className={cn("text-xs font-semibold", toneText[noteTone])}>{note}</span> : null}
+      {trend?.includes(null) ? <span className="text-xs text-muted-foreground">Historique indisponible pour certaines semaines</span> : null}
     </div>
   );
 }

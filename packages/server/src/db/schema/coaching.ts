@@ -67,6 +67,21 @@ export const followUpEvents = pgTable("follow_up_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [index("follow_up_events_history_idx").on(t.followUpId, t.createdAt)]);
 
+export const subscriptionFollowUpCadenceHistory = pgTable("subscription_follow_up_cadence_history", {
+  id: idColumn(),
+  subscriptionId: uuid("subscription_id").notNull().references(() => subscriptions.id, { onDelete: "restrict" }),
+  effectiveFrequencyDays: integer("effective_frequency_days"),
+  source: text("source").notNull(),
+  effectiveFrom: timestamp("effective_from", { withTimezone: true }).notNull(),
+  effectiveTo: timestamp("effective_to", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, t => [
+  uniqueIndex("subscription_cadence_one_open_uq").on(t.subscriptionId).where(sql`${t.effectiveTo} IS NULL`),
+  index("subscription_cadence_history_lookup_idx").on(t.subscriptionId, t.effectiveFrom),
+  check("subscription_cadence_history_range_valid", sql`${t.effectiveTo} IS NULL OR ${t.effectiveTo} > ${t.effectiveFrom}`),
+  check("subscription_cadence_history_value_valid", sql`(${t.source} = 'none' AND ${t.effectiveFrequencyDays} IS NULL) OR (${t.source} IN ('override','variant','service') AND ${t.effectiveFrequencyDays} IS NOT NULL AND ${t.effectiveFrequencyDays} > 0)`),
+]);
+
 export const goals = pgTable("goals", {
   id: idColumn(),
   subscriptionId: uuid("subscription_id").notNull().references(() => subscriptions.id, { onDelete: "restrict" }),

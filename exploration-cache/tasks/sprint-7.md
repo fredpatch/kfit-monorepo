@@ -6,8 +6,8 @@ Deliver the V1 Core operational layer: dashboard KPIs and alert workspaces, noti
 
 ## Ordered tasks
 
-1. S7.1 — Core dashboard KPIs and operational alert workspaces — APPROVED_FOR_IMPLEMENTATION.
-2. S7.2 — Dashboard and email notification engine with configurable reminders — CLOSED until S7.1 validation.
+1. S7.1 — Core dashboard KPIs and operational alert workspaces — VALIDATED by Fred, 2026-10-23; publication authorized.
+2. S7.2 — Dashboard and email notification engine with configurable reminders — eligible for planning after S7.1 acceptance; separate Gate 1 required, no implementation authorized.
 3. S7.3 — Retention, anonymization, soft-delete purge and privacy-action replay — CLOSED until S7.2 validation.
 4. S7.4 — Backup/restore and production-hardening acceptance — CLOSED until S7.3 validation.
 
@@ -201,7 +201,7 @@ Fred approved this complete Gate 1. Implementation is authorized for S7.1 only. 
 
 ## S7.1 feasibility blocker — cadence history
 
-Status: **BLOCKED / GATE 1 AMENDMENT REQUIRED**.
+Historical status: **BLOCKED / GATE 1 AMENDMENT REQUIRED**, resolved by the approved amendment below.
 
 The Reviewer confirmed that historical overdue-follow-up stock cannot always be reconstructed safely.
 
@@ -339,3 +339,14 @@ Must prove:
 
 All other S7.1 Gate 1 rules remain locked.
 S7.2 remains closed until S7.1 local validation.
+
+## S7.1 execution and Gate 2 acceptance — 2026-10-23
+
+- Delivered the approved analytics/alerts contracts, protected GET routes, batch historical readers and owner finance reuse, plus French TodayPage UX-9c. Existing current Today and agenda semantics remain unchanged.
+- Fred additionally approved cumulative stage reach when a qualified/converted request has no separate contact-attempt record. No request workflow or source row was changed to enforce analytics ordering.
+- The one approved migration is `0013_orange_metal_master.sql`, generated through the deterministic Drizzle wrapper with separately approved btree_gist/GiST exclusion support. Preflight found no prior history, 8 subscriptions, 2 applicable legacy subscriptions, 0 overrides, 4 valid policies and no duplicate policy scope. Application and guarded prospective initialization were separately approved against localhost:5433/kfit_dev; exactly 2 rows started at actual initialization time. Preserve cadence evidence before rollback; retain a shared extension.
+- Resolved cadence values/sources are captured transactionally for override changes, lifecycle initialization/resumption, renewal, conversion and catalogue seeds. Writer fencing precedes owner row locks. No historical lookup substitutes today's policy for an unavailable interval.
+- Agent-run typecheck/build/db:check/diff passed; server **523/523**, shared **56/56**. Latest PostgreSQL **541/542 passed, 1 failed, zero skips**; all **35 new cases passed** (17 cadence, 18 dashboard). The unchanged S6.3 payment-proof assertion at `payment-proofs.repository.integration.ts:152` assumes FIFO array order where the existing query breaks timestamp ties by UUID. This full-suite failure remains open; no test weakening or further retry after three actual failures. Earlier new fixture errors were corrected at the business-week boundary without changing assertions.
+- Independent Reviewer: **REVIEW PASSED WITH NOTES**. Independent QA: **QA PASSED WITH LIMITATIONS**. No confirmed S7.1 defect. Agent browser/mobile/keyboard/navigation/tooltips were not runtime-validated. Actual catalogue-seed execution/concurrent seed-versus-override/activation paths were inspected but not directly exercised; helper atomicity and DB concurrency were tested.
+- Fred confirmed **"All green"** after this handoff and authorized documentation, commit and push. Gate 2 is accepted on developer-reported evidence; no additional exact human command results or resolution of the recorded agent failure is claimed.
+- S7.1 is validated, Sprint 7 remains open, and S7.2 requires a separately approved plan/Gate 1.

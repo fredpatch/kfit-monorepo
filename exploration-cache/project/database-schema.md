@@ -179,6 +179,18 @@ Structured coaching follow-up records.
 
 Key fields: `id`, `subscription_id`, `follow_up_type`, `occurred_at`, `note`, `next_action`, `next_action_at`, `status`, `attachment_document_id`, `created_by_user_id`.
 
+### `subscription_follow_up_cadence_history`
+Prospective resolved cadence authority for historical dashboard overdue stocks (approved S7.1 amendment; migration `0013_orange_metal_master.sql`).
+
+Key fields: `id`, `subscription_id`, `effective_frequency_days` nullable, `source`, `effective_from`, `effective_to` nullable, `created_at`.
+
+- RESTRICT subscription FK; source is `override`, `variant`, `service` or `none`.
+- `none` requires a null frequency; other sources require a positive integer resolved frequency.
+- Half-open `[effective_from, effective_to)` intervals; a finite end must exceed the start.
+- Partial unique index permits at most one open interval; btree_gist/GiST exclusion prevents overlapping ranges, including concurrent/direct writes.
+- Append-oriented: source changes may close the open end and insert a new resolved segment in the same transaction; prior resolved values are not rewritten. Unchanged resolution adds no segment.
+- Legacy authority begins only at actual controlled initialization, never an inferred creation/activation date. Missing historical intervals mean unavailable evidence; reads never initialize rows or use current policy as a historical substitute.
+
 ### `goals`
 Structured goals.
 

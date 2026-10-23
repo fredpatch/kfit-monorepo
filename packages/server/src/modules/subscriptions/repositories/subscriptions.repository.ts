@@ -10,6 +10,7 @@ import { lockConsentDefinitions, readConsentEvidence } from "../../consents/repo
 import { checklistDefinition, itemPermissions, resolveEffectivePolicy } from "../../onboarding/services/onboarding.service.js";
 import { endFromDuration, transitions, validDuration } from "../services/subscription-lifecycle.policy.js";
 import { failure, type LifecycleActor, type LifecycleCommand, type LifecycleResult, type SubscriptionsRepository } from "../services/subscriptions.service.js";
+import { lockCadenceWrites, recordEffectiveCadence, resolvedCadence } from "../../follow-ups/repositories/cadence-history.repository.js";
 
 type Transaction = Parameters<Parameters<typeof appDb.transaction>[0]>[0];
 type Subscription = typeof subscriptions.$inferSelect;
@@ -60,6 +61,7 @@ export class DrizzleSubscriptionsRepository implements SubscriptionsRepository {
   constructor(private readonly database: typeof appDb, private readonly options: { auditHashPepper: string }) {}
   async execute(id: string, command: LifecycleCommand, actor: LifecycleActor): Promise<LifecycleResult> {
     return this.database.transaction(async tx => {
+      if (["activate", "renew", "resume", "resume-active"].includes(command.action)) await lockCadenceWrites(tx);
       const query = tx.select().from(subscriptions).where(eq(subscriptions.id, id));
       // Shared read lock produces a coherent detail while mutations serialize on this row.
       const [sub] = await query.for(command.action === "read" ? "share" : "update");
@@ -134,6 +136,7 @@ export class DrizzleSubscriptionsRepository implements SubscriptionsRepository {
             createdByUserId: actor.userId, createdAt: now, updatedAt: now,
           }).returning();
           if (!child) throw new Error("Renewal insert returned no row");
+          await recordEffectiveCadence(tx, child, await resolvedCadence(tx, child), now);
           if (components.length) await tx.insert(subscriptionComponents).values(components.map(c => ({ subscriptionId: child.id,
             sourceServiceComponentId: c.sourceServiceComponentId, componentType: c.componentType, labelSnapshot: c.labelSnapshot, quantityEntitled: c.quantityEntitled,
             quantityConsumed: 0, quantityOwedByCoach: 0, createdAt: now, updatedAt: now })));
@@ -147,6 +150,7 @@ export class DrizzleSubscriptionsRepository implements SubscriptionsRepository {
       update.status = toStatus;
       const [updated] = await tx.update(subscriptions).set(update).where(eq(subscriptions.id, id)).returning();
       if (!updated) throw new Error("Lifecycle update returned no row");
+      if (toStatus === "active") await recordEffectiveCadence(tx, updated, await resolvedCadence(tx, updated), now);
       await tx.insert(subscriptionStatusHistory).values({ subscriptionId: id, fromStatus: sub.status, toStatus, reason: command.reason || null, changedAt: now, changedByUserId: actor.userId });
       await new AuditService(tx, this.options).record({ actorType: "user", actorUserId: actor.userId, requestId: actor.requestId, ipAddress: actor.ipAddress, userAgent: actor.userAgent,
         eventType: event, entityType: "subscription", entityId: id, result: "success", metadata: { subscriptionId: id, fromStatus: sub.status, toStatus, occurredAt: now.toISOString(), completionOverride: command.action === "complete" && command.overrideOutstandingComponents === true } });

@@ -108,6 +108,8 @@ Most business entities are never physically deleted by normal CRUD. Archive/anon
 - `subscriptions 1 — N appointments`
 - `appointments 1 — N appointment_events`
 - `subscriptions 1 — N follow_ups`
+- `subscriptions 1 — N subscription_follow_up_cadence_history` (RESTRICT deletion; approved S7.1 amendment).
+- Cadence history stores resolved frequency/source in non-overlapping half-open effective intervals, at most one open interval. Only the current end closes; old resolved values remain immutable through application writers. Source/history transitions share one transaction. Missing legacy authority is unavailable, not an inferred current-policy value.
 - `subscriptions 1 — N goals`
 - `subscriptions 1 — N progress_measurements`
 - `progress_measurements 0..1 — N progress_photos`

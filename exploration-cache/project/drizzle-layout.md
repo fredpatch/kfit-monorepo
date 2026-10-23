@@ -81,6 +81,7 @@ Closed database/application vocabularies shared by schema modules. Prefer text c
 - appointments
 - appointment_events
 - follow_ups
+- subscription_follow_up_cadence_history
 - goals
 - progress_measurements
 - progress_photos

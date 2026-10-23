@@ -13,6 +13,11 @@ import { DrizzleQuotesRepository } from "./modules/quotes/repositories/quotes.re
 import { PuppeteerQuoteRenderer } from "./modules/quotes/services/quote-pdf.renderer.js";
 import { FinanceService } from "./modules/finance/services/finance.service.js";
 import { DrizzleFinanceRepository } from "./modules/finance/repositories/finance.repository.js";
+import { DashboardAnalyticsController } from "./modules/dashboard/controllers/analytics.controller.js";
+import { DashboardAnalyticsService } from "./modules/dashboard/services/analytics.service.js";
+import { DashboardAlertsService } from "./modules/dashboard/services/alerts.service.js";
+import { DrizzleDashboardAnalyticsRepository } from "./modules/dashboard/repositories/analytics.repository.js";
+import { DrizzleDashboardAlertsRepository } from "./modules/dashboard/repositories/alerts.repository.js";
 import { DocumentsController } from "./modules/documents/controllers/documents.controller.js";
 import { DrizzleDocumentsRepository } from "./modules/documents/repositories/documents.repository.js";
 import { DocumentsService } from "./modules/documents/services/documents.service.js";
@@ -152,7 +157,7 @@ export function createDevelopmentApp() {
   const onboardingService = new OnboardingService(new DrizzleOnboardingRepository(db, { auditHashPepper: authConfig.auditHashPepper }));
   const customersService = new CustomersService(new DrizzleCustomersRepository(db, { auditHashPepper: authConfig.auditHashPepper }));
   // UX-9 « Aujourd'hui »: reuses each module's own service so every state is computed by its owner.
-  const todayController = new TodayController(new TodayService(new DrizzleTodayRepository(db), {
+  const todayService = new TodayService(new DrizzleTodayRepository(db), {
     async followUpQueue(actor) {
       const result = await followUpsService.execute("", "queue", {}, actor);
       if (!result.ok || !("items" in result.body)) throw new Error("Follow-up queue unavailable");
@@ -165,7 +170,13 @@ export function createDevelopmentApp() {
       const result = await onboardingService.execute(subscriptionId, "read", {}, undefined, actor);
       return result.status === "ok" ? result.onboarding : null;
     },
-  }));
+  });
+  const todayController = new TodayController(todayService);
+  const dashboardFinance = new DrizzleFinanceRepository(db, { auditHashPepper: authConfig.auditHashPepper });
+  const dashboardAnalyticsController = new DashboardAnalyticsController(
+    new DashboardAnalyticsService(new DrizzleDashboardAnalyticsRepository(db, dashboardFinance)),
+    new DashboardAlertsService(new DrizzleDashboardAlertsRepository(db, dashboardFinance), todayService),
+  );
 
   const documentsController = new DocumentsController(new DocumentsService(
     new DrizzleDocumentsRepository(db, {
@@ -210,6 +221,7 @@ export function createDevelopmentApp() {
     requestConversionController: new RequestConversionController(new RequestConversionService(new DrizzleRequestConversionRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     customersController: new CustomersController(customersService),
     todayController,
+    dashboardAnalyticsController,
   });
 }
 import { ConsentController } from "./modules/consents/controllers/consent.controller.js";

@@ -74,6 +74,7 @@ build               npm run build
 unit tests          npm test                   (shared + server, no DB)
 integration tests   npm run test:integration   (server, real local DB)
 schema check        npm run db:check
+cadence generation  npm run db:generate:cadence-history (ask; Drizzle plus approved PostgreSQL exclusion guard)
 lint                not configured
 client tests        none — client acceptance = typecheck + build + developer browser check
 ```
@@ -84,6 +85,7 @@ Tiers (mirrored in `.vscode/settings.json`):
 auto    git status · git diff · git log · git show · git branch --show-current
         npm run typecheck · npm run build · npm test · npm run db:check
 ask     npm run db:migrate · npm run db:generate · npm run test:integration
+        npm run db:generate:cadence-history
         npm run seed:* · npm run preflight:* · npm run db:up / db:down · docker compose …
         npm install / ci / any lockfile change · git add · git commit
         npm run dev:api · npm run dev:client (QA runtime checks; stop afterwards)

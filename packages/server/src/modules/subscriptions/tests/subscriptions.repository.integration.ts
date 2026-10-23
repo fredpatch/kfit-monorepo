@@ -12,6 +12,7 @@ import { questionnaireSubmissions, questionnaireTemplates } from "../../../db/sc
 import { DrizzleConsentRepository } from "../../consents/repositories/consent.repository.js";
 import { DrizzleOnboardingRepository } from "../../onboarding/repositories/onboarding.repository.js";
 import { DrizzleSubscriptionsRepository } from "../repositories/subscriptions.repository.js";
+import { subscriptionFollowUpCadenceHistory } from "../../../db/schema/coaching.js";
 import type { LifecycleCommand } from "../services/subscriptions.service.js";
 
 const userId = randomUUID(), customerId = randomUUID(), serviceId = randomUUID(), variantId = randomUUID(), templateId = randomUUID();
@@ -44,6 +45,7 @@ after(async () => {
     const all = await db.select({ id: subscriptions.id, parent: subscriptions.renewedFromSubscriptionId }).from(subscriptions).where(eq(subscriptions.customerId, customerId));
     const allIds = all.map(s => s.id);
     if (allIds.length) {
+      await db.delete(subscriptionFollowUpCadenceHistory).where(inArray(subscriptionFollowUpCadenceHistory.subscriptionId, allIds));
       await db.delete(consentRecords).where(inArray(consentRecords.subscriptionId, allIds));
       await db.delete(medicalClearanceRecords).where(inArray(medicalClearanceRecords.subscriptionId, allIds));
       await db.delete(questionnaireSubmissions).where(inArray(questionnaireSubmissions.subscriptionId, allIds));

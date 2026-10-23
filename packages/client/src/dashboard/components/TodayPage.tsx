@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "react-router";
-import { AlertTriangle, BarChart3, CalendarCheck, Inbox, Users } from "lucide-react";
-import type { TodayTask, TodayTaskKind } from "@kfit/shared";
+import { AlertTriangle, CalendarCheck, Inbox, Users } from "lucide-react";
+import type { DashboardPeriod, TodayTask, TodayTaskKind } from "@kfit/shared";
+import { DashboardAlerts, DashboardFinance, DashboardRequests, dashboardTrendProps, useDashboardAnalytics } from "./DashboardAnalytics.js";
 import { dashboardApi, dashboardErrorMessage } from "../api/dashboard-api.js";
 import { AdminPage } from "../../app/layout/AdminPage.js";
 import { KpiTile } from "../../components/charts/kpi-tile.js";
@@ -56,6 +57,8 @@ function duration(start: string, end: string) {
 export function TodayPage() {
   const query = useQuery({ queryKey: ["dashboard", "today"], queryFn: () => dashboardApi.today(), refetchInterval: 60_000 });
   const [filter, setFilter] = useState<Filter>("all");
+  const [periode, setPeriode] = useState<DashboardPeriod>("4w");
+  const analytics = useDashboardAnalytics(periode);
   const data = query.data;
   const counts = useMemo(() => {
     const result: Record<Filter, number> = { all: 0, follow: 0, requests: 0, subscriptions: 0 };
@@ -79,25 +82,14 @@ export function TodayPage() {
       ) : (
         <div className="flex flex-col gap-5">
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <KpiTile label="Clientes actives" value={String(data.kpis.activeClients)} icon={Users} tone="success" note="Au moins un abonnement actif" />
-            <KpiTile label="Suivis en retard" value={String(data.kpis.followUpsOverdue)} icon={AlertTriangle} tone={data.kpis.followUpsOverdue ? "danger" : "success"} note={data.kpis.oldestOverdueDays !== null ? `Le plus ancien : ${data.kpis.oldestOverdueDays} jour(s)` : "Aucun retard"} noteTone={data.kpis.followUpsOverdue ? "danger" : "neutral"} />
-            <KpiTile label="Nouvelles demandes" value={String(data.kpis.newRequestsThisWeek)} icon={Inbox} tone="info" note={`Cette semaine · ${data.kpis.requestsToContact} à contacter`} />
-            <KpiTile label="Séances réalisées" value={String(data.kpis.sessionsCompletedThisWeek)} icon={CalendarCheck} tone="warning" note={`Cette semaine · ${data.kpis.sessionsCompletedToday} aujourd'hui`} />
+            <KpiTile label="Clientes actives" value={String(data.kpis.activeClients)} icon={Users} tone="success" note="Au moins un abonnement actif" {...dashboardTrendProps(analytics.data?.trends.activeClients, "Clientes actives")} />
+            <KpiTile label="Suivis en retard" value={String(data.kpis.followUpsOverdue)} icon={AlertTriangle} tone={data.kpis.followUpsOverdue ? "danger" : "success"} note={data.kpis.oldestOverdueDays !== null ? `Le plus ancien : ${data.kpis.oldestOverdueDays} jour(s)` : "Aucun retard"} noteTone={data.kpis.followUpsOverdue ? "danger" : "neutral"} {...dashboardTrendProps(analytics.data?.trends.followUpsOverdue, "Suivis en retard")} />
+            <KpiTile label="Nouvelles demandes" value={String(data.kpis.newRequestsThisWeek)} icon={Inbox} tone="info" note={`Cette semaine · ${data.kpis.requestsToContact} à contacter`} {...dashboardTrendProps(analytics.data?.trends.newRequests, "Nouvelles demandes")} />
+            <KpiTile label="Séances réalisées" value={String(data.kpis.sessionsCompletedThisWeek)} icon={CalendarCheck} tone="warning" note={`Cette semaine · ${data.kpis.sessionsCompletedToday} aujourd'hui`} {...dashboardTrendProps(analytics.data?.trends.sessionsCompleted, "Séances réalisées")} />
           </div>
 
-          {/* Charts row (board 02). The weekly requests chart waits for the Sprint 7 time-series API (backlog: UX-9c). */}
           <div className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-            <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-5">
-              <div className="flex flex-col gap-0.5">
-                <h2 className="text-base font-bold">Nouvelles demandes</h2>
-                <p className="text-[13px] text-muted-foreground">Cette semaine : {data.kpis.newRequestsThisWeek} demande(s) · {data.kpis.requestsToContact} à contacter</p>
-              </div>
-              <div className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-input px-5 py-8 text-center">
-                <BarChart3 aria-hidden="true" className="size-5 text-muted-foreground" />
-                <p className="text-sm font-bold">Historique disponible au Sprint 7</p>
-                <p className="max-w-sm text-[13px] text-muted-foreground">Le graphique des demandes reçues par semaine (4 sem. · 8 sem. · 12 mois) et le taux de conversion arriveront avec l'historique des indicateurs.</p>
-              </div>
-            </section>
+            <DashboardRequests query={analytics} periode={periode} onPeriodChange={setPeriode} />
 
             <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-5">
               <div className="flex flex-col gap-0.5">
@@ -115,6 +107,9 @@ export function TodayPage() {
               )}
             </section>
           </div>
+
+          <DashboardFinance query={analytics} />
+          <DashboardAlerts />
 
           <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-5">

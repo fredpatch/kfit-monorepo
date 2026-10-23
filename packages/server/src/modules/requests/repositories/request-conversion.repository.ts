@@ -9,6 +9,7 @@ import { prospects, qualificationReviews, serviceRequests } from "../../../db/sc
 import { AuditService } from "../../auth/services/audit.service.js";
 import { activeCustomerWhatsappMatches, lockCustomerWhatsapp } from "../../customers/repositories/customers.repository.js";
 import { resolveConversionDecision, type ConversionActor, type ConversionResult, type RequestConversionRepository } from "../services/request-conversion.service.js";
+import { lockCadenceWrites, recordEffectiveCadence, resolvedCadence } from "../../follow-ups/repositories/cadence-history.repository.js";
 
 function isConversionLinkConflict(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
@@ -23,6 +24,7 @@ export class DrizzleRequestConversionRepository implements RequestConversionRepo
   async convert(requestId: string, fallbackStart: Date | null, actor: ConversionActor): Promise<ConversionResult> {
     try {
       return await this.database.transaction(async tx => {
+        await lockCadenceWrites(tx);
         const [request] = await tx.select().from(serviceRequests).where(eq(serviceRequests.id, requestId)).for("update");
         if (!request) return { status: "not_found" };
         const [sourceSubscription] = await tx.select({ id: subscriptions.id }).from(subscriptions).where(eq(subscriptions.sourceRequestId, requestId)).limit(1);
@@ -58,8 +60,9 @@ export class DrizzleRequestConversionRepository implements RequestConversionRepo
           agreedPriceXaf: decision.agreedPriceXaf, currency: "XAF", plannedStartDate: decision.plannedStartDate,
           durationValueSnapshot: duration.value, durationUnitSnapshot: duration.unit,
           createdByUserId: actor.userId, capacityReservedUntil: null,
-        }).returning({ id: subscriptions.id, reference: subscriptions.reference });
+        }).returning();
         if (!subscription) throw new Error("Conversion subscription insert returned no row");
+        await recordEffectiveCadence(tx, subscription, await resolvedCadence(tx, subscription), new Date());
         const components = await tx.select().from(serviceComponents).where(and(eq(serviceComponents.serviceId, request.serviceId), or(isNull(serviceComponents.variantId), eq(serviceComponents.variantId, decision.variantId))));
         if (components.length > 0) {
           await tx.insert(subscriptionComponents).values(components.map(component => ({

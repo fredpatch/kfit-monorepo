@@ -5,7 +5,7 @@ import { before, after, test } from "node:test";
 import { eq, inArray } from "drizzle-orm";
 import { db, pool } from "../../../db/client.js";
 import { users, auditEvents } from "../../../db/schema/auth.js";
-import { appointments, followUps, followUpEvents } from "../../../db/schema/coaching.js";
+import { appointments, followUps, followUpEvents, subscriptionFollowUpCadenceHistory } from "../../../db/schema/coaching.js";
 import { customers, subscriptions, subscriptionPauses } from "../../../db/schema/customers.js";
 import { services, serviceVariants, servicePolicies } from "../../../db/schema/catalogue.js";
 import { DrizzleFollowUpsRepository } from "../repositories/follow-ups.repository.js";
@@ -31,6 +31,7 @@ after(async () => {
     if (!safe) return;
     await db.delete(auditEvents).where(eq(auditEvents.actorUserId, userId));
     if (subIds.length) {
+      await db.delete(subscriptionFollowUpCadenceHistory).where(inArray(subscriptionFollowUpCadenceHistory.subscriptionId, subIds));
       const rows = await db.select({ id: followUps.id }).from(followUps).where(inArray(followUps.subscriptionId, subIds));
       if (rows.length) await db.delete(followUpEvents).where(inArray(followUpEvents.followUpId, rows.map(r => r.id)));
       await db.delete(followUps).where(inArray(followUps.subscriptionId, subIds));
@@ -82,7 +83,8 @@ test("PostgreSQL variant cadence wins, null variant field falls back", async () 
 test("PostgreSQL subscription override wins and clearing immediately restores policy", async () => {
   const o = await owner({ variantDays: 3 }); const before = (await detail(o.subId)).followUps;
   assert.ok((await service.execute(o.subId, "cadence", { frequencyDays: 2 }, actor)).ok); assert.equal((await detail(o.subId)).cadence.cadenceSource, "override"); assert.equal((await detail(o.subId)).cadence.nextFollowUpDueAt, at(-1).toISOString());
-  assert.ok((await service.execute(o.subId, "cadence", { frequencyDays: null }, actor)).ok); const view = await detail(o.subId); assert.equal(view.cadence.cadenceSource, "variant"); assert.equal(view.cadence.effectiveCadenceDays, 3); assert.deepEqual(view.followUps, before);
+  const laterService = new FollowUpsService(repositoryAt(new Date(now.getTime() + 1)));
+  assert.ok((await laterService.execute(o.subId, "cadence", { frequencyDays: null }, actor)).ok); const view = await detail(o.subId); assert.equal(view.cadence.cadenceSource, "variant"); assert.equal(view.cadence.effectiveCadenceDays, 3); assert.deepEqual(view.followUps, before);
 });
 test("PostgreSQL null cadence disables monitoring and omits subscription from queue", async () => { const o = await owner({ days: null }); const view = await detail(o.subId); assert.equal(view.cadence.monitoringDisabled, true); assert.equal(view.cadence.cadenceState, null); assert.ok(!(await queue()).some(i => i.subscriptionId === o.subId)); });
 test("PostgreSQL missing activation is not cadence eligible despite meaningful-looking rows", async () => { const o = await owner({ start: null }); await app(o.subId, "completed"); assert.equal((await detail(o.subId)).cadence.cadenceEligible, false); assert.ok(!(await queue()).some(i => i.subscriptionId === o.subId)); });

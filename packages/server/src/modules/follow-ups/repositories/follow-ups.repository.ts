@@ -7,6 +7,7 @@ import { servicePolicies } from "../../../db/schema/catalogue.js";
 import { AuditService, type AuditMetadata } from "../../auth/services/audit.service.js";
 import { calculateCadence, effectiveFollowUpStatus, InvalidCadenceError, latestMeaningfulActivity, resolveCadence } from "../services/follow-up-cadence.policy.js";
 import { followUpFailure, type FollowUpActor, type FollowUpCommand, type FollowUpResult, type FollowUpsRepository } from "../services/follow-ups.service.js";
+import { lockCadenceWrites, recordEffectiveCadence, resolvedCadence } from "./cadence-history.repository.js";
 type Tx = Parameters<Parameters<typeof appDb.transaction>[0]>[0];
 type Subscription = typeof subscriptions.$inferSelect;
 
@@ -63,6 +64,7 @@ export class DrizzleFollowUpsRepository implements FollowUpsRepository {
       }, { isolationLevel: "repeatable read", accessMode: "read only" });
 
       return await this.database.transaction(async tx => {
+        if (command.action === "cadence") await lockCadenceWrites(tx);
         const initial = command.action === "complete" || command.action === "cancel" ? (await tx.select({ subscriptionId: followUps.subscriptionId }).from(followUps).where(eq(followUps.id, id)))[0] : null;
         if ((command.action === "complete" || command.action === "cancel") && !initial) return followUpFailure("FOLLOW_UP_NOT_FOUND");
         const subscriptionId = initial?.subscriptionId ?? id;
@@ -71,9 +73,11 @@ export class DrizzleFollowUpsRepository implements FollowUpsRepository {
         if (!sub) return followUpFailure("FOLLOW_UP_NOT_FOUND");
         if (command.action === "cadence") {
           if (!["active", "paused"].includes(sub.status)) return followUpFailure("FOLLOW_UP_CADENCE_NOT_APPLICABLE");
+          const previousCadence = await resolvedCadence(tx, sub);
           const now = this.clock();
           const [updated] = await tx.update(subscriptions).set({ followUpFrequencyDaysOverride: command.frequencyDays, updatedAt: now }).where(eq(subscriptions.id, subscriptionId)).returning();
           if (!updated) throw new Error("Cadence update returned no row");
+          await recordEffectiveCadence(tx, updated, await resolvedCadence(tx, updated), now, previousCadence);
           const detail = await this.detail(tx, updated, now); // Invalid configuration/range throws and rolls back.
           await this.audit(tx, actor, subscriptionId, null, "follow_up.cadence_override_updated", { oldCadenceDays: sub.followUpFrequencyDaysOverride, newCadenceDays: command.frequencyDays, cadenceSource: detail.cadence.cadenceSource });
           return { ok: true, body: { detail } };

@@ -1,3 +1,15 @@
+## 2026-10-23 — S7.1 prospective cadence authority and cumulative funnel
+
+**Sources**: Fred's approved S7.1 historical-feasibility amendment, explicit database overlap-guard approval and cumulative-stage-reach decision; `exploration-cache/tasks/sprint-7.md`.
+
+**Context**: Mutable service/variant fallback cadence cannot establish historical overdue stocks. The request workflow also permits qualification/conversion without a separately logged contact attempt, while the dashboard funnel must remain cumulative.
+
+**Decision**: Store resolved subscription cadence source/value in prospective half-open effective intervals. Never invent legacy authority before controlled initialization. Missing eligible history produces unavailable/null stock and no delta, rendered as an accessible gap. Enforce one-open/non-overlap/source/value/range invariants in PostgreSQL; Fred approved btree_gist and a GiST exclusion constraint in the single additive migration. Source/history updates are atomic, including catalogue seed policy changes; participating writers acquire the same transaction-scoped advisory fence before owner row locks, preserving the existing subscription-to-catalogue ordering. Append only when resolution changes.
+
+For submitted request cohorts, later-stage reach implies earlier-stage reach; converted implies qualified/contacted and qualified implies contacted. The latest authoritative qualification and conversion linkage remain the source of truth. Analytics changes no request state or contact records. Finance uses the existing S6.1 effective-net ledger model and current active schedules, keeping collected, due, future, overdue and outstanding amounts separate.
+
+**Impact**: Migration `0013_orange_metal_master.sql`; deterministic Drizzle wrapper emits the unsupported exclusion constraint, with approved generation/application gates. Current Today/follow-up behavior remains based on the existing owner policy. New dashboard routes are authenticated admin GETs only; no persisted dashboard alerts or notification system. Source schema and operational caveats are recorded in the schema/relational docs and technical gotchas. This decision authorizes S7.1 only, not S7.2.
+
 ## 2026-10-22 — Sprint 5 and UI refonte unified on main
 
 **Context**: Sprint 5 business work continued on `sprint-5` while the validated UI/UX refonte advanced on `main`. Both branches descended from UX-1 and then diverged: `main` carried UX-2→UX-10 work while `sprint-5` carried S5.5 planning/execution-memory updates.

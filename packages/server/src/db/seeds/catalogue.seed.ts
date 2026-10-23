@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { serviceComponents, servicePolicies, services, serviceVariants } from "../schema/catalogue.js";
 
 import { kfitInitialCatalogueSeed } from "./catalogue.seed-data.js";
+import { lockCadenceWrites, lockPolicyCadenceScope, recordPolicyCadenceChanges } from "../../modules/follow-ups/repositories/cadence-history.repository.js";
 
 type CatalogueSeedDatabase = typeof import("../client.js").db;
 
@@ -15,6 +16,8 @@ export type CatalogueSeedResult = {
 
 export async function seedInitialCatalogue(db: CatalogueSeedDatabase): Promise<CatalogueSeedResult> {
   await db.transaction(async (tx) => {
+    await lockCadenceWrites(tx);
+    const previousCadences = await lockPolicyCadenceScope(tx, kfitInitialCatalogueSeed.services.map(service => service.id));
     await tx.insert(services).values(kfitInitialCatalogueSeed.services).onConflictDoUpdate({
       target: services.id,
       set: {
@@ -73,6 +76,7 @@ export async function seedInitialCatalogue(db: CatalogueSeedDatabase): Promise<C
         medicalClearancePolicy: sqlExcluded("medical_clearance_policy"),
       },
     });
+    await recordPolicyCadenceChanges(tx, previousCadences, new Date());
   });
 
   return {

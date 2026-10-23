@@ -6,9 +6,43 @@ export const dashboardApiRoutes = {
   /** ?du=YYYY-MM-DD&au=YYYY-MM-DD (business days, inclusive, ≤ 62 days) &statut=a,b */
   appointments: "/admin/appointments",
   today: "/admin/today",
+  analytics: "/admin/dashboard/analytics",
+  alerts: "/admin/dashboard/alerts",
 } as const;
 export const dashboardErrorCodes = ["DASHBOARD_INVALID_INPUT", "DASHBOARD_ADMIN_FORBIDDEN", "DASHBOARD_ROUTE_UNEXPECTED_FAILURE"] as const;
 export type DashboardErrorCode = (typeof dashboardErrorCodes)[number];
+
+export const dashboardPeriods = ["4w", "8w", "12m"] as const;
+export type DashboardPeriod = (typeof dashboardPeriods)[number];
+export type DashboardHistoricalPoint = { start: string; end: string } & (
+  { availability: "complete"; value: number } | { availability: "unavailable"; value: null }
+);
+export type DashboardDelta = {
+  current: number; previous: number; absoluteChange: number; percentageChange: number | null;
+  direction: "up" | "down" | "flat"; favourable: boolean | null;
+};
+export type DashboardKpiTrend = { points: DashboardHistoricalPoint[]; delta: DashboardDelta | null };
+export type DashboardFinanceSummary = { collectedXaf: number; dueXaf: number; futureXaf: number; overdueXaf: number; outstandingXaf: number };
+export type DashboardAnalyticsResponse = {
+  asOf: string; businessDate: string; periode: DashboardPeriod;
+  trends: Record<"activeClients" | "followUpsOverdue" | "newRequests" | "sessionsCompleted", DashboardKpiTrend>;
+  requests: {
+    buckets: Array<{ start: string; end: string; count: number; isCurrent: boolean }>;
+    totalRequests: number;
+    funnel: { received: number; contacted: number; qualified: number; converted: number };
+    conversionRate: number | null;
+  };
+  finance: DashboardFinanceSummary;
+};
+export const dashboardAlertKinds = ["follow_up_overdue", "request_to_contact", "installment_overdue", "payment_proof_pending", "quote_action_required", "preparation_blocked", "completion_due"] as const;
+export type DashboardAlertKind = (typeof dashboardAlertKinds)[number];
+export type DashboardAlert = {
+  kind: DashboardAlertKind; severity: "warning" | "info";
+  customerId: string | null; customerDisplayName: string; subscriptionId: string | null;
+  requestId: string | null; resourceId: string | null;
+  title: string; summary: string; referenceAt: string | null; deepLink: string;
+};
+export type DashboardAlertsResponse = { asOf: string; alerts: DashboardAlert[] };
 
 export type AgendaAppointment = {
   id: string;

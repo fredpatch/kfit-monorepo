@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, ne } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import { financeEventTypes, financePaymentMethods, type FinanceDetail, type FinancePaymentEvent, type FinancePlan, type FinancePlanStatus } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
 import { subscriptions } from "../../../db/schema/customers.js";
@@ -10,6 +10,11 @@ import { allocateFifo, financialStatus, installmentStatus, sumXaf, FinanceInvari
 type Database = typeof appDb;
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type Subscription = typeof subscriptions.$inferSelect;
+type FinanceReadData = {
+  plans: Array<typeof paymentPlans.$inferSelect>;
+  schedule: Array<{ item: typeof installments.$inferSelect }>;
+  rows: Array<{ allocation: typeof paymentAllocations.$inferSelect; event: typeof paymentEvents.$inferSelect }>;
+};
 const validPlanStatus = (value: string): FinancePlanStatus => {
   if (value === "draft" || value === "active" || value === "superseded" || value === "settled" || value === "cancelled") return value;
   throw new FinanceInvariantError();
@@ -25,11 +30,14 @@ export class DrizzleFinanceRepository implements FinanceRepository {
     const plans = await tx.select().from(paymentPlans).where(eq(paymentPlans.subscriptionId, sub.id)).orderBy(paymentPlans.createdAt, paymentPlans.id);
     const schedule = await tx.select({ item: installments }).from(installments).innerJoin(paymentPlans, eq(paymentPlans.id, installments.paymentPlanId))
       .where(eq(paymentPlans.subscriptionId, sub.id)).orderBy(installments.dueDate, installments.sequenceNumber, installments.id);
-    const itemMap = new Map(schedule.map(({ item }) => [item.id, item]));
     const rows = await tx.select({ allocation: paymentAllocations, event: paymentEvents }).from(paymentAllocations)
       .innerJoin(paymentEvents, eq(paymentEvents.id, paymentAllocations.paymentEventId))
       .where(and(eq(paymentAllocations.subscriptionId, sub.id), isNotNull(paymentEvents.confirmedAt)))
       .orderBy(paymentEvents.confirmedAt, paymentEvents.id, paymentAllocations.createdAt, paymentAllocations.id);
+    return this.readModel(sub, now, { plans, schedule, rows });
+  }
+  private readModel(sub: Subscription, now: Date, { plans, schedule, rows }: FinanceReadData): FinanceDetail {
+    const itemMap = new Map(schedule.map(({ item }) => [item.id, item]));
     const events = new Map<string, FinancePaymentEvent>();
     for (const { event, allocation } of rows) {
       const eventType = financeEventTypes.find(t => t === event.eventType), method = financePaymentMethods.find(m => m === event.paymentMethod);
@@ -116,6 +124,18 @@ export class DrizzleFinanceRepository implements FinanceRepository {
   async readInTransaction(tx: Tx, subscriptionId: string) {
     const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, subscriptionId));
     return sub ? this.read(tx, sub, this.clock()) : null;
+  }
+  /** Dashboard snapshot: the same ledger invariants, with three batched reads. */
+  async readManyInTransaction(tx: Tx, owners: readonly Subscription[], now: Date): Promise<FinanceDetail[]> {
+    if (!owners.length) return [];
+    const ids = owners.map(sub => sub.id);
+    const plans = await tx.select().from(paymentPlans).where(inArray(paymentPlans.subscriptionId, ids)).orderBy(paymentPlans.createdAt, paymentPlans.id);
+    const schedule = await tx.select({ item: installments, subscriptionId: paymentPlans.subscriptionId }).from(installments).innerJoin(paymentPlans, eq(paymentPlans.id, installments.paymentPlanId))
+      .where(inArray(paymentPlans.subscriptionId, ids)).orderBy(installments.dueDate, installments.sequenceNumber, installments.id);
+    const rows = await tx.select({ allocation: paymentAllocations, event: paymentEvents }).from(paymentAllocations).innerJoin(paymentEvents, eq(paymentEvents.id, paymentAllocations.paymentEventId))
+      .where(and(inArray(paymentAllocations.subscriptionId, ids), isNotNull(paymentEvents.confirmedAt)))
+      .orderBy(paymentEvents.confirmedAt, paymentEvents.id, paymentAllocations.createdAt, paymentAllocations.id);
+    return owners.map(sub => this.readModel(sub, now, { plans: plans.filter(plan => plan.subscriptionId === sub.id), schedule: schedule.filter(row => row.subscriptionId === sub.id), rows: rows.filter(row => row.allocation.subscriptionId === sub.id) }));
   }
   // Proof review supplies the outer atomic boundary for payment mutations.
   recordPaymentInTransaction(tx: Tx, subscriptionId: string, command: Extract<FinanceCommand, { action: "record" }>, actor: FinanceActor) {

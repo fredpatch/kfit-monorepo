@@ -11,14 +11,25 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
 Active slice      S7.1 — Core dashboard KPIs and operational alert workspaces
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Last validated    Sprint 6 — closed 2026-10-23
-Next action       IDE Implementer: resume S7.1 with cadence-history amendment; stop before S7.2
+Workflow state    VALIDATED
+Last validated    S7.1 — Fred accepted 2026-10-23
+Next action       Commit/push S7.1 and closure notes as authorized; S7.2 requires a separate Gate 1
 
-UI refonte        UX-1 → UX-9b validated/pushed
+UI refonte        UX-1 → UX-9b pushed; UX-9c validated with S7.1
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
 UX next           close UX-10 locally, then UX-11
 ```
+
+## S7.1 execution evidence — 2026-10-23
+
+- Delivered admin-only read-only analytics and alerts, eight weekly KPI points/deltas, Libreville weekly/monthly request buckets, cumulative submitted-cohort funnel, distinct authoritative XAF finance summaries and owner-workspace deep links. Existing Today/agenda business semantics remain unchanged. French UX-9c replaces the placeholder chart and adds gap-aware sparklines, finance and separate operational alerts; the greeting remains `Bonjour`.
+- Fred approved prospective resolved cadence history after the independent feasibility blocker. Approved preflight found 8 subscriptions, 2 applicable legacy subscriptions, 0 overrides, 4 policies, no invalid/duplicate sources and no history. Separately approved Drizzle generation/application of `0013_orange_metal_master.sql` adds one history table, RESTRICT subscription FK, source/value/range checks, one-open index, lookup index and the approved btree_gist/GiST overlap guard. Root/server environment targets were verified as localhost:5433/kfit_dev without printing secrets.
+- Separately approved guarded initialization created exactly 2 legacy rows at the actual execution timestamp; no earlier cadence was invented. Override, activation/resumption, renewal, conversion and catalogue-seed changes capture resolved source/value in the source transaction. Cadence writers share a transaction advisory fence before owner row locks. Unchanged resolution creates no extra transition; unknown historical cadence produces unavailable/null and no delta.
+- Fred explicitly chose cumulative funnel reach: qualification/conversion implies earlier stages even without a recorded contact attempt. Finance reuses S6.1's existing read model through batched reads; no payment mutation behavior or S6 tests changed.
+- Agent-run typecheck/build/db:check/diff checks passed. Unit/HTTP/shared: **523/523 server + 56/56 shared**, zero skips. Latest PostgreSQL: **541/542 passed, 1 failed, zero skips**; all **35 new S7.1 cases passed** (17 cadence-history + 18 dashboard). The full suite remains failed: the unchanged payment-proof allocation-order assertion expects [8000,12000] but receives [12000,8000]. Existing equal-timestamp ordering falls back to UUID. Three actual runs reached the loop breaker; no assertion was weakened or further retry performed. An intermediate invocation stopped at compilation before DB tests and supplies no PostgreSQL evidence. The two new Sunday-fixture errors were corrected to the exact Monday boundary with assertions unchanged before the latest run.
+- Independent Reviewer: **REVIEW PASSED WITH NOTES**, no S7.1 blocker/major/minor. Independent QA: **QA PASSED WITH LIMITATIONS**, with fresh unit/typecheck/schema/diff checks and inspection of PostgreSQL/build evidence. Browser tools were unavailable to agents. Actual catalogue-seed execution/races with override or activation were inspected but not directly runtime-tested; helper transactions and database overlap concurrency were tested.
+- Fred subsequently confirmed **"All green"**, accepted Gate 2, and explicitly authorized documentation, commit and push. This records developer-reported acceptance separately from the measured agent failures/limitations; no additional per-check browser/DBeaver execution or full PostgreSQL pass is invented.
+- No dependency/lockfile changes, notification persistence, S7.2 implementation, Sprint 7 closure or deployment. S7.2's validation prerequisite is satisfied, but its own plan/Gate 1 is still required.
 
 ## Sprint 6 objective
 
@@ -131,23 +142,24 @@ Before production:
 
 ```text
 Branch            main
-Sprint            6
-Slice             S6.4
-Workflow state    CLOSED
-Validated         Sprint 5, S6.1, S6.2 and S6.3
-Approved goal     One immutable numbered receipt per confirmed payment_received; secure sharing; explicit full-correction void
-Done              Preflight, generated/applied migration 0012, contracts/server/PDF/sharing, French client, automated checks
-Pending           Authorized publication of a38901a and closure notes; separate Sprint 6 closure decision
-Validation        typecheck/build/schema passed; server 470/470, shared 55/55, PostgreSQL 507/507; real PDF/files preflights passed
-Acceptance        S6.4 detailed approved request in sprint-6.md
-Files/layers      shared/receipts; server/receipts/schema/internal read-only finance participation; client/receipts/Finance/App/proxy
-Human acceptance  Fred confirmed S6.4 browser and database checks green on 2026-10-23
-Rules             Explicit issuance only; snapshot historical source position; full-correction-only void; no money/lifecycle changes
-Risks             PDF/DB compensation, deterministic finance/counter locks, historical ordering, token usage
-Assumptions       Ambiguous source confirmation timestamp rejects rather than inventing historical balance
-Next action       Push as authorized; await separate Sprint 6 closure decision; no Sprint 7 implementation
-UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
-Out of scope      Invoices, refunds, credit notes, tax engine, provider APIs, automated delivery, exports, bulk issue, Sprint 7
+Sprint            7
+Slice             S7.1
+Workflow state    VALIDATED
+Validated         Sprint 6 closed; S7.1 accepted by Fred on 2026-10-23
+Approved goal     Historical dashboard analytics and derived alerts; approved prospective cadence-history amendment
+Done              Migration 0013, prospective two-row initialization, atomic cadence writers, analytics/alerts, French UX-9c, Reviewer and QA
+Pending           Authorized commit/push and commit-hash sync; separate S7.2 Gate 1
+Validation        typecheck/build/schema/diff passed; server 523/523, shared 56/56; PostgreSQL 541/542, all 35 new cases passed
+Acceptance        sprint-7.md S7.1 Gate 1 and cadence-history amendment; Fred's cumulative-funnel decision
+Files/layers      shared/dashboard; server/dashboard/cadence/schema/seed/finance read model; client/TodayPage/charts/API/proxy
+Human acceptance  Fred confirmed "All green" and authorized docs/commit/push
+Rules             No invented legacy cadence, gap/null semantics, owner finance truth, cumulative cohort, admin GET-only endpoints
+Risks             Existing payment-proof ordering assertion still fails; actual catalogue-seed concurrency not runtime-tested
+Not validated     No agent browser/mobile/keyboard run; no separately observed human per-check counts
+Assumptions       No new business rule; accepted limitations remain documented
+Next action       Publish as authorized; await a separately approved S7.2 plan
+UI state          UX-9c accepted; UX-10 local validation remains separately pending
+Out of scope      S7.2 notifications/email, retention, backup/hardening, Sprint 8/V1.1 and deployment
 ```
 
 ### S6.4 Fred Gate 2 checklist (after Reviewer and QA)

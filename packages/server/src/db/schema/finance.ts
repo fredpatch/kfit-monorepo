@@ -139,7 +139,11 @@ export const receipts = pgTable("receipts", {
   customerId: uuid("customer_id").notNull().references(() => customers.id, { onDelete: "restrict" }),
   paymentEventId: uuid("payment_event_id").notNull().references(() => paymentEvents.id, { onDelete: "restrict" }),
   issuedAt: timestamp("issued_at", { withTimezone: true }).defaultNow().notNull(),
-  pdfDocumentId: uuid("pdf_document_id"),
+  pdfDocumentId: uuid("pdf_document_id").notNull().references(() => documents.id, { onDelete: "restrict" }),
+  snapshotJson: jsonb("snapshot_json").notNull(),
   voidedAt: timestamp("voided_at", { withTimezone: true }),
   voidReason: text("void_reason"),
-}, (t) => [uniqueIndex("receipts_number_uq").on(t.receiptNumber), index("receipts_payment_idx").on(t.paymentEventId)]);
+}, (t) => [uniqueIndex("receipts_number_uq").on(t.receiptNumber), index("receipts_payment_idx").on(t.paymentEventId),
+  uniqueIndex("receipts_payment_event_uq").on(t.paymentEventId),
+  check("receipts_void_reason_valid", sql`(${t.voidedAt} IS NULL AND ${t.voidReason} IS NULL) OR (${t.voidedAt} IS NOT NULL AND ${t.voidReason} IS NOT NULL AND length(btrim(${t.voidReason})) > 0)`),
+]);

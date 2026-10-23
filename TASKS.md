@@ -11,9 +11,9 @@ Sprint 6 S6.1, S6.2 and S6.3 are validated and closed on `main`. The former `spr
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
 Active slice      S6.4 — Sequential payment receipts and secure sharing preparation
-Workflow state    APPROVED_FOR_IMPLEMENTATION
-Last validated    S6.3 — 2026-10-22
-Next action       IDE Implementer: implement S6.4 server-first only; stop before next sprint
+Workflow state    VALIDATED
+Last validated    S6.4 — 2026-10-23
+Next action       Authorized S6.4 commit and push; Sprint 6 closure remains a separate Fred decision
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -29,9 +29,26 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED, Fred validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED, Fred validated 2026-10-22; implementation commit `9fe7e1b`.
 3. S6.3 — Customer payment-proof upload and structured coach review workflow — CLOSED, Fred validated 2026-10-22; implementation commit `8edebc7`.
-4. S6.4 — Sequential payment receipts and secure sharing preparation — APPROVED_FOR_IMPLEMENTATION.
+4. S6.4 — Sequential payment receipts and secure sharing preparation — VALIDATED by Fred on 2026-10-23; commit/push authorized.
 
 Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation commit `1050fcb` is locally validated end-to-end by Fred, including browser and DBeaver Gate 2. S6.1 is closed. Fred's pasted S6.2 request explicitly approves implementation on main; the connected backlog confirms Gate 1. The detailed request is appended to the local sprint spec.
+
+### S6.4 execution evidence — 2026-10-22
+
+- Fred's detailed S6.4 request authorizes implementation on main and independent Reviewer then QA. Request appended to sprint-6.md. Clean tree at entry; baseline typecheck passed. S6.3 is validated/closed; no Sprint 7 work.
+- Relevant API-contract/database-safety/security skills inspected. Existing finance/quotes/proofs/private-document infrastructure traced. Notion Concurrent Sequential Numbering, Historical Business Snapshot, Business Document PDF Generation, Secure External Document Sharing, Hard Commit Point and Atomic Business Operation mechanisms inspected; reuse with explicit issuance and immutable evidence.
+- Approved read-only preflight:receipts passed against root .env guarded localhost:5433/kfit_dev: zero receipts, duplicate/invalid references, receipt artifacts/counters/tokens. No backfill required. Fred approved generation and application of 0012_spooky_spiral.sql: required snapshot/PDF, RESTRICT document FK, unique payment and void-reason consistency only. Generated SQL inspected; migration applied against verified server .env localhost:5433/kfit_dev. Sandbox EPERM blocked the first generator subprocess; approved generation retried outside sandbox. Preserve snapshots/numbering/PDFs/void evidence before any rollback after use. No dependencies/lockfile changes.
+- Historical balance rule: sum authoritative confirmed history strictly before the source confirmation plus that source payment, never today's remaining balance. If multiple events share the source confirmation timestamp, reject issuance as RECEIPT_ISSUE_CONFLICT because the existing ledger cannot establish true order. Snapshot records confirmed-position-v1; current correction state remains separate. This conservative deterministic rule follows the detailed spec's historical-reconstruction requirement; regression coverage required.
+- Metadata does not consume tokens; successful PDF reads consume one use, following the existing document convention (default three uses, explicit bounded maxUses). Receipt-owned immutable versions cannot mutate/share through generic document routes.
+- Shared contracts, receipt repository/service/controller/nine routes and deterministic French PDF renderer implemented. Read-only S6.1 transaction entry reuses authoritative finance validation/current correction state without changing payment mutations. Same finance lock order protects issue/correction; void locks receipt first, then finance scope. No automatic receipt issuance in manual payment/proof confirmation. First unit/HTTP run passed 470 server + 55 shared including real Chromium PDF determinism. New PostgreSQL fixtures initially exposed a concrete Buffer return type mismatch before DB execution; corrected adapter copies bytes to an owned Buffer. Final compilation/unit rerun pending; no PostgreSQL invocation yet.
+- Subsequent compilation/unit run passed 470/470 server + 55/55 shared. Added 33 server unit/HTTP and 2 shared tests. Approved PostgreSQL invocation on 2026-10-23 passed 507/507, zero failures/skips, including 40 receipt cases: unique same/different-payment issuance, counter/render/scan/storage/audit rollback, immutable identity/PDF/snapshot, historical prefix and ambiguous-timestamp rejection, token limits, correction/void races, private document ownership and lifecycle independence. PostgreSQL artifacts are deterministic test adapters, not a claim of real antivirus/render/storage in that suite.
+- Separately approved real preflight:pdf passed (PDF signature/size, four-page output, local French/branding assets); preflight:files passed (private storage, SHA/size/signature/opaque naming, clean ClamAV OK, EICAR FOUND, temporary cleanup). Endpoints/env verified local before execution. These do not substitute for combined browser-to-receipt-renderer/ClamAV/storage/DB acceptance.
+- French Finance integration includes issue buttons/receipt links on payment_received history rows, Reçus section, private PDF download, temporary share/revoke and eligible-only explicit void with private reason. Public /recu/:token shows frozen payment facts and current correction state, prominent ANNULÉ for voided receipts, original historical PDF download. Existing components, responsive classes and focus patterns reused; no redesign/dependencies.
+- Final all-package typecheck and db:check passed; production build and static diff inspection complete before review handoff. Independent Reviewer then QA are required by the approved S6.4 execution order. Browser tooling unavailable: live/mobile/keyboard/console/network checks remain NOT VALIDATED until Fred/QA can execute them. No human acceptance, validated changelog, commit/push, Sprint 6 closure or Sprint 7 work.
+- Independent Reviewer on 2026-10-23 initially requested one MINOR fix: PDF error responses were Blobs and bypassed typed French messages. Receipt-only API rejection handling now decodes bounded JSON with a non-null/string-error shape guard; malformed payloads fall back safely and successful binaries are unchanged. Re-review returned REVIEW PASSED WITH NOTES, no unresolved BLOCKER/MAJOR/MINOR. Reviewer inspected actual tracked/untracked code, schema/generated SQL, consumers and assertions/logs; git diff --check passed. No DB/preflight rerun or human acceptance claimed. Browser/mobile/keyboard, focus after successful issuance and combined real render/scan/storage/download remain QA/Fred checks. Workflow advanced to AWAITING_QA.
+- Independent QA on 2026-10-23 returned QA PASSED WITH LIMITATIONS, no confirmed feature failure/regression. Fresh all-workspace typecheck passed; fresh npm test passed 470/470 server + 55/55 shared, zero failures/skips; fresh git diff --check passed with existing LF-to-CRLF advisories. QA mapped all 14 shared/unit/HTTP and 31 PostgreSQL criteria to actual assertions and the prior 507/507 PostgreSQL log (40 receipt cases), distinguishing inspected evidence from fresh executions. Prior build/schema/real PDF/files preflights inspected, not rerun. No source/test/doc edits, dev servers or DB/preflight/container/seed commands by QA. Browser tools unavailable: live forms/downloads, mobile/keyboard/focus after issuance, console/network and combined renderer/ClamAV/storage/DB path remain NOT VALIDATED. State is AWAITING_HUMAN_VALIDATION; no Fred acceptance, validated changelog, commit/push, Sprint 6 closure or Sprint 7 claimed.
+
+- Fred subsequently confirmed browser and database checks "all green" on 2026-10-23 and explicitly authorized commit/push. S6.4 Gate 2 is accepted on developer-reported evidence, separate from the agent command counts above. No additional per-check runtime claims are invented. Sprint 6 closure and Sprint 7 implementation remain separately gated.
 
 ### S6.3 execution evidence — 2026-10-22
 
@@ -115,24 +132,34 @@ Before production:
 Branch            main
 Sprint            6
 Slice             S6.4
-Workflow state    PLANNING / GATE_1_PENDING
+Workflow state    VALIDATED
 Validated         Sprint 5, S6.1, S6.2 and S6.3
-Approved goal     Secure proof evidence/upload/review; authoritative payments only through S6.1 review transaction
-Done              Contracts, generated/applied migration 0011, server, French client, automated checks, static inspection
-Pending           S6.4 planning / Gate 1 only
-Validation        typecheck/build/db:check passed; server 437/437, shared 53/53, PostgreSQL 467/467; real files preflight passed
-Acceptance        S6.3 detailed request and exact-full/positive-partial clarification in sprint-6.md
-Files/layers      shared/payment-proofs; server/payment-proofs/schema/finance internal transaction entry; client/payment-proofs/Finance/App/proxy
-Human acceptance  S6.3 browser + DBeaver Gate 2 confirmed green by Fred
-Rules             Evidence is not money; full equals claim; partial positive/lower; no lifecycle mutation/public file download
-Risks             File/DB cleanup compensation, shared finance locks, private-note separation, one active replacement
-Assumptions       No new business assumptions; exact-full/positive-partial rule explicitly approved by Fred
-Next action       Planner: prepare S6.4 Gate 1; no implementation yet
+Approved goal     One immutable numbered receipt per confirmed payment_received; secure sharing; explicit full-correction void
+Done              Preflight, generated/applied migration 0012, contracts/server/PDF/sharing, French client, automated checks
+Pending           Authorized S6.4 commit and push
+Validation        typecheck/build/schema passed; server 470/470, shared 55/55, PostgreSQL 507/507; real PDF/files preflights passed
+Acceptance        S6.4 detailed approved request in sprint-6.md
+Files/layers      shared/receipts; server/receipts/schema/internal read-only finance participation; client/receipts/Finance/App/proxy
+Human acceptance  Fred confirmed S6.4 browser and database checks green on 2026-10-23
+Rules             Explicit issuance only; snapshot historical source position; full-correction-only void; no money/lifecycle changes
+Risks             PDF/DB compensation, deterministic finance/counter locks, historical ordering, token usage
+Assumptions       Ambiguous source confirmation timestamp rejects rather than inventing historical balance
+Next action       Authorized S6.4 commit and push; no Sprint 6 closure or Sprint 7 implementation
 UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
-Out of scope      S6.4+, receipts, refunds, OCR/provider APIs, notifications, finance analytics and Sprint 7
+Out of scope      Invoices, refunds, credit notes, tax engine, provider APIs, automated delivery, exports, bulk issue, Sprint 7
 ```
 
-### S6.3 Fred Gate 2 checklist (after Reviewer and QA)
+### S6.4 Fred Gate 2 checklist (after Reviewer and QA)
+
+1. Verify server .env targets localhost:5433/kfit_dev and the scanner endpoint is local. From root run npm run typecheck, npm test, npm run build, npm run db:check, npm run test:integration, npm run preflight:pdf and npm run preflight:files. Current agent counts: 470 server, 55 shared, 507 PostgreSQL. Migration 0012_spooky_spiral.sql is already applied locally; no reset/reapplication requested. Agent ask-tier reruns still need new per-invocation approval.
+2. In an existing synthetic subscription Finance area, record a confirmed payment if needed. No receipt is issued automatically. Select Émettre le reçu on that payment and confirm. Expect one REC-YYYY-NNNN, one private PDF/document and frozen original payment/allocation/balance facts. Repeat the issue request: same receipt/number, no additional PDF/counter increment. No issue action for correction events.
+3. Download privately; check French branding, FCFA amounts, dates in Libreville, allocation breakdown and historical balance after the source payment. Issue for an older payment after a newer one: historical balance must exclude the newer one. Changing customer profile or later finance history must not change the snapshot/original PDF.
+4. Share with explicit expiry/use limit and open /recu/<token> without admin cookies. Metadata does not consume a use; each successful PDF download consumes one. Verify expiry, revocation, exhaustion, errors and rate limiting. No raw bearer in stored rows/audits or internal customer/payment IDs/references/reasons in public metadata.
+5. Partially correct the source payment: receipt stays issued, current correction/effective amount changes, void denied. Fully correct it: explicitly Annuler le reçu with nonblank private reason. Number/snapshot/PDF/payment/subscription stay preserved; one void audit/transition. Valid public link shows ANNULÉ and the corrected-payment explanation while serving the original PDF. Reissue never creates another receipt.
+6. DBeaver: inspect receipts, business_document_counters, documents/document_versions, payment_events/allocations, secure_access_tokens, external_access_events and audit_events for synthetic IDs. Check unique payment_event_id/receipt_number, exact customer/scope linkage, ownerType=receipt/ownerId=receipt.id/documentType=payment_receipt, clean immutable v1 with opaque key/SHA/size, transactional number/counter/audit and private voidReason. Generic metadata must exclude customer identity, external reference, bearer and reason. Subscription lifecycle must stay unchanged. Do not modify production rows or reset the database.
+7. Browser: narrow/mobile widths, keyboard tab order, confirmation/cancel focus, loading/pending/error/retry states, PDF downloads, console/network and combined real receipt renderer/scanner/storage/DB path. These remain NOT VALIDATED by agent source inspection. Report Gate 2 explicitly; do not close Sprint 6 or start Sprint 7 automatically.
+
+### S6.3 Fred Gate 2 checklist (historical)
 
 Commands from repository root, with local PostgreSQL/ClamAV available and server `.env` verified against localhost:5433/kfit_dev:
 

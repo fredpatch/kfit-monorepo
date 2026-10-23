@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "preflight:receipts": "node ./scripts/preflight/receipts.mjs",
     "preflight:finance": "node ./scripts/preflight/finance.mjs",
     "preflight:quotes": "node ./scripts/preflight/quotes.mjs",
     "preflight:payment-proofs": "node ./scripts/preflight/payment-proofs.mjs",

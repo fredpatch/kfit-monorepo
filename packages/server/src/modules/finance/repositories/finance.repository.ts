@@ -112,7 +112,12 @@ export class DrizzleFinanceRepository implements FinanceRepository {
       throw error;
     }
   }
-  // Internal transaction participation: proof review supplies the outer atomic boundary.
+  // Receipt issuance supplies its own transaction and shares this authoritative read model.
+  async readInTransaction(tx: Tx, subscriptionId: string) {
+    const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, subscriptionId));
+    return sub ? this.read(tx, sub, this.clock()) : null;
+  }
+  // Proof review supplies the outer atomic boundary for payment mutations.
   recordPaymentInTransaction(tx: Tx, subscriptionId: string, command: Extract<FinanceCommand, { action: "record" }>, actor: FinanceActor) {
     return this.executeMutation(tx, subscriptionId, command, actor);
   }

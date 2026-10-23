@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
+    "preflight:receipts": "npm run preflight:receipts --workspace @kfit/server",
     "preflight:finance": "npm run preflight:finance --workspace @kfit/server",
     "preflight:quotes": "npm run preflight:quotes --workspace @kfit/server",
     "preflight:payment-proofs": "npm run preflight:payment-proofs --workspace @kfit/server",

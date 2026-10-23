@@ -20,3 +20,4 @@ export * from "./documents/contracts.js";
 export * from "./finance/contracts.js";
 export * from "./quotes/contracts.js";
 export * from "./payment-proofs/contracts.js";
+export * from "./receipts/contracts.js";

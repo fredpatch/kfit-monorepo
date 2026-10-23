@@ -1,4 +1,6 @@
 import express, { type Express } from "express";
+import type { ReceiptsController } from "./modules/receipts/controllers/receipts.controller.js";
+import { createExpressReceiptsRouter } from "./modules/receipts/routes/express-receipts.router.js";
 import type { PaymentProofsController } from "./modules/payment-proofs/controllers/payment-proofs.controller.js";
 import { createExpressPaymentProofsRouter } from "./modules/payment-proofs/routes/express-payment-proofs.router.js";
 import type { QuotesController } from "./modules/quotes/controllers/quotes.controller.js";
@@ -37,6 +39,7 @@ import type { QuestionnaireController } from "./modules/questionnaires/controlle
 import { createExpressQuestionnaireRouter } from "./modules/questionnaires/routes/express-questionnaire.router.js";
 
 export type ServerAppDeps = {
+  receiptsController?: ReceiptsController;
   paymentProofsController?: PaymentProofsController;
   quotesController?: QuotesController;
   financeController?: FinanceController;
@@ -111,5 +114,6 @@ export function createServerApp(deps: ServerAppDeps): Express {
   if (deps.financeController) app.use(createExpressFinanceRouter({ controller: deps.financeController, resolveSession: deps.resolveAuthSession }));
   if (deps.quotesController) app.use(createExpressQuotesRouter({ controller: deps.quotesController, resolveSession: deps.resolveAuthSession }));
   if (deps.paymentProofsController) app.use(createExpressPaymentProofsRouter({ controller: deps.paymentProofsController, resolveSession: deps.resolveAuthSession }));
+  if (deps.receiptsController) app.use(createExpressReceiptsRouter({ controller: deps.receiptsController, resolveSession: deps.resolveAuthSession }));
   return app;
 }

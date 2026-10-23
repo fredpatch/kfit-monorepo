@@ -2,6 +2,18 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-23 — Sprint 6.4 sequential receipts and secure sharing
+
+- Fred confirmed browser and database checks all green and explicitly authorized commit/push.
+- Added explicit receipt issuance for authoritative confirmed payment_received events, with one receipt per payment enforced by PostgreSQL uniqueness and locked annual REC-YYYY-NNNN numbering.
+- Frozen historical snapshots and deterministic French PDFs preserve source payment/allocation facts and balance after that payment. Ambiguous source confirmation timestamps reject safely rather than invent historical ordering.
+- Private scanned immutable PDF storage, receipt ownership, structural audit and number allocation commit atomically; failures compensate finalized files. Payment entry and proof confirmation remain independent of PDF infrastructure.
+- Added hash-only scoped temporary download links, expiry/revocation/use limits, non-consuming metadata and access audits. Current correction state remains separate from immutable historical evidence.
+- Explicit void requires full source-payment correction and a private reason; number/PDF remain preserved, and valid public links show ANNULÉ while retaining the original PDF.
+- French Finance receipt actions/section and public /recu/:token reuse existing components. Reviewed binary-error decoding preserves typed French failures without changing successful PDF downloads.
+- Approved migration 0012_spooky_spiral.sql was generated/applied after a zero-evidence preflight; no backfill required. Preserve snapshot/number/PDF/void evidence before rollback after use.
+- Agent evidence: typecheck/build/schema/diff passed; 470/470 server, 55/55 shared, 507/507 PostgreSQL including 40 receipt cases; real PDF and ClamAV clean/EICAR preflights passed. Independent Reviewer passed with notes; QA passed with limitations before Fred acceptance. No dependency/lockfile changes. Sprint 6 closure remains a separate decision.
+
 ## 2026-10-22 — Sprint 6.3 secure payment proofs and coach review
 
 - Implementation commit: `8edebc7` — `feat(payment-proofs): add secure upload and coach review`.

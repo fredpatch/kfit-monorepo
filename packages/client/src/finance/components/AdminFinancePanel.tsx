@@ -8,6 +8,7 @@ import { EmptyState } from "../../components/ui/empty-state.js";
 import { dateTimeFr, fromLocalInput, moneyXaf, toLocalInput } from "../../lib/format.js";
 import { financeApi, financeErrorMessage } from "../api/finance-api.js";
 import { AdminPaymentProofsPanel } from "../../payment-proofs/components/AdminPaymentProofsPanel.js";
+import { AdminReceiptsPanel, ReceiptPaymentAction } from "../../receipts/components/AdminReceiptsPanel.js";
 
 const methods: Record<FinancePaymentMethod, string> = { cash: "Espèces", bank_transfer: "Virement bancaire", mobile_money: "Mobile Money" };
 const planStatuses: Record<FinancePlanStatus, string> = { draft: "Brouillon", active: "Actif", superseded: "Remplacé", settled: "Soldé", cancelled: "Annulé" };
@@ -67,7 +68,9 @@ export function AdminFinancePanel({ subscriptionId }: { subscriptionId: string }
     <section className="space-y-3"><h3 className="font-bold">Historique des paiements</h3>{view.paymentHistory.length === 0 ? <p className="text-sm text-muted-foreground">Aucun paiement enregistré.</p> : <ol className="space-y-3">{view.paymentHistory.map(payment => <li key={payment.id} className="rounded-xl border border-border bg-card p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-bold">{payment.eventType === "payment_received" ? "Paiement confirmé" : "Correction de paiement"} · {moneyXaf(payment.amountXaf)}</p><p className="text-sm text-muted-foreground">{dateTimeFr(payment.occurredAt)} · {methods[payment.paymentMethod]}</p></div>{payment.correctableXaf > 0 && <Button variant="secondary" size="sm" disabled={busy} onClick={event => open({ kind: "correct", id: payment.id, max: payment.correctableXaf }, event.currentTarget)}>Corriger un paiement</Button>}</div>
       <p className="mt-2 text-xs text-muted-foreground">Confirmation : {dateTimeFr(payment.confirmedAt)}</p>{payment.externalReference && <p className="mt-2 break-all text-sm">Référence externe : {payment.externalReference}</p>}{payment.correctionOfEventId && <p className="mt-2 break-all text-xs text-muted-foreground">Correction du paiement {payment.correctionOfEventId}. Le paiement initial reste conservé.</p>}
       <details className="mt-3 text-sm"><summary className="cursor-pointer font-semibold">Répartition enregistrée</summary><ul className="mt-2 space-y-1">{payment.allocations.map(allocation => <li key={allocation.id} className="break-all">{moneyXaf(allocation.amountXaf)} · échéance {view.plans.flatMap(plan => plan.installments).find(item => item.id === allocation.installmentId)?.sequenceNumber ?? "historique"}{allocation.paymentPlanId !== active?.id ? " · échéancier historique" : ""}</li>)}</ul></details>
+      <ReceiptPaymentAction subscriptionId={subscriptionId} payment={payment} />
     </li>)}</ol>}</section>
+    <AdminReceiptsPanel subscriptionId={subscriptionId} />
     <AdminPaymentProofsPanel subscriptionId={subscriptionId} />
     <Dialog open={Boolean(mode)} onOpenChange={open => { if (!open && !busy) setMode(null); }}>
       {mode && <DialogContent title={titles[mode.kind]} description="Montants en XAF entiers. Les opérations sont contrôlées et confirmées par le serveur." className="max-h-[90dvh] max-w-xl overflow-y-auto" onCloseAutoFocus={event => { event.preventDefault(); (opener.current?.isConnected ? opener.current : refreshButton.current)?.focus(); }}>

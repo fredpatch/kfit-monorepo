@@ -1,4 +1,8 @@
 import { createServerApp } from "./app.js";
+import { ReceiptsController } from "./modules/receipts/controllers/receipts.controller.js";
+import { ReceiptsService } from "./modules/receipts/services/receipts.service.js";
+import { DrizzleReceiptsRepository } from "./modules/receipts/repositories/receipts.repository.js";
+import { PuppeteerReceiptRenderer } from "./modules/receipts/services/receipt-pdf.renderer.js";
 import { FinanceController } from "./modules/finance/controllers/finance.controller.js";
 import { PaymentProofsController } from "./modules/payment-proofs/controllers/payment-proofs.controller.js";
 import { PaymentProofsService } from "./modules/payment-proofs/services/payment-proofs.service.js";
@@ -174,7 +178,12 @@ export function createDevelopmentApp() {
   ));
 
   const proofStorage = new PrivateDocumentStorage();
+  const receiptStorage = new PrivateDocumentStorage(), receiptRenderer = new PuppeteerReceiptRenderer();
   return createServerApp({
+    receiptsController: new ReceiptsController(new ReceiptsService(new DrizzleReceiptsRepository(db,
+      { auditHashPepper: authConfig.auditHashPepper, tokenPepper: authConfig.otpPepper }, {
+        render: snapshot => receiptRenderer.render(snapshot), persist: input => receiptStorage.persist(input), read: key => receiptStorage.read(key), remove: key => receiptStorage.remove(key),
+      }))),
     paymentProofsController: new PaymentProofsController(new PaymentProofsService(new DrizzlePaymentProofsRepository(db,
       { auditHashPepper: authConfig.auditHashPepper, tokenPepper: authConfig.otpPepper }, proofStorage), proofStorage)),
     financeController: new FinanceController(new FinanceService(new DrizzleFinanceRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),

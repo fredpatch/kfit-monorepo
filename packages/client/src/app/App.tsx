@@ -12,6 +12,7 @@ import { LegacySubscriptionRedirect, SubscriptionPreparationRoute, SubscriptionR
 const PublicAppointmentPage = lazy(() => import("../appointments/components/PublicAppointmentPage.js").then((m) => ({ default: m.PublicAppointmentPage })));
 const PublicDocumentPage = lazy(() => import("../documents/components/PublicDocumentPage.js").then((m) => ({ default: m.PublicDocumentPage })));
 const PublicQuotePage = lazy(() => import("../quotes/components/PublicQuotePage.js").then((m) => ({ default: m.PublicQuotePage })));
+const PublicReceiptPage = lazy(() => import("../receipts/components/PublicReceiptPage.js").then((m) => ({ default: m.PublicReceiptPage })));
 const PublicPaymentProofPage = lazy(() => import("../payment-proofs/components/PublicPaymentProofPage.js").then((m) => ({ default: m.PublicPaymentProofPage })));
 const CataloguePage = lazy(() => import("../catalogue/components/CataloguePage.js").then((m) => ({ default: m.CataloguePage })));
 const PublicConsentPage = lazy(() => import("../consents/components/PublicConsentPage.js").then((m) => ({ default: m.PublicConsentPage })));
@@ -61,6 +62,7 @@ export function App() {
         <Route path="/appointment" element={<Legacy><PublicAppointmentPage /></Legacy>} />
         <Route path="/document/:token" element={<Suspense fallback={null}><PublicDocumentPage /></Suspense>} />
         <Route path="/devis/:token" element={<Suspense fallback={null}><PublicQuotePage /></Suspense>} />
+        <Route path="/recu/:token" element={<Suspense fallback={null}><PublicReceiptPage /></Suspense>} />
         <Route path="/justificatif/:token" element={<Suspense fallback={null}><PublicPaymentProofPage /></Suspense>} />
         <Route path="/consent" element={<Legacy><PublicConsentPage /></Legacy>} />
         <Route path="/questionnaire" element={<Legacy><PublicQuestionnairePage /></Legacy>} />

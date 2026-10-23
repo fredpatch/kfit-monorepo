@@ -4,6 +4,7 @@
 
 ## 2026-10-23 — Sprint 6.4 sequential receipts and secure sharing
 
+- Implementation commit: `a38901a` — `feat(receipts): add sequential receipts and secure sharing`.
 - Fred confirmed browser and database checks all green and explicitly authorized commit/push.
 - Added explicit receipt issuance for authoritative confirmed payment_received events, with one receipt per payment enforced by PostgreSQL uniqueness and locked annual REC-YYYY-NNNN numbering.
 - Frozen historical snapshots and deterministic French PDFs preserve source payment/allocation facts and balance after that payment. Ambiguous source confirmation timestamps reject safely rather than invent historical ordering.

@@ -5,15 +5,15 @@
 
 ## Now
 
-Sprint 6 S6.1, S6.2 and S6.3 are validated and closed on `main`. The former `sprint-5` branch remains historical.
+Sprint 6 S6.1–S6.4 are validated and closed as individual slices on `main`. Sprint 6 closure remains a separate Fred decision. The former `sprint-5` branch remains historical.
 
 ```text
 Branch            main
 Sprint            6 — Paiements, échéances, devis, reçus et justificatifs
 Active slice      S6.4 — Sequential payment receipts and secure sharing preparation
-Workflow state    VALIDATED
+Workflow state    CLOSED
 Last validated    S6.4 — 2026-10-23
-Next action       Authorized S6.4 commit and push; Sprint 6 closure remains a separate Fred decision
+Next action       Publish authorized S6.4 commits; await separate Sprint 6 closure decision
 
 UI refonte        UX-1 → UX-9b validated/pushed
 UX-10             pushed at e0ae7f1; Fred local Mailpit/browser validation still pending
@@ -29,7 +29,7 @@ Build the authoritative V1 Core finance flow while keeping financial state indep
 1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED, Fred validated 2026-10-22.
 2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED, Fred validated 2026-10-22; implementation commit `9fe7e1b`.
 3. S6.3 — Customer payment-proof upload and structured coach review workflow — CLOSED, Fred validated 2026-10-22; implementation commit `8edebc7`.
-4. S6.4 — Sequential payment receipts and secure sharing preparation — VALIDATED by Fred on 2026-10-23; commit/push authorized.
+4. S6.4 — Sequential payment receipts and secure sharing preparation — CLOSED; Fred validated 2026-10-23; implementation commit `a38901a`.
 
 Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation commit `1050fcb` is locally validated end-to-end by Fred, including browser and DBeaver Gate 2. S6.1 is closed. Fred's pasted S6.2 request explicitly approves implementation on main; the connected backlog confirms Gate 1. The detailed request is appended to the local sprint spec.
 
@@ -49,6 +49,7 @@ Execution source: `exploration-cache/tasks/sprint-6.md`. S6.1 implementation com
 - Independent QA on 2026-10-23 returned QA PASSED WITH LIMITATIONS, no confirmed feature failure/regression. Fresh all-workspace typecheck passed; fresh npm test passed 470/470 server + 55/55 shared, zero failures/skips; fresh git diff --check passed with existing LF-to-CRLF advisories. QA mapped all 14 shared/unit/HTTP and 31 PostgreSQL criteria to actual assertions and the prior 507/507 PostgreSQL log (40 receipt cases), distinguishing inspected evidence from fresh executions. Prior build/schema/real PDF/files preflights inspected, not rerun. No source/test/doc edits, dev servers or DB/preflight/container/seed commands by QA. Browser tools unavailable: live forms/downloads, mobile/keyboard/focus after issuance, console/network and combined renderer/ClamAV/storage/DB path remain NOT VALIDATED. State is AWAITING_HUMAN_VALIDATION; no Fred acceptance, validated changelog, commit/push, Sprint 6 closure or Sprint 7 claimed.
 
 - Fred subsequently confirmed browser and database checks "all green" on 2026-10-23 and explicitly authorized commit/push. S6.4 Gate 2 is accepted on developer-reported evidence, separate from the agent command counts above. No additional per-check runtime claims are invented. Sprint 6 closure and Sprint 7 implementation remain separately gated.
+- Gate 3 implementation committed as `a38901a` — `feat(receipts): add sequential receipts and secure sharing`. S6.4 is closed after Fred validation; this documentation update records the implementation hash. Publication is explicitly authorized. This closes only S6.4, not Sprint 6; no Sprint 7 work is authorized.
 
 ### S6.3 execution evidence — 2026-10-22
 
@@ -132,11 +133,11 @@ Before production:
 Branch            main
 Sprint            6
 Slice             S6.4
-Workflow state    VALIDATED
+Workflow state    CLOSED
 Validated         Sprint 5, S6.1, S6.2 and S6.3
 Approved goal     One immutable numbered receipt per confirmed payment_received; secure sharing; explicit full-correction void
 Done              Preflight, generated/applied migration 0012, contracts/server/PDF/sharing, French client, automated checks
-Pending           Authorized S6.4 commit and push
+Pending           Authorized publication of a38901a and closure notes; separate Sprint 6 closure decision
 Validation        typecheck/build/schema passed; server 470/470, shared 55/55, PostgreSQL 507/507; real PDF/files preflights passed
 Acceptance        S6.4 detailed approved request in sprint-6.md
 Files/layers      shared/receipts; server/receipts/schema/internal read-only finance participation; client/receipts/Finance/App/proxy
@@ -144,7 +145,7 @@ Human acceptance  Fred confirmed S6.4 browser and database checks green on 2026-
 Rules             Explicit issuance only; snapshot historical source position; full-correction-only void; no money/lifecycle changes
 Risks             PDF/DB compensation, deterministic finance/counter locks, historical ordering, token usage
 Assumptions       Ambiguous source confirmation timestamp rejects rather than inventing historical balance
-Next action       Authorized S6.4 commit and push; no Sprint 6 closure or Sprint 7 implementation
+Next action       Push as authorized; await separate Sprint 6 closure decision; no Sprint 7 implementation
 UI state          UX-1→UX-9b validated; UX-10 pushed, Fred local validation pending
 Out of scope      Invoices, refunds, credit notes, tax engine, provider APIs, automated delivery, exports, bulk issue, Sprint 7
 ```

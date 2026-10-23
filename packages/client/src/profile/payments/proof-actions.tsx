@@ -10,6 +10,7 @@ import { StatusPill } from "../../components/ui/status-pill.js";
 import { Dialog, DialogContent } from "../../components/ui/dialog.js";
 import { dateTimeFr, fromLocalInput, moneyXaf, shortDateFr } from "../../lib/format.js";
 import { paymentProofsApi, paymentProofErrorMessage } from "../../payment-proofs/api/payment-proofs-api.js";
+import { focusReturnTarget } from "../../lib/focus.js";
 import { OneTimeLink } from "./OneTimeLink.js";
 import { ProofReviewDialog } from "./ProofReviewDialog.js";
 import { proofStatus } from "./payments-meta.js";
@@ -27,7 +28,7 @@ export function useProofActions(subscriptionId: string, firstOpenInstallment: st
   const [created, setCreated] = useState<{ url: string; meta: string } | null>(null);
   const opener = useRef<HTMLElement | null>(null), inFlight = useRef(false);
 
-  const remember = () => { opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; };
+  const remember = () => { opener.current = focusReturnTarget(); };
   const restoreFocus = (event: Event) => {
     event.preventDefault();
     if (opener.current?.isConnected) opener.current.focus();

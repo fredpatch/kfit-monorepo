@@ -8,6 +8,7 @@ import { Field } from "../../components/ui/field.js";
 import { Dialog, DialogContent } from "../../components/ui/dialog.js";
 import { dateTimeFr, fromLocalInput, moneyXaf } from "../../lib/format.js";
 import { downloadReceipt, receiptErrorMessage, receiptsApi } from "../../receipts/api/receipts-api.js";
+import { focusReturnTarget } from "../../lib/focus.js";
 import { OneTimeLink } from "./OneTimeLink.js";
 
 /** Receipts live on their payment row (board 15a): one official receipt per confirmed payment (S6.3). */
@@ -63,9 +64,10 @@ export function useReceiptActions(subscriptionId: string) {
   const [mode, setMode] = useState<Mode | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null);
   const [expires, setExpires] = useState(""), [maxUses, setMaxUses] = useState("3"), [reason, setReason] = useState("");
   const [created, setCreated] = useState<{ url: string; meta: string } | null>(null);
-  const inFlight = useRef(false);
+  const inFlight = useRef(false), opener = useRef<HTMLElement | null>(null);
 
   function open(kind: Mode["kind"], receipt: Receipt) {
+    opener.current = focusReturnTarget();
     setMode({ kind, receipt });
     setExpires("");
     setMaxUses("3");
@@ -173,6 +175,7 @@ export function useReceiptActions(subscriptionId: string) {
           title={`${titles[mode.kind]} ${current.receiptNumber}`}
           description={mode.kind === "share" ? "Un lien personnel, temporaire et révocable vers le PDF historique." : mode.kind === "void" ? "Possible seulement quand le paiement source est entièrement corrigé." : `${moneyXaf(current.snapshot.amountXaf)} · émis le ${dateTimeFr(current.issuedAt)}`}
           className="max-w-lg"
+          onCloseAutoFocus={(event) => { event.preventDefault(); if (opener.current?.isConnected) opener.current.focus(); }}
         >
           {body}
           {mode.kind === "links" || created ? <div className="flex justify-end"><Button variant="secondary" onClick={close}>Fermer</Button></div> : null}

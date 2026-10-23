@@ -28,7 +28,7 @@ import { AdminPage, LegacyEmbed as Legacy } from "../layout/AdminPage.js";
 /* Charts (Recharts) load only when the Progression tab is opened. */
 const AnalysisTab = lazy(() => import("../../profile/analysis/AnalysisTab.js").then((m) => ({ default: m.AnalysisTab })));
 const ProgressTab = lazy(() => import("../../profile/progress/ProgressTab.js").then((m) => ({ default: m.ProgressTab })));
-const AdminDocumentsPanel = lazy(() => import("../../documents/components/AdminDocumentsPanel.js").then((m) => ({ default: m.AdminDocumentsPanel })));
+const DocumentsTab = lazy(() => import("../../profile/documents/DocumentsTab.js").then((m) => ({ default: m.DocumentsTab })));
 const PaymentsTab = lazy(() => import("../../profile/payments/PaymentsTab.js").then((m) => ({ default: m.PaymentsTab })));
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -264,7 +264,7 @@ export function ClientProfilePage() {
           </TabsContent>
           <TabsContent value="documents">
             <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement des documents…</p>}>
-              <AdminDocumentsPanel key={selected.id} subscriptionId={selected.id} />
+              <DocumentsTab key={selected.id} subscriptionId={selected.id} />
             </Suspense>
           </TabsContent>
           <TabsContent value="paiements">

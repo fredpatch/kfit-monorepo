@@ -8,6 +8,7 @@ import { EmptyState } from "../../components/ui/empty-state.js";
 import { Pill, StatusPill } from "../../components/ui/status-pill.js";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu.js";
 import { cn } from "../../lib/utils.js";
+import { focusReturnTarget } from "../../lib/focus.js";
 import { dateTimeFr, moneyXaf, shortDateFr } from "../../lib/format.js";
 import { financeApi, financeErrorMessage } from "../../finance/api/finance-api.js";
 import { FinanceOperationDialog, type FinanceMode } from "./FinanceOperationDialog.js";
@@ -34,7 +35,7 @@ export function PaymentsTab({ subscriptionId }: { subscriptionId: string }) {
   const receiptActions = useReceiptActions(subscriptionId);
 
   function openFinance(next: FinanceMode) {
-    opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    opener.current = focusReturnTarget();
     setMode(next);
   }
   const restoreFocus = (event: Event) => {

@@ -23,8 +23,8 @@ UX-16             notification-centre boards validated → referenced in sprint-
 UX-12a/12b        all 7 customer token pages on the public shell (4288d46, 57e5613)
 UX-11             landing + request page pushed (bf87713)
 UX-15             « Paiements » + « Documents » pushed (27042a1, f86cdcb)
-UX-14             boards 14a–14e validated; UX-14a Rendez-vous + Suivis tab + Suivis page — diff delivered 2026-10-23
-UX next           UX-14b Préparation + Santé et consentements → UX-14c questionnaire answers (API + view)
+UX-14             UX-14a pushed (56f8454); UX-14b Préparation + Santé et consentements — diff delivered 2026-10-23
+UX next           UX-14c questionnaire answers (server API + view) → UX-13 cleanup
 ```
 
 ## S7.1 — closed 2026-10-23
@@ -198,13 +198,13 @@ Agent reruns of database/preflight commands still require a new per-invocation a
 
 ```text
 Branch            main (Track B runs beside Sprint 7; S7.2 owns the admin shell/header until it lands)
-Step              UX-14a delivered (Rendez-vous, Suivis tab, Suivis page); UX-14b next
+Step              UX-14b delivered (Préparation, Santé et consentements); UX-14c next (backend first)
 Workflow state    AWAITING_HUMAN_VALIDATION (UX-9d, UX-10) · PLANNING (boards)
 Validation done   UX-9d: client tsc + build, browser pass desktop + 390 px on scratch data
 Not validated     Fred local check of UX-9d and UX-10 (Mailpit)
 Pending decisions Alerts vs À traiter duplication; « ton/ta coach » wording; currency label (Refonte UI § Open decisions)
 Risks             Any edit to AdminLayout/header conflicts with S7.2 until it is merged
-Next action       Fred: apply UX-14a, plan one appointment and record one follow-up on real data; Claude: UX-14b
+Next action       Fred: apply UX-14b, waive one item and send one consent link on real data; Claude: UX-14c plan (API + audit + OTP)
 ```
 
 ## Refonte UI — suivi
@@ -246,7 +246,7 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 | UX-11 | 10, 11a | Landing `/` (offers from the public catalogue, family filter, plans, steps, FAQ, CTA) + request page `/demande/:offre`; intake rules unchanged; legacy wrapper removed | — | Delivered — awaiting push; prod blocked by coach onboarding (name/logo/photo) + legal pages | — |
 | UX-12a | 11e–h | Shared public shell (`components/public/PublicShell.tsx`, one no-referrer hook) + /document, /devis, /recu, /justificatif restyled; logic unchanged | — | Pushed | 4288d46 |
 | UX-12b | 11b–d | /questionnaire (one question per screen, health consent step), /consent, /appointment on the public shell; customer-only forms, coach forms untouched (UX-14); appointment times in Libreville; legacy wrapper removed | — | Pushed | 57e5613 |
-| UX-14 | 14a–14e | Legacy admin tabs: Rendez-vous, Suivis, Préparation, Santé et consentements + Suivis page. 14a (diff 1): Rendez-vous tab (Libreville times, schedule sheet with duration suggestion + auto response link, action dialogs), Suivis tab (open actions, history, « rythme » card, record sheet), Suivis page (table, filters, opens the form via `nouveau=suivi`) | — | 14a delivered — awaiting push; 14b Préparation + Santé next; 14c questionnaire answers API + view | — |
+| UX-14 | 14a–14e | Legacy admin tabs: Rendez-vous, Suivis, Préparation, Santé et consentements + Suivis page. 14a (diff 1): Rendez-vous tab (Libreville times, schedule sheet with duration suggestion + auto response link, action dialogs), Suivis tab (open actions, history, « rythme » card, record sheet), Suivis page (table, filters, opens the form via `nouveau=suivi`) | — | 14a pushed (56f8454); 14b delivered — awaiting push (Préparation: banner + progress, checklist, waiver dialog, reservation; Santé: consents, links, coach capture sheet, questionnaire links + coach entry sheet; last legacy admin panels removed); 14c questionnaire answers API + view next | — |
 | UX-15 | 15a–15d | Screens added in S5.5/S6 without a board. 15a: Finance + Devis tabs merged into « Paiements » (summary, proof banner, échéancier « n sur N », payments with receipt column + ⋯, quote card + side sheet, proofs history) + proof review dialog (preview, size, scan, 5 decisions). 15b: Documents tab (versioned list, Partager → link + separate code for sensitive docs, ⋯ add version / download / versions and links / archive / revoke with confirmation, private photos card) | — | 15a pushed (27042a1); 15b delivered — awaiting push | — |
 | UX-16 | 12, 12b, 12c | S7.2 notification centre (bell panel, mobile sheet, Réglages) — board only, implemented inside S7.2 | — | Boards validated 2026-10-23 → S7.2 implementer (`sprint-7.md` § S7.2 UI) | — |
 | UX-13 | — | Cleanup: legacy CSS removal, a11y, reduced motion, mobile pass, full UI recette | — | To do (last) | — |
@@ -267,6 +267,7 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 - [x] UX-11 rules (Fred 2026-10-23): WhatsApp free entry (no auto +241); start « Dès que possible » / date; links from env, legal links hidden; text-only brand + « ta coach »; 4 FAQ answers approved.
 - [x] UX-15 rules (Fred 2026-10-23): Finance + Devis merged into « Paiements »; proof review with inline preview, size and scan result; instalments « n sur N », payments linked to « échéance N ». Old `onglet=finance|devis` links open « Paiements » (client alias, server deep links unchanged).
 - [x] UX-14 rules (Fred 2026-10-23): add « Voir les réponses » (needs a read-only API, UX-14c); the coach types start and end, with a duration suggestion (1 h by default); the appointment response link is created at scheduling and expires at the start; « Enregistrer le suivi » opens the form directly; wording « rythme » / « Revenir au rythme du service ».
+- [x] UX-14c rules (Fred 2026-10-23): viewing questionnaire answers is written to the audit log, requires a fresh OTP, and is refused once the client has withdrawn « Données de santé ».
 - [ ] UX-15a: keep the proof confirm form pre-filled with the client's declaration (current) or require re-typing? — unanswered.
 - [ ] Multi-subscription progress: exclude measurements taken without health consent?
 - [ ] Client test framework (Vitest + Testing Library)?

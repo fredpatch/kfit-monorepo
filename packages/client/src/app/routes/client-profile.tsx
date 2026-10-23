@@ -5,10 +5,8 @@ import { isAxiosError } from "axios";
 import { Mail, MapPin, MessageCircle, Phone, Plus } from "lucide-react";
 import { customerAnalyticsPeriods, type AdminCustomerSubscriptionSummary, type CustomerAnalyticsPeriod } from "@kfit/shared";
 import { customersApi } from "../../customers/api/customers-api.js";
-import { OnboardingPanel, isOnboardingEditable } from "../../onboarding/components/AdminOnboardingPage.js";
+import { isOnboardingEditable } from "../../profile/preparation/editable.js";
 import { OverviewTab } from "../../profile/overview/OverviewTab.js";
-import { AdminConsentPanel } from "../../consents/components/AdminConsentPanel.js";
-import { AdminQuestionnairePanel } from "../../questionnaires/components/AdminQuestionnairePanel.js";
 import { Avatar } from "../../components/ui/avatar.js";
 import { Button } from "../../components/ui/button.js";
 import { EmptyState } from "../../components/ui/empty-state.js";
@@ -21,7 +19,7 @@ import { dateFr } from "../../lib/format.js";
 import { describeStatus, subscriptionStatus } from "../../lib/status-map.js";
 import { familyMeta, familyOfSlug } from "../../lib/families.js";
 import { defaultSubscription, deriveClientStatus } from "../../lib/client-status.js";
-import { AdminPage, LegacyEmbed as Legacy } from "../layout/AdminPage.js";
+import { AdminPage } from "../layout/AdminPage.js";
 
 /* Charts (Recharts) load only when the Progression tab is opened. */
 const AnalysisTab = lazy(() => import("../../profile/analysis/AnalysisTab.js").then((m) => ({ default: m.AnalysisTab })));
@@ -29,6 +27,8 @@ const ProgressTab = lazy(() => import("../../profile/progress/ProgressTab.js").t
 const DocumentsTab = lazy(() => import("../../profile/documents/DocumentsTab.js").then((m) => ({ default: m.DocumentsTab })));
 const AppointmentsTab = lazy(() => import("../../profile/appointments/AppointmentsTab.js").then((m) => ({ default: m.AppointmentsTab })));
 const FollowUpsTab = lazy(() => import("../../profile/follow-ups/FollowUpsTab.js").then((m) => ({ default: m.FollowUpsTab })));
+const PreparationTab = lazy(() => import("../../profile/preparation/PreparationTab.js").then((m) => ({ default: m.PreparationTab })));
+const HealthTab = lazy(() => import("../../profile/health/HealthTab.js").then((m) => ({ default: m.HealthTab })));
 const PaymentsTab = lazy(() => import("../../profile/payments/PaymentsTab.js").then((m) => ({ default: m.PaymentsTab })));
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -258,9 +258,9 @@ export function ClientProfilePage() {
             </Suspense>
           </TabsContent>
           <TabsContent value="preparation">
-            <Legacy>
-              <OnboardingPanel key={selected.id} subscriptionId={selected.id} health={false} />
-            </Legacy>
+            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement de la préparation…</p>}>
+              <PreparationTab key={selected.id} subscriptionId={selected.id} openHealth={() => update({ onglet: "sante" })} />
+            </Suspense>
           </TabsContent>
           <TabsContent value="progression">
             <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement de la progression…</p>}>
@@ -278,10 +278,9 @@ export function ClientProfilePage() {
             </Suspense>
           </TabsContent>
           <TabsContent value="sante">
-            <Legacy>
-              <AdminConsentPanel key={`c-${selected.id}`} subscriptionId={selected.id} editable={isOnboardingEditable(selected.status)} />
-              <AdminQuestionnairePanel key={`q-${selected.id}`} subscriptionId={selected.id} editable={isOnboardingEditable(selected.status)} />
-            </Legacy>
+            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement…</p>}>
+              <HealthTab key={selected.id} subscriptionId={selected.id} editable={isOnboardingEditable(selected.status)} />
+            </Suspense>
           </TabsContent>
           </>}
         </Tabs>

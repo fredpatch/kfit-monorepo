@@ -97,7 +97,8 @@ export class DrizzlePaymentProofsRepository implements PaymentProofsRepository {
           const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, id)); if (!sub) return proofFailure("PAYMENT_PROOF_NOT_FOUND");
           const rows = await tx.select().from(paymentProofs).where(eq(paymentProofs.subscriptionId, id)).orderBy(paymentProofs.submittedAt, paymentProofs.id);
           const links = await tx.select().from(secureAccessTokens).where(and(eq(secureAccessTokens.resourceType, scope.resourceType), eq(secureAccessTokens.action, scope.action), eq(secureAccessTokens.resourceId, id))).orderBy(secureAccessTokens.createdAt);
-          return { ok: true, body: { proofs: await Promise.all(rows.map(p => this.detail(tx, p))), links: links.map(t => this.link(t)) } };
+          const proofs: PaymentProof[] = []; for (const p of rows) proofs.push(await this.detail(tx, p)); // one tx connection: no parallel queries
+          return { ok: true, body: { proofs, links: links.map(t => this.link(t)) } };
         }
         if (c.action === "issue-link") {
           const [parent] = c.supersedesProofId ? await tx.select().from(paymentProofs).where(eq(paymentProofs.id, c.supersedesProofId)).for("update") : [];

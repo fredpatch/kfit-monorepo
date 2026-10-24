@@ -96,7 +96,8 @@ export class DrizzleReceiptsRepository implements ReceiptsRepository {
           const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, id)); if (!sub) return receiptFailure("RECEIPT_NOT_FOUND");
           const rows = await tx.select({ receipt: receipts }).from(receipts).innerJoin(paymentAllocations, eq(paymentAllocations.paymentEventId, receipts.paymentEventId)).where(eq(paymentAllocations.subscriptionId, id)).orderBy(receipts.issuedAt, receipts.id);
           const unique = [...new Map(rows.map(r => [r.receipt.id, r.receipt])).values()];
-          return { ok: true, body: { receipts: await Promise.all(unique.map(r => this.detail(tx, r))) } };
+          const details: Receipt[] = []; for (const r of unique) details.push(await this.detail(tx, r)); // one tx connection: no parallel queries
+          return { ok: true, body: { receipts: details } };
         }
         if (command.action === "issue") {
           const { sub, view, source } = await this.lockFinance(tx, id);

@@ -6,8 +6,11 @@ export type PasswordRecoveryMail = {
   expiresAt: Date;
 };
 
+export type SensitiveActionMail = PasswordRecoveryMail;
+
 export type AuthMailDelivery = {
   sendPasswordRecoveryCode(input: PasswordRecoveryMail): Promise<void>;
+  sendSensitiveActionCode(input: SensitiveActionMail): Promise<void>;
 };
 
 export type SmtpAuthMailConfig = {
@@ -56,6 +59,20 @@ export class NodemailerAuthMailDelivery implements AuthMailDelivery {
         `Code : ${input.code}`,
         `Expiration : ${input.expiresAt.toISOString()}`,
         "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.",
+      ].join("\n\n"),
+    });
+  }
+
+  async sendSensitiveActionCode(input: SensitiveActionMail): Promise<void> {
+    await this.transport.sendMail({
+      from: this.config.from,
+      to: input.to,
+      subject: "K'FIT — Code de confirmation",
+      text: [
+        "Une action sensible a été demandée sur votre compte K'FIT.",
+        `Code : ${input.code}`,
+        `Expiration : ${input.expiresAt.toISOString()}`,
+        "Si vous n'êtes pas à l'origine de cette demande, changez votre mot de passe.",
       ].join("\n\n"),
     });
   }

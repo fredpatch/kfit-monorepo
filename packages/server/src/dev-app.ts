@@ -38,6 +38,8 @@ import {
 } from "./modules/auth/repositories/auth.repositories.js";
 import { loadSmtpAuthMailConfig, NodemailerAuthMailDelivery } from "./modules/auth/services/auth-mail.delivery.js";
 import { InMemoryRecoveryRateLimiter, PasswordRecoveryService } from "./modules/auth/services/password-recovery.service.js";
+import { SensitiveActionOtpService } from "./modules/auth/services/sensitive-action-otp.service.js";
+import { createHttpLogger } from "./logging/http-logger.js";
 import { AccessTokenSessionResolver } from "./modules/auth/services/access-token-session.resolver.js";
 import { AuditService } from "./modules/auth/services/audit.service.js";
 import { AuthRouteService } from "./modules/auth/services/auth-route.service.js";
@@ -113,13 +115,15 @@ export function createDevelopmentApp() {
   /*
    * Password recovery (Sprint 1 service, unchanged) is bound only when SMTP is configured (UX-10, Fred 2026-10-22).
    * Without SMTP_HOST the /auth/recovery/* routes keep answering 501 and the UI shows « Récupération indisponible ».
+   * The sensitive-action OTP (UX-14c) is e-mailed through the same transport; without SMTP its request answers 501.
    */
-  const passwordRecoveryService = process.env.SMTP_HOST
+  const authMail = process.env.SMTP_HOST ? new NodemailerAuthMailDelivery(loadSmtpAuthMailConfig(process.env)) : undefined;
+  const passwordRecoveryService = authMail
     ? new PasswordRecoveryService(
         new DrizzlePasswordRecoveryRepository(db),
         otpChallengeService,
         passwords,
-        new NodemailerAuthMailDelivery(loadSmtpAuthMailConfig(process.env)),
+        authMail,
         audit,
         new InMemoryRecoveryRateLimiter({
           windowMs: authConfig.recoveryRateLimitWindowMs,
@@ -130,12 +134,16 @@ export function createDevelopmentApp() {
         { recoveryTokenSecret: authConfig.recoveryTokenSecret, recoveryGrantTtlMs: authConfig.recoveryGrantTtlMs },
       )
     : undefined;
+  const sensitiveActionOtpService = authMail
+    ? new SensitiveActionOtpService(otpChallengeService, users, authMail, audit)
+    : undefined;
 
   const authController = new AuthController({
     otpChallengeService,
     authRouteService,
     bootstrapService,
     ...(passwordRecoveryService ? { passwordRecoveryService } : {}),
+    ...(sensitiveActionOtpService ? { sensitiveActionOtpService } : {}),
   });
 
   const resolver = new AccessTokenSessionResolver(sessionRepository, {
@@ -192,6 +200,7 @@ export function createDevelopmentApp() {
   const proofStorage = new PrivateDocumentStorage();
   const receiptStorage = new PrivateDocumentStorage(), receiptRenderer = new PuppeteerReceiptRenderer();
   return createServerApp({
+    requestLogger: createHttpLogger(),
     receiptsController: new ReceiptsController(new ReceiptsService(new DrizzleReceiptsRepository(db,
       { auditHashPepper: authConfig.auditHashPepper, tokenPepper: authConfig.otpPepper }, {
         render: snapshot => receiptRenderer.render(snapshot), persist: input => receiptStorage.persist(input), read: key => receiptStorage.read(key), remove: key => receiptStorage.remove(key),

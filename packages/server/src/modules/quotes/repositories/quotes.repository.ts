@@ -112,7 +112,8 @@ export class DrizzleQuotesRepository implements QuotesRepository {
           if (!sub) return quoteFailure("QUOTE_NOT_FOUND");
           if (command.action === "list") {
             const rows = await tx.select().from(quotes).where(eq(quotes.subscriptionId, id)).orderBy(quotes.createdAt, quotes.id);
-            return { ok: true, body: { quotes: await Promise.all(rows.map(q => this.detail(tx, q))), acceptedQuoteVersionId: sub.acceptedQuoteVersionId } };
+            const details: QuoteDetail[] = []; for (const q of rows) details.push(await this.detail(tx, q)); // one tx connection: no parallel queries
+            return { ok: true, body: { quotes: details, acceptedQuoteVersionId: sub.acceptedQuoteVersionId } };
           }
           if (command.draft.validUntil <= this.clock()) return quoteFailure("QUOTE_INVALID_INPUT");
           const [q] = await tx.insert(quotes).values({ subscriptionId: sub.id, customerId: sub.customerId, requestId: sub.sourceRequestId, status: "draft" }).returning();

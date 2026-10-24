@@ -89,7 +89,7 @@ export class PasswordRecoveryService {
     private readonly repository: PasswordRecoveryRepository,
     private readonly otp: Pick<OtpChallengeService, "issue" | "verify">,
     private readonly passwords: Pick<PasswordService, "validate" | "hash">,
-    private readonly mail: AuthMailDelivery,
+    private readonly mail: Pick<AuthMailDelivery, "sendPasswordRecoveryCode">,
     private readonly audit: PasswordRecoveryAudit,
     private readonly rateLimiter: RecoveryRateLimiter,
     private readonly options: PasswordRecoveryServiceOptions,

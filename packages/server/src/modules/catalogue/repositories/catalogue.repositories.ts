@@ -194,21 +194,20 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
       const serviceIds = serviceRows.map((service) => service.id);
       if (serviceIds.length === 0) return { services: [], variants: [], components: [], policies: [], claims: [], waitlist: [] };
       const onboarding = sql<boolean>`${subscriptions.status} = 'onboarding'`;
-      const [variantRows, componentRows, policyRows, claimRows, waitlistRows] = await Promise.all([
-        tx.select().from(serviceVariants)
-          .where(and(inArray(serviceVariants.serviceId, serviceIds), isNull(serviceVariants.archivedAt), ne(serviceVariants.availabilityStatus, "archived")))
-          .orderBy(asc(serviceVariants.sortOrder), asc(serviceVariants.name)),
-        tx.select().from(serviceComponents).where(inArray(serviceComponents.serviceId, serviceIds)),
-        tx.select().from(servicePolicies).where(inArray(servicePolicies.serviceId, serviceIds)),
-        tx.select({ serviceId: subscriptions.serviceId, variantId: subscriptions.variantId, onboarding, count: count() })
-          .from(subscriptions)
-          .where(and(inArray(subscriptions.serviceId, serviceIds), capacityClaimCondition(now)))
-          .groupBy(subscriptions.serviceId, subscriptions.variantId, onboarding),
-        tx.select({ serviceId: waitlistEntries.serviceId, active: count(), oldestEnteredAt: min(waitlistEntries.enteredAt) })
-          .from(waitlistEntries)
-          .where(and(inArray(waitlistEntries.serviceId, serviceIds), eq(waitlistEntries.status, "active"), isNull(waitlistEntries.leftAt)))
-          .groupBy(waitlistEntries.serviceId),
-      ]);
+      // A transaction owns one pg connection, which runs one query at a time: await each read in turn.
+      const variantRows = await tx.select().from(serviceVariants)
+        .where(and(inArray(serviceVariants.serviceId, serviceIds), isNull(serviceVariants.archivedAt), ne(serviceVariants.availabilityStatus, "archived")))
+        .orderBy(asc(serviceVariants.sortOrder), asc(serviceVariants.name));
+      const componentRows = await tx.select().from(serviceComponents).where(inArray(serviceComponents.serviceId, serviceIds));
+      const policyRows = await tx.select().from(servicePolicies).where(inArray(servicePolicies.serviceId, serviceIds));
+      const claimRows = await tx.select({ serviceId: subscriptions.serviceId, variantId: subscriptions.variantId, onboarding, count: count() })
+        .from(subscriptions)
+        .where(and(inArray(subscriptions.serviceId, serviceIds), capacityClaimCondition(now)))
+        .groupBy(subscriptions.serviceId, subscriptions.variantId, onboarding);
+      const waitlistRows = await tx.select({ serviceId: waitlistEntries.serviceId, active: count(), oldestEnteredAt: min(waitlistEntries.enteredAt) })
+        .from(waitlistEntries)
+        .where(and(inArray(waitlistEntries.serviceId, serviceIds), eq(waitlistEntries.status, "active"), isNull(waitlistEntries.leftAt)))
+        .groupBy(waitlistEntries.serviceId);
       return {
         services: serviceRows.map(mapAdminService),
         variants: variantRows.map(mapVariant),

@@ -3,6 +3,7 @@ import { authCookieNames } from "../middleware/auth.cookies.js";
 import type { AuthRouteService } from "../services/auth-route.service.js";
 import type { BootstrapService } from "../services/bootstrap.service.js";
 import type { PasswordRecoveryService } from "../services/password-recovery.service.js";
+import type { SensitiveActionOtpService } from "../services/sensitive-action-otp.service.js";
 import { requireAuthenticatedSession } from "../middleware/auth.middleware.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../types/auth.http.types.js";
 
@@ -11,6 +12,7 @@ export type AuthControllerDeps = {
   authRouteService?: Pick<AuthRouteService, "login" | "refresh" | "logout">;
   bootstrapService?: Pick<BootstrapService, "status" | "create">;
   passwordRecoveryService?: Pick<PasswordRecoveryService, "request" | "verify" | "reset">;
+  sensitiveActionOtpService?: Pick<SensitiveActionOtpService, "request">;
 };
 
 export class AuthController {
@@ -224,21 +226,27 @@ export class AuthController {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
 
-    const issued = await this.deps.otpChallengeService.issue({
+    if (!this.deps.sensitiveActionOtpService) {
+      return { status: 501, body: { error: "AUTH_OTP_DELIVERY_NOT_BOUND" } };
+    }
+
+    const result = await this.deps.sensitiveActionOtpService.request({
       userId: auth.session.userId,
       sessionId: auth.session.sessionId,
-      purpose: "sensitive_action",
       requestId: context.requestId,
       ipAddress: context.ipAddress ?? null,
       userAgent: context.userAgent ?? null,
     });
+    if (result.status === "delivery_failed") {
+      return { status: 503, body: { error: "AUTH_OTP_DELIVERY_FAILED" } };
+    }
 
     return {
       status: 202,
       body: {
-        challengeId: issued.challenge.id,
-        deliveryChannel: issued.challenge.deliveryChannel,
-        expiresAt: issued.challenge.expiresAt.toISOString(),
+        challengeId: result.challenge.id,
+        deliveryChannel: result.challenge.deliveryChannel,
+        expiresAt: result.challenge.expiresAt.toISOString(),
       },
     };
   }

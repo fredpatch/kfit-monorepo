@@ -278,7 +278,7 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 ### Risks / pre-prod items
 
 - **Auth contract gap (compliance):** Sprint 1 contract requires OTP on unknown devices before a session is issued; `/auth/login` always issues one. Pre-prod blocker until the device-OTP server slice ships.
-- **Recovery needs SMTP:** `/auth/recovery/*` answers 501 unless `SMTP_HOST`/`SMTP_FROM` are set; staging/prod env must define them (UI then shows « Récupération indisponible »).
+- **Recovery and sensitive-action OTP need SMTP:** `/auth/recovery/*` and `POST /auth/otp/sensitive-action` answer 501 unless `SMTP_HOST`/`SMTP_FROM` are set; staging/prod env must define them (UI then shows « Récupération indisponible » / « Envoi du code indisponible »). A failed send answers 503 (`AUTH_OTP_DELIVERY_FAILED`) and supersedes any earlier sensitive-action code.
 - **Prod reverse proxy:** if it lists API paths, add `/admin/today` and `/admin/appointments` (Vite dev proxy done).
 - **Brand assets:** coach name, logo and photo will come from a coach onboarding (Fred 2026-10-23, Notion backlog). Until then the public pages say « ta coach » and use the text mark; UX-11 is not production-ready without it.
 - **Public commitments to confirm with the coach:** « Réponse sous 24 h » (board 10 hero) and the FAQ health answer (check against the privacy notice during legal validation).

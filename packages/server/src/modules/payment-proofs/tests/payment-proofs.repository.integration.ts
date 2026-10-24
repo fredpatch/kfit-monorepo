@@ -209,3 +209,8 @@ test("PostgreSQL payment proof cannot acquire public sharing or mutate artifact 
   const r = await upload(), docs = new DrizzleDocumentsRepository(db, { ...options, verificationPepper: "synthetic" }, () => now);
   assert.deepEqual(await docs.execute(r.p.documentId, { action: "archive" }, actor), { ok: false, error: "DOCUMENT_NOT_FOUND" }); assert.deepEqual(await docs.execute(r.p.documentVersionId, { action: "issue-link", expiresAt: at(10000), maxUses: 3 }, actor), { ok: false, error: "DOCUMENT_NOT_FOUND" });
 });
+test("PostgreSQL proof list returns every proof of the subscription with its detail", async () => {
+  const id = await owner(), a = await upload(await link(id)), b = await upload(await link(id));
+  const listed = await call(id, "list"); assert.ok(listed.ok && "body" in listed && "proofs" in listed.body, JSON.stringify(listed)); if (!listed.ok || !("body" in listed) || !("proofs" in listed.body)) throw new Error("Missing proofs");
+  assert.deepEqual(listed.body.proofs.map(p => p.id).sort(), [a.p.id, b.p.id].sort()); assert.equal(listed.body.links.length, 2);
+});

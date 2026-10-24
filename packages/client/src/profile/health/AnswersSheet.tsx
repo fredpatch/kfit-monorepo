@@ -7,7 +7,7 @@ import { Field } from "../../components/ui/field.js";
 import { Sheet, SheetContent } from "../../components/ui/dialog.js";
 import { dateFr, dateTimeFr } from "../../lib/format.js";
 import { authApiClient } from "../../auth/api/auth-api.js";
-import { authFailureOf, authMessages, commonAuthMessage } from "../../auth/api/auth-errors.js";
+import { authFailureOf, authMessages, commonAuthMessage, sensitiveOtpRequestMessage } from "../../auth/api/auth-errors.js";
 import { OtpCodeInput } from "../../auth/components/OtpCodeInput.js";
 import { questionnaireApi, questionnaireErrorMessage } from "../../questionnaires/api/questionnaire-api.js";
 
@@ -57,7 +57,7 @@ export function AnswersSheet({ subscriptionId, revision, onClose, restoreFocus }
       await authApiClient.requestSensitiveActionOtp();
       setState({ kind: "otp", sent: true });
     } catch (failure) {
-      setOtpError(commonAuthMessage(authFailureOf(failure)));
+      setOtpError(sensitiveOtpRequestMessage(authFailureOf(failure)));
     } finally {
       setBusy(false);
     }

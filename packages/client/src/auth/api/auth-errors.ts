@@ -31,7 +31,16 @@ export const authMessages = {
   grantExpired: "Le délai pour choisir un nouveau mot de passe a expiré. Recommence la récupération.",
   resetDone: "Mot de passe modifié. Tu peux te connecter.",
   bootstrapDone: "Compte initial créé. Tu peux te connecter.",
+  otpDeliveryUnavailable: "Envoi du code indisponible. Contacte l'administrateur.",
+  otpDeliveryFailed: "Le code n'a pas pu être envoyé. Réessaie dans un instant.",
 } as const;
+
+/** Sensitive-action code request (UX-14c): no mail transport (501) or the e-mail failed (503). */
+export function sensitiveOtpRequestMessage(failure: AuthFailure): string {
+  if (failure.status === 501) return authMessages.otpDeliveryUnavailable;
+  if (failure.status === 503) return authMessages.otpDeliveryFailed;
+  return commonAuthMessage(failure);
+}
 
 /** Shared tail: rate limit, unreachable server, recovery not bound (501), anything else. */
 export function commonAuthMessage(failure: AuthFailure): string {

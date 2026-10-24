@@ -112,13 +112,18 @@ test("AuthController requests and verifies sensitive-action OTPs through the ser
   const calls: string[] = [];
   const controller = new AuthController({
     otpChallengeService: {
-      async issue(input) {
-        calls.push(`issue:${input.purpose}:${input.sessionId}`);
-        return { challenge: makeChallenge(), code: "123456" };
+      async issue() {
+        throw new Error("not used");
       },
       async verify(code, input) {
         calls.push(`verify:${code}:${input.purpose}:${input.sessionId}`);
         return { status: "verified", challenge: makeChallenge({ consumedAt: new Date("2026-08-25T08:01:00Z") }) };
+      },
+    },
+    sensitiveActionOtpService: {
+      async request(input) {
+        calls.push(`request:${input.userId}:${input.sessionId}`);
+        return { status: "sent", challenge: makeChallenge() };
       },
     },
   });
@@ -126,14 +131,33 @@ test("AuthController requests and verifies sensitive-action OTPs through the ser
   const issueResponse = await controller.requestSensitiveActionOtp(context);
   assert.equal(issueResponse.status, 202);
   assert.equal((issueResponse.body as { challengeId: string }).challengeId, "00000000-0000-0000-0000-000000000001");
-  assert.equal(JSON.stringify(issueResponse.body).includes("123456"), false);
 
   const verifyResponse = await controller.verifySensitiveActionOtp(context, { code: "123456" });
   assert.equal(verifyResponse.status, 200);
   assert.deepEqual(calls, [
-    "issue:sensitive_action:22222222-2222-2222-2222-222222222222",
+    "request:11111111-1111-1111-1111-111111111111:22222222-2222-2222-2222-222222222222",
     "verify:123456:sensitive_action:22222222-2222-2222-2222-222222222222",
   ]);
+});
+
+test("AuthController answers 501 without a mail transport and 503 when the code could not be e-mailed", async () => {
+  const otpChallengeService = {
+    async issue(): Promise<never> {
+      throw new Error("not used");
+    },
+    async verify(): Promise<VerifyOtpResult> {
+      throw new Error("not used");
+    },
+  };
+
+  const unbound = await new AuthController({ otpChallengeService }).requestSensitiveActionOtp(context);
+  assert.deepEqual(unbound, { status: 501, body: { error: "AUTH_OTP_DELIVERY_NOT_BOUND" } });
+
+  const failed = await new AuthController({
+    otpChallengeService,
+    sensitiveActionOtpService: { async request() { return { status: "delivery_failed" }; } },
+  }).requestSensitiveActionOtp(context);
+  assert.deepEqual(failed, { status: 503, body: { error: "AUTH_OTP_DELIVERY_FAILED" } });
 });
 
 test("AuthController maps OTP rejection reasons to stable HTTP responses", async () => {

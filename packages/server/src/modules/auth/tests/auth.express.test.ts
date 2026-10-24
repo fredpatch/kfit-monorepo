@@ -102,6 +102,11 @@ async function withTestServer<T>(resolveSession: () => AuthenticatedSessionConte
         return { status: "verified", challenge: makeChallenge({ consumedAt: new Date("2026-08-25T08:01:00Z") }) };
       },
     },
+    sensitiveActionOtpService: {
+      async request() {
+        return { status: "sent", challenge: makeChallenge() };
+      },
+    },
   });
 
   const app = createServerApp({

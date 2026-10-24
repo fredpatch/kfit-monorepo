@@ -260,3 +260,8 @@ test("PostgreSQL response audit failure rolls back response, token use and acces
   await assert.rejects(auditFailureRepository().execute(link.token, { action: "respond", decision: "accepted" }, visitor));
   assert.deepEqual(await db.select().from(secureAccessTokens).where(eq(secureAccessTokens.id, link.tokenId)), before); assert.equal(current(quote(await call(link.q.id, "read"))).response, null); assert.equal((await db.select().from(externalAccessEvents).where(eq(externalAccessEvents.secureAccessTokenId, link.tokenId))).length, 0);
 });
+test("PostgreSQL quote list returns every quote of the subscription with its versions", async () => {
+  const id = await owner(), a = await issue(await create(15000, id)), b = await create(16000, id);
+  const listed = await call(id, "list"); assert.ok(listed.ok && "body" in listed && "quotes" in listed.body, JSON.stringify(listed)); if (!listed.ok || !("body" in listed) || !("quotes" in listed.body)) throw new Error("Missing quotes");
+  assert.deepEqual(listed.body.quotes.map(q => q.id).sort(), [a.id, b.id].sort()); assert.ok(listed.body.quotes.every(q => q.versions.length > 0));
+});

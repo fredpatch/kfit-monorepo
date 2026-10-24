@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type RequestHandler } from "express";
 import type { ReceiptsController } from "./modules/receipts/controllers/receipts.controller.js";
 import { createExpressReceiptsRouter } from "./modules/receipts/routes/express-receipts.router.js";
 import type { PaymentProofsController } from "./modules/payment-proofs/controllers/payment-proofs.controller.js";
@@ -41,6 +41,8 @@ import type { QuestionnaireController } from "./modules/questionnaires/controlle
 import { createExpressQuestionnaireRouter } from "./modules/questionnaires/routes/express-questionnaire.router.js";
 
 export type ServerAppDeps = {
+  /** Mounted before every route, so each request is logged once it finishes. */
+  requestLogger?: RequestHandler;
   receiptsController?: ReceiptsController;
   paymentProofsController?: PaymentProofsController;
   quotesController?: QuotesController;
@@ -68,6 +70,7 @@ export function createServerApp(deps: ServerAppDeps): Express {
   const app = express();
 
   app.disable("x-powered-by");
+  if (deps.requestLogger) app.use(deps.requestLogger);
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/health", (_request, response) => {

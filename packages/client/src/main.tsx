@@ -6,7 +6,6 @@ import { queryClient } from "./app/query-client.js";
 import { Toaster } from "./components/ui/toaster.js";
 import { TooltipProvider } from "./components/ui/tooltip.js";
 import "./styles/index.css";
-import "./styles/legacy.css";
 
 const rootElement = document.getElementById("root");
 

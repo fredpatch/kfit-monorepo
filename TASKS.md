@@ -23,8 +23,9 @@ UX-16             notification-centre boards validated → referenced in sprint-
 UX-12a/12b        all 7 customer token pages on the public shell (4288d46, 57e5613)
 UX-11             landing + request page pushed (bf87713)
 UX-15             « Paiements » + « Documents » pushed (27042a1, f86cdcb)
-UX-14             UX-14a/14b pushed (56f8454, b751757); UX-14c answers view (server + client) — diffs delivered 2026-10-23
-UX next           UX-13 cleanup (legacy CSS, AdminPage legacy prop) + full recette
+UX-14             pushed (56f8454, b751757, 63279f3; OTP e-mail fix f989bec)
+UX-13             legacy stylesheet + wrapper removed, recette done — diff delivered 2026-10-24
+UX next           none planned — open decisions + Fred validations below; UX-16 lands with S7.2
 ```
 
 ## S7.1 — closed 2026-10-23
@@ -198,13 +199,13 @@ Agent reruns of database/preflight commands still require a new per-invocation a
 
 ```text
 Branch            main (Track B runs beside Sprint 7; S7.2 owns the admin shell/header until it lands)
-Step              UX-14c delivered (questionnaire answers: audited, fresh OTP, health consent check); UX-13 next
-Workflow state    AWAITING_HUMAN_VALIDATION (UX-9d, UX-10) · PLANNING (boards)
-Validation done   UX-9d: client tsc + build, browser pass desktop + 390 px on scratch data
+Step              UX-13 delivered (refonte complete except UX-16, owned by S7.2)
+Workflow state    AWAITING_HUMAN_VALIDATION (UX-9d, UX-10, UX-13)
+Validation done   UX-13: client tsc + build; real-API recette (demo account, local PostgreSQL) of 7 admin routes + 9 public pages at 1440 and 390 px — no page error, no overflow, no legacy markup; mocked regression of every rebuilt profile tab
 Not validated     Fred local check of UX-9d and UX-10 (Mailpit)
 Pending decisions Alerts vs À traiter duplication; « ton/ta coach » wording; currency label (Refonte UI § Open decisions)
 Risks             Any edit to AdminLayout/header conflicts with S7.2 until it is merged
-Next action       Fred: apply UX-14c (server then client), run server tests + questionnaire integration, view one revision with the e-mailed code (Mailpit); Claude: UX-13
+Next action       Fred: apply UX-13, click through the admin once; then settle the open decisions (alerts duplication, coach wording, UX-15a proof pre-fill)
 ```
 
 ## Refonte UI — suivi
@@ -246,10 +247,10 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 | UX-11 | 10, 11a | Landing `/` (offers from the public catalogue, family filter, plans, steps, FAQ, CTA) + request page `/demande/:offre`; intake rules unchanged; legacy wrapper removed | — | Delivered — awaiting push; prod blocked by coach onboarding (name/logo/photo) + legal pages | — |
 | UX-12a | 11e–h | Shared public shell (`components/public/PublicShell.tsx`, one no-referrer hook) + /document, /devis, /recu, /justificatif restyled; logic unchanged | — | Pushed | 4288d46 |
 | UX-12b | 11b–d | /questionnaire (one question per screen, health consent step), /consent, /appointment on the public shell; customer-only forms, coach forms untouched (UX-14); appointment times in Libreville; legacy wrapper removed | — | Pushed | 57e5613 |
-| UX-14 | 14a–14e | Legacy admin tabs: Rendez-vous, Suivis, Préparation, Santé et consentements + Suivis page. 14a (diff 1): Rendez-vous tab (Libreville times, schedule sheet with duration suggestion + auto response link, action dialogs), Suivis tab (open actions, history, « rythme » card, record sheet), Suivis page (table, filters, opens the form via `nouveau=suivi`) | — | 14a pushed (56f8454); 14b delivered — awaiting push (Préparation: banner + progress, checklist, waiver dialog, reservation; Santé: consents, links, coach capture sheet, questionnaire links + coach entry sheet; last legacy admin panels removed); 14c: GET …/questionnaire/revisions/:submissionId (fresh sensitive-action OTP, `questionnaire.answers_viewed` audit with ids only, health answers refused once « Données de santé » is withdrawn) + « Voir les réponses » with e-mail code step-up — delivered | — |
+| UX-14 | 14a–14e | Legacy admin tabs: Rendez-vous, Suivis, Préparation, Santé et consentements + Suivis page. 14a (diff 1): Rendez-vous tab (Libreville times, schedule sheet with duration suggestion + auto response link, action dialogs), Suivis tab (open actions, history, « rythme » card, record sheet), Suivis page (table, filters, opens the form via `nouveau=suivi`) | — | Pushed — 14a 56f8454, 14b b751757, 14c 63279f3 + f989bec (Préparation: banner + progress, checklist, waiver dialog, reservation; Santé: consents, links, coach capture sheet, questionnaire links + coach entry sheet; last legacy admin panels removed); 14c: GET …/questionnaire/revisions/:submissionId (fresh sensitive-action OTP, `questionnaire.answers_viewed` audit with ids only, health answers refused once « Données de santé » is withdrawn) + « Voir les réponses » with e-mail code step-up | — |
 | UX-15 | 15a–15d | Screens added in S5.5/S6 without a board. 15a: Finance + Devis tabs merged into « Paiements » (summary, proof banner, échéancier « n sur N », payments with receipt column + ⋯, quote card + side sheet, proofs history) + proof review dialog (preview, size, scan, 5 decisions). 15b: Documents tab (versioned list, Partager → link + separate code for sensitive docs, ⋯ add version / download / versions and links / archive / revoke with confirmation, private photos card) | — | 15a pushed (27042a1); 15b delivered — awaiting push | — |
 | UX-16 | 12, 12b, 12c | S7.2 notification centre (bell panel, mobile sheet, Réglages) — board only, implemented inside S7.2 | — | Boards validated 2026-10-23 → S7.2 implementer (`sprint-7.md` § S7.2 UI) | — |
-| UX-13 | — | Cleanup: legacy CSS removal, a11y, reduced motion, mobile pass, full UI recette | — | To do (last) | — |
+| UX-13 | — | Cleanup: `legacy.css` (20 KB) and the `legacy` wrapper removed, dead `AdminProgressPanel` removed, h1 added to the request page; recette on the real API at 1440 / 390 px (reduced motion already global in `index.css`) | — | Delivered — awaiting push | — |
 
 ### Locked decisions (2026-10-22)
 

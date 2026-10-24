@@ -139,6 +139,8 @@ function RequestForm({ service }: { service: CataloguePublicService }) {
         <Button type="submit" form="request-form" className={publicPrimaryClass} disabled={pending}>{pending ? "Envoi…" : "Envoyer ma demande"}</Button>
       )}
     >
+      {/* UX-13 recette: the header shows « Ma demande » as text; the page still needs one h1 for screen readers. */}
+      <h1 className="sr-only">Ma demande : {service.name}{variant ? ` · ${variant.name}` : ""}</h1>
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5">
         <span aria-hidden="true" className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", family.softClass)}><span className={cn("size-3.5 rounded", family.dotClass)} /></span>
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">

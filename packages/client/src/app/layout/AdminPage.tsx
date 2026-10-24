@@ -1,5 +1,4 @@
-import { useEffect, type MouseEvent, type ReactNode } from "react";
-import { useNavigate } from "react-router";
+import { useEffect, type ReactNode } from "react";
 
 type AdminPageProps = {
   title: string;
@@ -9,13 +8,11 @@ type AdminPageProps = {
   actions?: ReactNode;
   /** Extra row under the title (sub-navigation, filters). */
   toolbar?: ReactNode;
-  /** Screens not rebuilt yet render inside the scoped legacy stylesheet. */
-  legacy?: boolean;
   children: ReactNode;
 };
 
 /** Page heading + content. One h1 per screen; sets the browser tab title. */
-export function AdminPage({ title, breadcrumb, description, actions, toolbar, legacy = false, children }: AdminPageProps) {
+export function AdminPage({ title, breadcrumb, description, actions, toolbar, children }: AdminPageProps) {
 
   useEffect(() => {
     document.title = `${title} · K'FIT`;
@@ -32,28 +29,8 @@ export function AdminPage({ title, breadcrumb, description, actions, toolbar, le
         {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
       </div>
       {toolbar}
-      {legacy ? <LegacyEmbed>{children}</LegacyEmbed> : children}
-    </div>
-  );
-}
-
-/**
- * Wraps a screen not rebuilt yet: scoped legacy styles, and its plain <a href="/admin/..."> links
- * are routed client-side instead of reloading the app.
- */
-export function LegacyEmbed({ children }: { children: ReactNode }) {
-  const navigate = useNavigate();
-  function interceptLegacyLinks(event: MouseEvent<HTMLDivElement>) {
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    const anchor = (event.target as HTMLElement).closest("a");
-    const href = anchor?.getAttribute("href");
-    if (!anchor || !href || !href.startsWith("/admin") || anchor.target) return;
-    event.preventDefault();
-    void navigate(href);
-  }
-  return (
-    <div className="legacy legacy-embedded" onClick={interceptLegacyLinks}>
       {children}
     </div>
   );
 }
+

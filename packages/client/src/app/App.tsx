@@ -8,7 +8,7 @@ import { AdminLayout } from "./layout/AdminLayout.js";
 import { AdminPage } from "./layout/AdminPage.js";
 import { LegacySubscriptionRedirect, SubscriptionPreparationRoute, SubscriptionRoute } from "./routes/subscription-routes.js";
 
-/* Screens load on demand: keeps the first load small (charts, tables, legacy screens). */
+/* Screens load on demand: keeps the first load small (charts, tables, public pages). */
 const PublicAppointmentPage = lazy(() => import("../appointments/components/PublicAppointmentPage.js").then((m) => ({ default: m.PublicAppointmentPage })));
 const PublicDocumentPage = lazy(() => import("../documents/components/PublicDocumentPage.js").then((m) => ({ default: m.PublicDocumentPage })));
 const PublicQuotePage = lazy(() => import("../quotes/components/PublicQuotePage.js").then((m) => ({ default: m.PublicQuotePage })));

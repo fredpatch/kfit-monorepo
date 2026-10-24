@@ -6,6 +6,7 @@ import { requireCsrf, requireSameOrigin } from "../../auth/middleware/auth.middl
 import type { ExpressAuthSessionResolver } from "../../auth/routes/express-auth.router.js";
 import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js";
 import type { NotificationAction, NotificationsController } from "../controllers/notifications.controller.js";
+import { logger } from "../../../logging/logger.js";
 
 // audit_events.request_id is a uuid column: a free-form X-Request-Id would make audited writes fail, so it is only reused when valid.
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -25,7 +26,10 @@ export function createExpressNotificationsRouter(deps: { controller: Notificatio
         query: request.query as Record<string, unknown>, body: request.body,
       });
       response.status(result.status).json(result.body);
-    } catch {
+    } catch (error) {
+      // Error type and pg SQLSTATE only (e.g. 42P01 = missing table): messages and details can carry health data or row values.
+      const code = error && typeof error === "object" && "code" in error ? String(error.code) : "no code";
+      logger.error(`notifications ${action} failed: ${error instanceof Error ? error.name : typeof error} (${code})`);
       response.status(500).json({ error: "NOTIFICATION_ROUTE_UNEXPECTED_FAILURE" });
     }
   };

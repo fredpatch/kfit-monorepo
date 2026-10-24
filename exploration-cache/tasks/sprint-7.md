@@ -732,3 +732,31 @@ Mandatory:
 - browser notification center/settings responsive + keyboard accessible.
 
 Fred approved this complete Gate 1. Implementation is authorized for S7.2 only. S7.3 remains closed until Fred local validation.
+
+## S7.2 execution — 2026-10-24 (Claude)
+
+Delivered as S7.2a (server) and S7.2b (client, UX-16). Pending Fred local validation.
+
+Defaults chosen inside the approved registry (to confirm):
+- e-mail master on; daily digest on at 08:00 Africa/Libreville;
+- per-kind e-mails off for all 7 kinds (digest is the default channel, avoids spam);
+- reminder_days: follow_up_overdue 3, installment_overdue 7 (1–30);
+- quote_action_required kept (S7.1 derives it precisely from quotes « changes_requested »), with its own e-mail key;
+- recipients = active, non-archived admin users (the coach workspace is admin-only today);
+- retry +5m/+30m/+2h/+12h then dead_letter (5 attempts, code constant, not exposed as a setting);
+- a row stuck in « sending » > 30 min goes to dead_letter (SENDING_INTERRUPTED), never auto-resent;
+- optional outbox list/retry endpoints not built (no notification.email_retry_requested audit yet).
+
+Evidence (scratch worktree on origin/main 733020e, local PostgreSQL 5433):
+- server tsc clean; unit 545 (2 Chromium PDF tests fail locally without browser, unrelated);
+- integration 553/553 incl. notifications.repository.integration (Gate 1 validation list: dedupe, concurrent reconcile,
+  resolution history, read ≠ resolve, recurrence, e-mail/category off, reminder windows, digest 08:00 + one per date,
+  SMTP retry, SKIP LOCKED claims, sent never resent, dead letter, advisory-locked job runs, inactive/archived/coach excluded,
+  privacy-safe payloads, no business mutation);
+- runtime: dev API with jobs + SMTP sink received the French digest (« K'FIT — Actions à traiter », 2 demandes à contacter);
+- browser (1440/390, real API): bell badge, panel, mark one/all read, resolved tab, deep link, Escape returns focus,
+  Réglages save/reload/validation (45 days rejected client-side; server rejects too).
+
+Known limits: reminders verified by integration, not by the SMTP sink run; jobs start from the dev API entrypoint
+(no production entrypoint before Sprint 9); `KFIT_NOTIFICATION_JOBS=off` disables them.
+

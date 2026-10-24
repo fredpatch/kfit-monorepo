@@ -11,14 +11,17 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
 Active slice      S7.2 — Dashboard and email notification engine with configurable reminders
-Workflow state    APPROVED_FOR_IMPLEMENTATION
+Workflow state    IMPLEMENTED_PENDING_LOCAL_VALIDATION
 Last validated    S7.1 — locally validated 2026-10-23
 Implementation    ed1c7d0 — feat(dashboard): add historical analytics and operational alerts
-Next action       IDE Implementer: implement S7.2 notification/digest/outbox only; stop before S7.3
+S7.2 owner       Claude (took over 2026-10-24: nothing on main beyond Gate 1 docs)
+S7.2 delivered    S7.2a server (engine, outbox, jobs, API, migration 0014) + S7.2b client (UX-16 bell, panel, Réglages)
+Next action       Fred: apply S7.2a/S7.2b, migrate, local validation (sprint-7.md § S7.2 execution); stop before S7.3
+Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser
 
 UI refonte        UX-1 → UX-15 done; Fred local checks of UX-9d, UX-10, UX-13 passed (2026-10-24)
 UX-9d/9e          Aujourd'hui fidelity fixes + alerts dedupe pushed (1d3a476, 6ca2a2f)
-UX-16             notification-centre boards validated → referenced in sprint-7.md § S7.2 UI
+UX-16             implemented inside S7.2b (bell + panel, mobile sheet, Configuration › Réglages)
 UX-12a/12b        all 7 customer token pages on the public shell (4288d46, 57e5613)
 UX-11             landing + request page pushed (bf87713)
 UX-15             « Paiements » + « Documents » pushed (27042a1, f86cdcb)

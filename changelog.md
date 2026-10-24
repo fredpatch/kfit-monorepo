@@ -2,6 +2,16 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-24 — Refonte UI (Track B) closed
+
+- Every admin and public screen now follows the validated boards (canvas « K'FIT — Refonte UI »); business rules unchanged except where Fred decided below.
+- Steps since UX-9c, each applied and pushed by Fred: UX-9d `1d3a476`, UX-9e `6ca2a2f`, UX-10 `e0ae7f1`, UX-12a `4288d46`, UX-12b `57e5613`, UX-11 `bf87713`, UX-15 `27042a1` + `f86cdcb`, UX-14 `56f8454` + `b751757` + `63279f3` (OTP e-mail fix `f989bec`), UX-13 `14106e7`.
+- Fred's local checks of UX-9d, UX-10 and UX-13 passed on 2026-10-24.
+- Highlights: login/recovery screens; landing + request page; the 7 customer link pages on one public shell; « Paiements » (finance, quotes, receipts, proof review) and « Documents » tabs; Rendez-vous, Suivis, Préparation, Santé et consentements tabs and the Suivis page; `legacy.css` removed.
+- Fred decisions recorded in `TASKS.md` § Open decisions: FCFA on customer pages / XAF in admin; Finance + Devis merged into « Paiements »; proof confirm pre-filled with the client's declaration; appointment response link created at scheduling; « rythme » wording; questionnaire answers viewable only after a fresh e-mailed OTP, audited, refused once the health-data consent is withdrawn.
+- Only server change of the track: UX-14c read-only answers route (`GET /admin/subscriptions/:id/questionnaire/revisions/:submissionId`); questionnaire PostgreSQL integration 47/47.
+- Limits: public pages still say « ta coach » until the coach onboarding (name, logo, photo); production also needs legal pages, SMTP settings and the public contact links at build time.
+
 ## 2026-10-23 — Sprint 7.1 dashboard analytics and operational alerts
 
 - S7.1 is locally validated and closed.

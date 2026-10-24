@@ -6,6 +6,7 @@ import { ReceiptsService } from "../services/receipts.service.js";
 import { receiptNumber, buildReceiptSnapshot, correctionOf, readReceiptSnapshot, receiptHtml, publicReceipt } from "../services/receipt-snapshot.js";
 import { PuppeteerReceiptRenderer } from "../services/receipt-pdf.renderer.js";
 import { ReceiptDomainError, type ReceiptActor } from "../services/receipts.types.js";
+import { chromiumUnavailable } from "../../../testing/chromium.js";
 const id = "11111111-1111-1111-1111-111111111111", actor: ReceiptActor = { userId: id, requestId: id, ipAddress: null, userAgent: null };
 const denied = new ReceiptsService({ async execute() { assert.fail("Invalid input reached persistence"); } });
 const fail = { ok: false, error: "RECEIPT_INVALID_INPUT" };
@@ -50,4 +51,4 @@ test("public receipt metadata excludes internal identity, notes, references, all
   const r: Receipt = { id, customerId: id, subscriptionId: id, paymentEventId: id, receiptNumber: snapshot.receiptNumber, issuedAt: snapshot.issuedAt, state: "voided", voidedAt: snapshot.issuedAt, voidReason: "PRIVATE_REASON", snapshot, pdfDocumentId: id, links: [], ...correctionOf({ amountXaf: 4000, correctableXaf: 0 }) };
   const p = publicReceipt(r); assert.equal(p.state, "voided"); assert.equal(p.correctionState, "fully_corrected"); for (const k of ["id", "customerId", "subscriptionId", "paymentEventId", "voidReason", "snapshot", "links", "allocations"]) assert.ok(!Object.hasOwn(p, k));
 });
-test("real Chromium receipt PDF is deterministic for the identical frozen snapshot", async () => { const renderer = new PuppeteerReceiptRenderer(), a = await renderer.render(snapshot), b = await renderer.render(structuredClone(snapshot)); assert.equal(a.subarray(0, 5).toString(), "%PDF-"); assert.equal(createHash("sha256").update(a).digest("hex"), createHash("sha256").update(b).digest("hex")); });
+test("real Chromium receipt PDF is deterministic for the identical frozen snapshot", { skip: chromiumUnavailable() }, async () => { const renderer = new PuppeteerReceiptRenderer(), a = await renderer.render(snapshot), b = await renderer.render(structuredClone(snapshot)); assert.equal(a.subarray(0, 5).toString(), "%PDF-"); assert.equal(createHash("sha256").update(a).digest("hex"), createHash("sha256").update(b).digest("hex")); });

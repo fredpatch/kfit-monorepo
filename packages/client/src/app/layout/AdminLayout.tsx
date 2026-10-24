@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { adminNav, allNavItems, type NavItem } from "./nav-config.js";
 import { useNavBadges } from "./use-nav-badges.js";
 import { UserMenu } from "./UserMenu.js";
+import { NotificationCenter } from "../../notifications/components/NotificationCenter.js";
 
 function Brand() {
   return (
@@ -129,6 +130,7 @@ export function AdminLayout() {
             <span className="font-extrabold tracking-tight">K'FIT</span>
           </span>
           <div className="flex-1" />
+          <NotificationCenter />
           <UserMenu />
         </header>
         <main className="w-full max-w-[1240px] flex-1 px-4 pb-28 pt-6 sm:px-8 md:pb-12">

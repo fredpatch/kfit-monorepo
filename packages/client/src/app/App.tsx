@@ -14,6 +14,7 @@ const PublicDocumentPage = lazy(() => import("../documents/components/PublicDocu
 const PublicQuotePage = lazy(() => import("../quotes/components/PublicQuotePage.js").then((m) => ({ default: m.PublicQuotePage })));
 const PublicReceiptPage = lazy(() => import("../receipts/components/PublicReceiptPage.js").then((m) => ({ default: m.PublicReceiptPage })));
 const PublicPaymentProofPage = lazy(() => import("../payment-proofs/components/PublicPaymentProofPage.js").then((m) => ({ default: m.PublicPaymentProofPage })));
+const NotificationSettingsPage = lazy(() => import("../notifications/components/NotificationSettingsPage.js").then((m) => ({ default: m.NotificationSettingsPage })));
 const CataloguePage = lazy(() => import("../catalogue/components/CataloguePage.js").then((m) => ({ default: m.CataloguePage })));
 const PublicConsentPage = lazy(() => import("../consents/components/PublicConsentPage.js").then((m) => ({ default: m.PublicConsentPage })));
 const ClientsPage = lazy(() => import("../customers/components/ClientsPage.js").then((m) => ({ default: m.ClientsPage })));
@@ -93,6 +94,7 @@ export function App() {
           <Route path="abonnements/:id/preparation" element={<SubscriptionPreparationRoute />} />
           <Route path="offres" element={<CataloguePage />} />
           <Route path="questionnaires" element={<QuestionnairesPage />} />
+          <Route path="reglages" element={<NotificationSettingsPage />} />
 
           {/* Former URLs, still used in e-mails or bookmarks. */}
           <Route path="follow-up-queue" element={<Navigate replace to="/admin/suivis" />} />

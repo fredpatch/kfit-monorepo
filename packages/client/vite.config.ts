@@ -32,6 +32,8 @@ export default defineConfig(({ mode }) => {
         "/admin/appointments": apiProxy,
         "/admin/today": apiProxy,
         "/admin/dashboard": apiProxy,
+        "/admin/notifications": apiProxy,
+        "/admin/notification-settings": apiProxy,
         "/admin/follow-ups": apiProxy,
         "/admin/goals": apiProxy,
         "/admin/payment-plans": apiProxy,

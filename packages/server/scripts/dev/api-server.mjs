@@ -10,7 +10,7 @@ if (!Number.isSafeInteger(port) || port <= 0 || port > 65535) {
 
 const { logger } = await import("../../dist/logging/logger.js");
 const { runStartupChecks } = await import("../../dist/dev/startup-checks.js");
-const { createDevelopmentApp } = await import("../../dist/dev-app.js");
+const { createDevelopmentRuntime } = await import("../../dist/dev-app.js");
 const { pool } = await import("../../dist/db/client.js");
 
 logger.info("✔ Environment loaded (.env)");
@@ -20,7 +20,11 @@ if (!(await runStartupChecks(pool))) {
   process.exit(1);
 }
 
-const app = createDevelopmentApp();
+const { app, startNotificationJobs } = createDevelopmentRuntime();
+// S7.2 jobs: reconcile every 15 min, e-mail delivery every 5 min (advisory-locked, safe with several API processes).
+const stopNotificationJobs = process.env.KFIT_NOTIFICATION_JOBS === "off"
+  ? (logger.info("Notification jobs disabled (KFIT_NOTIFICATION_JOBS=off)"), () => undefined)
+  : startNotificationJobs((line) => logger.warn(line));
 // Bound to the IPv4 loopback only (the Vite proxy targets 127.0.0.1); `localhost` reaches it from the browser.
 const server = app.listen(port, "127.0.0.1", () => {
   logger.info(`✔ K'FIT dev API listening on http://localhost:${port} (health: http://localhost:${port}/health)`);
@@ -28,6 +32,7 @@ const server = app.listen(port, "127.0.0.1", () => {
 
 async function shutdown(signal) {
   logger.info(`Received ${signal}; shutting down K'FIT dev API.`);
+  stopNotificationJobs();
   server.close(async () => {
     await pool.end();
     process.exit(0);

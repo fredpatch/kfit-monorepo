@@ -26,7 +26,13 @@ import { PuppeteerProgressSummaryRenderer } from "./modules/documents/services/p
 import { ProgressController } from "./modules/progress/controllers/progress.controller.js";
 import { ProgressService } from "./modules/progress/services/progress.service.js";
 import { DrizzleProgressRepository } from "./modules/progress/repositories/progress.repository.js";
-import { db } from "./db/client.js";
+import { randomUUID } from "node:crypto";
+import { db, pool } from "./db/client.js";
+import { NotificationsController } from "./modules/notifications/controllers/notifications.controller.js";
+import { DrizzleNotificationsRepository } from "./modules/notifications/repositories/notifications.repository.js";
+import { NotificationJobsService } from "./modules/notifications/services/notification-jobs.service.js";
+import { NodemailerNotificationMailDelivery } from "./modules/notifications/services/notification-mail.delivery.js";
+import { startScheduledJobs } from "./modules/notifications/jobs/scheduled-job.runner.js";
 import { createFreshOtpLookup } from "./modules/auth/services/fresh-otp.lookup.js";
 import { AuthController } from "./modules/auth/controllers/auth.controller.js";
 import {
@@ -68,6 +74,11 @@ import { CustomersService } from "./modules/customers/services/customers.service
 import { DrizzleCustomersRepository } from "./modules/customers/repositories/customers.repository.js";
 
 export function createDevelopmentApp() {
+  return createDevelopmentRuntime().app;
+}
+
+/** App plus the S7.2 scheduled jobs (started by scripts/dev/api-server.mjs, not by tests that only need the app). */
+export function createDevelopmentRuntime() {
   const authConfig = loadAuthConfig(process.env);
   const audit = new AuditService(db, { auditHashPepper: authConfig.auditHashPepper });
   const passwords = new PasswordService();
@@ -182,10 +193,34 @@ export function createDevelopmentApp() {
   });
   const todayController = new TodayController(todayService);
   const dashboardFinance = new DrizzleFinanceRepository(db, { auditHashPepper: authConfig.auditHashPepper });
+  const dashboardAlerts = new DashboardAlertsService(new DrizzleDashboardAlertsRepository(db, dashboardFinance), todayService);
   const dashboardAnalyticsController = new DashboardAnalyticsController(
     new DashboardAnalyticsService(new DrizzleDashboardAnalyticsRepository(db, dashboardFinance)),
-    new DashboardAlertsService(new DrizzleDashboardAlertsRepository(db, dashboardFinance), todayService),
+    dashboardAlerts,
   );
+
+  /*
+   * S7.2 notifications. In-app history always works; e-mail is an optional side effect, delivered only when SMTP is configured
+   * (otherwise outbox rows fail with NOT_CONFIGURED and end in dead letter, never blocking anything).
+   * Sources are read through the S7.1 alert derivation as an active admin (read-only paths, no audit, no business mutation).
+   */
+  const notificationsRepository = new DrizzleNotificationsRepository(db, {
+    auditHashPepper: authConfig.auditHashPepper,
+    appBaseUrl: process.env.KFIT_APP_BASE_URL || "http://localhost:5173",
+  });
+  const notificationJobs = new NotificationJobsService(
+    notificationsRepository,
+    async () => {
+      const [reader] = await notificationsRepository.recipients(db);
+      if (!reader) return [];
+      return (await dashboardAlerts.alerts({ userId: reader.id, requestId: `job:notifications.reconcile:${randomUUID()}`, ipAddress: null, userAgent: null })).alerts;
+    },
+    process.env.SMTP_HOST ? new NodemailerNotificationMailDelivery(loadSmtpAuthMailConfig(process.env)) : null,
+  );
+  const startNotificationJobs = (log: (line: string) => void) => startScheduledJobs(pool, db, [
+    { jobKey: "notifications.reconcile", cron: "*/15 * * * *", windowMs: 15 * 60_000, work: () => notificationJobs.reconcile() },
+    { jobKey: "notifications.email-delivery", cron: "*/5 * * * *", windowMs: 5 * 60_000, work: () => notificationJobs.deliver() },
+  ], log);
 
   const documentsController = new DocumentsController(new DocumentsService(
     new DrizzleDocumentsRepository(db, {
@@ -199,7 +234,7 @@ export function createDevelopmentApp() {
 
   const proofStorage = new PrivateDocumentStorage();
   const receiptStorage = new PrivateDocumentStorage(), receiptRenderer = new PuppeteerReceiptRenderer();
-  return createServerApp({
+  const app = createServerApp({
     requestLogger: createHttpLogger(),
     receiptsController: new ReceiptsController(new ReceiptsService(new DrizzleReceiptsRepository(db,
       { auditHashPepper: authConfig.auditHashPepper, tokenPepper: authConfig.otpPepper }, {
@@ -233,7 +268,9 @@ export function createDevelopmentApp() {
     customersController: new CustomersController(customersService),
     todayController,
     dashboardAnalyticsController,
+    notificationsController: new NotificationsController(notificationsRepository),
   });
+  return { app, startNotificationJobs };
 }
 import { ConsentController } from "./modules/consents/controllers/consent.controller.js";
 import { ConsentService } from "./modules/consents/services/consent.service.js";

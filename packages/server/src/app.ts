@@ -37,6 +37,8 @@ import type { TodayController } from "./modules/dashboard/controllers/today.cont
 import { createExpressTodayRouter } from "./modules/dashboard/routes/express-today.router.js";
 import type { DashboardAnalyticsController } from "./modules/dashboard/controllers/analytics.controller.js";
 import { createExpressDashboardAnalyticsRouter } from "./modules/dashboard/routes/express-analytics.router.js";
+import type { NotificationsController } from "./modules/notifications/controllers/notifications.controller.js";
+import { createExpressNotificationsRouter } from "./modules/notifications/routes/express-notifications.router.js";
 import type { QuestionnaireController } from "./modules/questionnaires/controllers/questionnaire.controller.js";
 import { createExpressQuestionnaireRouter } from "./modules/questionnaires/routes/express-questionnaire.router.js";
 
@@ -64,6 +66,7 @@ export type ServerAppDeps = {
   questionnaireController?: QuestionnaireController;
   todayController?: TodayController;
   dashboardAnalyticsController?: DashboardAnalyticsController;
+  notificationsController?: NotificationsController;
 };
 
 export function createServerApp(deps: ServerAppDeps): Express {
@@ -114,6 +117,7 @@ export function createServerApp(deps: ServerAppDeps): Express {
   // Registered before the appointments router so GET /admin/appointments (agenda) is matched explicitly.
   if (deps.todayController) app.use(createExpressTodayRouter({ controller: deps.todayController, resolveSession: deps.resolveAuthSession }));
   if (deps.dashboardAnalyticsController) app.use(createExpressDashboardAnalyticsRouter({ controller: deps.dashboardAnalyticsController, resolveSession: deps.resolveAuthSession }));
+  if (deps.notificationsController) app.use(createExpressNotificationsRouter({ controller: deps.notificationsController, resolveSession: deps.resolveAuthSession }));
   if (deps.appointmentsController) app.use(createExpressAppointmentsRouter({ controller: deps.appointmentsController, resolveSession: deps.resolveAuthSession }));
   if (deps.followUpsController) app.use(createExpressFollowUpsRouter({ controller: deps.followUpsController, resolveSession: deps.resolveAuthSession }));
   if (deps.progressController) app.use(createExpressProgressRouter({ controller: deps.progressController, resolveSession: deps.resolveAuthSession }));

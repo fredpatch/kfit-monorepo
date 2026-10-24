@@ -8,3 +8,4 @@ export * from "./coaching.js";
 export * from "./documents.js";
 export * from "./finance.js";
 export * from "./operations.js";
+export * from "./notifications.js";

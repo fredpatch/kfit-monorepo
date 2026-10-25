@@ -1,4 +1,5 @@
-import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { idColumn } from "./_helpers.js";
 import { users } from "./auth.js";
 
@@ -25,7 +26,13 @@ export const retentionHolds = pgTable("retention_holds", {
   releasedAt: timestamp("released_at", { withTimezone: true }),
   createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
   releasedByUserId: uuid("released_by_user_id").references(() => users.id, { onDelete: "set null" }),
-}, (t) => [index("retention_holds_scope_idx").on(t.scopeType, t.scopeId, t.status)]);
+}, (t) => [
+  index("retention_holds_scope_idx").on(t.scopeType, t.scopeId, t.status),
+  // S7.3 (D7): closed vocabularies.
+  check("retention_holds_status_valid", sql`${t.status} in ('active', 'released')`),
+  check("retention_holds_scope_type_valid", sql`${t.scopeType} in ('customer', 'prospect', 'document')`),
+  check("retention_holds_hold_type_valid", sql`${t.holdType} in ('legal', 'dispute', 'accounting')`),
+]);
 
 export const anonymizationEvents = pgTable("anonymization_events", {
   id: idColumn(),
@@ -37,4 +44,10 @@ export const anonymizationEvents = pgTable("anonymization_events", {
   executedAt: timestamp("executed_at", { withTimezone: true }),
   executedByUserId: uuid("executed_by_user_id").references(() => users.id, { onDelete: "set null" }),
   metadataJson: jsonb("metadata_json"),
-}, (t) => [index("anonymization_events_subject_idx").on(t.subjectType, t.subjectId, t.requestedAt)]);
+}, (t) => [
+  index("anonymization_events_subject_idx").on(t.subjectType, t.subjectId, t.requestedAt),
+  // S7.3: one executed anonymization per subject (D10 idempotency, replay key).
+  uniqueIndex("anonymization_events_subject_executed_uq").on(t.subjectType, t.subjectId).where(sql`${t.status} = 'executed'`),
+  check("anonymization_events_status_valid", sql`${t.status} in ('executed')`),
+  check("anonymization_events_subject_type_valid", sql`${t.subjectType} in ('customer', 'prospect')`),
+]);

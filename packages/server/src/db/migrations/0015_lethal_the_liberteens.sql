@@ -1,0 +1,6 @@
+CREATE UNIQUE INDEX "anonymization_events_subject_executed_uq" ON "anonymization_events" USING btree ("subject_type","subject_id") WHERE "anonymization_events"."status" = 'executed';--> statement-breakpoint
+ALTER TABLE "anonymization_events" ADD CONSTRAINT "anonymization_events_status_valid" CHECK ("anonymization_events"."status" in ('executed'));--> statement-breakpoint
+ALTER TABLE "anonymization_events" ADD CONSTRAINT "anonymization_events_subject_type_valid" CHECK ("anonymization_events"."subject_type" in ('customer', 'prospect'));--> statement-breakpoint
+ALTER TABLE "retention_holds" ADD CONSTRAINT "retention_holds_status_valid" CHECK ("retention_holds"."status" in ('active', 'released'));--> statement-breakpoint
+ALTER TABLE "retention_holds" ADD CONSTRAINT "retention_holds_scope_type_valid" CHECK ("retention_holds"."scope_type" in ('customer', 'prospect', 'document'));--> statement-breakpoint
+ALTER TABLE "retention_holds" ADD CONSTRAINT "retention_holds_hold_type_valid" CHECK ("retention_holds"."hold_type" in ('legal', 'dispute', 'accounting'));

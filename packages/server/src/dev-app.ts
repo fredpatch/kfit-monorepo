@@ -46,6 +46,12 @@ import { loadSmtpAuthMailConfig, NodemailerAuthMailDelivery } from "./modules/au
 import { InMemoryRecoveryRateLimiter, PasswordRecoveryService } from "./modules/auth/services/password-recovery.service.js";
 import { SensitiveActionOtpService } from "./modules/auth/services/sensitive-action-otp.service.js";
 import { createHttpLogger } from "./logging/http-logger.js";
+import { logger } from "./logging/logger.js";
+import { PrivacyController } from "./modules/privacy/controllers/privacy.controller.js";
+import { privacyPurgeJob } from "./modules/privacy/jobs/privacy-purge.job.js";
+import { DrizzlePrivacyRepository } from "./modules/privacy/repositories/privacy.repository.js";
+import { createPrivacyJournal, PRIVACY_JOURNAL_DIR_ENV } from "./modules/privacy/services/privacy-journal.js";
+import { PrivacyService } from "./modules/privacy/services/privacy.service.js";
 import { AccessTokenSessionResolver } from "./modules/auth/services/access-token-session.resolver.js";
 import { AuditService } from "./modules/auth/services/audit.service.js";
 import { AuthRouteService } from "./modules/auth/services/auth-route.service.js";
@@ -222,6 +228,19 @@ export function createDevelopmentRuntime() {
     { jobKey: "notifications.email-delivery", cron: "*/5 * * * *", windowMs: 5 * 60_000, work: () => notificationJobs.deliver() },
   ], log);
 
+  /*
+   * S7.3 privacy (Gate 1 approved 2026-10-25): archive, anonymize (fresh OTP + typed name), holds; daily purge job (D3, D12);
+   * off-database journal when KFIT_PRIVACY_JOURNAL_DIR is set (D11), otherwise disabled with a startup warning.
+   */
+  const privacyRepository = new DrizzlePrivacyRepository(db, { auditHashPepper: authConfig.auditHashPepper });
+  const privacyJournal = createPrivacyJournal(process.env[PRIVACY_JOURNAL_DIR_ENV]);
+  const privacyController = new PrivacyController(
+    new PrivacyService(privacyRepository, privacyJournal, (errorType) => logger.error(`✖ privacy journal append failed (${errorType}); run npm run privacy:journal-sync`)),
+    { lastConsumedAt: createFreshOtpLookup(db), windowMs: authConfig.freshOtpWindowMs },
+  );
+  const privacyStorage = new PrivateDocumentStorage();
+  const startPrivacyJobs = (log: (line: string) => void) => startScheduledJobs(pool, db, [privacyPurgeJob(privacyRepository, (key) => privacyStorage.remove(key))], log);
+
   const documentsController = new DocumentsController(new DocumentsService(
     new DrizzleDocumentsRepository(db, {
       auditHashPepper: authConfig.auditHashPepper,
@@ -269,8 +288,9 @@ export function createDevelopmentRuntime() {
     todayController,
     dashboardAnalyticsController,
     notificationsController: new NotificationsController(notificationsRepository),
+    privacyController,
   });
-  return { app, startNotificationJobs };
+  return { app, startNotificationJobs, startPrivacyJobs, privacyJournalEnabled: privacyJournal !== null };
 }
 import { ConsentController } from "./modules/consents/controllers/consent.controller.js";
 import { ConsentService } from "./modules/consents/services/consent.service.js";

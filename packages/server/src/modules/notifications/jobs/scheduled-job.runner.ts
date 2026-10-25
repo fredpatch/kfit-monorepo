@@ -48,7 +48,8 @@ export async function runScheduledJob(pool: Pool, db: typeof appDb, jobKey: stri
   }
 }
 
-export type NotificationJobDefinition = { jobKey: string; cron: string; windowMs: number; work: () => Promise<Record<string, number>> };
+/** `timezone` and `runKey` are optional (S7.3 daily purge keys its run on the Libreville business date). */
+export type NotificationJobDefinition = { jobKey: string; cron: string; windowMs: number; timezone?: string; runKey?: (now: Date) => string; work: () => Promise<Record<string, number>> };
 
 /** Starts the wake-ups (reconcile every 15 min, delivery every 5 min) and runs each once at start. Returns a stop function. */
 export function startScheduledJobs(pool: Pool, db: typeof appDb, jobs: NotificationJobDefinition[], log: (line: string) => void): () => void {
@@ -59,7 +60,7 @@ export function startScheduledJobs(pool: Pool, db: typeof appDb, jobs: Notificat
       if (running) return;
       running = true;
       try {
-        const outcome = await runScheduledJob(pool, db, job.jobKey, windowRunKey(new Date(), job.windowMs), job.work);
+        const outcome = await runScheduledJob(pool, db, job.jobKey, job.runKey ? job.runKey(new Date()) : windowRunKey(new Date(), job.windowMs), job.work);
         if (outcome.outcome === "failed") log(`✖ ${job.jobKey} failed (${outcome.errorCode})`);
       } catch {
         log(`✖ ${job.jobKey} could not run (database unavailable?)`);
@@ -67,7 +68,7 @@ export function startScheduledJobs(pool: Pool, db: typeof appDb, jobs: Notificat
         running = false;
       }
     };
-    tasks.push(schedule(job.cron, tick));
+    tasks.push(job.timezone ? schedule(job.cron, tick, { timezone: job.timezone }) : schedule(job.cron, tick));
     void tick();
   }
   return () => { for (const task of tasks) void task.stop(); };

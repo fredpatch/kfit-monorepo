@@ -2,6 +2,7 @@
  * S7.2 — internal operational notifications and optional e-mail reminders/digest (Gate 1 approved 2026-10-23).
  * Source modules own business truth; notifications are durable delivery/history; e-mail is an optional side effect.
  */
+import { privacyPurgeDelayDaysKey } from "../privacy/contracts.js";
 
 /** Closed vocabulary. quote_action_required is kept: S7.1 already derives one precise condition (quote status « changes_requested »). */
 export const notificationKinds = [
@@ -74,10 +75,11 @@ export type NotificationErrorCode = (typeof notificationErrorCodes)[number];
 
 type BooleanSetting = { type: "boolean"; default: boolean; label: string };
 type IntegerSetting = { type: "integer"; default: number; min: number; max: number; label: string };
-export type NotificationSettingDefinition = (BooleanSetting | IntegerSetting) & { sensitivity: "operational"; scope: "global" };
+export type NotificationSettingDefinition = (BooleanSetting | IntegerSetting) & { sensitivity: "operational" | "privacy"; scope: "global" };
 
 const bool = (value: boolean, label: string): NotificationSettingDefinition => ({ type: "boolean", default: value, label, sensitivity: "operational", scope: "global" });
-const int = (value: number, min: number, max: number, label: string): NotificationSettingDefinition => ({ type: "integer", default: value, min, max, label, sensitivity: "operational", scope: "global" });
+const int = (value: number, min: number, max: number, label: string, sensitivity: NotificationSettingDefinition["sensitivity"] = "operational"): NotificationSettingDefinition =>
+  ({ type: "integer", default: value, min, max, label, sensitivity, scope: "global" });
 
 /** Defaults: in-app is primary; e-mail on with one daily digest at 08:00 Libreville; per-kind e-mails off (avoid spam). */
 export const notificationSettingRegistry = {
@@ -93,7 +95,11 @@ export const notificationSettingRegistry = {
   "notifications.quote_action_required.email_enabled": bool(false, "Modifications de devis"),
   "notifications.preparation_blocked.email_enabled": bool(false, "Préparations bloquées"),
   "notifications.completion_due.email_enabled": bool(false, "Revues de fin"),
+  // S7.3 (D6): the registry is the closed union of operational settings; privacy adds only the purge delay.
+  [privacyPurgeDelayDaysKey]: int(30, 1, 365, "Délai avant suppression des fichiers (jours)", "privacy"),
 } as const satisfies Record<string, NotificationSettingDefinition>;
+/** Same closed registry under its S7.3 name; notification-named exports are kept for S7.2 callers. */
+export const operationalSettingRegistry = notificationSettingRegistry;
 
 export type NotificationSettingKey = keyof typeof notificationSettingRegistry;
 export type NotificationSettingValue = boolean | number;

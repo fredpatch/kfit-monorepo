@@ -208,9 +208,11 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
 
   async listQueue(filter: { status?: ServiceRequestStatus }): Promise<AdminServiceRequestSummary[]> {
     const query = this.baseQuery();
+    // S7.3 (D5): anonymized prospects leave the named queue; their requests stay reachable by id.
+    const visible = isNull(prospects.anonymizedAt);
     const rows = filter.status
-      ? await query.where(eq(serviceRequests.status, filter.status)).orderBy(desc(serviceRequests.submittedAt))
-      : await query.orderBy(desc(serviceRequests.submittedAt));
+      ? await query.where(and(visible, eq(serviceRequests.status, filter.status))).orderBy(desc(serviceRequests.submittedAt))
+      : await query.where(visible).orderBy(desc(serviceRequests.submittedAt));
 
     if (rows.length === 0) return [];
 

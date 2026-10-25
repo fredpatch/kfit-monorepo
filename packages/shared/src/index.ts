@@ -22,3 +22,4 @@ export * from "./quotes/contracts.js";
 export * from "./payment-proofs/contracts.js";
 export * from "./receipts/contracts.js";
 export * from "./notifications/contracts.js";
+export * from "./privacy/contracts.js";

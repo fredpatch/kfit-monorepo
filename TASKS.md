@@ -10,13 +10,14 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 ```text
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
-Active slice      S7.2 — Dashboard and email notification engine with configurable reminders
-Workflow state    IMPLEMENTED_PENDING_LOCAL_VALIDATION
-Last validated    S7.1 — locally validated 2026-10-23
-Implementation    ed1c7d0 — feat(dashboard): add historical analytics and operational alerts
-S7.2 owner       Claude (took over 2026-10-24: nothing on main beyond Gate 1 docs)
+Active slice      S7.3a — privacy server (archive, anonymize, holds, purge job, journal + replay)
+Workflow state    AWAITING_HUMAN_VALIDATION — S7.3a delivered 2026-10-25, uncommitted (sprint-7.md § S7.3a execution)
+Last validated    S7.2 — validated by Fred 2026-10-25
+Implementation    2dc7c43 (S7.2a server) + 0eac6d4 (S7.2b client, UX-16)
 S7.2 delivered    S7.2a server (engine, outbox, jobs, API, migration 0014) + S7.2b client (UX-16 bell, panel, Réglages)
-Next action       Fred: apply S7.2a/S7.2b, migrate, local validation (sprint-7.md § S7.2 execution); stop before S7.3
+S7.3 rules        Fred 2026-10-25: rules 2–9 approved, rule 1 amended; decisions D1–D12 in sprint-7.md
+S7.3a delivered   migration 0015, privacy module (archive, anonymize, holds, purge job, journal, privacy:replay/journal-sync); unit 569, integration 566
+Next action       Fred: local validation of S7.3a (sprint-7.md § S7.3a execution, manual steps 1–6); S7.3b client after
 Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser
 
 UI refonte        UX-1 → UX-15 done; Fred local checks of UX-9d, UX-10, UX-13 passed (2026-10-24)

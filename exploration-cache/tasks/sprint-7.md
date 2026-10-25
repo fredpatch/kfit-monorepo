@@ -7,8 +7,8 @@ Deliver the V1 Core operational layer: dashboard KPIs and alert workspaces, noti
 ## Ordered tasks
 
 1. S7.1 — Core dashboard KPIs and operational alert workspaces — CLOSED / validated 2026-10-23.
-2. S7.2 — Dashboard and email notification engine with configurable reminders — APPROVED_FOR_IMPLEMENTATION.
-3. S7.3 — Retention, anonymization, soft-delete purge and privacy-action replay — CLOSED until S7.2 validation.
+2. S7.2 — Dashboard and email notification engine with configurable reminders — CLOSED / validated 2026-10-25.
+3. S7.3 — Retention, anonymization, soft-delete purge and privacy-action replay — APPROVED_FOR_IMPLEMENTATION (Gate 1 approved 2026-10-25; S7.3a server in progress).
 4. S7.4 — Backup/restore and production-hardening acceptance — CLOSED until S7.3 validation.
 
 ## Dependency notes
@@ -760,3 +760,336 @@ Evidence (scratch worktree on origin/main 733020e, local PostgreSQL 5433):
 Known limits: reminders verified by integration, not by the SMTP sink run; jobs start from the dev API entrypoint
 (no production entrypoint before Sprint 9); `KFIT_NOTIFICATION_JOBS=off` disables them.
 
+## S7.3 Gate 1 — approved 2026-10-25
+
+Status: APPROVED_FOR_IMPLEMENTATION (S7.3a server first, S7.3b client after validation).
+
+Goal: let the admin irreversibly de-identify an archived customer or prospect, protect scopes under retention holds, purge
+the private files the anonymization releases, and make every executed privacy action replayable after a restore (feeds S7.4).
+
+### Business rules (Fred 2026-10-25)
+
+Approved: rules 2 (sensitive-action e-mail OTP + typed confirmation, irreversible), 3 (scope, with D2), 4 (controlled
+immutability exception), 5 (holds win), 6 (purge job, with D3), 7 (replay log, with D11), 8 (audit), 9 (out of V1, D4).
+
+Rule 1 amended (D6): anonymization is manual only, on an archived customer or prospect; no automatic time-based
+anonymization in V1; no retention-duration keys — only `privacy.purge.delay_days` is added to the settings registry.
+
+Compliance (legal sign-off before production, not before coding): Gabon loi n°001/2011 / CNPDCP, health-data
+sensitivity, OHADA retention of accounting records (≈10 years, to verify). Rule 3 assumes de-identified financial rows
+are acceptable to keep.
+
+### Findings from the codebase (2026-10-25)
+
+- `retention_holds` and `anonymization_events` already exist (migration 0000, `db/schema/operations.ts`), with free-text
+  statuses and only a scope/subject index. `retentionHoldStatuses = ["active","released"]` exists in `db/enums.ts`.
+- `customers` and `prospects` already have `archived_at` and `anonymized_at`, but **no code writes either column**:
+  there is no way to archive a customer or prospect today, so rule 1 has no eligible subject yet (D1).
+- Readers already hiding archived/anonymized customers: `customers.repository.ts` (`active` filter), dashboard
+  `alerts.repository.ts`, `analytics.repository.ts`. Nothing reads `prospects.archived_at/anonymized_at`
+  (admin requests list shows `prospects.full_name` unfiltered).
+- `documents.status` already supports `pending_purge`/`purged` and `documents.purge_after` exists, but nothing sets
+  them. `documents.repository.ts` already refuses access and status changes for `pending_purge`/`purged`.
+  `PrivateDocumentStorage.remove(key)` exists (`rm force`, idempotent).
+- Invariant 7 (submitted questionnaire revisions and consents immutable) is enforced by the absence of any update path,
+  not by a DB trigger or check.
+- Customer names are copied into `receipts.snapshot_json`, `quote_versions` snapshots and their PDFs, and into
+  `notifications.customer_display_name/title/summary` + `notification_email_outbox.body_text/body_html`.
+- The S7.2 settings registry (`packages/shared/src/notifications/contracts.ts`) is notification-scoped
+  (`NotificationSettingKey`, `sensitivity: "operational"`); privacy keys need it widened, not duplicated.
+- `runScheduledJob` / job starter (`notifications/jobs/scheduled-job.runner.ts`) are generic enough to reuse as-is.
+- Fresh step-up: `isFreshOtp(consumedAt, now, AUTH_FRESH_OTP_WINDOW_MS = 10 min)` already gates questionnaire answers
+  (UX-14c); the OTP is e-mailed by `SensitiveActionOtpService`.
+
+### PII / health inventory
+
+Categories: identity / health / financial / technical. Actions: null / replace / redact (free text → null or fixed
+marker) / keep / purge (document → `pending_purge`). Redaction marker (D2): free text → NULL when nullable, else
+`REDACTED_TEXT = "[effacé]"`; JSON → `{}` (or `[]` for arrays) when NOT NULL.
+
+| table.column | category | action on anonymize | rationale |
+| --- | --- | --- | --- |
+| customers.full_name | identity | replace « Client anonymisé · XXXX » | rule 3; NOT NULL; XXXX = first 4 hex of sha256(id), uppercase (D2a) |
+| customers.whatsapp | identity | replace placeholder `anon-<id>` | rule 3; NOT NULL, indexed — placeholder, no column change (D2a) |
+| customers.email, city | identity | null | rule 3 |
+| customers.country, preferred_contact_channel | identity (weak) | keep | not identifying alone; country kept (D2g) |
+| customers.anonymized_at | technical | set now | marker read by every filter |
+| prospects.full_name, whatsapp, email, city | identity | as customers | source prospect anonymized with the customer (D8) |
+| prospects.source | technical | keep | marketing attribution |
+| service_requests.objective, message | health / identity free text | redact | free text from the prospect (D2e) |
+| service_requests.submission_token | technical | keep | not personal |
+| contact_attempts.note | identity free text | redact | coach notes about the person (D2e) |
+| qualification_reviews.suitability_note, conditions_json, blockers_json | health free text | redact | may hold health remarks (D2e) |
+| waitlist_entries.priority_note | free text | redact | D2e |
+| questionnaire_answers.answer_json | health | redact (rule 4 exception) | rule 3 health free text |
+| questionnaire_submissions.* | technical | keep | dates/status only |
+| medical_clearance_records.note | health | redact | D2g |
+| consent_records.verification_metadata_json | technical / identity | redact | rule 3 "consent free text"; decision + dates kept as proof |
+| consent_records.decision, captured_at, definition id | legal fact | keep | proof of consent history |
+| progress_measurements.feeling_note | health | redact | rule 3 measurement notes |
+| progress_measurements.weight_kg, waist_cm, hips_cm, chest_cm, body_fat_estimate | health | null | numeric health data (D2b) |
+| progress_photos → documents | health | purge | rule 3 (D3) |
+| goals.label, baseline/target values | health | keep | D2g |
+| follow_ups.note, next_action | health free text | redact | rule 3 follow-up notes |
+| appointments.reschedule_note, location_or_channel | free text | redact | D2g |
+| subscription_pauses.reason, subscription_status_history.reason, onboarding_items.waiver_reason, component_events.reason | free text | redact | D2g |
+| subscriptions.*, payment_plans.*, installments.*, payment_allocations.* | financial | keep | rule 3 financial facts |
+| payment_events.amount/method/dates | financial | keep | rule 3 |
+| payment_events.external_reference, metadata_json | financial | keep | accounting reconciliation (D2c) |
+| payment_proofs.claimed_*/confirmed_* | financial | keep | rule 3 |
+| payment_proofs.customer_message, review_note | free text | redact | written by/about the person (D2c) |
+| payment_proofs → documents (proof files) | financial evidence | keep (not pending_purge) | payment evidence (D2c) |
+| quotes.*, quote_versions.amount/terms, quote_number | financial | keep | rule 3 |
+| quote_versions.service_snapshot_json + PDF (customerName) | financial document | keep | issued accounting document (D2d) |
+| receipts.receipt_number, amounts, snapshot_json (customerName) + PDF | financial document | keep | issued accounting document (D2d) |
+| documents (sensitivity private / sensitive_health, owner subscription) | health / private | purge | rule 3 (D3) |
+| document_versions.original_filename | identity (may contain name) | deleted with purge | D3 |
+| secure_access_tokens (hashes) | technical | revoke active tokens, keep rows | stop outstanding links; hashes only |
+| external_access_events, audit_events (ip/ua hashes) | technical | keep | hashed, audit trail |
+| notifications.customer_display_name, title, summary | identity copy | replace with pseudonym | D2f |
+| notification_email_outbox.body_text, body_html | identity copy | redact; pending/sending rows → dead_letter | D2f |
+| users.* | staff | out of scope | not a data subject of this feature |
+
+### Reused mechanisms
+
+- Sensitive-action OTP (`SensitiveActionOtpService`) + `isFreshOtp` window (UX-14c pattern).
+- S7.2 `runScheduledJob` / job starter, `scheduled_job_runs`, `KFIT_*_JOBS=off` kill-switch pattern.
+- S7.2 typed settings registry + `operational_settings` table (widened to a closed union of notification + privacy keys).
+- `AuditService`, X-Request-Id UUID guard (notifications router), Shared API Contracts, Domain Error Taxonomy.
+- Advisory-lock decision (decisions.md, `customer-whatsapp:<normalized>`), `PrivateDocumentStorage.remove`.
+
+### Architectural ownership
+
+shared `privacy/contracts.ts` (routes, error codes, settings keys, DTOs) → `modules/privacy/repositories/privacy.repository.ts`
+(transactions, locks, table writes) → `privacy.policy.ts` (pure: eligibility, hold check, pseudonym, column plan as named
+constants) → `anonymization.service.ts`, `retention-hold.service.ts`, `privacy-purge.job.ts`, `privacy-replay.ts` →
+`privacy.controller.ts` (admin session + fresh OTP + typed reference) → `express-privacy.router.ts`, registered in
+`app.ts`, composed in `dev-app.ts`. The column plan (table → columns → action) is one declarative constant used by
+both anonymize and replay.
+
+### Persistence — migration 0015 (small, additive)
+
+Tables exist; only constraints/indexes are missing:
+- partial unique index `anonymization_events_subject_executed_uq` on (subject_type, subject_id) where status = 'executed'
+  (one executed anonymization per subject; replay idempotency);
+- check constraints: `retention_holds.status in ('active','released')`, `anonymization_events.status in ('executed')`
+  `subject_type in ('customer','prospect')`, `scope_type in ('customer','prospect','document')`,
+  `hold_type in ('legal','dispute','accounting')` (D7);
+- index `documents_purge_due_idx` on (status, purge_after) for the purge job (D3);
+- no column change (WhatsApp placeholder, D2a).
+
+Existing-row check before the checks: `select status, count(*) from retention_holds group by 1` and same for
+`anonymization_events` (expected 0 rows locally). Rollback: drop the index/constraints (no data change).
+
+### Anonymization transaction (customer; prospect is the same minus subscriptions)
+
+One transaction, fixed lock order:
+1. `pg_advisory_xact_lock(hashtextextended('privacy-subject:<type>:<id>', 0))` — also taken by hold create/release.
+2. `select … for update` on the subject row; refuse `PRIVACY_SUBJECT_NOT_FOUND`, `PRIVACY_SUBJECT_NOT_ARCHIVED`;
+   already anonymized → idempotent success returning the existing event (double submit / retry).
+3. Active hold check on the subject scope and its documents (D7) → `PRIVACY_RETENTION_HOLD_ACTIVE`.
+4. Source prospect locked next (customer → prospect order) and anonymized with its requests (D8).
+5. Apply the column plan table by table in a fixed order (identity → prospect free text → health → notes →
+   notifications/outbox → documents to `pending_purge` with `purge_after` → revoke active secure tokens), collecting
+   `{table, columns[], rows}`.
+6. Insert `anonymization_events` (status executed, executed_by, metadata = column plan touched + counts, no values) and
+   the `privacy.subject_anonymized` audit event.
+7. Commit. Any failure rolls back everything (atomicity test). Journal append after commit (D11).
+
+Rule 4: only this repository method writes `questionnaire_answers` / `consent_records` after submission; no other module
+gains an update path (a test asserts the other repositories expose none).
+
+### Hold rules (rule 5)
+
+- Admin-only create/release; same subject advisory lock as anonymization, so a hold created concurrently either lands
+  before (anonymize refused) or after (subject already anonymized).
+- Fields: scope_type (`customer` | `prospect` | `document`, D7), scope_id, hold_type (`legal` | `dispute` | `accounting`, D7), reason (admin free text, never
+  copied into audit/logs/notifications), status, started/released by/at. Release is one-way.
+- Duplicate active hold for the same scope + type → `PRIVACY_HOLD_ALREADY_ACTIVE`.
+
+### Purge job (D3)
+
+- Job key `privacy.purge`, daily 03:00 Africa/Libreville, `windowRunKey` per business day, advisory lock via the runner,
+  kill switch `KFIT_PRIVACY_JOBS=off`.
+- Batch 50 documents `where status = 'pending_purge' and purge_after <= now()` ordered by purge_after, `for update skip
+  locked`, hold re-checked per document (hold on document or its owner subject → skipped, counted).
+- Order per document: delete storage objects first (document already inaccessible), then in one transaction delete
+  `document_versions`, set `current_version_id = null`, status `purged` (tombstone row kept). A crash between the two
+  steps leaves a `pending_purge` row whose files are gone; the next run deletes again (`rm force` is idempotent) and
+  commits.
+- Result counts only: `{scanned, purged, skippedHold, failed}`; failures leave the row for the next day.
+- purge_after = anonymization time + `privacy.purge.delay_days` (default 30) (D3c). Proof files are never marked (D2c).
+
+### Replay CLI (rule 7, D11)
+
+- `npm run privacy:replay -- --since <iso>` (server script, local DB guard like the integration tests).
+- Idempotency key = `anonymization_events.id`; the column plan is deterministic (pseudonym derived from the subject id),
+  so re-applying to an already-anonymized row converges; replay twice = same end state.
+- Replay also re-marks the subject's documents `pending_purge` and runs the purge pass for them (restored files deleted).
+- Runs before traffic is reopened (S7.4 restore runbook). Writes one `privacy.replay_run` audit event with counts.
+- Source of events: off-database journal ∪ DB events, dedupe by eventId (D11); `privacy:journal-sync` backfills the journal.
+
+### Settings (rules 1, 6)
+
+Closed registry keys, all `sensitivity: "privacy"`, `scope: "global"`:
+- `privacy.purge.delay_days` — integer 1–365, default 30 (D3c, D6). No retention-duration keys (D6).
+
+### API
+
+All admin-session + CSRF + same-origin (mutations); `Cache-Control: no-store`.
+
+| Method | Path | Step-up | Success | Errors |
+| --- | --- | --- | --- | --- |
+| POST | /admin/customers/:customerId/archive | no | 200 | PRIVACY_SUBJECT_NOT_FOUND, PRIVACY_SUBJECT_HAS_ACTIVE_SUBSCRIPTION (D1) |
+| POST | /admin/prospects/:prospectId/archive | no | 200 | PRIVACY_SUBJECT_NOT_FOUND, PRIVACY_SUBJECT_HAS_OPEN_REQUEST (D1) |
+| POST | /admin/customers/:customerId/anonymize | fresh OTP + `{ confirmName }` (D9) | 200 `{ anonymizationEventId, executedAt }` | AUTH_FRESH_OTP_REQUIRED, PRIVACY_CONFIRMATION_MISMATCH, PRIVACY_SUBJECT_NOT_FOUND, PRIVACY_SUBJECT_NOT_ARCHIVED, PRIVACY_RETENTION_HOLD_ACTIVE |
+| POST | /admin/prospects/:prospectId/anonymize | same | same | same |
+| GET | /admin/retention-holds?scopeType&scopeId | no | 200 list | PRIVACY_INVALID_INPUT |
+| POST | /admin/retention-holds | no | 201 | PRIVACY_INVALID_INPUT, PRIVACY_SUBJECT_NOT_FOUND, PRIVACY_HOLD_ALREADY_ACTIVE |
+| POST | /admin/retention-holds/:holdId/release | no | 200 | PRIVACY_HOLD_NOT_FOUND, PRIVACY_HOLD_ALREADY_RELEASED |
+| GET/PUT | existing settings endpoint, widened registry | no | 200 | unknown key / invalid value |
+
+Unexpected → `PRIVACY_ROUTE_UNEXPECTED_FAILURE` (500), logged as error type + SQLSTATE only.
+Typed confirmation = the subject's full name as displayed, compared after trim + NFC + collapsed whitespace, case-sensitive (D9).
+
+### UI (S7.3b, French)
+
+- Fiche client, menu ⋯: « Archiver le client » (D1); when archived: « Anonymiser… ». Dialog: « Cette action est
+  irréversible. L'identité et les données de santé de ce client seront effacées ; les paiements, devis et reçus sont
+  conservés. » → field « Saisis le nom {NOM} pour confirmer » → step « Code envoyé à ton adresse e-mail » (reuse the
+  AnswersSheet OTP step) → « Anonymiser définitivement ». Refusal for an active hold: « Un blocage de conservation est
+  actif sur ce client. Lève-le avant d'anonymiser. »
+- Card « Blocages de conservation » on the fiche: list, « Ajouter un blocage » (type + motif), « Lever le blocage »
+  (confirmation).
+- Anonymized customer: header « Client anonymisé · XXXX », health tabs replaced by « Données effacées le {date} ».
+- Configuration › Réglages: section « Confidentialité » — « Délai avant suppression des fichiers (jours) ».
+- Desktop + 390 px, keyboard, focus return (S7.2b patterns).
+
+### Audit (rule 8)
+
+`privacy.subject_archived`, `privacy.subject_anonymized`, `privacy.hold_created`, `privacy.hold_released`,
+`privacy.purge_run` (one per run, counts), `privacy.replay_run`. Metadata: IDs, subject/scope type, hold type,
+table/column names, counts. Never: names, WhatsApp, e-mail, hold reason, free-text values, storage keys, filenames.
+
+### Privacy of logs and metadata
+
+- `anonymization_events.metadata_json` = `{ planVersion, tables: [{ table, columns, rows }], documentsMarked, tokensRevoked }`.
+- Job results and CLI output: counts only. Router errors: type + SQLSTATE (S7.2 pattern).
+- The pseudonym « Client anonymisé · XXXX » must not be derivable back to the person (XXXX from sha256(subject id), D2a).
+
+### Validation
+
+- Unit (policy): eligibility matrix, hold blocks, pseudonym determinism, column plan covers every inventory row marked
+  non-keep, confirm-reference comparison, settings validation.
+- Express HTTP: auth/CSRF/origin, fresh OTP missing/expired → 403 `AUTH_FRESH_OTP_REQUIRED`, mismatch → 400, error
+  mapping, request-id guard, no PII in 500 bodies.
+- PG integration (5433): hold blocks anonymize and purge; atomic rollback on mid-way failure (proxy-injected failure
+  like the receipts tests); financial rows byte-identical after anonymize; immutable-record writers still refuse;
+  anonymized subject hidden from customer list/search/analytics/alerts/notifications; concurrent anonymize + hold create
+  serialize; double submit idempotent; purge only after passed purge_after, idempotent, skips holds; replay twice = same
+  state; audit rows present with no PII (assert no fixture name/WhatsApp/e-mail string in audit/metadata JSON).
+- `drizzle-kit migrate` on a fresh DB and on the seeded demo DB.
+- Browser (S7.3b): desktop + 390 px flow archive → anonymize with Mailpit code; hold add/release; Réglages section.
+
+### Risks
+
+- Rule 7 vs restore: events newer than the backup survive only in the off-database journal (D11); a journal append that fails
+  after commit must be backfilled with `privacy:journal-sync`.
+- Over-wiping a column the business still needs (or under-wiping a free-text column holding health data) — inventory
+  review by Fred is the control.
+- Names inside issued receipt/quote PDFs survive anonymization (D2d); needs legal confirmation.
+- Readers that do not yet filter `anonymized_at` (requests list for prospects) would show the pseudonym, not hide it.
+- Purge deletes files irreversibly; a wrong `purge_after` or missing hold check destroys evidence — covered by tests
+  and the default-off kill switch in non-dev environments.
+
+### Slice plan
+
+- **S7.3a server** (≈ 1 500–2 000 lines incl. tests): shared `privacy/contracts.ts` (+ settings registry widening);
+  migration 0015; `modules/privacy/` (repository, policy, services, purge job, controller, router); archive writers
+  (D1); reader updates for prospects; `scripts/privacy/replay.mjs` + `privacy:replay` script; `app.ts`, `dev-app.ts`,
+  `api-server.mjs` (job start). Tests: `privacy.policy.test.ts`, `privacy.express.test.ts`,
+  `privacy.repository.integration.ts`, `privacy-purge.integration.ts`, `privacy-replay.integration.ts`.
+- **S7.3b client** (≈ 600–900 lines): fiche client actions + anonymize dialog with OTP step, holds card, anonymized
+  customer view, Réglages « Confidentialité », API client + error messages. Acceptance: typecheck + build + browser.
+
+### Decisions (Fred 2026-10-25)
+
+D1. Add « Archiver » for customers and prospects. Customer: refused while any subscription is active/onboarding/paused (PRIVACY_SUBJECT_HAS_ACTIVE_SUBSCRIPTION). Prospect: refused while any request is open (PRIVACY_SUBJECT_HAS_OPEN_REQUEST). No unarchive in S7.3 (backlog item).
+D2. Rule 3 scope approved with:
+  a. Pseudonym « Client anonymisé · XXXX », XXXX = first 4 hex of sha256(subject id), uppercase. WhatsApp → placeholder `anon-<subject id>` (no column change).
+  b. Numeric measurements (weight_kg, waist_cm, hips_cm, chest_cm, body_fat_estimate) → null.
+  c. payment_events.external_reference + metadata_json kept; payment_proofs.customer_message + review_note redacted; proof files KEPT (not pending_purge).
+  d. Customer name kept inside issued receipt/quote snapshots and PDFs (accounting documents — legal to confirm).
+  e. Prospect free text redacted: service_requests.objective/message, contact_attempts.note, qualification_reviews.suitability_note/conditions_json/blockers_json, waitlist_entries.priority_note.
+  f. notifications.customer_display_name/title/summary → pseudonym; notification_email_outbox body_text/body_html redacted; pending/sending rows → dead_letter.
+  g. Other free text redacted: appointments.reschedule_note/location_or_channel, subscription_pauses.reason, subscription_status_history.reason, onboarding_items.waiver_reason, component_events.reason, medical_clearance_records.note. goals and country kept.
+  Redaction marker: free text → NULL when nullable, else the constant REDACTED_TEXT = "[effacé]"; JSON → {} (or [] for arrays) when NOT NULL.
+D3. Purge (rule 6 approved with): (a) only anonymization marks documents pending_purge in V1; (b) storage deleted before the DB tombstone commit; (c) purge_after = anonymization time + privacy.purge.delay_days (default 30); (d) daily 03:00 Africa/Libreville, batch 50.
+D4. Out of V1 confirmed: self-service erasure/export, automatic expiry, bulk anonymization.
+D5. Anonymized subjects hidden from named lists, search, alerts, notifications; their payments still count in revenue aggregates.
+D6. No inert retention-duration keys. Only privacy.purge.delay_days (integer 1–365, default 30) is added to the widened settings registry. Rule 1 amended accordingly.
+D7. Hold scopes = customer | prospect | document. Hold types = legal | dispute | accounting.
+D8. Anonymizing a customer also anonymizes its source prospect and that prospect's requests, same transaction (lock order customer → prospect).
+D9. Typed confirmation = the subject's full name as currently displayed. Compare after trim + Unicode NFC + collapse inner whitespace, case-sensitive. Mismatch → PRIVACY_CONFIRMATION_MISMATCH. The typed value is never logged or audited.
+D10. Already anonymized → idempotent 200 returning the existing event.
+D11. Off-database journal: after commit, append one JSON line per executed event to `${KFIT_PRIVACY_JOURNAL_DIR}/privacy-journal.jsonl` (fields: eventId, subjectType, subjectId, executedAt, planVersion, linkedSubjects; no PII), with fsync. Append failure after commit → log error type only; the DB event stays. Add `npm run privacy:journal-sync` (appends DB events missing from the journal, dedupe by eventId). `privacy:replay -- --since <iso>` reads journal ∪ DB events, dedupe by eventId. Env var missing → journal disabled with a startup warning in dev; document it in .env.example (no values printed).
+D12. Purge job starts only from the dev entrypoint and honours KFIT_PRIVACY_JOBS=off (same as S7.2). Production enablement = S7.4.
+
+D1 precision (Fred 2026-10-25, asked during S7.3a): a customer is archivable only when every subscription is `completed` or
+`cancelled`; `awaiting_payment`, `medical_clearance_required`, `ready_to_start` and `completion_due` also refuse with
+PRIVACY_SUBJECT_HAS_ACTIVE_SUBSCRIPTION. A prospect is archivable only when every request is terminal (`rejected`,
+`abandoned`, `converted`, `closed_duplicate`).
+
+## S7.3a execution — 2026-10-25 (Claude)
+
+Delivered: S7.3a server only, uncommitted, pending Fred local validation. S7.3b (client) is a separate brief.
+
+Evidence (local PostgreSQL 5433, `kfit_dev`):
+- tsc clean for shared, server, client; `npm run db:check` clean.
+- shared tests 59 → 62; server unit 545 → 569 (privacy policy 7, immutability scan 1, express 12, journal/job 4);
+  integration 553 → 566 (`privacy.repository.integration` 13). No residue left in `kfit_dev` after the suites.
+- Migration `0015_lethal_the_liberteens.sql` (generated with `npm run db:generate`; the only wrapper in the repo is the
+  cadence-specific one): partial unique index `anonymization_events_subject_executed_uq` + 5 checks (hold status/scope/type,
+  event status/subject type). Existing-row check before: 0 holds, 0 events. Applied on a fresh scratch DB
+  (`kfit_s73_fresh`, left in place — dropping a DB is a never-tier command) and on `kfit_dev`: 16 migrations each.
+- `documents_status_idx` (status, purge_after) already existed, so Gate 1's "documents purge index" needed no migration.
+
+Defaults: `privacy.purge.delay_days` = 30 (1–365, sensitivity privacy, widened S7.2 registry); purge job `privacy.purge`
+daily 03:00 Africa/Libreville, run key = Libreville business date, batch 50; `KFIT_PRIVACY_JOBS=on`;
+`KFIT_PRIVACY_JOURNAL_DIR` empty by default (journal disabled, startup warning). Both documented in `.env.example`.
+
+Implementation notes (within Gate 1 / D1–D12):
+- One declarative `ANONYMIZATION_PLAN` (policy) drives anonymize and replay; a unit test proves it covers every non-keep
+  inventory row and touches no kept financial column.
+- Pseudonyms derive from each row's own id: the customer row from the customer id, the linked prospect from the prospect id;
+  notifications take the subject's pseudonym in `customer_display_name`, `title` and `summary` (D2f, literal).
+- An already-anonymized subject returns the existing event before any archived/confirmation/hold check (D10); archiving an
+  archived subject returns its original `archivedAt`.
+- Replay keeps the original `anonymized_at`; documents restored as available are re-marked with `purge_after = now` and
+  purged at once; documents still `pending_purge` in the restored DB keep their schedule.
+- The S7.2 job starter gained optional `timezone` and `runKey` (reuse, no second runner).
+- Admin request queue hides anonymized prospects (D5); customers list/search, alerts and analytics lists already filtered;
+  analytics finance still counts every subscription (D5 revenue). Open notifications of an anonymized customer are redacted
+  at once and resolved by the next S7.2 reconcile (the alert source excludes the subject).
+
+Known limits:
+- `privacy:replay` and `privacy:journal-sync` refuse any database other than the local 5433 one until S7.4.
+- Purge job starts only from the dev entrypoint (D12).
+- S7.3b must add Vite proxy entries for `/admin/prospects` and `/admin/retention-holds` (`/admin/customers` exists).
+- No unarchive (D1 backlog). Names inside issued receipt/quote PDFs are kept (D2d, legal to confirm).
+
+Manual validation (Fred):
+1. `npm run db:migrate`, restart `npm run dev:api`: startup shows the privacy journal warning unless
+   `KFIT_PRIVACY_JOURNAL_DIR` is set; set it to a local folder outside the repo and restart.
+2. Pick a customer whose subscriptions are all completed/cancelled: `POST /admin/customers/:id/archive` (CSRF headers as the
+   UI sends them) → 200; with an unfinished subscription → 409.
+3. `POST /auth/otp/sensitive-action` → code in Mailpit (http://localhost:8025) → `POST /auth/otp/sensitive-action/verify`
+   `{ "code": "…" }` → then `POST /admin/customers/:id/anonymize` `{ "confirmName": "<exact displayed name>" }` → 200;
+   wrong name → 400; after 10 minutes without a new code → 403.
+4. DBeaver: `customers`/`prospects` row shows « Client anonymisé · XXXX », `anon-<id>`, null e-mail/city;
+   `questionnaire_answers.answer_json` = `{}`/`[]`; `documents` of the subscription = `pending_purge` with `purge_after` +30 d;
+   `payment_events`/`payment_allocations`/`installments` unchanged; one `anonymization_events` row (metadata = tables/columns/counts);
+   `audit_events` `privacy.*` rows with IDs/counts only; one line in `<journal dir>/privacy-journal.jsonl`.
+5. `POST /admin/retention-holds` on another archived customer, then anonymize → 409 `PRIVACY_RETENTION_HOLD_ACTIVE`;
+   release → anonymize succeeds.
+6. `npm run privacy:journal-sync` → `{ appended: 0 }`; `npm run privacy:replay -- --since <ISO before step 3>` → `replayed: 1`, no change.

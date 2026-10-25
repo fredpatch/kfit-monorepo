@@ -24,9 +24,11 @@ Recette 2026-10-25 fixes
   CAT-03a         catalogue variants, components, rules editable (REG-F2), server slice; validated by Fred 2026-10-25 (5c5325b)
   CAT-03b         client slice (D8 tabs + « Avant publication »); validated live by Fred 2026-10-25, committed (sprint-7.md § CAT-03b execution)
   POL-01          recette polish F3 F4 F5 F8 F9 F10 F11 — committed 2026-10-25 on Fred's instruction (sprint-7.md § POL-01 execution); manual checks pending
+TEST-01         integration DB kfit_test + dev « Données de test » cleanup — delivered and committed 2026-10-25 on Fred's instruction (sprint-7.md § TEST-01 execution); manual checks pending
 Backlog (V1.1)    « RDV à clôturer dans À traiter » (POL-01 D8: display-only in POL-01)
 S7.4 prereqs      production guard: refuse production start if any published consent definition title contains « DÉMONSTRATION » (D9, not implemented)
-Next action       Fred: POL-01 manual checks (sprint-7.md § POL-01 execution); then S7.3b
+S7.4 prereqs      CI integration DB = kfit_test (port alignment 5433 vs 5432 still open)
+Next action       Fred: TEST-01 validation (sprint-7.md § TEST-01 execution), POL-01 manual checks; then S7.3b
 Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser
 
 UI refonte        UX-1 → UX-15 done; Fred local checks of UX-9d, UX-10, UX-13 passed (2026-10-24)

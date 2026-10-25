@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { before, after, test } from "node:test";
@@ -35,7 +36,7 @@ function receipt(result: ReceiptResult): Receipt { assert.ok(result.ok, JSON.str
 const finance = () => new FinanceService(new DrizzleFinanceRepository(db, options, clock));
 const fa = { ...actor, userId };
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? ""); assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev" && !target.search);
+  assertLocalTestDatabase();
   // These isolated future partitions must be absent; never change another fixture's counter.
   assert.equal((await db.select().from(businessDocumentCounters).where(and(eq(businessDocumentCounters.documentType, "receipt"), inArray(businessDocumentCounters.year, [year, year + 1])))).length, 0); safe = true;
   await db.insert(users).values({ id: userId, email: `receipt-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });

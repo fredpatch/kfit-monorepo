@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { createHash, randomUUID, createHmac } from "node:crypto";
 import { once } from "node:events";
@@ -42,7 +43,7 @@ const scanner = net.createServer(socket => {
   });
 });
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? ""); assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev" && !target.search); safe = true;
+  assertLocalTestDatabase(); safe = true;
   root = await mkdtemp(path.join(os.tmpdir(), "kfit-proof-")); scanner.listen(0, "127.0.0.1"); await once(scanner, "listening");
   storage = new PrivateDocumentStorage({ root, clamavHost: "127.0.0.1", clamavPort: (scanner.address() as AddressInfo).port }); repo = repoAt();
   await db.insert(users).values({ id: userId, email: `proof-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });

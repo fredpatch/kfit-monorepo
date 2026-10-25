@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -23,6 +23,8 @@ const range = (key: NotificationSettingKey) => {
   const d = definition(key);
   return d.type === "integer" ? { min: d.min, max: d.max } : { min: 0, max: 0 };
 };
+// TEST-01 D4: dev builds only; the chunk is not emitted in production.
+const TestDataCard = import.meta.env.DEV ? lazy(() => import("../../dev/TestDataCard.js").then((m) => ({ default: m.TestDataCard }))) : null;
 const hours = Array.from({ length: 24 }, (_, h) => h);
 
 function SettingRow({ id, label, hint, checked, disabled, onChange, children }: { id: string; label: string; hint?: string; checked: boolean; disabled?: boolean; onChange?: (value: boolean) => void; children?: React.ReactNode }) {
@@ -169,6 +171,11 @@ export function NotificationSettingsPage() {
             </CardContent>
           </Card>
           {query.data?.updatedAt ? <p className="text-xs text-muted-foreground">Dernière modification : {dateTimeFr(query.data.updatedAt)}</p> : null}
+        </div>
+      ) : null}
+      {TestDataCard ? (
+        <div className="mt-5 grid max-w-3xl gap-5">
+          <Suspense fallback={null}><TestDataCard /></Suspense>
         </div>
       ) : null}
     </AdminPage>

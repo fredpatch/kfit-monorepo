@@ -48,6 +48,7 @@ Conventions        server-first; typed domain errors (e.g. REQUEST_*); server-au
 ```text
 Database          PostgreSQL 16 (Docker, postgres:16-alpine)
 Local target      localhost:5433 (Docker). Native PostgreSQL owns 5432 — never target it by accident.
+Test database     localhost:5433/kfit_test (root .env.test) for integration tests only; kfit_dev stays the dev API database (TEST-01).
 ORM / migrations  Drizzle ORM + drizzle-kit; migrations in packages/server/src/db/migrations
 Generated files   packages/server/src/db/migrations/** (SQL + meta snapshots), packages/*/dist/**
 Seeds             npm run seed:catalogue (ask tier)
@@ -72,7 +73,8 @@ Validation set (root):
 typecheck           npm run typecheck          (client typecheck builds shared first)
 build               npm run build
 unit tests          npm test                   (shared + server, no DB)
-integration tests   npm run test:integration   (server, real local DB)
+integration tests   npm run test:integration   (server, local kfit_test via root .env.test)
+test DB prepare     npm run db:test:prepare    (create kfit_test if missing + migrate + catalogue seed; idempotent)
 schema check        npm run db:check
 cadence generation  npm run db:generate:cadence-history (ask; Drizzle plus approved PostgreSQL exclusion guard)
 lint                not configured
@@ -84,7 +86,7 @@ Tiers (mirrored in `.vscode/settings.json`):
 ```text
 auto    git status · git diff · git log · git show · git branch --show-current
         npm run typecheck · npm run build · npm test · npm run db:check
-ask     npm run db:migrate · npm run db:generate · npm run test:integration
+ask     npm run db:migrate · npm run db:generate · npm run test:integration · npm run db:test:prepare
         npm run db:generate:cadence-history
         npm run seed:* · npm run preflight:* · npm run db:up / db:down · docker compose …
         npm install / ci / any lockfile change · git add · git commit

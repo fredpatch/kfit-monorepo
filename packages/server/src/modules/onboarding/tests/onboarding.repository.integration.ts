@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
@@ -22,8 +23,7 @@ const definitionIds: string[] = [];
 const future = () => new Date(Date.now() + 86400000);
 let safeTarget = false;
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? "");
-  assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433", "onboarding integration requires disposable local PostgreSQL on port 5433");
+  assertLocalTestDatabase();
   safeTarget = true;
   await db.insert(users).values({ id: userId, email: `onboarding-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
   await db.insert(customers).values({ id: customerId, fullName: "Synthetic Onboarding Customer", whatsapp: "+241" + String(BigInt("0x" + customerId.replaceAll("-", "").slice(0,12)) % 1000000000000n).padStart(12,"0") });

@@ -54,6 +54,9 @@ import { createPrivacyJournal, PRIVACY_JOURNAL_DIR_ENV } from "./modules/privacy
 import { PrivacyService } from "./modules/privacy/services/privacy.service.js";
 import { AccessTokenSessionResolver } from "./modules/auth/services/access-token-session.resolver.js";
 import { AuditService } from "./modules/auth/services/audit.service.js";
+import { DevToolsController } from "./modules/dev-tools/controllers/dev-tools.controller.js";
+import { DrizzleTestDataRepository } from "./modules/dev-tools/repositories/test-data.repository.js";
+import { TestDataService } from "./modules/dev-tools/services/test-data.service.js";
 import { AuthRouteService } from "./modules/auth/services/auth-route.service.js";
 import { BootstrapService } from "./modules/auth/services/bootstrap.service.js";
 import { OtpChallengeService } from "./modules/auth/services/otp-challenge.service.js";
@@ -296,6 +299,9 @@ export function createDevelopmentRuntime() {
     dashboardAnalyticsController,
     notificationsController: new NotificationsController(notificationsRepository),
     privacyController,
+    // TEST-01 D4: « Données de test » cleanup, dev composition only.
+    devToolsController: new DevToolsController(new TestDataService(new DrizzleTestDataRepository(db, { auditHashPepper: authConfig.auditHashPepper }),
+      (key) => privacyStorage.remove(key), (line) => logger.warn(line))),
   });
   return { app, startNotificationJobs, startPrivacyJobs, privacyJournalEnabled: privacyJournal !== null };
 }

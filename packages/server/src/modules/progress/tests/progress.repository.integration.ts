@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { before, after, test } from "node:test";
@@ -21,8 +22,7 @@ const repositoryAt = (time = now) => new DrizzleProgressRepository(db, options, 
 const repo = repositoryAt(), service = new ProgressService(repo);
 let safe = false;
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? "");
-  assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev" && !target.search, "requires disposable local PostgreSQL 5433/kfit_dev"); safe = true;
+  assertLocalTestDatabase(); safe = true;
   await db.insert(users).values({ id: userId, email: `progress-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
   await db.insert(customers).values({ id: customerId, fullName: "Synthetic Progress Customer", whatsapp: "+241000005454" });
   await db.insert(services).values({ id: serviceId, name: "Synthetic Progress Service", slug: `progress-${serviceId}`, pricingMode: "quote", deliveryType: "time_based", capacityMode: "unlimited" });

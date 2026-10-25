@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
@@ -31,7 +32,7 @@ async function healthDefinition() {
   assert.ok(result.ok); if (!result.ok) throw new Error("expected synthetic definition"); definitionIds.push(result.definition.id); return result.definition;
 }
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? ""); assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev", "questionnaire integration requires disposable local database"); safe = true;
+  assertLocalTestDatabase(); safe = true;
   await db.insert(users).values({ id: userId, email: `questionnaire-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
   await db.insert(customers).values({ id: customerId, fullName: "Synthetic Questionnaire Customer", whatsapp: `+241${String(BigInt("0x" + customerId.replaceAll("-", "").slice(0,12)) % 1000000000000n).padStart(12,"0")}` });
   await healthDefinition();

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
@@ -35,8 +36,7 @@ const rules = { followUpFrequencyDays: 7, lateCancelNoticeHours: 24, lateCancelC
 let safe = false;
 
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? "");
-  assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev", "requires local PostgreSQL kfit_dev on 5433");
+  assertLocalTestDatabase();
   safe = true;
   await db.insert(users).values({ id: userId, email: `catalogue-content-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
   await db.insert(customers).values({ id: customerId, fullName: "Synthetic Catalogue Customer", whatsapp: `+2417${customerId.replace(/\D/g, "").slice(0, 7).padEnd(7, "0")}` });

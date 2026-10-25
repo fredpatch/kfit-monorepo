@@ -1,18 +1,14 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { INTEGRATION_TEST_DATABASE_NAME, LOCAL_DATABASE_PORT, localDatabaseName } from "../db/database-target.js";
 
-/** POL-01 D1: integration tests write only to the disposable local kfit_dev database (same rule as quotes.repository.integration.ts). */
+/** TEST-01 D1: integration tests write only to the local kfit_test database, never to kfit_dev where the dev API and its jobs run. */
 export function isLocalTestDatabase(url: string | undefined): boolean {
-  try {
-    const target = new URL(url ?? "");
-    return ["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev" && !target.search;
-  } catch {
-    return false;
-  }
+  return localDatabaseName(url) === INTEGRATION_TEST_DATABASE_NAME;
 }
 
 export function assertLocalTestDatabase(url = process.env.DATABASE_URL): void {
-  assert.ok(isLocalTestDatabase(url), "integration tests require the local kfit_dev database on port 5433");
+  assert.ok(isLocalTestDatabase(url), `integration tests require the local ${INTEGRATION_TEST_DATABASE_NAME} database on port ${LOCAL_DATABASE_PORT} (root .env.test, npm run db:test:prepare)`);
 }
 
 /** POL-01 D1: fixture names stand out in the catalogue and lists if a run ever leaks. */

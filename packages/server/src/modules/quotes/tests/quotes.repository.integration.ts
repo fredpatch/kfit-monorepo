@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { before, after, test } from "node:test";
@@ -38,7 +39,7 @@ const failure = (error: string) => ({ ok: false, error });
 function quote(result: QuoteResult): QuoteDetail { assert.ok(result.ok, JSON.stringify(result)); if (!result.ok || !("body" in result) || !("quote" in result.body)) throw new Error("Missing quote detail"); return result.body.quote; }
 const current = (q: QuoteDetail) => { const v = q.versions.find(v => v.id === q.currentVersionId); assert.ok(v); return v; };
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? ""); assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev" && !target.search); safe = true;
+  assertLocalTestDatabase(); safe = true;
   counterExisted = (await db.select().from(businessDocumentCounters).where(and(eq(businessDocumentCounters.documentType, "quote"), eq(businessDocumentCounters.year, year)))).length > 0;
   await db.insert(users).values({ id: userId, email: `quote-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
   await db.insert(customers).values({ id: customerId, fullName: "Synthetic Quote Customer", whatsapp: "+241000006262" });

@@ -6,6 +6,7 @@ export * from "./customers/contracts.js";
 export * from "./customers/client-status.js";
 export * from "./phone.js";
 export * from "./dev/demo-account.js";
+export * from "./dev/test-data.js";
 export * from "./onboarding/contracts.js";
 export * from "./consents/contracts.js";
 export * from "./questionnaires/contracts.js";

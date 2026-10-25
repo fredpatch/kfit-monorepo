@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after,before,test } from "node:test";
@@ -18,7 +19,7 @@ const anon={userId:null,requestId:randomUUID(),ipAddress:null,userAgent:"docs-pu
 const file=(sha:string)=>({storageKey:randomUUID()+".pdf",originalFilename:"plan.pdf",mimeType:"application/pdf" as const,sizeBytes:100,sha256:sha});
 
 before(async()=>{
- const u=new URL(process.env.DATABASE_URL??"");assert.ok(["localhost","127.0.0.1"].includes(u.hostname)&&u.port==="5433"&&u.pathname==="/kfit_dev");
+ assertLocalTestDatabase();
  await db.insert(users).values({id:userId,email:`docs-${userId}@example.invalid`,passwordHash:"x",role:"admin",status:"active"});
  await db.insert(customers).values({id:customerId,fullName:"Docs Test",whatsapp:"+241000000001"});
  await db.insert(services).values({id:serviceId,name:"Docs Service",slug:`docs-${serviceId}`,pricingMode:"quote",deliveryType:"time_based",capacityMode:"unlimited"});

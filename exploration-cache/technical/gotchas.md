@@ -82,3 +82,10 @@ Handling:
 - rerun the integration suite once;
 - any S4.2 failure, repeated Sprint 3 failure, or different failure keeps the validation gate red;
 - harden the test separately rather than weakening concurrency assertions.
+
+## Tests: integration database isolation (TEST-01)
+
+Category: Tests.
+- POL-01 incident (2026-10-25): integration tests and the dev API shared kfit_dev. The dev jobs (notifications reconcile, delivery, privacy purge) wrote rows on live test fixtures, so cleanups failed on FKs.
+- Result: 58 leaked subscriptions and a published synthetic consent text stayed in kfit_dev until a manual, id-scoped delete.
+- Rule: integration = kfit_test only (localhost:5433/kfit_test, root `.env.test`, `npm run db:test:prepare`). The single guard is `assertLocalTestDatabase` in src/testing/integration-fixtures.ts; the dev API refuses to start on kfit_test.

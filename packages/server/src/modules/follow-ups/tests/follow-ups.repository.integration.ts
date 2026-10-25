@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { before, after, test } from "node:test";
@@ -21,8 +22,7 @@ const repositoryAt = (time = now) => new DrizzleFollowUpsRepository(db, options,
 const repo = repositoryAt(), service = new FollowUpsService(repo);
 let safe = false;
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? "");
-  assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev", "requires disposable local PostgreSQL on5433/kfit_dev"); safe = true;
+  assertLocalTestDatabase(); safe = true;
   await db.insert(users).values({ id: userId, email: `follow-ups-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
   await db.insert(customers).values({ id: customerId, fullName: "Synthetic Follow-up Customer", whatsapp: "+241000007777" });
 });

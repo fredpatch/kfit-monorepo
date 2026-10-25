@@ -9,6 +9,12 @@ if (!Number.isSafeInteger(port) || port <= 0 || port > 65535) {
 }
 
 const { logger } = await import("../../dist/logging/logger.js");
+const { namesIntegrationTestDatabase } = await import("../../dist/db/database-target.js");
+// TEST-01 D1: kfit_test belongs to the integration suite; the dev API and its jobs must never write there.
+if (namesIntegrationTestDatabase(process.env.DATABASE_URL)) {
+  logger.error("✖ K'FIT dev API not started: DATABASE_URL points at kfit_test, the integration test database. Use kfit_dev in .env.");
+  process.exit(1);
+}
 const { runStartupChecks } = await import("../../dist/dev/startup-checks.js");
 const { createDevelopmentRuntime } = await import("../../dist/dev-app.js");
 const { pool } = await import("../../dist/db/client.js");

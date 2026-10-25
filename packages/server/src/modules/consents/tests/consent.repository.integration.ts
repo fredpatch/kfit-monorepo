@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
@@ -30,8 +31,7 @@ async function publish(type: ConsentType) {
   assert.ok(result.ok); if (!result.ok) throw new Error("expected synthetic definition"); definitionIds.push(result.definition.id); return result.definition;
 }
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? "");
-  assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev", "consent integration requires disposable local PostgreSQL"); safeTarget = true;
+  assertLocalTestDatabase(); safeTarget = true;
   await db.insert(users).values({ id: userId, email: `consent-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
   await db.insert(customers).values({ id: customerId, fullName: "Synthetic Consent Customer", whatsapp: `+241${String(BigInt("0x" + customerId.replaceAll("-", "").slice(0,12)) % 1000000000000n).padStart(12,"0")}` });
   await db.insert(services).values({ id: serviceId, name: "Synthetic Consent Service", slug: `consent-${serviceId}`, pricingMode: "quote", deliveryType: "time_based", capacityMode: "unlimited" });

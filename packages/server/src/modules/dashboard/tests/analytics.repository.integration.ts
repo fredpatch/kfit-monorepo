@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
@@ -50,7 +51,7 @@ async function request(at: Date, convertedSubscriptionId: string | null = null) 
   return id;
 }
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? ""); assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev"); safe = true;
+  assertLocalTestDatabase(); safe = true;
   await db.insert(customers).values({ id: customerId, fullName: "Synthetic Dashboard", whatsapp: "+241000001772" });
   await db.insert(prospects).values({ id: prospectId, fullName: "Synthetic Dashboard Prospect", whatsapp: "+241000001773" });
   await db.insert(services).values({ id: serviceId, name: "Synthetic Dashboard Offer", slug: `dashboard-${serviceId}`, pricingMode: "quote", deliveryType: "time_based", capacityMode: "unlimited" });

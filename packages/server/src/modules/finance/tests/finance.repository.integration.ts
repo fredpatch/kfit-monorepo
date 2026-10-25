@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { before, after, test } from "node:test";
@@ -20,8 +21,7 @@ const repositoryAt = (time = now) => new DrizzleFinanceRepository(db, options, (
 const repo = repositoryAt(), service = new FinanceService(repo);
 let safe = false;
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? "");
-  assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev" && !target.search); safe = true;
+  assertLocalTestDatabase(); safe = true;
   await db.insert(users).values({ id: userId, email: `finance-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
   await db.insert(customers).values([{ id: customerId, fullName: "Synthetic Finance Customer", whatsapp: "+241000006161" }, { id: otherCustomerId, fullName: "Synthetic Other Finance Customer", whatsapp: "+241000006162" }]);
   await db.insert(services).values({ id: serviceId, name: "Synthetic Finance Service", slug: `finance-${serviceId}`, pricingMode: "quote", deliveryType: "time_based", capacityMode: "unlimited" });

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
@@ -24,8 +25,7 @@ const future = (days = 100) => new Date(Date.now() + days * 86400000);
 const past = () => new Date(Date.now() - 86400000);
 let safe = false;
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? "");
-  assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev", "requires disposable localhost:5433/kfit_dev"); safe = true;
+  assertLocalTestDatabase(); safe = true;
   await db.insert(users).values({ id: userId, email: `lifecycle-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
   await db.insert(customers).values({ id: customerId, fullName: "Synthetic Lifecycle Customer", whatsapp: "+241000009999" });
   await db.insert(services).values({ id: serviceId, name: "Synthetic Lifecycle", slug: `lifecycle-${serviceId}`, pricingMode: "quote", deliveryType: "time_based", capacityMode: "limited", capacityLimit: 1, defaultDurationValue: 999, defaultDurationUnit: "day" });

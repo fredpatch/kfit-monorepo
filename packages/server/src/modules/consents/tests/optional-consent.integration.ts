@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
@@ -39,8 +40,7 @@ async function publish(type: ConsentType) {
   return result.body.definition;
 }
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? "");
-  assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev", "optional consent integration requires disposable local PostgreSQL"); safeTarget = true;
+  assertLocalTestDatabase(); safeTarget = true;
   await db.insert(users).values({ id: userId, email: `optional-consent-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
   await db.insert(customers).values({ id: customerId, fullName: "Synthetic Optional Consent Customer", whatsapp: `+241${String(BigInt("0x" + customerId.replaceAll("-", "").slice(0, 12)) % 1000000000000n).padStart(12, "0")}` });
   await db.insert(services).values({ id: serviceId, name: "Synthetic Optional Consent Service", slug: `optional-consent-${serviceId}`, pricingMode: "quote", deliveryType: "time_based", capacityMode: "unlimited" });

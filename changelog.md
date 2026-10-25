@@ -2,6 +2,13 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-25 — TEST-01 integration test database + test-data cleanup
+
+- Integration tests run only on local `kfit_test` (root `.env.test`, `npm run db:test:prepare`: create + migrate + catalogue seed); one guard `assertLocalTestDatabase` in all 30 integration files; the dev API refuses to start on kfit_test.
+- Réglages › « Données de test » (dev builds only, absent from the production bundle): analyse then purge `[TEST] ` and legacy fixtures with their dependents in one transaction; rows tied to real customers kept; audit with counts only. Server routes mounted from dev-app.ts and refused outside local kfit_dev.
+- Flaky « unique-token collision » diagnosed: product bug in `isUniqueViolation` (drizzle wraps the pg error in `.cause`), not test isolation; left for its own brief.
+- Validation (agent): shared 71/71, server 623/623, PostgreSQL 597/597 on kfit_test, kfit_dev counts unchanged by the run, client bundle grep 0.
+
 ## 2026-10-25 — Recette fixes (REG-F1 → REG-F11)
 
 - REG-F1 variant-less offers qualify and convert: `001f55d` (validated by Fred).

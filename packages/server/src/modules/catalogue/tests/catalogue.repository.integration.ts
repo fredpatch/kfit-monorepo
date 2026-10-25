@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
@@ -18,8 +19,7 @@ const requestIds = [randomUUID(), randomUUID(), randomUUID()];
 const service = new CatalogueService(new DrizzleCatalogueRepository(db));
 
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? "");
-  assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433", "integration requires disposable local PostgreSQL on port 5433");
+  assertLocalTestDatabase();
 });
 after(async () => {
   await db.delete(waitlistEntries).where(eq(waitlistEntries.serviceId, serviceId));

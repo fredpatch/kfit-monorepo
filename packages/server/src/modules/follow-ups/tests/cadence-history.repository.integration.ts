@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { assertLocalTestDatabase } from "../../../testing/integration-fixtures.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
@@ -14,8 +15,7 @@ const customerId = randomUUID(), serviceIds: string[] = [], subscriptionIds: str
 const at = (day: number) => new Date(Date.UTC(2026, 0, day));
 let safe = false;
 before(async () => {
-  const target = new URL(process.env.DATABASE_URL ?? "");
-  assert.ok(["localhost", "127.0.0.1"].includes(target.hostname) && target.port === "5433" && target.pathname === "/kfit_dev");
+  assertLocalTestDatabase();
   safe = true;
   await db.insert(customers).values({ id: customerId, fullName: "Synthetic Cadence History", whatsapp: "+241000001771" });
 });

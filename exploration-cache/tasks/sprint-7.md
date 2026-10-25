@@ -1125,7 +1125,7 @@ Status: CONS-02a APPROVED_FOR_IMPLEMENTATION
 
 ## CONS-02a execution — 2026-10-25 (Claude)
 
-Status: delivered uncommitted, awaiting Fred validation. No migration (context_json carries the requested types).
+Status: validated by Fred 2026-10-25, committed 2aae7f9. No migration (context_json carries the requested types).
 
 Tests (agent-run, local PostgreSQL 5433):
 - shared 62 → 64; server unit + express 574 → 587; integration 571 → 583.

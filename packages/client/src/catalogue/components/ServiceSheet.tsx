@@ -5,17 +5,19 @@ import { toast } from "sonner";
 import { AlertTriangle, Minus, Plus } from "lucide-react";
 import type { CatalogueAdminServiceOverview, CatalogueAvailabilityStatus, CatalogueDeliveryType, CatalogueDurationUnit, CataloguePricingMode } from "@kfit/shared";
 import { catalogueApiClient, catalogueErrorMessage } from "../api/catalogue-api.js";
-import { capacitySummary, durationText, isArchived, sinceDays } from "../lib/catalogue-meta.js";
+import { capacitySummary, isArchived, sinceDays } from "../lib/catalogue-meta.js";
 import { Sheet, SheetClose, SheetContent } from "../../components/ui/dialog.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs.js";
 import { Button } from "../../components/ui/button.js";
 import { Field } from "../../components/ui/field.js";
 import { Input, NativeSelect, Textarea } from "../../components/ui/input.js";
 import { Switch } from "../../components/ui/switch.js";
-import { StatusPill } from "../../components/ui/status-pill.js";
 import { cn } from "../../lib/utils.js";
-import { availabilityStatus } from "../../lib/status-map.js";
-import { dateFr, moneyXaf } from "../../lib/format.js";
+import { dateFr } from "../../lib/format.js";
+import { ComponentsEditor } from "./ComponentsEditor.js";
+import { DeliverabilityChecklist } from "./DeliverabilityChecklist.js";
+import { RulesEditor } from "./RulesEditor.js";
+import { VariantsEditor } from "./VariantsEditor.js";
 
 /** Refresh admin lists and the public catalogue after any change. */
 export function useCatalogueRefresh() {
@@ -23,7 +25,7 @@ export function useCatalogueRefresh() {
   return () => Promise.all([client.invalidateQueries({ queryKey: ["catalogue"] })]);
 }
 
-type SheetTab = "availability" | "content" | "variants" | "rules";
+type SheetTab = "availability" | "content" | "variants" | "rules" | "checklist";
 
 const availabilityChoices: Array<{ value: Exclude<CatalogueAvailabilityStatus, "archived">; title: string; hint: string }> = [
   { value: "open", title: "Ouverte", hint: "Demandes directes" },
@@ -38,7 +40,7 @@ function ServerError({ message }: { message: string | null }) {
   return message ? <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger">{message}</p> : null;
 }
 
-/** Offer drawer (board 06): Disponibilité · Contenu · Variantes · Règles. */
+/** Offer drawer (board 06): Disponibilité · Contenu · Variantes · Règles · Avant publication (CAT-03b). */
 export function ServiceSheet({ service, position, total, open, onOpenChange }: { service: CatalogueAdminServiceOverview | null; position: number; total: number; open: boolean; onOpenChange: (open: boolean) => void }) {
   const refresh = useCatalogueRefresh();
   const [tab, setTab] = useState<SheetTab>("availability");
@@ -100,7 +102,6 @@ export function ServiceSheet({ service, position, total, open, onOpenChange }: {
     if (!service.publishedAt && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return content.setError("slug", { message: "Lettres minuscules, chiffres et tirets uniquement." });
     const price = v.basePriceXaf.trim() === "" ? null : Number(v.basePriceXaf);
     if (price !== null && !(Number.isInteger(price) && price >= 0)) return content.setError("basePriceXaf", { message: "Montant entier en XAF." });
-    if (v.pricingMode === "fixed" && price === null && service.publishedAt) return content.setError("basePriceXaf", { message: "Une offre publiée à prix fixe doit avoir un prix." });
     const duration = v.durationValue.trim() === "" ? null : Number(v.durationValue);
     if (duration !== null && !(Number.isInteger(duration) && duration > 0)) return content.setError("durationValue", { message: "Durée entière, au moins 1." });
     if (duration !== null && !v.durationUnit) return content.setError("durationUnit", { message: "Choisis l'unité." });
@@ -156,6 +157,7 @@ export function ServiceSheet({ service, position, total, open, onOpenChange }: {
             <TabsTrigger value="content">Contenu</TabsTrigger>
             <TabsTrigger value="variants">Variantes · {service.variants.length}</TabsTrigger>
             <TabsTrigger value="rules">Règles</TabsTrigger>
+            <TabsTrigger value="checklist">Avant publication</TabsTrigger>
           </TabsList>
 
           <TabsContent value="availability" className="flex flex-col gap-5">
@@ -273,58 +275,25 @@ export function ServiceSheet({ service, position, total, open, onOpenChange }: {
                 </Field>
               </div>
             </fieldset>
+            <section className="flex flex-col gap-2 border-t border-border-subtle pt-4" aria-labelledby="included-title">
+              <h3 id="included-title" className="text-sm font-bold">Prestations incluses dans l'offre</h3>
+              <p className="text-xs text-muted-foreground">Communes à toutes les variantes. Une modification vaut pour les nouvelles ventes ; les abonnements déjà vendus gardent leur contenu.</p>
+              <ComponentsEditor key={service.id} serviceId={service.id} variantId={null} components={service.components} disabled={archived} />
+            </section>
           </TabsContent>
 
           <TabsContent value="variants" className="flex flex-col gap-3">
-            <p className="text-xs text-muted-foreground">Lecture seule : les variantes se modifient pour l'instant hors de cet écran.</p>
-            {service.variants.length === 0 ? (
-              <p className="text-[13px] text-muted-foreground">Aucune variante : l'offre se vend telle quelle.</p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {service.variants.map((v) => {
-                  const occ = service.occupancy.byVariant.find((o) => o.variantId === v.id);
-                  return (
-                    <li key={v.id} className="flex flex-col gap-1.5 rounded-lg border border-border p-3.5">
-                      <span className="flex items-center justify-between gap-2">
-                        <strong className="text-sm">{v.name}</strong>
-                        <StatusPill size="sm" status={availabilityStatus[v.availabilityStatus]} />
-                      </span>
-                      <span className="text-[13px] text-muted-foreground">
-                        {v.priceXaf !== null ? moneyXaf(v.priceXaf) : "Prix de l'offre"}
-                        {durationText(v.durationValue, v.durationUnit) ? ` · ${durationText(v.durationValue, v.durationUnit)}` : ""}
-                        {` · ${occ?.occupied ?? 0}${v.capacityLimit !== null ? ` / ${v.capacityLimit}` : ""} place(s) occupée(s)`}
-                      </span>
-                      {v.components.length ? <span className="text-xs text-muted-foreground">{v.components.map((c) => `${c.quantity} × ${c.label}`).join(" · ")}</span> : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            {archived ? <p className="rounded-md bg-muted px-3 py-2 text-[13px] text-muted-foreground">Offre archivée : lecture seule.</p> : null}
+            <VariantsEditor key={service.id} service={service} disabled={archived} />
           </TabsContent>
 
           <TabsContent value="rules" className="flex flex-col gap-4">
-            <p className="text-xs text-muted-foreground">Lecture seule : règles appliquées par défaut à l'offre (une variante peut avoir les siennes).</p>
-            <dl className="grid grid-cols-1 gap-3 text-[13px] sm:grid-cols-2">
-              {[
-                ["Cadence de suivi", service.policy?.followUpFrequencyDays ? `Tous les ${service.policy.followUpFrequencyDays} jours` : "Aucune"],
-                ["Annulation tardive", service.policy?.lateCancelNoticeHours ? `Moins de ${service.policy.lateCancelNoticeHours} h avant${service.policy.lateCancelConsumesComponent ? " · séance due" : " · séance conservée"}` : "Non définie"],
-                ["Absence", service.policy ? (service.policy.missedConsumesComponent ? "Séance due" : "Séance conservée") : "Non définie"],
-                ["Avis médical", service.policy?.medicalClearancePolicy === "required_if_risk_flag" ? "Requis en cas de risque" : service.policy?.medicalClearancePolicy === "not_required" ? "Non requis" : "Non défini"],
-              ].map(([label, value]) => (
-                <div key={label} className="flex flex-col gap-0.5 rounded-lg bg-[#f7f8f5] p-3">
-                  <dt className="text-muted-foreground">{label}</dt>
-                  <dd className="font-semibold">{value}</dd>
-                </div>
-              ))}
-            </dl>
-            {service.components.length ? (
-              <div className="flex flex-col gap-1.5">
-                <h3 className="text-sm font-bold">Prestations incluses</h3>
-                <ul className="flex flex-col gap-1 text-[13px]">
-                  {service.components.map((c) => <li key={c.id}>{c.quantity} × {c.label}{c.isMandatory ? "" : " (optionnel)"}</li>)}
-                </ul>
-              </div>
-            ) : null}
+            <p className="text-xs text-muted-foreground">Règles de l'offre, appliquées à chaque variante qui n'a pas les siennes (onglet Variantes).</p>
+            <RulesEditor key={service.id} serviceId={service.id} variantId={null} policy={service.policy} disabled={archived} />
+          </TabsContent>
+
+          <TabsContent value="checklist" className="flex flex-col gap-3">
+            <DeliverabilityChecklist serviceId={service.id} variants={service.variants} published={service.publishedAt !== null} />
           </TabsContent>
         </Tabs>
         <ServerError message={serverError} />

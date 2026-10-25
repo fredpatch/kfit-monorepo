@@ -8,6 +8,7 @@ import { catalogueApiClient, catalogueErrorMessage } from "../api/catalogue-api.
 import { capacitySummary, catalogueTabLabels, catalogueTabs, metaText, priceText, sinceDays, tabOf, type CatalogueTab } from "../lib/catalogue-meta.js";
 import { ServiceSheet, useCatalogueRefresh } from "./ServiceSheet.js";
 import { NewServiceSheet } from "./NewServiceSheet.js";
+import { DeliverabilityChecklist, deliverabilityQueryKey } from "./DeliverabilityChecklist.js";
 import { AdminPage } from "../../app/layout/AdminPage.js";
 import { Button } from "../../components/ui/button.js";
 import { Dialog, DialogClose, DialogContent } from "../../components/ui/dialog.js";
@@ -45,6 +46,9 @@ export function CataloguePage() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirm, setConfirm] = useState<Confirm>(null);
+  // Same query key as the checklist inside the dialog: one request, and « Publier » waits for a deliverable offer (D6).
+  const publishingId = confirm?.kind === "publish" ? confirm.service.id : null;
+  const readiness = useQuery({ queryKey: deliverabilityQueryKey(publishingId ?? ""), queryFn: () => catalogueApiClient.deliverability(publishingId!), enabled: publishingId !== null });
   const [busy, setBusy] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [order, setOrder] = useState<string[] | null>(null);
@@ -301,12 +305,14 @@ export function CataloguePage() {
                 <DialogClose asChild>
                   <Button variant="secondary" disabled={busy}>Retour</Button>
                 </DialogClose>
-                <Button variant={confirm.kind === "archive" ? "destructive-solid" : "default"} disabled={busy} onClick={() => void runConfirm()}>
+                <Button variant={confirm.kind === "archive" ? "destructive-solid" : "default"} disabled={busy || (confirm.kind === "publish" && !readiness.data?.deliverable)} onClick={() => void runConfirm()}>
                   {busy ? "Enregistrement…" : confirm.kind === "publish" ? "Publier" : "Archiver"}
                 </Button>
               </>
             }
-          />
+          >
+            {confirm.kind === "publish" ? <DeliverabilityChecklist serviceId={confirm.service.id} variants={confirm.service.variants} published={false} /> : null}
+          </DialogContent>
         ) : null}
       </Dialog>
     </AdminPage>

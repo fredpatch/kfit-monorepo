@@ -1,4 +1,17 @@
-import type { CatalogueAdminServiceOverview, CatalogueDurationUnit } from "@kfit/shared";
+import type { CatalogueAdminServiceOverview, CatalogueComponentType, CatalogueDeliverabilityRule, CatalogueDurationUnit, CatalogueMedicalClearancePolicy } from "@kfit/shared";
+
+/* CAT-03b labels for the closed server vocabularies. */
+export const componentTypeLabels: Record<CatalogueComponentType, string> = { appointment: "Séance", follow_up: "Suivi", program: "Programme" };
+export const medicalPolicyLabels: Record<CatalogueMedicalClearancePolicy, string> = { not_required: "Non requis", required_if_risk_flag: "Requis en cas de risque", required: "Toujours requis" };
+/** « Avant publication » (D6): what each failed rule asks the coach to do. */
+export const deliverabilityLabels: Record<CatalogueDeliverabilityRule, string> = {
+  service_component_missing: "Ajoute au moins une prestation incluse dans l'offre (onglet Contenu).",
+  variant_component_missing: "Ajoute au moins une prestation à cette variante, ou une prestation commune à l'offre.",
+  service_rules_missing: "Enregistre les règles de l'offre (onglet Règles).",
+  medical_policy_missing: "Choisis la politique d'avis médical de l'offre (onglet Règles).",
+  price_missing: "Indique un prix : prix de base de l'offre ou prix de cette variante.",
+  duration_missing: "Indique une durée : durée par défaut de l'offre ou durée de cette variante.",
+};
 import { moneyXaf } from "../../lib/format.js";
 
 export const catalogueTabs = ["published", "drafts", "archived"] as const;

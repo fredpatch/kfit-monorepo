@@ -1224,3 +1224,15 @@ Choices and limits:
 - Archived variants are refused at conversion (qualification_invalid), including for qualifications made before the archive.
 - Archives are idempotent (a repeat writes no audit event). Variant duration must be a value and unit pair.
 - kfit_dev keeps the old seed until `npm run db:seed` runs: « Programme sportif 12 semaines » reports service_rules_missing there until then.
+
+## CAT-03b execution — 2026-10-25 (Claude)
+
+Status: validated by Fred live 2026-10-25 and committed. Client only (no server or shared change).
+Checks (agent-run): client tsc clean, client build OK. The client has no test runner. Browser: NOT VALIDATED by agent (Fred runs the live test).
+
+Offer sheet (board 06) per D8:
+- « Contenu »: service fields as before, plus « Prestations incluses dans l'offre » (add, edit, retirer = archive with confirmation).
+- « Variantes »: add, edit, archive (confirmation shows the subscriptions that keep it); per variant: its own prestations and its own rules (« Revenir aux règles de l'offre » removes the override).
+- « Règles »: editable offer rules (cadence 1–90 days or none, late-cancel 1–168 h or none, two consumption switches, medical policy incl. « Toujours requis »); a toast reports clients in preparation updated (D5).
+- « Avant publication »: the server deliverability report as a four-point checklist; also shown in the publish dialog, where « Publier » stays disabled until the offer is deliverable.
+Limits: a variant's position is set at creation only (the overview DTO carries no stored order); the client-side « published fixed offer needs a base price » check was removed to match D6.

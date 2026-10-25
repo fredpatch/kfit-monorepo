@@ -6,6 +6,7 @@ import type {
   CatalogueAdminServicesResponse,
   CatalogueAvailabilityStatus,
   CatalogueCapacityMode,
+  CatalogueDeliverabilityFailure,
   CatalogueDeliveryType,
   CatalogueDurationUnit,
   CataloguePricingMode,
@@ -107,7 +108,7 @@ export type CatalogueRepository = {
   getAdminService(serviceId: string): Promise<CatalogueAdminServiceRecord | null>;
   createService(input: CatalogueServiceWriteInput): Promise<CatalogueAdminServiceRecord | "slug_conflict">;
   updateService(serviceId: string, input: CatalogueServicePatchInput): Promise<CatalogueAdminServiceRecord | "not_found" | "slug_conflict">;
-  publishService(serviceId: string, now: Date): Promise<CatalogueAdminServiceRecord | "not_found" | "archived">;
+  publishService(serviceId: string, now: Date): Promise<CatalogueAdminServiceRecord | "not_found" | "archived" | { notDeliverable: CatalogueDeliverabilityFailure[] }>;
   archiveService(serviceId: string, now: Date): Promise<CatalogueAdminServiceRecord | "not_found">;
   reorderServices(items: Array<{ serviceId: string; sortOrder: number }>): Promise<CatalogueAdminServiceRecord[] | "not_found">;
 };
@@ -118,7 +119,8 @@ type MutationResult =
   | { status: "not_found" }
   | { status: "slug_conflict" }
   | { status: "archived" }
-  | { status: "publish_invalid"; reason: string };
+  | { status: "publish_invalid"; reason: string }
+  | { status: "not_deliverable"; failures: CatalogueDeliverabilityFailure[] };
 
 const availabilityStatuses: readonly CatalogueAvailabilityStatus[] = ["open", "temporarily_closed", "waitlist_only", "archived"];
 const pricingModes: readonly CataloguePricingMode[] = ["fixed", "quote"];
@@ -369,7 +371,6 @@ function validatePublishable(service: CatalogueAdminServiceRecord): string | nul
   if (service.archivedAt || service.availabilityStatus === "archived") return "archived";
   if (!service.name.trim()) return "name_required";
   if (!slugPattern.test(service.slug)) return "slug_invalid";
-  if (service.pricingMode === "fixed" && service.basePriceXaf === null) return "fixed_price_required";
   if (service.capacityMode === "limited" && service.capacityLimit === null) return "capacity_limit_required";
   return null;
 }
@@ -509,6 +510,7 @@ export class CatalogueService {
     const result = await this.repository.publishService(serviceId, now);
     if (result === "not_found") return { status: "not_found" };
     if (result === "archived") return { status: "archived" };
+    if ("notDeliverable" in result) return { status: "not_deliverable", failures: result.notDeliverable };
     return { status: "ok", response: { service: toAdminService(result) } };
   }
 

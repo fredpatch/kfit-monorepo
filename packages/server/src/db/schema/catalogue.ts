@@ -1,4 +1,4 @@
-import { boolean, check, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, pgTable, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { archivedAt, idColumn, timestamps } from "./_helpers.js";
 
@@ -56,6 +56,8 @@ export const serviceComponents = pgTable("service_components", {
   isMandatory: boolean("is_mandatory").notNull().default(true),
   consumptionPolicy: text("consumption_policy").notNull().default("manual"),
   ...timestamps,
+  // CAT-03 D2: removal is an archive; sold components stay referenced by subscription snapshots.
+  archivedAt,
 }, (t) => [check("service_components_quantity_positive", sql`${t.quantity} > 0`), index("service_components_service_idx").on(t.serviceId, t.variantId)]);
 
 export const servicePolicies = pgTable("service_policies", {
@@ -69,4 +71,5 @@ export const servicePolicies = pgTable("service_policies", {
   medicalClearancePolicy: text("medical_clearance_policy"),
   questionnaireTemplateId: uuid("questionnaire_template_id"),
   ...timestamps,
-}, (t) => [uniqueIndex("service_policies_scope_uq").on(t.serviceId, t.variantId)]);
+  // CAT-03 D7: NULLS NOT DISTINCT so a service keeps at most one offer-level (variant_id null) row.
+}, (t) => [unique("service_policies_scope_uq").on(t.serviceId, t.variantId).nullsNotDistinct()]);

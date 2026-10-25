@@ -12,7 +12,7 @@ test("initial catalogue seed defines stable public K'FIT services", () => {
   assert.equal(kfitInitialCatalogueSeed.services.every((service) => service.isPublic && service.publishedAt), true);
   assert.equal(kfitInitialCatalogueSeed.variants.length, 3);
   assert.equal(kfitInitialCatalogueSeed.components.length, 5);
-  assert.equal(kfitInitialCatalogueSeed.policies.length, 3);
+  assert.equal(kfitInitialCatalogueSeed.policies.length, 4);
 });
 
 test("initial catalogue seed keeps one service per request assumption ready", () => {

@@ -63,6 +63,8 @@ import { loadAuthConfig } from "./modules/auth/config/auth.config.js";
 import { CatalogueController } from "./modules/catalogue/controllers/catalogue.controller.js";
 import { DrizzleCatalogueRepository } from "./modules/catalogue/repositories/catalogue.repositories.js";
 import { CatalogueService } from "./modules/catalogue/services/catalogue.service.js";
+import { CatalogueContentService } from "./modules/catalogue/services/catalogue-content.service.js";
+import { DrizzleCatalogueContentRepository } from "./modules/catalogue/repositories/catalogue-content.repository.js";
 import { AdminRequestsController } from "./modules/requests/controllers/admin-requests.controller.js";
 import { RequestConversionController } from "./modules/requests/controllers/request-conversion.controller.js";
 import { OnboardingController } from "./modules/onboarding/controllers/onboarding.controller.js";
@@ -171,6 +173,7 @@ export function createDevelopmentRuntime() {
   const catalogueService = new CatalogueService(new DrizzleCatalogueRepository(db));
   const catalogueController = new CatalogueController(
     catalogueService,
+    new CatalogueContentService(new DrizzleCatalogueContentRepository(db, { auditHashPepper: authConfig.auditHashPepper })),
   );
 
   const requestsController = new RequestsController(

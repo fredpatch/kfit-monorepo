@@ -1,4 +1,4 @@
-import type { OnboardingDetail, OnboardingOwner, OnboardingState } from "@kfit/shared";
+import { catalogueMedicalClearancePolicies, type OnboardingDetail, type OnboardingOwner, type OnboardingState } from "@kfit/shared";
 
 export type OnboardingCommand =
   | { action: "read" | "initialize" | "ready" }
@@ -44,13 +44,21 @@ export function resolveEffectivePolicy(rows: Array<{ variantId: string | null; q
   const variant = variantRows[0];
   const effectiveQuestionnaireTemplateId = variant?.questionnaireTemplateId ?? service?.questionnaireTemplateId ?? null;
   const effectiveMedicalClearancePolicy = variant?.medicalClearancePolicy ?? service?.medicalClearancePolicy ?? null;
-  if (effectiveMedicalClearancePolicy && !["not_required", "required_if_risk_flag"].includes(effectiveMedicalClearancePolicy)) return { status: "policy_invalid" };
+  if (effectiveMedicalClearancePolicy && !catalogueMedicalClearancePolicies.some(policy => policy === effectiveMedicalClearancePolicy)) return { status: "policy_invalid" };
   return {
     status: "ok",
     source: variant ? "variant" : service ? "service" : "none",
     questionnaireRequired: !!effectiveQuestionnaireTemplateId,
   };
 }
+
+/** The variant value wins over the offer value; null on both means no medical requirement. */
+export function effectiveMedicalPolicy(rows: Array<{ variantId: string | null; medicalClearancePolicy: string | null }>, variantId: string | null): string | null {
+  const variant = variantId ? rows.find(row => row.variantId === variantId) : undefined;
+  return variant?.medicalClearancePolicy ?? rows.find(row => row.variantId === null)?.medicalClearancePolicy ?? null;
+}
+/** D4: « required » blocks onboarding without any risk flag. */
+export const medicalAlwaysRequired = (policy: string | null) => policy === "required";
 
 export function resolveCapacity(mode: string, serviceLimit: number | null, variantLimit: number | null):
   | { status: "ok"; mode: "limited" | "unlimited"; limit: number | null; scope: "service" | "variant" }

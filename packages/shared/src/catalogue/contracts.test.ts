@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   catalogueApiRoutes,
+  catalogueComponentTypes,
+  catalogueConsumptionPolicies,
   catalogueErrorCodes,
+  catalogueMedicalClearancePolicies,
+  catalogueRuleLimits,
   type CatalogueAdminServicesResponse,
   type CataloguePublicServicesResponse,
 } from "./contracts.js";
@@ -17,6 +21,15 @@ test("catalogue shared contracts expose stable public and admin routes", () => {
     adminServiceCapacity: "/admin/catalogue/services/:serviceId/capacity",
     adminServiceOrder: "/admin/catalogue/services/order",
     adminServicesOverview: "/admin/catalogue/services/overview",
+    adminVariants: "/admin/catalogue/services/:serviceId/variants",
+    adminVariant: "/admin/catalogue/services/:serviceId/variants/:variantId",
+    adminVariantArchive: "/admin/catalogue/services/:serviceId/variants/:variantId/archive",
+    adminComponents: "/admin/catalogue/services/:serviceId/components",
+    adminComponent: "/admin/catalogue/services/:serviceId/components/:componentId",
+    adminComponentArchive: "/admin/catalogue/services/:serviceId/components/:componentId/archive",
+    adminServiceRules: "/admin/catalogue/services/:serviceId/rules",
+    adminVariantRules: "/admin/catalogue/services/:serviceId/variants/:variantId/rules",
+    adminServiceDeliverability: "/admin/catalogue/services/:serviceId/deliverability",
   });
 
   assert.deepEqual(catalogueErrorCodes, [
@@ -27,7 +40,22 @@ test("catalogue shared contracts expose stable public and admin routes", () => {
     "CATALOGUE_SERVICE_SLUG_CONFLICT",
     "CATALOGUE_SERVICE_ARCHIVED",
     "CATALOGUE_SERVICE_PUBLISH_INVALID",
+    "CATALOGUE_SERVICE_NOT_DELIVERABLE",
+    "CATALOGUE_VARIANT_NOT_FOUND",
+    "CATALOGUE_VARIANT_SLUG_CONFLICT",
+    "CATALOGUE_VARIANT_ARCHIVED",
+    "CATALOGUE_COMPONENT_NOT_FOUND",
+    "CATALOGUE_COMPONENT_ARCHIVED",
+    "CATALOGUE_RULES_OVERRIDE_NOT_FOUND",
+    "CATALOGUE_RULES_OVERRIDE_HAS_QUESTIONNAIRE",
   ]);
+});
+
+test("CAT-03 closed vocabularies match Fred's decisions (D2, D3, D4)", () => {
+  assert.deepEqual(catalogueComponentTypes, ["appointment", "follow_up", "program"]);
+  assert.deepEqual(catalogueConsumptionPolicies, ["manual"]);
+  assert.deepEqual(catalogueMedicalClearancePolicies, ["not_required", "required_if_risk_flag", "required"]);
+  assert.deepEqual(catalogueRuleLimits, { followUpFrequencyDays: { min: 1, max: 90 }, lateCancelNoticeHours: { min: 1, max: 168 } });
 });
 
 test("catalogue shared contracts type-check public service response shape", () => {

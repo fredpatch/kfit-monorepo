@@ -176,5 +176,16 @@ export const kfitInitialCatalogueSeed = {
       missedConsumesComponent: false,
       medicalClearancePolicy: "not_required",
     },
+    {
+      // CAT-03 amendment (Fred 2026-10-25): offer-level rules so D6 finds an explicit medical policy.
+      id: "24000000-0000-4000-8000-000000000004",
+      serviceId: "21000000-0000-4000-8000-000000000002",
+      variantId: null,
+      followUpFrequencyDays: 7,
+      lateCancelNoticeHours: 24,
+      lateCancelConsumesComponent: false,
+      missedConsumesComponent: true,
+      medicalClearancePolicy: "required_if_risk_flag",
+    },
   ],
 };

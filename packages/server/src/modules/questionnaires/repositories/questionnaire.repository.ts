@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { and, asc, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
-import { validateQuestionnaireAnswers, parseQuestionnaireAnswers, type ConsentLinkState, type PublicQuestionnaireSubmitInput, type QuestionnaireDetail,
+import { catalogueMedicalClearancePolicies, validateQuestionnaireAnswers, parseQuestionnaireAnswers, type CatalogueMedicalClearancePolicy, type ConsentLinkState, type PublicQuestionnaireSubmitInput, type QuestionnaireDetail,
   type QuestionnaireDocument, type QuestionnaireErrorCode, type QuestionnaireRevision, type QuestionnaireSubmitInput } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
 import { subscriptions } from "../../../db/schema/customers.js";
@@ -39,7 +39,7 @@ function publicLinkState(token: Token, document: QuestionnaireDocument | null): 
   return { id: token.id, expiresAt: token.expiresAt.toISOString(), state: error === "QUESTIONNAIRE_LINK_CONSUMED" ? "consumed" : error === "QUESTIONNAIRE_LINK_REVOKED" ? "revoked"
     : error === "QUESTIONNAIRE_LINK_EXPIRED" ? "expired" : error || !document || !matchesContext(token.contextJson, contextFor(document, token.resourceId)) ? "stale" : "available" };
 }
-type Assignment = { ok: true; document: QuestionnaireDocument | null; history: QuestionnaireRevision[]; medicalPolicy: "not_required" | "required_if_risk_flag" }
+type Assignment = { ok: true; document: QuestionnaireDocument | null; history: QuestionnaireRevision[]; medicalPolicy: CatalogueMedicalClearancePolicy }
   | { ok: false; error: QuestionnaireErrorCode };
 export class DrizzleQuestionnaireRepository implements QuestionnaireRepository {
   constructor(private readonly database: typeof appDb, private readonly options: { auditHashPepper: string }) {}
@@ -63,8 +63,9 @@ export class DrizzleQuestionnaireRepository implements QuestionnaireRepository {
     const servicePolicy = servicePoliciesForScope[0];
     const variantPolicy = variantPoliciesForScope[0];
     const effectiveMedicalPolicy = variantPolicy?.medicalClearancePolicy ?? servicePolicy?.medicalClearancePolicy ?? null;
-    if (effectiveMedicalPolicy && !["not_required", "required_if_risk_flag"].includes(effectiveMedicalPolicy)) return { ok: false, error: "QUESTIONNAIRE_ASSIGNMENT_INVALID" };
-    const medicalPolicy = effectiveMedicalPolicy === "required_if_risk_flag" ? "required_if_risk_flag" : "not_required";
+    if (effectiveMedicalPolicy && !catalogueMedicalClearancePolicies.some(policy => policy === effectiveMedicalPolicy)) return { ok: false, error: "QUESTIONNAIRE_ASSIGNMENT_INVALID" };
+    // « required » is held by the onboarding requirement itself (CAT-03 D4); a risk flag only adds one under required_if_risk_flag.
+    const medicalPolicy = (effectiveMedicalPolicy ?? "not_required") as CatalogueMedicalClearancePolicy;
     await lockQuestionnaireTemplates(tx);
     const templateId = variantPolicy?.questionnaireTemplateId ?? servicePolicy?.questionnaireTemplateId ?? null;
     if (!templateId) return { ok: true, document: null, history: [], medicalPolicy };

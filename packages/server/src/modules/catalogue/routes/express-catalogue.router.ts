@@ -7,6 +7,7 @@ import { parseCookieHeader } from "../../auth/middleware/auth.cookies.js";
 import { requireCsrf, requireSameOrigin } from "../../auth/middleware/auth.middleware.js";
 import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js";
 import type { CatalogueController } from "../controllers/catalogue.controller.js";
+import type { CatalogueContentAction } from "../services/catalogue-content.service.js";
 import type { HttpJsonResponse } from "../types/catalogue.http.types.js";
 
 export type ExpressCatalogueRouterDeps = {
@@ -154,6 +155,32 @@ export function createExpressCatalogueRouter(deps: ExpressCatalogueRouterDeps): 
       response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
     }
   });
+
+  /* CAT-03a content routes: one handler, same guards (same origin + CSRF on every mutation). */
+  const content = (action: CatalogueContentAction) => async (request: Request, response: Response) => {
+    try {
+      const context = await toAuthContext(request, deps.resolveSession);
+      if (request.method !== "GET") {
+        const guard = mutationGuard(context);
+        if (guard) return applyJsonResponse(response, guard);
+      }
+      const variantId = routeParam(request.params.variantId), componentId = routeParam(request.params.componentId);
+      const params = { serviceId: routeParam(request.params.serviceId) ?? "", ...(variantId ? { variantId } : {}), ...(componentId ? { componentId } : {}) };
+      applyJsonResponse(response, await deps.controller.content(context, action, params, request.body));
+    } catch {
+      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+    }
+  };
+  router.post(catalogueApiRoutes.adminVariants, content("variant_create"));
+  router.patch(catalogueApiRoutes.adminVariant, content("variant_update"));
+  router.post(catalogueApiRoutes.adminVariantArchive, content("variant_archive"));
+  router.post(catalogueApiRoutes.adminComponents, content("component_create"));
+  router.patch(catalogueApiRoutes.adminComponent, content("component_update"));
+  router.post(catalogueApiRoutes.adminComponentArchive, content("component_archive"));
+  router.put(catalogueApiRoutes.adminServiceRules, content("rules_put"));
+  router.put(catalogueApiRoutes.adminVariantRules, content("variant_rules_put"));
+  router.delete(catalogueApiRoutes.adminVariantRules, content("variant_rules_delete"));
+  router.get(catalogueApiRoutes.adminServiceDeliverability, content("deliverability"));
 
   return router;
 }

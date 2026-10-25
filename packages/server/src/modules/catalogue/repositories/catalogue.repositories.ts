@@ -4,6 +4,8 @@ import { serviceComponents, servicePolicies, services, serviceVariants } from ".
 import { subscriptions } from "../../../db/schema/customers.js";
 import { waitlistEntries } from "../../../db/schema/prospects.js";
 import { capacityClaimCondition } from "../../onboarding/repositories/capacity-claims.js";
+import { evaluateDeliverability } from "../services/catalogue-content.policy.js";
+import { loadDeliverabilityInput } from "./catalogue-content.repository.js";
 import type {
   CatalogueAdminServiceRecord,
   CatalogueRepository,
@@ -172,7 +174,7 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
       this.database
         .select()
         .from(serviceComponents)
-        .where(inArray(serviceComponents.serviceId, serviceIds)),
+        .where(and(inArray(serviceComponents.serviceId, serviceIds), isNull(serviceComponents.archivedAt))),
       this.database
         .select()
         .from(servicePolicies)
@@ -198,7 +200,7 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
       const variantRows = await tx.select().from(serviceVariants)
         .where(and(inArray(serviceVariants.serviceId, serviceIds), isNull(serviceVariants.archivedAt), ne(serviceVariants.availabilityStatus, "archived")))
         .orderBy(asc(serviceVariants.sortOrder), asc(serviceVariants.name));
-      const componentRows = await tx.select().from(serviceComponents).where(inArray(serviceComponents.serviceId, serviceIds));
+      const componentRows = await tx.select().from(serviceComponents).where(and(inArray(serviceComponents.serviceId, serviceIds), isNull(serviceComponents.archivedAt)));
       const policyRows = await tx.select().from(servicePolicies).where(inArray(servicePolicies.serviceId, serviceIds));
       const claimRows = await tx.select({ serviceId: subscriptions.serviceId, variantId: subscriptions.variantId, onboarding, count: count() })
         .from(subscriptions)
@@ -265,26 +267,31 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
     }
   }
 
+  /** CAT-03 D6: deliverability is checked under the service row lock that every content writer takes first. */
   async publishService(serviceId: string, now: Date) {
-    const [existing] = await this.database
-      .select()
-      .from(services)
-      .where(eq(services.id, serviceId))
-      .limit(1);
-    if (!existing) return "not_found";
-    if (existing.archivedAt || existing.availabilityStatus === "archived") return "archived";
+    return this.database.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(services)
+        .where(eq(services.id, serviceId))
+        .for("update");
+      if (!existing) return "not_found" as const;
+      if (existing.archivedAt || existing.availabilityStatus === "archived") return "archived" as const;
+      const failures = evaluateDeliverability(await loadDeliverabilityInput(tx, existing));
+      if (failures.length) return { notDeliverable: failures };
 
-    const [updated] = await this.database
-      .update(services)
-      .set({
-        isPublic: true,
-        publishedAt: existing.publishedAt ?? now,
-        updatedAt: now,
-      })
-      .where(eq(services.id, serviceId))
-      .returning();
-    if (!updated) return "not_found";
-    return mapAdminService(updated);
+      const [updated] = await tx
+        .update(services)
+        .set({
+          isPublic: true,
+          publishedAt: existing.publishedAt ?? now,
+          updatedAt: now,
+        })
+        .where(eq(services.id, serviceId))
+        .returning();
+      if (!updated) return "not_found" as const;
+      return mapAdminService(updated);
+    });
   }
 
   async archiveService(serviceId: string, now: Date) {

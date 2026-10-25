@@ -1166,3 +1166,61 @@ Checks (agent-run): tsc shared/server/client clean; client build OK; shared 64/6
 NOT VALIDATED: browser behaviour. The Chrome extension was not connected, so no flow was driven in a browser.
 
 Delivered: public page renders the link's definitions (« Tes accords facultatifs » for optional links); Santé tab split into « Conditions obligatoires » and « Accords facultatifs » with « Accord à renouveler », « Demander un accord » and « Recueillir des accords »; link list names each link's documents; new page /admin/consentements « Textes de consentement » (versions, drafts, read, publish with impact and OTP step-up); nav entry under Configuration.
+
+## CAT-03 Gate 1 — approved 2026-10-25 (recette fix REG-F2)
+
+### Context (verified on main)
+- Tables exist, seed-only today: service_variants (archived_at), service_components (NO archived_at), service_policies (unique (service_id, variant_id) — NULL variant rows are NOT unique in PostgreSQL).
+- Catalogue API (modules/catalogue) only writes service-level fields, capacity, order, publish, archive. validatePublishable (catalogue.service.ts ~l.368) checks name/slug/price/capacity only.
+- Existing service_policies writer to mirror: questionnaires/repositories/template.repository.ts (~l.60–80: select scope FOR UPDATE, update or insert).
+- Cadence-history protocol (S7.1, gotchas.md): writers take fence key 7247001 before owner row locks; helpers in follow-ups/repositories/cadence-history.repository.ts: lockCadenceWrites, lockPolicyCadenceScope(tx, serviceIds) → recordPolicyCadenceChanges(tx, before, at). Same transaction, before/after resolution.
+- Capacity claim writers lock the service row first (onboarding.repository.ts ~l.25 comment) — variant capacity edits must follow the same order.
+- Snapshots: conversion copies price/duration/components into subscriptions/subscription_components (label_snapshot, quantity_entitled, source_service_component_id FK restrict); appointments snapshot late-cancel/missed rules. Onboarding reads medical clearance LIVE via resolveEffectivePolicy (onboarding.service.ts ~l.37–47), which today accepts only not_required | required_if_risk_flag; questionnaire.repository.ts also handles "required".
+- Seed values in use: componentType appointment | follow_up | program; consumptionPolicy manual; medical not_required | required_if_risk_flag.
+
+### Decisions (Fred 2026-10-25)
+D1. Variants: create; edit name, slug (unique per service), priceXaf, durationValue/Unit, capacityLimit, availabilityStatus, sortOrder; archive (never delete). Archived variants excluded from public catalogue, qualification list (already) and new conversions. Existing subscriptions never rewritten. Capacity edits follow the service-lock-first order.
+D2. Components: scope = service (variantId null) or one variant of the same service; componentType ∈ {appointment, follow_up, program} (closed constant); label; quantity > 0; isMandatory; consumptionPolicy ∈ {manual} only in V1. Edit allowed (subscriptions keep snapshots). Removal = archive (new archived_at); archived components are excluded from new conversions and from the public/admin "included" lists. No hard delete.
+D3. Rules: one service-level row + optional per-variant override row. Editable fields: followUpFrequencyDays (null = no cadence, else 1–90), lateCancelNoticeHours (null or 1–168), lateCancelConsumesComponent, missedConsumesComponent, medicalClearancePolicy. questionnaireTemplateId is NOT editable here (stays on the Questionnaires screen; preserve it on every write). Any write that can change a resolved cadence runs lockCadenceWrites → lockPolicyCadenceScope([serviceId]) → write → recordPolicyCadenceChanges in the same transaction. Removing a variant override = delete that override row (fallback to service), also through the cadence protocol.
+D4. Medical clearance closed list: not_required | required_if_risk_flag | required. Extend resolveEffectivePolicy and the onboarding requirement derivation so "required" creates an always-blocking medical clearance item (same item/flow as the risk-flag case, without needing a risk flag). Keep questionnaire behaviour consistent.
+D5. Effect of edits: late-cancel/missed rules apply to new appointments only (existing snapshots). Medical clearance applies live to subscriptions in onboarding: the rules write response includes { onboardingSubscriptionsAffected } and readiness items of those subscriptions are re-derived consistently in the same transaction (reuse the existing derivation; do not invent a new one).
+D6. Deliverability check, pure function, used by publish and by a read endpoint:
+    - every active (non-archived) variant reaches ≥ 1 non-archived component (service-level or its own); a variant-less offer needs ≥ 1 service-level component;
+    - a service-level rules row exists with medicalClearancePolicy explicitly set (not null);
+    - pricing: fixed → base price or every active variant has a price; quote → no price required;
+    - time_based → every active variant resolves a duration (variant or service default); one_time → none required.
+    Publish refuses with CATALOGUE_SERVICE_NOT_DELIVERABLE + list of failed rule keys. GET .../deliverability returns { deliverable, failures[] } for any offer (published offers that fail are flagged, never auto-unpublished).
+D7. Migration 0016 (normal `npm run db:generate`, never hand-edit output): service_components.archived_at (nullable timestamptz); replace service_policies_scope_uq with a unique index on (service_id, variant_id) NULLS NOT DISTINCT — if Drizzle cannot express NULLS NOT DISTINCT, STOP and ask before any custom SQL. Preflight first and report: duplicate service-level policy rows per service (expected 0); if any exist, STOP and ask.
+D8. UI (CAT-03b, not this run): « Variantes », « Contenu », « Règles » tabs editable + « Avant publication » checklist.
+D9. Slices: CAT-03a server (this run) → CAT-03b client.
+
+Amendment (Fred 2026-10-25, during CAT-03a): « Programme sportif 12 semaines » had only a variant-level rules row. The catalogue seed gains a service-level row with the variant's values (follow-up 7 days, required_if_risk_flag) so D6 stays as written and the seeded offer stays deliverable.
+
+Status: CAT-03a APPROVED_FOR_IMPLEMENTATION
+
+## CAT-03a execution — 2026-10-25 (Claude)
+
+Status: committed 2026-10-25 on Fred's instruction (agent tests accepted); live validation with CAT-03b.
+
+Tests (agent-run, local PostgreSQL 5433): shared 64 → 65; server unit + express 587 → 600; integration 583 → 592. tsc shared/server/client clean.
+Mutation checks: an empty deliverability rule fails the publish-guard test; skipping recordPolicyCadenceChanges fails both cadence tests.
+
+Migration 0016 (`npm run db:generate`, not edited):
+```sql
+DROP INDEX "service_policies_scope_uq";
+ALTER TABLE "service_components" ADD COLUMN "archived_at" timestamp with time zone;
+ALTER TABLE "service_policies" ADD CONSTRAINT "service_policies_scope_uq" UNIQUE NULLS NOT DISTINCT("service_id","variant_id");
+```
+Preflight on kfit_dev (PostgreSQL 16.15): 0 duplicate offer-level rows, 0 duplicate variant-level rows. Applied to a fresh database (kfit_cat03_fresh, left in place) and to kfit_dev; `db:check` clean.
+
+Routes: POST/PATCH variants, POST variant archive, POST/PATCH components, POST component archive, PUT offer rules, PUT/DELETE variant rules, GET deliverability (catalogueApiRoutes). Publish now returns 409 CATALOGUE_SERVICE_NOT_DELIVERABLE + failures.
+
+Choices and limits:
+- NULLS NOT DISTINCT is a unique constraint (Drizzle supports it on constraints only); PostgreSQL backs it with a unique index. No custom SQL.
+- D6 owns publish pricing: the older `fixed_price_required` check (base price mandatory for fixed offers) was removed so « every active variant has a price » can publish.
+- Removing a variant override refuses with CATALOGUE_RULES_OVERRIDE_HAS_QUESTIONNAIRE when that row also carries a questionnaire assignment (deleting it would drop the assignment, D3).
+- Offer-level PUT requires an explicit medical policy; on a variant, null means « same as the offer » (also for cadence and late-cancel notice).
+- « required » opens a medical_clearance record (trigger `service_policy`) and the blocking item; lifting it marks only that record `waived` and removes the item when no requirement stays open. Risk-flag requirements are untouched.
+- Archived variants are refused at conversion (qualification_invalid), including for qualifications made before the archive.
+- Archives are idempotent (a repeat writes no audit event). Variant duration must be a value and unit pair.
+- kfit_dev keeps the old seed until `npm run db:seed` runs: « Programme sportif 12 semaines » reports service_rules_missing there until then.

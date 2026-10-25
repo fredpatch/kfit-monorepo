@@ -7,7 +7,8 @@ import { onboardingItems } from "../../../db/schema/onboarding.js";
 import { capacityClaimCondition } from "./capacity-claims.js";
 import { lockConsentDefinitions, readConsentEvidence } from "../../consents/repositories/consent.repository.js";
 import { AuditService, type AuditMetadata } from "../../auth/services/audit.service.js";
-import { checklistDefinition, deriveOnboarding, itemPermissions, resolveCapacity, resolveEffectivePolicy,
+import { syncPolicyMedicalRequirement } from "./medical-requirement.js";
+import { checklistDefinition, deriveOnboarding, effectiveMedicalPolicy, itemPermissions, medicalAlwaysRequired, resolveCapacity, resolveEffectivePolicy,
   type OnboardingActor, type OnboardingCommand, type OnboardingRepository, type OnboardingResult } from "../services/onboarding.service.js";
 
 export class DrizzleOnboardingRepository implements OnboardingRepository {
@@ -85,6 +86,8 @@ export class DrizzleOnboardingRepository implements OnboardingRepository {
             }))).onConflictDoNothing({ target: [onboardingItems.subscriptionId, onboardingItems.itemType] }).returning({ id: onboardingItems.id });
             if (inserted.length) await audit("subscription.onboarding_initialized", { itemCount: inserted.length });
           }
+          const medicalPolicy = effectiveMedicalPolicy(policyRows, subscription.variantId);
+          if (medicalAlwaysRequired(medicalPolicy)) await syncPolicyMedicalRequirement(tx, subscriptionId, medicalPolicy, audit);
           break;
         }
         case "complete":

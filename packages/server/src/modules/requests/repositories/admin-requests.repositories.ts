@@ -25,9 +25,7 @@ import type {
   NormalizedQualificationReviewInput,
 } from "../services/admin-requests.service.js";
 import { finalVariantRefusal, finalVariantRuleFor, type FinalVariantRefusal } from "../services/admin-requests.service.js";
-
-/** REG-F1: an option is active while neither archived nor marked archived in the catalogue (R1, R4). */
-const activeVariant = and(isNull(serviceVariants.archivedAt), ne(serviceVariants.availabilityStatus, "archived"));
+import { activeVariant } from "../../catalogue/repositories/catalogue-content.repository.js";
 
 type AdminRequestsDb = typeof appDb;
 

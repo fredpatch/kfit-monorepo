@@ -1,13 +1,16 @@
 import { createHash } from "node:crypto";
-import { and, desc, eq, gt, sql } from "drizzle-orm";
-import { consentTypes, requiredConsentTypes, type ConsentDefinition, type ConsentDecision, type ConsentDetail, type ConsentErrorCode, type ConsentLinkState, type ConsentRecord, type ConsentType } from "@kfit/shared";
+import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
+import { consentTypes, optionalConsentTypes, requiredConsentTypes, type ConsentDecisions, type ConsentDefinition, type ConsentDefinitionSummary, type ConsentDecision, type ConsentDetail,
+  type ConsentErrorCode, type ConsentRecord, type ConsentRequestLinkState, type ConsentType } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
 import { subscriptions } from "../../../db/schema/customers.js";
 import { consentDefinitions, consentRecords, onboardingItems } from "../../../db/schema/onboarding.js";
 import { externalAccessEvents, secureAccessTokens } from "../../../db/schema/documents.js";
 import { AuditService, hashAuditContext, type AuditMetadata } from "../../auth/services/audit.service.js";
-import { currentDecisions, latestDefinitions, requiredBundle, type ConsentActor, type ConsentCommand, type ConsentRepository, type ConsentResult } from "../services/consent.service.js";
-import { consentTokenScope, createConsentToken, hashConsentToken, validateConsentToken } from "../services/consent-token.crypto.js";
+import { consentCommandScopes, consentScopeAllows, consentScopeStatuses, currentDecisions, isObject, latestDefinitions, optionalConsentStates, parseOptionalTypes,
+  requestedDecisionError, requiredBundle, type ConsentActor, type ConsentCommand, type ConsentDefinitionCommand, type ConsentDefinitionRepository,
+  type ConsentRepository, type ConsentResult, type ConsentScope } from "../services/consent.service.js";
+import { consentTokenActions, consentTokenScope, createConsentToken, hashConsentToken, optionalConsentTokenScope, validateConsentToken } from "../services/consent-token.crypto.js";
 
 type Database = typeof appDb;
 export type ConsentTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -44,34 +47,50 @@ export async function readConsentEvidence(tx: ConsentTransaction, subscriptionId
   const current = currentDecisions(history);
   return { definitions, history, current, bundle: requiredBundle(definitions, current ?? []) };
 }
-function tokenDefinitionIds(token: TokenRow): string[] | null {
+type TokenRequest = { kind: ConsentRequestLinkState["kind"]; types: ConsentType[]; definitionIds: string[] };
+// Onboarding links always carry the two required types; optional links carry the coach-picked types (D3).
+function tokenRequest(token: TokenRow): TokenRequest | null {
   const context = token.contextJson;
-  if (!context || typeof context !== "object" || !("definitionIds" in context) || !Array.isArray(context.definitionIds)
-    || context.definitionIds.length !== 2 || !context.definitionIds.every(id => typeof id === "string")) return null;
-  return context.definitionIds;
+  if (!isObject(context) || !Array.isArray(context.definitionIds) || !context.definitionIds.every(id => typeof id === "string")) return null;
+  const definitionIds = context.definitionIds as string[];
+  if (token.action === consentTokenScope.action) return definitionIds.length === 2 ? { kind: "onboarding", types: [...requiredConsentTypes], definitionIds } : null;
+  const types = token.action === optionalConsentTokenScope.action ? parseOptionalTypes(context.types) : null;
+  return types && types.length === definitionIds.length ? { kind: "optional", types, definitionIds } : null;
 }
-function linkState(token: TokenRow, definitions: ConsentDefinition[]): ConsentLinkState {
+const latestOf = (definitions: ConsentDefinition[], types: readonly ConsentType[]) => latestDefinitions(definitions).filter(d => types.some(type => type === d.consentType));
+function linkState(token: TokenRow, definitions: ConsentDefinition[]): ConsentRequestLinkState {
   const error = validateConsentToken(token);
-  const ids = tokenDefinitionIds(token);
-  const latest = latestDefinitions(definitions).filter(d => requiredConsentTypes.some(type => type === d.consentType));
-  const stale = !ids || latest.length !== 2 || !latest.every(d => ids.includes(d.id));
-  return { id: token.id, expiresAt: token.expiresAt.toISOString(), state: error === "CONSENT_LINK_REVOKED" ? "revoked"
+  const request = tokenRequest(token);
+  const latest = request ? latestOf(definitions, request.types) : [];
+  const stale = !request || latest.length !== request.types.length || !latest.every(d => request.definitionIds.includes(d.id));
+  return { id: token.id, kind: token.action === optionalConsentTokenScope.action ? "optional" : "onboarding", types: request?.types ?? [],
+    expiresAt: token.expiresAt.toISOString(), state: error === "CONSENT_LINK_REVOKED" ? "revoked"
     : error === "CONSENT_LINK_CONSUMED" ? "consumed" : error === "CONSENT_LINK_EXPIRED" ? "expired" : error || stale ? "stale" : "available" };
 }
+function decided(definitions: ConsentDefinition[], decisions: ConsentDecisions): { definition: ConsentDefinition; decision: ConsentDecision }[] | null {
+  const pairs = definitions.flatMap(definition => { const decision = decisions[definition.consentType]; return decision ? [{ definition, decision }] : []; });
+  return pairs.length === definitions.length ? pairs : null;
+}
+const versionRank = (version: string) => /^[1-9][0-9]*$/.test(version) ? BigInt(version) : 0n;
+const summaryOf = ({ id, consentType, version, title, contentHash, status, publishedAt, retiredAt }: ConsentDefinition): ConsentDefinitionSummary =>
+  ({ id, consentType, version, title, contentHash, status, publishedAt, retiredAt });
+type DefinitionWrite = { id?: string; consentType: ConsentType; version: string; title: string; content: string; publish: boolean };
+type DefinitionWriteResult = { ok: true; definition: ConsentDefinition } | { ok: false; error: ConsentErrorCode };
 
-export class DrizzleConsentRepository implements ConsentRepository {
+export class DrizzleConsentRepository implements ConsentRepository, ConsentDefinitionRepository {
   constructor(private readonly database: Database, private readonly options: { auditHashPepper: string }) {}
-  private audit(tx: ConsentTransaction, actor: ConsentActor, subscriptionId: string, eventType: string, metadata: AuditMetadata) {
+  private audit(tx: ConsentTransaction, actor: ConsentActor, entityId: string, eventType: string, metadata: AuditMetadata, entityType = "subscription") {
     return new AuditService(tx, this.options).record({ actorType: actor.userId ? "user" : "anonymous", actorUserId: actor.userId,
-      requestId: actor.requestId, ipAddress: actor.ipAddress, userAgent: actor.userAgent, eventType, entityType: "subscription", entityId: subscriptionId, result: "success", metadata });
+      requestId: actor.requestId, ipAddress: actor.ipAddress, userAgent: actor.userAgent, eventType, entityType, entityId, result: "success", metadata });
   }
   private async detail(tx: ConsentTransaction, subscription: SubscriptionRow): Promise<ConsentResult> {
     const evidence = await readConsentEvidence(tx, subscription.id);
     if (!evidence.current) return failure("CONSENT_HISTORY_INVALID");
     const tokens = await tx.select().from(secureAccessTokens).where(and(eq(secureAccessTokens.resourceType, consentTokenScope.resourceType),
-      eq(secureAccessTokens.resourceId, subscription.id), eq(secureAccessTokens.action, consentTokenScope.action))).orderBy(desc(secureAccessTokens.createdAt));
+      eq(secureAccessTokens.resourceId, subscription.id), inArray(secureAccessTokens.action, [...consentTokenActions]))).orderBy(desc(secureAccessTokens.createdAt));
     const detail: ConsentDetail = { subscription: { id: subscription.id, reference: subscription.reference }, definitions: evidence.definitions,
-      history: evidence.history, current: evidence.current, requiredBundle: evidence.bundle, links: tokens.map(t => linkState(t, evidence.definitions)) };
+      history: evidence.history, current: evidence.current, requiredBundle: evidence.bundle, optionalStates: optionalConsentStates(evidence.definitions, evidence.current),
+      links: tokens.map(t => linkState(t, evidence.definitions)) };
     return { ok: true, body: { consents: detail } };
   }
   private async append(tx: ConsentTransaction, subscription: SubscriptionRow, decisions: { definition: ConsentDefinition; decision: ConsentDecision }[],
@@ -111,14 +130,46 @@ export class DrizzleConsentRepository implements ConsentRepository {
     return this.database.transaction(async tx => {
       const [subscription] = await tx.select().from(subscriptions).where(eq(subscriptions.id, subscriptionId)).for("update");
       if (!subscription) return failure("CONSENT_NOT_FOUND");
+      // Lock order: subscription, then tokens, then definitions (same as public submission).
+      const supersededLinks = command.action !== "issue_optional" ? [] : await tx.select({ id: secureAccessTokens.id }).from(secureAccessTokens)
+        .where(and(eq(secureAccessTokens.resourceType, optionalConsentTokenScope.resourceType), eq(secureAccessTokens.resourceId, subscriptionId),
+          eq(secureAccessTokens.action, optionalConsentTokenScope.action), isNull(secureAccessTokens.revokedAt), isNull(secureAccessTokens.usedAt),
+          gt(secureAccessTokens.expiresAt, sql`clock_timestamp()`))).for("update");
       await lockConsentDefinitions(tx);
       if (command.action === "read") return this.detail(tx, subscription);
-      if (command.action !== "revoke_link" && command.action !== "revoke" && subscription.status !== "onboarding") return failure("CONSENT_INVALID_STATE");
+      const scope: ConsentScope | undefined = (consentCommandScopes as Partial<Record<ConsentCommand["action"], ConsentScope>>)[command.action];
+      if (scope && !consentScopeAllows(scope, subscription.status)) return failure("CONSENT_INVALID_STATE");
       const evidence = await readConsentEvidence(tx, subscriptionId);
       if (!evidence.current) return failure("CONSENT_HISTORY_INVALID");
+      if (command.action === "issue_optional" || command.action === "capture_optional") {
+        const types = command.action === "issue_optional" ? command.types : optionalConsentTypes.filter(type => command.decisions[type]);
+        if (command.action === "capture_optional" && requestedDecisionError(command.decisions, types)) return failure("CONSENT_TYPE_NOT_REQUESTED");
+        const definitions = latestOf(evidence.definitions, types);
+        if (definitions.length !== types.length) return failure("CONSENT_DEFINITIONS_MISSING");
+        if (command.action === "capture_optional") {
+          if (!definitions.every(d => command.expectedDefinitionIds.includes(d.id))) return failure("CONSENT_DEFINITIONS_CHANGED");
+          const pairs = decided(definitions, command.decisions);
+          if (!pairs) return failure("CONSENT_INVALID_INPUT");
+          const error = await this.append(tx, subscription, pairs, actor, null);
+          if (error) return error;
+          return this.detail(tx, subscription);
+        }
+        for (const previous of supersededLinks) {
+          await tx.update(secureAccessTokens).set({ revokedAt: new Date(), updatedAt: new Date() }).where(eq(secureAccessTokens.id, previous.id));
+          await this.audit(tx, actor, subscriptionId, "consent.link_revoked", { secureAccessTokenId: previous.id, reason: "superseded" });
+        }
+        const token = createConsentToken();
+        const requested = { types: definitions.map(d => d.consentType), definitionIds: definitions.map(d => d.id) };
+        const [row] = await tx.insert(secureAccessTokens).values({ tokenHash: hashConsentToken(token), ...optionalConsentTokenScope,
+          resourceId: subscriptionId, expiresAt: command.expiresAt, maxUses: 1, contextJson: requested }).returning();
+        if (!row) throw new Error("Consent token insert did not return a row");
+        await this.audit(tx, actor, subscriptionId, "consent.request_link_issued", { subscriptionId, secureAccessTokenId: row.id,
+          consentTypes: requested.types, definitionIds: requested.definitionIds, supersededLinks: supersededLinks.length });
+        return { ok: true, body: { token, link: linkState(row, evidence.definitions) } };
+      }
       if (command.action === "revoke_link") {
         const [token] = await tx.select().from(secureAccessTokens).where(and(eq(secureAccessTokens.id, command.tokenId),
-          eq(secureAccessTokens.resourceId, subscriptionId), eq(secureAccessTokens.resourceType, consentTokenScope.resourceType), eq(secureAccessTokens.action, consentTokenScope.action))).for("update");
+          eq(secureAccessTokens.resourceId, subscriptionId), eq(secureAccessTokens.resourceType, consentTokenScope.resourceType), inArray(secureAccessTokens.action, [...consentTokenActions]))).for("update");
         if (!token) return failure("CONSENT_NOT_FOUND");
         if (!token.revokedAt) {
           await tx.update(secureAccessTokens).set({ revokedAt: new Date(), updatedAt: new Date() }).where(eq(secureAccessTokens.id, token.id));
@@ -144,14 +195,15 @@ export class DrizzleConsentRepository implements ConsentRepository {
           await this.audit(tx, actor, subscriptionId, "consent.link_created", { subscriptionId, secureAccessTokenId: row.id });
           return { ok: true, body: { token, link: linkState(row, evidence.definitions) } };
         }
-        const error = await this.append(tx, subscription, definitions.map(definition => ({ definition,
-          decision: command.decisions[definition.consentType as "service_terms" | "privacy_notice"] })), actor, null);
+        const pairs = decided(definitions, command.decisions);
+        if (!pairs) return failure("CONSENT_INVALID_INPUT");
+        const error = await this.append(tx, subscription, pairs, actor, null);
         if (error) return error;
       }
       return this.detail(tx, subscription);
     });
   }
-  async publicAccess(rawToken: string, decisions: import("@kfit/shared").ConsentDecisions | null, actor: ConsentActor, rejectedInput?: "CONSENT_INVALID_INPUT"): Promise<ConsentResult> {
+  async publicAccess(rawToken: string, decisions: ConsentDecisions | null, actor: ConsentActor, rejectedInput?: "CONSENT_INVALID_INPUT"): Promise<ConsentResult> {
     let attemptedTokenId: string | null = null;
     try { return await this.database.transaction(async tx => {
       const [initial] = /^[A-Za-z0-9_-]{43}$/.test(rawToken) ? await tx.select().from(secureAccessTokens).where(eq(secureAccessTokens.tokenHash, hashConsentToken(rawToken))) : [];
@@ -167,19 +219,22 @@ export class DrizzleConsentRepository implements ConsentRepository {
       const invalid = token ? validateConsentToken(token) : "CONSENT_LINK_INVALID";
       if (invalid || !subscription || !token) { const error = invalid ?? "CONSENT_LINK_INVALID"; await event(initial.id, error); return failure(error); }
       await lockConsentDefinitions(tx);
-      if (subscription.status !== "onboarding") { await event(token.id, "CONSENT_INVALID_STATE"); return failure("CONSENT_INVALID_STATE"); }
+      const request = tokenRequest(token);
+      if (!consentScopeAllows(request?.kind === "optional" ? "optional" : "required", subscription.status)) { await event(token.id, "CONSENT_INVALID_STATE"); return failure("CONSENT_INVALID_STATE"); }
       const evidence = await readConsentEvidence(tx, subscription.id);
       const afterWaitError = validateConsentToken(token);
       if (afterWaitError) { await event(token.id, afterWaitError); return failure(afterWaitError); }
       if (!evidence.current) { await event(token.id, "CONSENT_HISTORY_INVALID"); return failure("CONSENT_HISTORY_INVALID"); }
-      if (linkState(token, evidence.definitions).state !== "available") { await event(token.id, "CONSENT_LINK_STALE"); return failure("CONSENT_LINK_STALE"); }
-      const definitions = latestDefinitions(evidence.definitions).filter(d => requiredConsentTypes.some(type => type === d.consentType));
+      if (!request || linkState(token, evidence.definitions).state !== "available") { await event(token.id, "CONSENT_LINK_STALE"); return failure("CONSENT_LINK_STALE"); }
+      const definitions = latestOf(evidence.definitions, request.types);
       if (!decisions) {
         await event(token.id, "success");
         return { ok: true, body: { document: { subscriptionReference: subscription.reference, definitions } } };
       }
-      const error = await this.append(tx, subscription, definitions.map(definition => ({ definition,
-        decision: decisions[definition.consentType as "service_terms" | "privacy_notice"] })), { ...actor, userId: null }, token.id);
+      const rejected = requestedDecisionError(decisions, request.types);
+      const pairs = rejected ? null : decided(definitions, decisions);
+      if (!pairs) { const code = rejected ?? "CONSENT_INVALID_INPUT"; await event(token.id, code); return failure(code); }
+      const error = await this.append(tx, subscription, pairs, { ...actor, userId: null }, token.id);
       if (error) { await event(token.id, error.ok ? "failure" : error.error); return error; }
       const consumed = await tx.update(secureAccessTokens).set({ usedAt: new Date(), useCount: 1, updatedAt: new Date() })
         .where(and(eq(secureAccessTokens.id, token.id), gt(secureAccessTokens.expiresAt, sql`clock_timestamp()`))).returning({ id: secureAccessTokens.id });
@@ -195,23 +250,82 @@ export class DrizzleConsentRepository implements ConsentRepository {
       throw error;
     }
   }
-  // Internal definition storage boundary; no publishing/editing HTTP workflow in S4.4.
-  async saveDefinition(input: { id?: string; consentType: ConsentType; version: string; title: string; content: string; publish: boolean }): Promise<{ ok: true; definition: ConsentDefinition } | { ok: false; error: ConsentErrorCode }> {
+  // Caller holds lockConsentDefinitions. Published rows are immutable and publication only moves the version forward.
+  private async writeDefinition(tx: ConsentTransaction, input: DefinitionWrite): Promise<DefinitionWriteResult> {
     if (!/^[1-9][0-9]*$/.test(input.version) || !input.content.trim() || !input.title.trim()) return { ok: false, error: "CONSENT_INVALID_INPUT" };
+    const rows = await tx.select().from(consentDefinitions).where(eq(consentDefinitions.consentType, input.consentType));
+    const existing = rows.find(row => row.id === input.id);
+    if (input.id && (!existing || existing.status !== "draft" || existing.publishedAt)) return { ok: false, error: "CONSENT_DEFINITION_IMMUTABLE" };
+    if (rows.some(row => row.id !== input.id && row.version === input.version)) return { ok: false, error: "CONSENT_VERSION_CONFLICT" };
+    if (input.publish && rows.some(row => row.publishedAt && BigInt(row.version) >= BigInt(input.version))) return { ok: false, error: "CONSENT_VERSION_CONFLICT" };
+    const values = { consentType: input.consentType, version: input.version, title: input.title, content: input.content,
+      contentHash: createHash("sha256").update(input.content).digest("hex"), status: input.publish ? "published" : "draft",
+      publishedAt: input.publish ? new Date() : null, updatedAt: new Date() };
+    const [row] = existing ? await tx.update(consentDefinitions).set(values).where(and(eq(consentDefinitions.id, existing.id), eq(consentDefinitions.status, "draft"))).returning()
+      : await tx.insert(consentDefinitions).values(values).returning();
+    if (!row) throw new Error("Definition write did not return a row");
+    return { ok: true, definition: definitionDto(row) };
+  }
+  async saveDefinition(input: DefinitionWrite): Promise<DefinitionWriteResult> {
+    return this.database.transaction(async tx => { await lockConsentDefinitions(tx); return this.writeDefinition(tx, input); });
+  }
+  // Subscriptions whose current grant is on today's latest version: publishing a newer one puts them in renewal (D6, D7).
+  private async renewalImpact(tx: ConsentTransaction, consentType: ConsentType): Promise<number> {
+    const latest = latestDefinitions((await tx.select().from(consentDefinitions).where(eq(consentDefinitions.consentType, consentType))).map(definitionDto))[0];
+    if (!latest) return 0;
+    const rows = await tx.select({ id: consentRecords.id, subscriptionId: consentRecords.subscriptionId, definitionId: consentRecords.consentDefinitionId,
+      decision: consentRecords.decision, supersedes: consentRecords.supersedesConsentRecordId }).from(consentRecords)
+      .innerJoin(consentDefinitions, eq(consentRecords.consentDefinitionId, consentDefinitions.id))
+      .innerJoin(subscriptions, eq(consentRecords.subscriptionId, subscriptions.id))
+      .where(and(eq(consentDefinitions.consentType, consentType), inArray(subscriptions.status, [...consentScopeStatuses.optional])));
+    const superseded = new Set(rows.flatMap(row => row.supersedes ? [row.supersedes] : []));
+    return new Set(rows.filter(row => !superseded.has(row.id) && row.decision === "granted" && row.definitionId === latest.id).map(row => row.subscriptionId)).size;
+  }
+  async definitions(command: ConsentDefinitionCommand, actor: ConsentActor): Promise<ConsentResult> {
     return this.database.transaction(async tx => {
       await lockConsentDefinitions(tx);
-      const rows = await tx.select().from(consentDefinitions).where(eq(consentDefinitions.consentType, input.consentType));
-      const existing = rows.find(row => row.id === input.id);
-      if (input.id && (!existing || existing.status !== "draft" || existing.publishedAt)) return { ok: false, error: "CONSENT_DEFINITION_IMMUTABLE" };
-      if (rows.some(row => row.id !== input.id && row.version === input.version)) return { ok: false, error: "CONSENT_VERSION_CONFLICT" };
-      if (input.publish && rows.some(row => row.publishedAt && BigInt(row.version) >= BigInt(input.version))) return { ok: false, error: "CONSENT_VERSION_CONFLICT" };
-      const values = { consentType: input.consentType, version: input.version, title: input.title, content: input.content,
-        contentHash: createHash("sha256").update(input.content).digest("hex"), status: input.publish ? "published" : "draft",
-        publishedAt: input.publish ? new Date() : null, updatedAt: new Date() };
-      const [row] = existing ? await tx.update(consentDefinitions).set(values).where(and(eq(consentDefinitions.id, existing.id), eq(consentDefinitions.status, "draft"))).returning()
-        : await tx.insert(consentDefinitions).values(values).returning();
-      if (!row) throw new Error("Definition write did not return a row");
-      return { ok: true, definition: definitionDto(row) };
+      const audit = (definition: ConsentDefinition, eventType: string, extra: AuditMetadata = {}) => this.audit(tx, actor, definition.id, eventType,
+        { consentType: definition.consentType, definitionId: definition.id, definitionVersion: definition.version, ...extra }, "consent_definition");
+      if (command.action === "definitions_list") {
+        const all = (await tx.select().from(consentDefinitions)).map(definitionDto);
+        return { ok: true, body: { definitions: consentTypes.map(consentType => ({ consentType, versions: all.filter(d => d.consentType === consentType)
+          .sort((a, b) => versionRank(b.version) > versionRank(a.version) ? 1 : versionRank(b.version) < versionRank(a.version) ? -1 : 0).map(summaryOf) })) } };
+      }
+      if (command.action === "definition_create") {
+        // Next version under the definitions lock; the (type, version) unique index backs it.
+        const rows = await tx.select({ version: consentDefinitions.version }).from(consentDefinitions).where(eq(consentDefinitions.consentType, command.consentType));
+        const version = (rows.reduce((highest, row) => versionRank(row.version) > highest ? versionRank(row.version) : highest, 0n) + 1n).toString();
+        const written = await this.writeDefinition(tx, { consentType: command.consentType, version, title: command.title, content: command.content, publish: false });
+        if (!written.ok) return written;
+        await audit(written.definition, "consent.definition_draft_saved");
+        return { ok: true, body: { definition: written.definition } };
+      }
+      const [row] = await tx.select().from(consentDefinitions).where(eq(consentDefinitions.id, command.definitionId));
+      if (!row) return failure("CONSENT_NOT_FOUND");
+      const definition = definitionDto(row);
+      if (command.action === "definition_read") return { ok: true, body: { definition } };
+      if (definition.status !== "draft" || row.publishedAt) return failure("CONSENT_DEFINITION_IMMUTABLE");
+      switch (command.action) {
+        case "definition_impact": return { ok: true, body: { type: definition.consentType, activeSubscriptionsAffected: await this.renewalImpact(tx, definition.consentType) } };
+        case "definition_delete": {
+          const deleted = await tx.delete(consentDefinitions).where(and(eq(consentDefinitions.id, definition.id), eq(consentDefinitions.status, "draft"), isNull(consentDefinitions.publishedAt))).returning({ id: consentDefinitions.id });
+          if (deleted.length !== 1) return failure("CONSENT_DEFINITION_IMMUTABLE");
+          await audit(definition, "consent.definition_draft_deleted");
+          return { ok: true, body: { deleted: true } };
+        }
+        case "definition_update":
+        case "definition_publish": {
+          const publish = command.action === "definition_publish";
+          const affected = publish ? await this.renewalImpact(tx, definition.consentType) : 0;
+          const written = await this.writeDefinition(tx, { id: definition.id, consentType: definition.consentType, version: definition.version, publish,
+            title: command.action === "definition_update" ? command.title ?? definition.title : definition.title,
+            content: command.action === "definition_update" ? command.content ?? definition.content : definition.content });
+          if (!written.ok) return written;
+          await audit(written.definition, publish ? "consent.definition_published" : "consent.definition_draft_saved",
+            publish ? { contentHash: written.definition.contentHash, activeSubscriptionsAffected: affected } : {});
+          return { ok: true, body: { definition: written.definition } };
+        }
+      }
     });
   }
 }

@@ -1093,3 +1093,59 @@ Manual validation (Fred):
 5. `POST /admin/retention-holds` on another archived customer, then anonymize → 409 `PRIVACY_RETENTION_HOLD_ACTIVE`;
    release → anonymize succeeds.
 6. `npm run privacy:journal-sync` → `{ appended: 0 }`; `npm run privacy:replay -- --since <ISO before step 3>` → `replayed: 1`, no change.
+
+## CONS-02 Gate 1 — approved 2026-10-25 (recette fixes REG-F6 + REG-F7)
+
+### Context (verified on main 001f55d)
+- consent_records are append-only and superseding; a decision counts only against the LATEST published definition of its type (latestDefinitions + currentDecisions). Keep this rule.
+- Required bundle = service_terms + privacy_notice (requiredConsentTypes). The onboarding link (token action "onboarding_consent") and coach capture only carry those two (repository l.~175: `.filter(requiredConsentTypes…)`; ConsentDecisions = Record<RequiredConsentType,…>).
+- consent.repository.ts l.116 and l.170 refuse everything except revoke/revoke_link when subscription.status !== "onboarding".
+- health_data is only captured inline by a health-category questionnaire (questionnaire.repository.ts appendHealthDecision). progress_photo_storage, marketing, publication have no capture path. Consumers: progress.repository.ts healthGranted, documents.repository.ts consentGranted (health_data, progress_photo_storage), questionnaire health gate.
+- saveDefinition (consent.repository.ts l.~203) already does draft → published with immutability + content hash, but has no HTTP route ("no publishing/editing HTTP workflow in S4.4").
+- secure_access_tokens has context_json → use it for the requested types; no new table expected.
+
+### Decisions (Fred 2026-10-25)
+D1. New « Demander un accord » flow for optional consents, allowed when the subscription is onboarding, active or paused (never completed/cancelled/other).
+D2. Optional types = health_data, progress_photo_storage, marketing, publication (named constant optionalConsentTypes). The coach picks which ones go in a request (at least one); client default selection (health_data + progress_photo_storage) is a UI concern.
+D3. Public link: new token action "optional_consent", context_json = { types, definitionIds } (latest published ids at issue time). Same public page/route family, generalized to N definitions; no pre-checked choice; each type granted or refused independently (a refusal is recorded as evidence); link consumed on submit; default validity 7 days (coach may set expiry like today); one available optional link per subscription — issuing a new one revokes the previous. Stale when any requested definition is no longer the latest published (existing CONSENT_LINK_STALE). A requested type with no published definition → refuse issue with CONSENT_DEFINITIONS_MISSING.
+D4. Coach-assisted capture extended to optional types while onboarding/active/paused: capturedVia "coach_assisted", expectedDefinitionIds guard (existing pattern), no free-text note.
+D5. Required types stay onboarding-only (existing link + capture unchanged). A new required version never re-blocks active/paused subscriptions.
+D6. New version of an optional type keeps the existing rule (old grant no longer current). Expose per subscription in the consent detail: for each optional type → state "granted" | "refused" | "revoked" | "renewal_required" (granted on an older version) | "none", so the client can show « Accord à renouveler ».
+D7. Consent texts admin API (admin session + CSRF + same-origin; publish additionally requires a fresh sensitive-action OTP via isFreshOtp, same as anonymization):
+    - GET list by type with all versions (status, version, publishedAt, contentHash, title; content on detail);
+    - POST create draft (next version number computed server-side), PATCH draft (title/content only while draft), DELETE draft (never published);
+    - GET publish-impact: { type, activeSubscriptionsAffected } = active/paused/onboarding subscriptions whose current decision for that type is "granted" on the current latest version (they will need renewal) — counts only;
+    - POST publish (OTP) → immutable, hash, publishedAt; previous latest stays in history (no auto-retire);
+    - Reuse saveDefinition semantics; keep advisory/lock order via lockConsentDefinitions.
+    Audit: consent.definition_draft_saved, consent.definition_published, consent.request_link_issued, consent.decision_recorded (existing), metadata = type, version, ids, counts — never text content.
+D8. Slices: CONS-02a server (this run), CONS-02b client (separate).
+D9. Real legal texts are a separate Fred/legal task. Add to TASKS.md under S7.4 prerequisites: "production guard: refuse production start if any published consent definition title contains « DÉMONSTRATION »" — do NOT implement it now.
+
+Status: CONS-02a APPROVED_FOR_IMPLEMENTATION
+
+## CONS-02a execution — 2026-10-25 (Claude)
+
+Status: delivered uncommitted, awaiting Fred validation. No migration (context_json carries the requested types).
+
+Tests (agent-run, local PostgreSQL 5433):
+- shared 62 → 64; server unit + express 574 → 587; integration 571 → 583.
+- First full integration run: 582/583, `DrizzleRequestsRepository resolves a real Postgres unique-token collision` failed once, then passed alone and in a second full run (583/583). Reported as flaky, not touched.
+- Mutation check: narrowing the optional status rule to onboarding makes 8 of the 12 new PG tests fail.
+
+Routes (all admin routes: admin session + CSRF + same origin on mutations):
+- POST /admin/subscriptions/:subscriptionId/consent-requests `{ types, expiresAt? }` → `{ token, link }` (optional link, D3)
+- POST /admin/subscriptions/:subscriptionId/consents/optional-capture `{ decisions, expectedDefinitionIds }` → consent detail (D4)
+- POST /admin/subscriptions/:subscriptionId/consent-link/:tokenId/revoke now revokes onboarding and optional links
+- GET/POST /public/consents/:token unchanged path, generalized to the token's requested types
+- GET /admin/consent-definitions; POST same path creates a draft `{ consentType, title, content }`
+- GET/PATCH/DELETE /admin/consent-definitions/:definitionId
+- GET /admin/consent-definitions/:definitionId/publish-impact → `{ type, activeSubscriptionsAffected }`
+- POST /admin/consent-definitions/:definitionId/publish (fresh sensitive-action OTP, else 403 AUTH_FRESH_OTP_REQUIRED)
+
+Defaults and rules: optional link validity 7 days when expiresAt is absent; status rule `consentScopeStatuses` (required: onboarding; optional: onboarding, active, paused); `ConsentDetail.optionalStates` per optional type (D6); `ConsentDetail.links[].kind/types` added; new code CONSENT_TYPE_NOT_REQUESTED (400).
+
+Known limits:
+- Editing, deleting or publishing a non-draft answers the existing CONSENT_DEFINITION_IMMUTABLE (409); no CONSENT_DEFINITION_NOT_DRAFT code was added.
+- Extra audit events beyond D7: consent.definition_draft_deleted, and consent.link_revoked with reason "superseded" when a new optional link replaces one.
+- CONSENT_DEFINITIONS_MISSING on optional issue is not PG-tested (every type has a published definition in kfit_dev).
+- Until CONS-02b, the current Santé tab lists optional links with the onboarding links (none exist until the new API is used).

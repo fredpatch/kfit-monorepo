@@ -276,7 +276,9 @@ export function createDevelopmentRuntime() {
     subscriptionsController: new SubscriptionsController(new SubscriptionsService(new DrizzleSubscriptionsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
     questionnaireController: new QuestionnaireController(new QuestionnaireService(new DrizzleQuestionnaireRepository(db, { auditHashPepper: authConfig.auditHashPepper })), new QuestionnaireTemplateService(new DrizzleQuestionnaireTemplateRepository(db, { auditHashPepper: authConfig.auditHashPepper })),
       { lastConsumedAt: createFreshOtpLookup(db), windowMs: authConfig.freshOtpWindowMs }),
-    consentController: new ConsentController(new ConsentService(new DrizzleConsentRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
+    consentController: new ConsentController(new ConsentService(new DrizzleConsentRepository(db, { auditHashPepper: authConfig.auditHashPepper })),
+      new ConsentDefinitionService(new DrizzleConsentRepository(db, { auditHashPepper: authConfig.auditHashPepper })),
+      { lastConsumedAt: createFreshOtpLookup(db), windowMs: authConfig.freshOtpWindowMs }),
     authController,
     resolveAuthSession: (request) => resolver.resolveFromRequest(request),
     catalogueController,
@@ -293,7 +295,7 @@ export function createDevelopmentRuntime() {
   return { app, startNotificationJobs, startPrivacyJobs, privacyJournalEnabled: privacyJournal !== null };
 }
 import { ConsentController } from "./modules/consents/controllers/consent.controller.js";
-import { ConsentService } from "./modules/consents/services/consent.service.js";
+import { ConsentDefinitionService, ConsentService } from "./modules/consents/services/consent.service.js";
 import { DrizzleConsentRepository } from "./modules/consents/repositories/consent.repository.js";
 import { QuestionnaireController } from "./modules/questionnaires/controllers/questionnaire.controller.js";
 import { QuestionnaireService, QuestionnaireTemplateService } from "./modules/questionnaires/services/questionnaire.service.js";

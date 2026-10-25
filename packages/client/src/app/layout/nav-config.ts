@@ -1,4 +1,4 @@
-import { ClipboardList, Inbox, Layers, MessageCircle, Settings, Sun, Users, type LucideIcon } from "lucide-react";
+import { ClipboardList, FileCheck, Inbox, Layers, MessageCircle, Settings, Sun, Users, type LucideIcon } from "lucide-react";
 
 export type NavBadgeSource = "followUpsOverdue" | "requestsNew" | "todayTasks";
 
@@ -30,6 +30,7 @@ export const adminNav: NavGroup[] = [
     items: [
       { to: "/admin/offres", label: "Catalogue", icon: Layers },
       { to: "/admin/questionnaires", label: "Questionnaires", icon: ClipboardList },
+      { to: "/admin/consentements", label: "Textes de consentement", icon: FileCheck },
       { to: "/admin/reglages", label: "Réglages", icon: Settings },
     ],
   },

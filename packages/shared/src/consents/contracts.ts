@@ -4,6 +4,12 @@ export const requiredConsentTypes = ["service_terms", "privacy_notice"] as const
 export type RequiredConsentType = (typeof requiredConsentTypes)[number];
 export const optionalConsentTypes = ["health_data", "progress_photo_storage", "marketing", "publication"] as const;
 export type OptionalConsentType = (typeof optionalConsentTypes)[number];
+export type ConsentScope = "required" | "optional";
+// D5: required acceptances stay onboarding-only. D1: optional consents follow the live coaching relationship.
+export const consentScopeStatuses = { required: ["onboarding"], optional: ["onboarding", "active", "paused"] } as const satisfies Record<ConsentScope, readonly string[]>;
+export function consentScopeAllows(scope: ConsentScope, status: string): boolean {
+  return consentScopeStatuses[scope].some(allowed => allowed === status);
+}
 export type ConsentDecision = "granted" | "refused" | "revoked";
 // Holds exactly the requested set: both required types for onboarding, the coach-picked optional types otherwise.
 export type ConsentDecisions = Partial<Record<ConsentType, "granted" | "refused">>;

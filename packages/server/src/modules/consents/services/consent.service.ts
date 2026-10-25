@@ -23,14 +23,9 @@ export type ConsentDefinitionCommand = { action: "definitions_list" } | { action
 export interface ConsentDefinitionRepository {
   definitions(command: ConsentDefinitionCommand, actor: ConsentActor): Promise<ConsentResult>;
 }
-export type ConsentScope = "required" | "optional";
-// D5: required acceptances stay onboarding-only. D1: optional consents follow the live coaching relationship.
-export const consentScopeStatuses = { required: ["onboarding"], optional: ["onboarding", "active", "paused"] } as const satisfies Record<ConsentScope, readonly string[]>;
+export { consentScopeAllows, consentScopeStatuses, type ConsentScope } from "@kfit/shared";
 export const consentCommandScopes = { issue: "required", capture: "required", issue_optional: "optional", capture_optional: "optional" } as const;
 export const optionalConsentLinkValidityMs = 7 * 24 * 60 * 60 * 1000;
-export function consentScopeAllows(scope: ConsentScope, status: string): boolean {
-  return consentScopeStatuses[scope].some(allowed => allowed === status);
-}
 export const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export function isObject(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
 export function parseDecisionShape(body: unknown): ConsentDecisions | null {

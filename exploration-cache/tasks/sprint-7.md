@@ -1149,3 +1149,20 @@ Known limits:
 - Extra audit events beyond D7: consent.definition_draft_deleted, and consent.link_revoked with reason "superseded" when a new optional link replaces one.
 - CONSENT_DEFINITIONS_MISSING on optional issue is not PG-tested (every type has a published definition in kfit_dev).
 - Until CONS-02b, the current Santé tab lists optional links with the onboarding links (none exist until the new API is used).
+
+## CONS-02b plan — approved by Fred 2026-10-25 (client)
+
+1. Public consent page renders the definitions the link carries (onboarding: both required; optional: « Tes accords facultatifs », refusal never blocks coaching). Nothing preselected, every requested text answered.
+2. Santé tab: « Accords facultatifs » block with per-type state (« Accord à renouveler »), « Demander un accord » (default health_data + progress_photo_storage, 7 days) and coach-assisted optional capture while onboarding/active/paused. Required block unchanged. Link list shows the link kind.
+3. New Configuration page « Textes de consentement » (/admin/consentements): versions by type, draft create/edit/delete, published read-only, publish with impact preview and sensitive-action OTP step-up.
+4. API client + French error messages; status rule (consentScopeStatuses) moved to the shared contract, server stays authoritative.
+Browser QA by Claude in Chrome authorized (dev:api + dev:web).
+
+## CONS-02b execution — 2026-10-25 (Claude)
+
+Status: delivered and committed 2026-10-25 on Fred's instruction; browser validation pending. Client only, plus `consentScopeStatuses` / `consentScopeAllows` moved to the shared contract (server re-exports them).
+
+Checks (agent-run): tsc shared/server/client clean; client build OK; shared 64/64, server unit 587/587, integration 583/583 (unchanged counts). The client has no test runner.
+NOT VALIDATED: browser behaviour. The Chrome extension was not connected, so no flow was driven in a browser.
+
+Delivered: public page renders the link's definitions (« Tes accords facultatifs » for optional links); Santé tab split into « Conditions obligatoires » and « Accords facultatifs » with « Accord à renouveler », « Demander un accord » and « Recueillir des accords »; link list names each link's documents; new page /admin/consentements « Textes de consentement » (versions, drafts, read, publish with impact and OTP step-up); nav entry under Configuration.

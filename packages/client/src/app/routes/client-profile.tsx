@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { NavLink, useParams, useSearchParams } from "react-router";
 import { isAxiosError } from "axios";
 import { Mail, MapPin, MessageCircle, Phone, Plus } from "lucide-react";
-import { customerAnalyticsPeriods, type AdminCustomerSubscriptionSummary, type CustomerAnalyticsPeriod } from "@kfit/shared";
+import { consentScopeAllows, customerAnalyticsPeriods, type AdminCustomerSubscriptionSummary, type CustomerAnalyticsPeriod } from "@kfit/shared";
 import { customersApi } from "../../customers/api/customers-api.js";
 import { isOnboardingEditable } from "../../profile/preparation/editable.js";
 import { OverviewTab } from "../../profile/overview/OverviewTab.js";
@@ -279,7 +279,7 @@ export function ClientProfilePage() {
           </TabsContent>
           <TabsContent value="sante">
             <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement…</p>}>
-              <HealthTab key={selected.id} subscriptionId={selected.id} editable={isOnboardingEditable(selected.status)} />
+              <HealthTab key={selected.id} subscriptionId={selected.id} editable={isOnboardingEditable(selected.status)} optionalEditable={consentScopeAllows("optional", selected.status)} />
             </Suspense>
           </TabsContent>
           </>}

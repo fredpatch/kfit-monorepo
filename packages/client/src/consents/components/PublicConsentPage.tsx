@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
-import { requiredConsentTypes, type ConsentDefinition, type ConsentDecisions, type RequiredConsentType } from "@kfit/shared";
+import { consentTypes, requiredConsentTypes, type ConsentDefinition, type ConsentDecisions, type ConsentType } from "@kfit/shared";
 import { Button } from "../../components/ui/button.js";
 import { PublicChoice, PublicLoading, PublicNote, PublicShell, PublicTitle, PublicUnavailable, publicPrimaryClass } from "../../components/public/PublicShell.js";
 import { cn } from "../../lib/utils.js";
@@ -20,29 +20,36 @@ export function PublicConsentPage() {
 
 type Choice = "granted" | "refused" | "";
 
+const isRequired = (type: ConsentType) => requiredConsentTypes.some((required) => required === type);
+
 /**
- * Service terms + privacy notice (board 11c). Customer-only form: nothing preselected, each document answered
- * separately, both required before sending (S4 consent rules). The coach capture form (admin) is unchanged.
+ * The documents the link carries (board 11c): service terms + privacy notice for onboarding, or the optional
+ * accords the coach asked for (CONS-02). Customer-only form: nothing preselected, each document answered
+ * separately, every one answered before sending. The coach capture forms (admin) are separate.
  */
 function PublicConsentContent({ token, queryId }: { token: string; queryId: string }) {
   const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [choices, setChoices] = useState<Record<RequiredConsentType, Choice>>({ service_terms: "", privacy_notice: "" });
+  const [choices, setChoices] = useState<Partial<Record<ConsentType, Choice>>>({});
   const inFlight = useRef(false);
   const query = useQuery({ queryKey: ["public-consent", queryId], queryFn: () => consentApi.publicGet(token), retry: false, refetchOnWindowFocus: false, enabled: !!token && !submitted });
+  const definitions = consentTypes
+    .map((type) => query.data?.document.definitions.find((d) => d.consentType === type))
+    .filter((d): d is ConsentDefinition => Boolean(d));
+  const optional = definitions.length > 0 && !definitions.some((d) => isRequired(d.consentType));
 
   async function submit() {
-    const { service_terms, privacy_notice } = choices;
-    if (!service_terms || !privacy_notice || inFlight.current) return;
-    const decisions: ConsentDecisions = { service_terms, privacy_notice };
+    const decisions: ConsentDecisions = {};
+    for (const d of definitions) { const choice = choices[d.consentType]; if (choice) decisions[d.consentType] = choice; }
+    if (definitions.length === 0 || Object.keys(decisions).length !== definitions.length || inFlight.current) return;
     inFlight.current = true; setBusy(true); setError(null);
     try { await consentApi.publicSubmit(token, decisions); setSubmitted(true); }
     catch (failure) { setError(consentErrorMessage(failure)); await query.refetch(); }
     finally { inFlight.current = false; setBusy(false); }
   }
 
-  const tag = "Conditions";
+  const tag = optional ? "Accords" : "Conditions";
   if (!token) return <PublicUnavailable title="Lien incomplet" message="Ce lien est incomplet. Demande un nouveau lien à ton coach." tag={tag} />;
   if (submitted) {
     return (
@@ -57,10 +64,7 @@ function PublicConsentContent({ token, queryId }: { token: string; queryId: stri
   if (query.isPending) return <PublicLoading label="Chargement des documents…" tag={tag} />;
   if (query.isError || !query.data) return <PublicUnavailable title="Documents indisponibles" message={consentErrorMessage(query.error)} tag={tag} />;
 
-  const definitions = requiredConsentTypes
-    .map((type) => query.data.document.definitions.find((d) => d.consentType === type))
-    .filter((d): d is ConsentDefinition => Boolean(d));
-  const answered = definitions.filter((d) => choices[d.consentType as RequiredConsentType]).length;
+  const answered = definitions.filter((d) => choices[d.consentType]).length;
   const complete = answered === definitions.length && definitions.length > 0;
 
   return (
@@ -73,13 +77,17 @@ function PublicConsentContent({ token, queryId }: { token: string; queryId: stri
         </>
       }
     >
-      <PublicTitle>Avant de commencer</PublicTitle>
-      <p className="text-[15px] leading-relaxed text-muted-foreground">Lis et réponds à ces deux documents. Les deux sont nécessaires pour démarrer ton accompagnement.</p>
+      <PublicTitle>{optional ? "Tes accords facultatifs" : "Avant de commencer"}</PublicTitle>
+      <p className="text-[15px] leading-relaxed text-muted-foreground">
+        {optional
+          ? "Ton coach te demande ton accord pour ces usages. Réponds à chacun : un refus n'empêche pas ton accompagnement."
+          : "Lis et réponds à ces deux documents. Les deux sont nécessaires pour démarrer ton accompagnement."}
+      </p>
       {error ? <p role="alert" className="text-sm font-medium text-danger">{error}</p> : null}
 
       {definitions.map((definition) => {
-        const type = definition.consentType as RequiredConsentType;
-        const value = choices[type];
+        const type = definition.consentType;
+        const value = choices[type] ?? "";
         const set = (next: Choice) => setChoices((current) => ({ ...current, [type]: next }));
         return (
           <fieldset key={definition.id} disabled={busy} className={cn("flex flex-col gap-3 rounded-[18px] border bg-card p-4", value ? "border-primary/40" : "border-border")}>
@@ -87,7 +95,7 @@ function PublicConsentContent({ token, queryId }: { token: string; queryId: stri
             <div className="flex items-start gap-2.5">
               <div className="flex flex-1 flex-col gap-0.5">
                 <h2 className="text-[17px] font-extrabold">{definition.title}</h2>
-                <span className="text-xs text-muted-foreground">Version {definition.version} · obligatoire</span>
+                <span className="text-xs text-muted-foreground">Version {definition.version} · {isRequired(type) ? "obligatoire" : "facultatif"}</span>
               </div>
               {value ? <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-bold text-success">Répondu</span> : null}
             </div>

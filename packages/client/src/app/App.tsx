@@ -21,6 +21,7 @@ const ClientsPage = lazy(() => import("../customers/components/ClientsPage.js").
 const AdminFollowUpQueuePage = lazy(() => import("../follow-ups/components/AdminFollowUpQueuePage.js").then((m) => ({ default: m.AdminFollowUpQueuePage })));
 const TodayPage = lazy(() => import("../dashboard/components/TodayPage.js").then((m) => ({ default: m.TodayPage })));
 const QuestionnairesPage = lazy(() => import("../questionnaires/components/QuestionnairesPage.js").then((m) => ({ default: m.QuestionnairesPage })));
+const ConsentTextsPage = lazy(() => import("../consents/components/ConsentTextsPage.js").then((m) => ({ default: m.ConsentTextsPage })));
 const PublicRequestPage = lazy(() => import("../requests/components/PublicRequestForm.js").then((m) => ({ default: m.PublicRequestPage })));
 const PublicQuestionnairePage = lazy(() => import("../questionnaires/components/PublicQuestionnairePage.js").then((m) => ({ default: m.PublicQuestionnairePage })));
 const RequestsPage = lazy(() => import("../requests/components/RequestsPage.js").then((m) => ({ default: m.RequestsPage })));
@@ -94,6 +95,7 @@ export function App() {
           <Route path="abonnements/:id/preparation" element={<SubscriptionPreparationRoute />} />
           <Route path="offres" element={<CataloguePage />} />
           <Route path="questionnaires" element={<QuestionnairesPage />} />
+          <Route path="consentements" element={<ConsentTextsPage />} />
           <Route path="reglages" element={<NotificationSettingsPage />} />
 
           {/* Former URLs, still used in e-mails or bookmarks. */}

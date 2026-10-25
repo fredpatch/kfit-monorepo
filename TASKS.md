@@ -20,7 +20,7 @@ S7.3a delivered   migration 0015, privacy module (archive, anonymize, holds, pur
 Recette 2026-10-25 fixes
   REG-F1          variant-less offers qualify and convert (R1–R4, no migration); validated by Fred 2026-10-25 (001f55d)
   CONS-02a        optional consents + consent texts admin API (REG-F6, REG-F7), server slice; validated by Fred 2026-10-25 (sprint-7.md § CONS-02a execution); committed 2aae7f9
-  CONS-02 next    CONS-02b client (separate brief)
+  CONS-02b        client slice; committed 2026-10-25, browser NOT VALIDATED by agent (sprint-7.md § CONS-02b execution); next: Fred validates
 S7.4 prereqs      production guard: refuse production start if any published consent definition title contains « DÉMONSTRATION » (D9, not implemented)
 Next action       Fred: local validation of S7.3a (sprint-7.md § S7.3a execution, manual steps 1–6); S7.3b client after
 Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser

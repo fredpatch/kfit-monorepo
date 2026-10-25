@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import type {
   AdminContactAttempt,
   AdminQualificationReview,
@@ -24,6 +24,10 @@ import type {
   NormalizedCreateWaitlistEntryInput,
   NormalizedQualificationReviewInput,
 } from "../services/admin-requests.service.js";
+import { finalVariantRefusal, finalVariantRuleFor, type FinalVariantRefusal } from "../services/admin-requests.service.js";
+
+/** REG-F1: an option is active while neither archived nor marked archived in the catalogue (R1, R4). */
+const activeVariant = and(isNull(serviceVariants.archivedAt), ne(serviceVariants.availabilityStatus, "archived"));
 
 type AdminRequestsDb = typeof appDb;
 
@@ -437,6 +441,7 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
     | "not_found"
     | "invalid_transition"
     | "variant_invalid"
+    | FinalVariantRefusal
   > {
     return this.database.transaction(async (tx) => {
       const [requestRow] = await tx
@@ -449,11 +454,16 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
       if (!requestRow) return "not_found" as const;
       if (requestRow.status !== "qualification_in_progress") return "invalid_transition" as const;
 
+      if (input.outcome !== "rejected") {
+        const [active] = await tx.select({ total: count() }).from(serviceVariants).where(and(eq(serviceVariants.serviceId, requestRow.serviceId), activeVariant));
+        const refusal = finalVariantRefusal(finalVariantRuleFor(active?.total ?? 0), input.finalVariantId);
+        if (refusal) return refusal;
+      }
       if (input.finalVariantId) {
         const [ownedVariant] = await tx
           .select({ id: serviceVariants.id })
           .from(serviceVariants)
-          .where(and(eq(serviceVariants.id, input.finalVariantId), eq(serviceVariants.serviceId, requestRow.serviceId)))
+          .where(and(eq(serviceVariants.id, input.finalVariantId), eq(serviceVariants.serviceId, requestRow.serviceId), activeVariant))
           .limit(1);
         if (!ownedVariant) return "variant_invalid" as const;
       }
@@ -752,7 +762,7 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
     const rows = await this.database
       .select({ id: serviceVariants.id, name: serviceVariants.name })
       .from(serviceVariants)
-      .where(eq(serviceVariants.serviceId, serviceId))
+      .where(and(eq(serviceVariants.serviceId, serviceId), activeVariant))
       .orderBy(serviceVariants.sortOrder, serviceVariants.name);
 
     return rows.map((row) => ({ id: row.id, name: row.name }));

@@ -17,6 +17,8 @@ Implementation    2dc7c43 (S7.2a server) + 0eac6d4 (S7.2b client, UX-16)
 S7.2 delivered    S7.2a server (engine, outbox, jobs, API, migration 0014) + S7.2b client (UX-16 bell, panel, Réglages)
 S7.3 rules        Fred 2026-10-25: rules 2–9 approved, rule 1 amended; decisions D1–D12 in sprint-7.md
 S7.3a delivered   migration 0015, privacy module (archive, anonymize, holds, purge job, journal, privacy:replay/journal-sync); unit 569, integration 566
+Recette 2026-10-25 fixes
+  REG-F1          variant-less offers qualify and convert (R1–R4, no migration); delivered uncommitted, awaiting Fred validation
 Next action       Fred: local validation of S7.3a (sprint-7.md § S7.3a execution, manual steps 1–6); S7.3b client after
 Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser
 

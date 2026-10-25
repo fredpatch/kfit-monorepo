@@ -33,6 +33,8 @@ export const requestErrorCodes = [
   "REQUEST_CONTACT_ATTEMPT_INVALID_INPUT",
   "REQUEST_STATUS_INVALID_INPUT",
   "REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT",
+  "REQUEST_FINAL_VARIANT_REQUIRED",
+  "REQUEST_FINAL_VARIANT_NOT_APPLICABLE",
   "REQUEST_WAITLIST_INVALID_INPUT",
   "REQUEST_WAITLIST_NOT_ELIGIBLE",
   "REQUEST_WAITLIST_ALREADY_ACTIVE",
@@ -56,7 +58,8 @@ export type RequestConversionResponse = {
     customerId: string;
     sourceRequestId: string;
     serviceId: string;
-    variantId: string;
+    /** Null when the offer is sold without option (REG-F1). */
+    variantId: string | null;
     status: "onboarding";
     agreedPriceXaf: number;
     currency: "XAF";

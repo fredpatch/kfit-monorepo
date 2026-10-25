@@ -10,11 +10,12 @@ export interface RequestConversionRepository {
 type Qualification = { outcome: string; finalVariantId: string | null; agreedPriceXaf: number | null; targetStartDate: Date | null };
 /** Called with authoritative state loaded under the request's transaction lock. */
 export function resolveConversionDecision(status: string, reviews: Qualification[], fallbackStart: Date | null):
-  | { status: "ok"; variantId: string; agreedPriceXaf: number; plannedStartDate: Date }
+  | { status: "ok"; variantId: string | null; agreedPriceXaf: number; plannedStartDate: Date }
   | { status: "not_eligible" | "qualification_invalid" | "start_date_required" } {
   if (status !== "qualified" && status !== "qualified_with_conditions") return { status: "not_eligible" };
   const review = reviews[0];
-  if (reviews.length !== 1 || !review || review.outcome !== status || !review.finalVariantId
+  // REG-F1 R3: a null option is a valid snapshot (offer sold as is); the qualification is honoured as recorded.
+  if (reviews.length !== 1 || !review || review.outcome !== status
     || review.agreedPriceXaf === null || !Number.isInteger(review.agreedPriceXaf) || review.agreedPriceXaf < 0) {
     return { status: "qualification_invalid" };
   }

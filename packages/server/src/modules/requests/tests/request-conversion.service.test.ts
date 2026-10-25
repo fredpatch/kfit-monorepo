@@ -22,7 +22,7 @@ test("conversion domain takes qualification commercial values and target start b
 });
 
 test("conversion domain requires one consistent current review with complete commercial values", () => {
-  for (const reviews of [[], [review, review], [{ ...review, outcome: "qualified_with_conditions" }], [{ ...review, finalVariantId: null }],
+  for (const reviews of [[], [review, review], [{ ...review, outcome: "qualified_with_conditions" }],
     [{ ...review, agreedPriceXaf: null }], [{ ...review, agreedPriceXaf: -1 }], [{ ...review, agreedPriceXaf: 1.5 }], [{ ...review, targetStartDate: new Date("invalid") }]]) {
     assert.equal(resolveConversionDecision("qualified", reviews, null).status, "qualification_invalid");
   }

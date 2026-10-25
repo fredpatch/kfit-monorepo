@@ -17,6 +17,8 @@ const requestErrorMessages: Record<RequestErrorCode, string> = {
   REQUEST_CONTACT_ATTEMPT_INVALID_INPUT: "Vérifie les informations du contact (canal, sens, résultat) puis réessaie.",
   REQUEST_STATUS_INVALID_INPUT: "Le statut demandé n'est pas valide.",
   REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT: "Vérifie la décision de qualification puis réessaie.",
+  REQUEST_FINAL_VARIANT_REQUIRED: "Choisis l'option retenue pour cette offre.",
+  REQUEST_FINAL_VARIANT_NOT_APPLICABLE: "Cette offre n'a pas d'option : laisse le champ vide.",
   REQUEST_WAITLIST_INVALID_INPUT: "Vérifie les informations de liste d'attente puis réessaie.",
   REQUEST_WAITLIST_NOT_ELIGIBLE: "Cette demande ne peut pas être ajoutée à la liste d'attente.",
   REQUEST_WAITLIST_ALREADY_ACTIVE: "Cette demande est déjà active en liste d'attente.",

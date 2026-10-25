@@ -33,10 +33,10 @@ export class DrizzleRequestConversionRepository implements RequestConversionRepo
         const decision = resolveConversionDecision(request.status, reviews, fallbackStart);
         if (decision.status !== "ok") return decision;
         const [service] = await tx.select().from(services).where(eq(services.id, request.serviceId)).for("share");
-        const [variant] = await tx.select().from(serviceVariants)
+        const [variant] = decision.variantId === null ? [] : await tx.select().from(serviceVariants)
           .where(and(eq(serviceVariants.id, decision.variantId), eq(serviceVariants.serviceId, request.serviceId))).for("share");
-        if (!service || !variant) return { status: "qualification_invalid" };
-        const duration = resolveDuration({ value: variant.durationValue, unit: variant.durationUnit }, { value: service.defaultDurationValue, unit: service.defaultDurationUnit });
+        if (!service || (decision.variantId !== null && !variant)) return { status: "qualification_invalid" };
+        const duration = resolveDuration(variant ? { value: variant.durationValue, unit: variant.durationUnit } : null, { value: service.defaultDurationValue, unit: service.defaultDurationUnit });
         if (!duration) return { status: "duration_invalid" };
 
         const [prospect] = await tx.select().from(prospects).where(eq(prospects.id, request.prospectId)).for("share");
@@ -63,7 +63,8 @@ export class DrizzleRequestConversionRepository implements RequestConversionRepo
         }).returning();
         if (!subscription) throw new Error("Conversion subscription insert returned no row");
         await recordEffectiveCadence(tx, subscription, await resolvedCadence(tx, subscription), new Date());
-        const components = await tx.select().from(serviceComponents).where(and(eq(serviceComponents.serviceId, request.serviceId), or(isNull(serviceComponents.variantId), eq(serviceComponents.variantId, decision.variantId))));
+        const components = await tx.select().from(serviceComponents).where(and(eq(serviceComponents.serviceId, request.serviceId),
+          decision.variantId === null ? isNull(serviceComponents.variantId) : or(isNull(serviceComponents.variantId), eq(serviceComponents.variantId, decision.variantId))));
         if (components.length > 0) {
           await tx.insert(subscriptionComponents).values(components.map(component => ({
             subscriptionId: subscription.id, sourceServiceComponentId: component.id, componentType: component.componentType,

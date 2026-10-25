@@ -147,6 +147,9 @@ export class AdminRequestsController {
       case "invalid_transition":
         return { status: 409, body: { error: "REQUEST_INVALID_TRANSITION" } };
       case "invalid":
+        // REG-F1: the two catalogue-dependent option refusals get their own codes so the UI can say what to fix.
+        if (result.reason === "final_variant_required") return { status: 400, body: { error: "REQUEST_FINAL_VARIANT_REQUIRED" } };
+        if (result.reason === "final_variant_not_applicable") return { status: 400, body: { error: "REQUEST_FINAL_VARIANT_NOT_APPLICABLE" } };
         return { status: 400, body: { error: "REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT", reason: result.reason } };
     }
   }

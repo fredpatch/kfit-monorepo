@@ -137,7 +137,7 @@ test("Drizzle admin requests repository records one qualification review, transi
   assert.notEqual(result, "not_found");
   assert.notEqual(result, "invalid_transition");
   assert.notEqual(result, "variant_invalid");
-  if (result === "not_found" || result === "invalid_transition" || result === "variant_invalid") return;
+  if (typeof result === "string") return;
   assert.equal(result.request.status, "qualified");
   assert.equal(result.qualificationReview.version, 1);
 

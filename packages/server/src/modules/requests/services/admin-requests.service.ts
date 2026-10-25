@@ -88,6 +88,7 @@ export type AdminRequestsRepository = {
     | "not_found"
     | "invalid_transition"
     | "variant_invalid"
+    | FinalVariantRefusal
   >;
   createWaitlistEntry(
     requestId: string,
@@ -217,7 +218,19 @@ function normalizeContactAttempt(input: CreateContactAttemptInput, now: Date): N
   };
 }
 
-function normalizeQualificationReview(input: CreateQualificationReviewInput): NormalizedQualificationReviewInput | { invalid: string } {
+/**
+ * REG-F1 rule R1 (Fred 2026-10-25). An offer with at least one active option needs the chosen option; an offer with none is
+ * sold as is and takes no option. Rejected decisions never carry an option (R2, checked in normalization).
+ */
+export type FinalVariantRule = "required" | "not_applicable";
+export type FinalVariantRefusal = "final_variant_required" | "final_variant_not_applicable";
+export const finalVariantRuleFor = (activeVariantCount: number): FinalVariantRule => (activeVariantCount > 0 ? "required" : "not_applicable");
+export function finalVariantRefusal(rule: FinalVariantRule, finalVariantId: string | null): FinalVariantRefusal | null {
+  if (rule === "required") return finalVariantId === null ? "final_variant_required" : null;
+  return finalVariantId === null ? null : "final_variant_not_applicable";
+}
+
+export function normalizeQualificationReview(input: CreateQualificationReviewInput): NormalizedQualificationReviewInput | { invalid: string } {
   if (typeof input.outcome !== "string" || !qualificationReviewOutcomes.includes(input.outcome as QualificationReviewOutcome)) {
     return { invalid: "outcome_invalid" };
   }
@@ -242,7 +255,9 @@ function normalizeQualificationReview(input: CreateQualificationReviewInput): No
     return { outcome, finalVariantId: null, agreedPriceXaf: null, targetStartDate: null, suitabilityNote, conditions: null, blockers };
   }
 
-  if (typeof input.finalVariantId !== "string" || !uuidPattern.test(input.finalVariantId)) return { invalid: "final_variant_id_invalid" };
+  // R1: whether an option is required or not applicable depends on the catalogue, decided in the repository transaction.
+  const finalVariantId = input.finalVariantId === undefined || input.finalVariantId === null || input.finalVariantId === "" ? null : input.finalVariantId;
+  if (finalVariantId !== null && (typeof finalVariantId !== "string" || !uuidPattern.test(finalVariantId))) return { invalid: "final_variant_id_invalid" };
   if (typeof input.agreedPriceXaf !== "number" || !Number.isInteger(input.agreedPriceXaf) || input.agreedPriceXaf < 0) {
     return { invalid: "agreed_price_invalid" };
   }
@@ -251,7 +266,7 @@ function normalizeQualificationReview(input: CreateQualificationReviewInput): No
 
   return {
     outcome,
-    finalVariantId: input.finalVariantId,
+    finalVariantId,
     agreedPriceXaf,
     targetStartDate,
     suitabilityNote,
@@ -338,6 +353,7 @@ export class AdminRequestsService {
     if (result === "not_found") return { status: "not_found" };
     if (result === "invalid_transition") return { status: "invalid_transition" };
     if (result === "variant_invalid") return { status: "invalid", reason: "final_variant_id_invalid" };
+    if (result === "final_variant_required" || result === "final_variant_not_applicable") return { status: "invalid", reason: result };
     return { status: "ok", qualificationReview: result.qualificationReview, request: result.request };
   }
 

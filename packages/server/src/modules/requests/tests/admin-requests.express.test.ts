@@ -448,3 +448,14 @@ test("admin requests routes return a stable error on unexpected failures", async
     assert.deepEqual(await response.json(), { error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
   }, () => adminSession);
 });
+
+for (const [reason, error] of [["final_variant_required", "REQUEST_FINAL_VARIANT_REQUIRED"], ["final_variant_not_applicable", "REQUEST_FINAL_VARIANT_NOT_APPLICABLE"]] as const) {
+  test(`admin requests qualification-review route maps ${reason} to 400 ${error} (REG-F1)`, async () => {
+    const controller = new AdminRequestsController(makeService({ async recordQualificationReview() { return { status: "invalid", reason }; } }));
+    await withTestServer(controller, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}${qualificationReviewPath(summary.id)}`, { method: "POST", headers: csrfHeaders(), body: JSON.stringify({ outcome: "qualified", agreedPriceXaf: 25000 }) });
+      assert.equal(response.status, 400);
+      assert.deepEqual(await response.json(), { error });
+    }, () => adminSession);
+  });
+}

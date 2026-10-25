@@ -135,7 +135,7 @@ export function SubscriptionCard({ view }: { view: SubscriptionDetail }) {
           </span>
           <h2 className="text-lg font-bold leading-snug">
             {view.serviceName}
-            {view.variantName ? ` — ${view.variantName}` : ""}
+            {` — ${view.variantName ?? "Offre unique"}`}
           </h2>
           <span className="text-[13px] text-muted-foreground">
             {moneyXaf(view.agreedPriceXaf)} · durée convenue {durationText(view)}

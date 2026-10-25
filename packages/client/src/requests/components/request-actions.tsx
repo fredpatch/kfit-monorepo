@@ -165,6 +165,8 @@ export function QualificationSheet({ request, open, onOpenChange }: { request: A
   });
   const { control, register, handleSubmit, reset, watch, setError, formState } = useForm<QualificationValues>({ defaultValues: defaults() });
   const outcome = watch("outcome");
+  // REG-F1: an offer with no active option is sold as is; the server refuses any option for it.
+  const soldAsIs = request.qualificationAvailableVariants.length === 0;
 
   useEffect(() => {
     if (open) {
@@ -183,7 +185,7 @@ export function QualificationSheet({ request, open, onOpenChange }: { request: A
     try {
       await adminRequestsApiClient.recordQualificationReview(request.id, {
         outcome: v.outcome,
-        finalVariantId: rejected ? undefined : v.finalVariantId,
+        finalVariantId: rejected || soldAsIs ? undefined : v.finalVariantId || undefined,
         agreedPriceXaf: rejected || v.agreedPriceXaf === "" ? undefined : Number(v.agreedPriceXaf),
         targetStartDate: rejected || v.targetStartDate === "" ? undefined : new Date(v.targetStartDate).toISOString(),
         suitabilityNote: v.suitabilityNote || undefined,
@@ -223,14 +225,18 @@ export function QualificationSheet({ request, open, onOpenChange }: { request: A
           </fieldset>
           {outcome !== "rejected" ? (
             <>
-              <Field label="Option retenue">
-                {(p) => (
-                  <NativeSelect {...p} {...register("finalVariantId")}>
-                    <option value="">Choisir une option</option>
-                    {request.qualificationAvailableVariants.map((variant) => <option key={variant.id} value={variant.id}>{variant.name}</option>)}
-                  </NativeSelect>
-                )}
-              </Field>
+              {soldAsIs ? (
+                <p className="text-sm text-muted-foreground">Offre sans option : vendue telle quelle.</p>
+              ) : (
+                <Field label="Option retenue">
+                  {(p) => (
+                    <NativeSelect {...p} {...register("finalVariantId")}>
+                      <option value="">Choisir une option</option>
+                      {request.qualificationAvailableVariants.map((variant) => <option key={variant.id} value={variant.id}>{variant.name}</option>)}
+                    </NativeSelect>
+                  )}
+                </Field>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Prix validé (XAF)" error={formState.errors.agreedPriceXaf?.message}>
                   {(p) => <Input {...p} inputMode="numeric" {...register("agreedPriceXaf")} />}
@@ -379,7 +385,8 @@ export function currentReview(request: AdminServiceRequestDetail) {
 export function conversionState(request: AdminServiceRequestDetail) {
   const review = currentReview(request);
   const eligible = request.status === "qualified" || request.status === "qualified_with_conditions";
-  const consistent = review?.outcome === request.status && !!review?.finalVariantId && review.agreedPriceXaf !== null;
+  // A null option is a valid qualification of an offer sold as is (REG-F1).
+  const consistent = review?.outcome === request.status && review.agreedPriceXaf !== null;
   return { review, eligible, consistent };
 }
 
@@ -413,7 +420,9 @@ export function ConversionDialog({ request, open, onOpenChange, onConverted }: {
     }
   });
 
-  const variantName = request.qualificationAvailableVariants.find((variant) => variant.id === review?.finalVariantId)?.name ?? "Option qualifiée";
+  const variantName = review?.finalVariantId
+    ? request.qualificationAvailableVariants.find((variant) => variant.id === review.finalVariantId)?.name ?? "Option qualifiée"
+    : "Offre unique";
 
   return (
     <Dialog open={open} onOpenChange={(next) => (formState.isSubmitting ? undefined : onOpenChange(next))}>

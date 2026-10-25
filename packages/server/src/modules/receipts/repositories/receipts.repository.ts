@@ -85,7 +85,7 @@ export class DrizzleReceiptsRepository implements ReceiptsRepository {
       await tx.update(secureAccessTokens).set({ useCount: token.useCount + 1, usedAt: now, updatedAt: now }).where(eq(secureAccessTokens.id, token.id));
       await this.access(tx, token, actor, event, "success"); return result;
     }
-    await this.access(tx, token, actor, event, "success"); return { ok: true, body: publicReceipt(detail) };
+    await this.access(tx, token, actor, event, "success"); return { ok: true, body: publicReceipt(detail, { maxUses: token.maxUses, useCount: token.useCount }) };
   }
   async execute(id: string, command: ReceiptCommand, actor: ReceiptActor): Promise<ReceiptResult> {
     let key: string | null = null;

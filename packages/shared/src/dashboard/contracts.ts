@@ -60,10 +60,12 @@ export type AgendaAppointment = {
 };
 export type AgendaResponse = { from: string; to: string; appointments: AgendaAppointment[] };
 
-/** « À traiter » line kinds, in the validated priority order. */
+/** « À traiter » line kinds, in the validated priority order (POL-01 D5 adds the two finance kinds). */
 export const todayTaskKinds = [
   "follow_up_overdue",
+  "installment_overdue",
   "follow_up_due",
+  "payment_proof_pending",
   "request_new",
   "request_follow_up",
   "preparation_expired",
@@ -81,10 +83,14 @@ export type TodayTask = {
   offer: string;
   /** Reference instant: last activity, submission, next action, reservation end or planned end. */
   at: string | null;
-  /** Days overdue for follow-ups; null otherwise. */
+  /** Days overdue for follow-ups and installments; null otherwise. */
   days: number | null;
   /** First missing required preparation item. */
   item: string | null;
+  /** POL-01 D5: the installment or payment proof the finance tasks point to. */
+  resourceId?: string;
+  /** POL-01 D6: amount still due on an overdue installment. */
+  amountXaf?: number;
 };
 export type TodayKpis = {
   activeClients: number;
@@ -106,3 +112,7 @@ export type TodayResponse = {
   /** Published, visible offers with their occupancy (UX-7 rule). */
   capacity: Array<{ serviceId: string; name: string; slug: string; occupied: number; limit: number | null; waitlist: number; availabilityStatus: string }>;
 };
+/** POL-01 D6: numbers behind the « Aujourd'hui » header sentence. */
+export function todayHeaderCounts(tasks: ReadonlyArray<Pick<TodayTask, "kind">>): { total: number; followUpsOverdue: number; installmentsOverdue: number } {
+  return { total: tasks.length, followUpsOverdue: tasks.filter((t) => t.kind === "follow_up_overdue").length, installmentsOverdue: tasks.filter((t) => t.kind === "installment_overdue").length };
+}

@@ -186,6 +186,8 @@ export function createDevelopmentRuntime() {
   const onboardingService = new OnboardingService(new DrizzleOnboardingRepository(db, { auditHashPepper: authConfig.auditHashPepper }));
   const customersService = new CustomersService(new DrizzleCustomersRepository(db, { auditHashPepper: authConfig.auditHashPepper }));
   // UX-9 « Aujourd'hui »: reuses each module's own service so every state is computed by its owner.
+  const dashboardFinance = new DrizzleFinanceRepository(db, { auditHashPepper: authConfig.auditHashPepper });
+  const dashboardAlertsRepository = new DrizzleDashboardAlertsRepository(db, dashboardFinance);
   const todayService = new TodayService(new DrizzleTodayRepository(db), {
     async followUpQueue(actor) {
       const result = await followUpsService.execute("", "queue", {}, actor);
@@ -199,10 +201,10 @@ export function createDevelopmentRuntime() {
       const result = await onboardingService.execute(subscriptionId, "read", {}, undefined, actor);
       return result.status === "ok" ? result.onboarding : null;
     },
+    collections: (now) => dashboardAlertsRepository.snapshot(now),
   });
   const todayController = new TodayController(todayService);
-  const dashboardFinance = new DrizzleFinanceRepository(db, { auditHashPepper: authConfig.auditHashPepper });
-  const dashboardAlerts = new DashboardAlertsService(new DrizzleDashboardAlertsRepository(db, dashboardFinance), todayService);
+  const dashboardAlerts = new DashboardAlertsService(dashboardAlertsRepository, todayService);
   const dashboardAnalyticsController = new DashboardAnalyticsController(
     new DashboardAnalyticsService(new DrizzleDashboardAnalyticsRepository(db, dashboardFinance)),
     dashboardAlerts,

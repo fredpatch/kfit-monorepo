@@ -2,35 +2,38 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db, pool } from "../../../db/client.js";
 import { auditEvents, users } from "../../../db/schema/auth.js";
 import { services, serviceVariants } from "../../../db/schema/catalogue.js";
 import { contactAttempts, prospects, qualificationReviews, serviceRequests, waitlistEntries } from "../../../db/schema/prospects.js";
 import { DrizzleAdminRequestsRepository } from "../repositories/admin-requests.repositories.js";
+import { assertLocalTestDatabase, cleanupInOrder, testFixtureName, uniqueTestWhatsapp } from "../../../testing/integration-fixtures.js";
 
 const pepper = "a-secure-integration-pepper-that-is-longer-than-32-characters";
 const serviceId = randomUUID();
 const variantId = randomUUID();
 const userId = randomUUID();
-const prospectWhatsapp = `+241${Math.floor(10_000_000 + Math.random() * 89_999_999)}`;
+const prospectWhatsapp = uniqueTestWhatsapp();
+let safe = false;
 
 before(async () => {
+  assertLocalTestDatabase(); safe = true;
   await db.insert(services).values({
     id: serviceId,
-    name: "Admin Requests Integration Service",
+    name: testFixtureName("Admin Requests Integration Service"),
     slug: `admin-requests-integration-${serviceId}`,
     pricingMode: "quote",
     deliveryType: "one_time",
     availabilityStatus: "open",
     capacityMode: "unlimited",
     waitlistEnabled: true,
-    isPublic: true,
+    isPublic: false,
   });
   await db.insert(serviceVariants).values({
     id: variantId,
     serviceId,
-    name: "Qualification Integration Variant",
+    name: testFixtureName("Qualification Integration Variant"),
     slug: `qualification-integration-${variantId}`,
     priceXaf: 50000,
     availabilityStatus: "open",
@@ -39,29 +42,32 @@ before(async () => {
   await db.insert(users).values({ id: userId, email: `admin-requests-${userId}@kfit.local`, passwordHash: "test-hash", status: "active", role: "coach" });
 });
 
+// POL-01 D1: this run's rows only (its user, its per-run WhatsApp, its service), reverse FK order, every step attempted.
 after(async () => {
-  await db.delete(auditEvents).where(eq(auditEvents.actorUserId, userId));
-  await db.delete(contactAttempts).where(eq(contactAttempts.createdByUserId, userId));
-  const prospectRows = await db.select({ id: prospects.id }).from(prospects).where(eq(prospects.whatsapp, prospectWhatsapp));
-  for (const prospect of prospectRows) {
-    const requestRows = await db.select({ id: serviceRequests.id }).from(serviceRequests).where(eq(serviceRequests.prospectId, prospect.id));
-    for (const request of requestRows) {
-      await db.delete(qualificationReviews).where(eq(qualificationReviews.requestId, request.id));
-      await db.delete(waitlistEntries).where(eq(waitlistEntries.requestId, request.id));
-    }
-    await db.delete(serviceRequests).where(eq(serviceRequests.prospectId, prospect.id));
-    await db.delete(prospects).where(eq(prospects.id, prospect.id));
+  try {
+    if (!safe) return;
+    const prospectIds = (await db.select({ id: prospects.id }).from(prospects).where(eq(prospects.whatsapp, prospectWhatsapp))).map((p) => p.id);
+    const requestIds = prospectIds.length ? (await db.select({ id: serviceRequests.id }).from(serviceRequests).where(inArray(serviceRequests.prospectId, prospectIds))).map((r) => r.id) : [];
+    await cleanupInOrder([
+      ["audit events", () => db.delete(auditEvents).where(eq(auditEvents.actorUserId, userId))],
+      ["contact attempts", () => db.delete(contactAttempts).where(eq(contactAttempts.createdByUserId, userId))],
+      ["qualification reviews", async () => { if (requestIds.length) await db.delete(qualificationReviews).where(inArray(qualificationReviews.requestId, requestIds)); }],
+      ["waitlist entries", async () => { if (requestIds.length) await db.delete(waitlistEntries).where(inArray(waitlistEntries.requestId, requestIds)); }],
+      ["service requests", async () => { if (requestIds.length) await db.delete(serviceRequests).where(inArray(serviceRequests.id, requestIds)); }],
+      ["prospects", async () => { if (prospectIds.length) await db.delete(prospects).where(inArray(prospects.id, prospectIds)); }],
+      ["user", () => db.delete(users).where(eq(users.id, userId))],
+      ["variant", () => db.delete(serviceVariants).where(eq(serviceVariants.id, variantId))],
+      ["service", () => db.delete(services).where(eq(services.id, serviceId))],
+    ]);
+  } finally {
+    await pool.end();
   }
-  await db.delete(users).where(eq(users.id, userId));
-  await db.delete(serviceVariants).where(eq(serviceVariants.id, variantId));
-  await db.delete(services).where(eq(services.id, serviceId));
-  await pool.end();
 });
 
 async function seedRequest(status = "submitted"): Promise<string> {
   const [prospect] = await db
     .insert(prospects)
-    .values({ fullName: "Admin Requests Integration", whatsapp: prospectWhatsapp, source: "integration-test" })
+    .values({ fullName: testFixtureName("Admin Requests Integration"), whatsapp: prospectWhatsapp, source: "integration-test" })
     .returning({ id: prospects.id });
   if (!prospect) throw new Error("prospect insert returned no row");
 

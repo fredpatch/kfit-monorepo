@@ -48,7 +48,8 @@ export type NotificationItem = {
 export const notificationListViews = ["active", "resolved"] as const;
 export type NotificationListView = (typeof notificationListViews)[number];
 export type NotificationListResponse = { view: NotificationListView; items: NotificationItem[]; nextCursor: string | null };
-export type NotificationUnreadCountResponse = { unread: number };
+/** unread: bell badge (not read, not resolved). open: « À traiter » tab (not resolved, read or not) — POL-01 D7. */
+export type NotificationUnreadCountResponse = { unread: number; open: number };
 export type NotificationReadResponse = { notification: NotificationItem };
 export type NotificationReadAllResponse = { updated: number };
 

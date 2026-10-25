@@ -1,11 +1,12 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
-import { after, test } from "node:test";
+import { after, before, test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db, pool } from "../../../db/client.js";
 import { authSessions, otpChallenges, trustedDevices, users } from "../../../db/schema/auth.js";
 import { DrizzlePasswordRecoveryRepository } from "../repositories/auth.repositories.js";
+import { assertLocalTestDatabase, cleanupInOrder } from "../../../testing/integration-fixtures.js";
 
 const userId = randomUUID();
 const sessionId = randomUUID();
@@ -13,13 +14,21 @@ const deviceId = randomUUID();
 const challengeId = randomUUID();
 const verifiedAt = new Date("2026-08-25T14:00:00.000Z");
 const completedAt = new Date("2026-08-25T14:02:00.000Z");
+let safe = false;
+
+before(() => { assertLocalTestDatabase(); safe = true; });
 
 after(async () => {
-  await db.delete(otpChallenges).where(eq(otpChallenges.userId, userId));
-  await db.delete(authSessions).where(eq(authSessions.userId, userId));
-  await db.delete(trustedDevices).where(eq(trustedDevices.userId, userId));
-  await db.delete(users).where(eq(users.id, userId));
-  await pool.end();
+  try {
+    if (safe) await cleanupInOrder([
+      ["otp challenges", () => db.delete(otpChallenges).where(eq(otpChallenges.userId, userId))],
+      ["sessions", () => db.delete(authSessions).where(eq(authSessions.userId, userId))],
+      ["trusted devices", () => db.delete(trustedDevices).where(eq(trustedDevices.userId, userId))],
+      ["user", () => db.delete(users).where(eq(users.id, userId))],
+    ]);
+  } finally {
+    await pool.end();
+  }
 });
 
 test("password recovery hard commit updates password and revokes sessions/devices once", async () => {

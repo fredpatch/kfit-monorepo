@@ -1,40 +1,51 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
-import { after, test } from "node:test";
+import { after, before, test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db, pool } from "../../../db/client.js";
 import { prospects, serviceRequests } from "../../../db/schema/prospects.js";
 import { services } from "../../../db/schema/catalogue.js";
 import { DrizzleRequestsRepository } from "../repositories/requests.repositories.js";
+import { assertLocalTestDatabase, cleanupInOrder, testFixtureName, uniqueTestWhatsapp } from "../../../testing/integration-fixtures.js";
 
 const serviceId = randomUUID();
 const submissionToken = `integration-${randomUUID()}`;
+const whatsapp = uniqueTestWhatsapp();
+let safe = false;
 
+before(() => { assertLocalTestDatabase(); safe = true; });
+
+// POL-01 D1: only this run's rows, reverse FK order, every step attempted.
 after(async () => {
-  await db.delete(serviceRequests).where(eq(serviceRequests.submissionToken, submissionToken));
-  await db.delete(prospects).where(eq(prospects.whatsapp, "+24100000000"));
-  await db.delete(services).where(eq(services.id, serviceId));
-  await pool.end();
+  try {
+    if (safe) await cleanupInOrder([
+      ["service requests", () => db.delete(serviceRequests).where(eq(serviceRequests.submissionToken, submissionToken))],
+      ["prospects", () => db.delete(prospects).where(eq(prospects.whatsapp, whatsapp))],
+      ["service", () => db.delete(services).where(eq(services.id, serviceId))],
+    ]);
+  } finally {
+    await pool.end();
+  }
 });
 
 test("DrizzleRequestsRepository resolves a real Postgres unique-token collision by returning the existing request", async () => {
   await db.insert(services).values({
     id: serviceId,
-    name: "Integration test service",
+    name: testFixtureName("Integration test service"),
     slug: `integration-test-service-${serviceId}`,
     pricingMode: "quote",
     deliveryType: "one_time",
     availabilityStatus: "open",
     capacityMode: "unlimited",
-    isPublic: true,
+    isPublic: false,
   });
 
   const repository = new DrizzleRequestsRepository(db);
   const input = {
     submissionToken,
-    fullName: "Integration Test",
-    whatsapp: "+24100000000",
+    fullName: testFixtureName("Integration Test"),
+    whatsapp,
     email: null,
     serviceId,
     requestedVariantId: null,

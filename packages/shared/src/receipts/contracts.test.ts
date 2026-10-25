@@ -7,3 +7,9 @@ test("receipt contracts expose only explicit commands and separate correction st
   assert.ok(!Object.keys(receiptApiRoutes).some(k => /patch|update|delete/i.test(k)));
 });
 test("receipt error taxonomy is unique, stable and domain specific", () => { assert.equal(new Set(receiptErrorCodes).size, 17); assert.ok(receiptErrorCodes.every(e => e.startsWith("RECEIPT_"))); });
+
+test("POL-01 D3: consumed, expired and revoked links close the download button; other errors do not", async () => {
+  const { isReceiptLinkClosed } = await import("./contracts.js");
+  for (const code of ["RECEIPT_LINK_CONSUMED", "RECEIPT_LINK_EXPIRED", "RECEIPT_LINK_REVOKED"]) assert.equal(isReceiptLinkClosed(code), true, code);
+  for (const code of ["RECEIPT_PDF_FAILURE", "RECEIPT_RATE_LIMITED", "RECEIPT_LINK_INVALID", undefined]) assert.equal(isReceiptLinkClosed(code), false, String(code));
+});

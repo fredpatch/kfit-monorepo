@@ -23,6 +23,7 @@ const sources: TodaySources = {
   async catalogueOverview() { return { asOf: "", services: [] }; },
   async requests() { return []; },
   async onboarding() { return null; },
+  async collections() { return { owners: [], finance: [], proofs: [] }; },
 };
 const clock = () => new Date("2026-10-22T09:00:00Z");
 

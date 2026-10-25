@@ -20,11 +20,13 @@ S7.3a delivered   migration 0015, privacy module (archive, anonymize, holds, pur
 Recette 2026-10-25 fixes
   REG-F1          variant-less offers qualify and convert (R1–R4, no migration); validated by Fred 2026-10-25 (001f55d)
   CONS-02a        optional consents + consent texts admin API (REG-F6, REG-F7), server slice; validated by Fred 2026-10-25 (sprint-7.md § CONS-02a execution); committed 2aae7f9
-  CONS-02b        client slice; committed 2026-10-25, browser NOT VALIDATED by agent (sprint-7.md § CONS-02b execution); next: Fred validates
-  CAT-03a         catalogue variants, components, rules editable (REG-F2), server slice; committed 2026-10-25, migration 0016 (sprint-7.md § CAT-03a execution)
+  CONS-02b        client slice; validated live by Fred 2026-10-25 (b0af0a1)
+  CAT-03a         catalogue variants, components, rules editable (REG-F2), server slice; validated by Fred 2026-10-25 (5c5325b)
   CAT-03b         client slice (D8 tabs + « Avant publication »); validated live by Fred 2026-10-25, committed (sprint-7.md § CAT-03b execution)
+  POL-01          recette polish F3 F4 F5 F8 F9 F10 F11 — committed 2026-10-25 on Fred's instruction (sprint-7.md § POL-01 execution); manual checks pending
+Backlog (V1.1)    « RDV à clôturer dans À traiter » (POL-01 D8: display-only in POL-01)
 S7.4 prereqs      production guard: refuse production start if any published consent definition title contains « DÉMONSTRATION » (D9, not implemented)
-Next action       Fred: local validation of S7.3a (sprint-7.md § S7.3a execution, manual steps 1–6); S7.3b client after
+Next action       Fred: POL-01 manual checks (sprint-7.md § POL-01 execution); then S7.3b
 Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser
 
 UI refonte        UX-1 → UX-15 done; Fred local checks of UX-9d, UX-10, UX-13 passed (2026-10-24)

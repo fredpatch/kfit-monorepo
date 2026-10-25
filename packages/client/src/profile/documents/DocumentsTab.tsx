@@ -47,6 +47,13 @@ function saveBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/** POL-01 D4: one subtitle per creation dialog. */
+const newDocumentDescriptions = {
+  upload: "PDF, JPG, PNG ou WebP · 10 Mo maximum · analyse antivirus avant enregistrement.",
+  summary: "PDF généré à partir des mesures et objectifs enregistrés · lien protégé par un code.",
+  photo: "JPG, PNG ou WebP · 10 Mo maximum · consentement photos requis.",
+} as const;
+
 type Dialogs =
   | { kind: "upload" }
   | { kind: "summary" }
@@ -342,7 +349,7 @@ function DocumentDialog({ subscriptionId, dialog, onClose, onDone, onShare, rest
     <Dialog open onOpenChange={(value) => { if (!value && !busy) onClose(); }}>
       <DialogContent
         title={titles[dialog.kind]}
-        description={doc ? `${labels[doc.documentType]} · ${statusLabels[doc.status]}` : "PDF, JPG, PNG ou WebP · 10 Mo maximum · analyse antivirus avant enregistrement."}
+        description={doc ? `${labels[doc.documentType]} · ${statusLabels[doc.status]}` : newDocumentDescriptions[dialog.kind as keyof typeof newDocumentDescriptions]}
         className="max-h-[90dvh] max-w-lg overflow-y-auto"
         onCloseAutoFocus={restoreFocus}
       >

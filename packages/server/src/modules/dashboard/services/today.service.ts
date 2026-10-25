@@ -3,7 +3,7 @@ import {
   type AdminCustomerOverviewResponse, type AdminServiceRequestSummary, type AgendaAppointment, type AgendaResponse,
   type CatalogueAdminServicesOverviewResponse, type FollowUpQueueResponse, type OnboardingDetail, type TodayResponse,
 } from "@kfit/shared";
-import { buildTodayTasks, clientsByOffer } from "./today.policy.js";
+import { buildTodayTasks, clientsByOffer, type FinanceCollectionsInput } from "./today.policy.js";
 
 export type DashboardActor = { userId: string; requestId: string; ipAddress: string | null; userAgent: string | null };
 export interface TodayRepository {
@@ -19,6 +19,8 @@ export type TodaySources = {
   catalogueOverview(): Promise<CatalogueAdminServicesOverviewResponse>;
   requests(): Promise<AdminServiceRequestSummary[]>;
   onboarding(subscriptionId: string, actor: DashboardActor): Promise<OnboardingDetail | null>;
+  /** POL-01 D5: overdue installments and pending proofs, from the dashboard collections snapshot (one reader for tasks and alerts). */
+  collections(now: Date): Promise<FinanceCollectionsInput>;
 };
 export type AgendaResult = { status: "ok"; response: AgendaResponse } | { status: "invalid"; reason: string };
 
@@ -55,7 +57,7 @@ export class TodayService {
     const dayEnd = addBusinessDays(dayStart, 1);
     const weekStart = startOfBusinessWeek(now);
 
-    const [queue, customerOverview, catalogue, requests, open, appointments, newRequestsThisWeek, sessionsWeek, sessionsToday] = await Promise.all([
+    const [queue, customerOverview, catalogue, requests, open, appointments, newRequestsThisWeek, sessionsWeek, sessionsToday, collections] = await Promise.all([
       this.sources.followUpQueue(actor),
       this.sources.customerOverview(),
       this.sources.catalogueOverview(),
@@ -65,6 +67,7 @@ export class TodayService {
       this.repository.countRequestsSubmittedSince(weekStart),
       this.repository.countCompletedAppointmentsSince(weekStart),
       this.repository.countCompletedAppointmentsSince(dayStart),
+      this.sources.collections(now),
     ]);
     // Onboarding states come from the onboarding module itself (few subscriptions are in preparation at once).
     const preparing = open.filter((s) => s.status === "onboarding");
@@ -77,6 +80,7 @@ export class TodayService {
       offerOfSubscription: new Map(open.map((s) => [s.id, s.offer])),
       requests,
       preparations: preparing.map((s, i) => ({ subscriptionId: s.id, customerId: s.customerId, customerName: s.customerName, offer: s.offer, detail: details[i] ?? null })),
+      collections,
       completions: open.filter((s) => s.status === "completion_due").map((s) => ({ subscriptionId: s.id, customerId: s.customerId, customerName: s.customerName, offer: s.offer, plannedEndDate: s.plannedEndDate })),
     });
     const overdue = queue.items.filter((f) => f.cadenceState === "overdue");

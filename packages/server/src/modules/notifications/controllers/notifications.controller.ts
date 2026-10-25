@@ -17,7 +17,7 @@ function parseCursor(raw: unknown): { at: Date; id: string } | null | "invalid" 
 
 /** Admin-only (same workspace rule as the dashboard). A user only ever sees and marks their own notifications. */
 export class NotificationsController {
-  constructor(private readonly repository: Pick<DrizzleNotificationsRepository, "list" | "unreadCount" | "markRead" | "markAllRead" | "settings" | "updateSettings">, private readonly clock: () => Date = () => new Date()) {}
+  constructor(private readonly repository: Pick<DrizzleNotificationsRepository, "list" | "counts" | "markRead" | "markAllRead" | "settings" | "updateSettings">, private readonly clock: () => Date = () => new Date()) {}
 
   async handle(context: AuthHttpRequestContext, action: NotificationAction, input: { id?: string | undefined; query?: Record<string, unknown>; body?: unknown }): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
@@ -36,7 +36,7 @@ export class NotificationsController {
         return { status: 200, body: { view, ...page } };
       }
       case "unread_count":
-        return { status: 200, body: { unread: await this.repository.unreadCount(auth.session.userId) } };
+        return { status: 200, body: await this.repository.counts(auth.session.userId) };
       case "read": {
         if (!input.id || !uuidPattern.test(input.id) || !emptyBody(input.body)) return fail(400, "NOTIFICATION_INVALID_INPUT");
         const item = await this.repository.markRead(input.id, actor, this.clock());

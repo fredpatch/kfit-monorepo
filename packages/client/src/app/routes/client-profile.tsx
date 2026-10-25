@@ -3,14 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { NavLink, useParams, useSearchParams } from "react-router";
 import { isAxiosError } from "axios";
 import { Mail, MapPin, MessageCircle, Phone, Plus } from "lucide-react";
-import { consentScopeAllows, customerAnalyticsPeriods, type AdminCustomerSubscriptionSummary, type CustomerAnalyticsPeriod } from "@kfit/shared";
+import { consentScopeAllows, customerAnalyticsPeriods, isOpenSubscription, type AdminCustomerSubscriptionSummary, type CustomerAnalyticsPeriod } from "@kfit/shared";
 import { customersApi } from "../../customers/api/customers-api.js";
 import { isOnboardingEditable } from "../../profile/preparation/editable.js";
 import { OverviewTab } from "../../profile/overview/OverviewTab.js";
 import { Avatar } from "../../components/ui/avatar.js";
 import { Button } from "../../components/ui/button.js";
 import { EmptyState } from "../../components/ui/empty-state.js";
-import { StatusPill } from "../../components/ui/status-pill.js";
+import { Pill, StatusPill } from "../../components/ui/status-pill.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs.js";
 import { paymentProofsApi } from "../../payment-proofs/api/payment-proofs-api.js";
 import { Tooltip } from "../../components/ui/tooltip.js";
@@ -141,6 +141,8 @@ export function ClientProfilePage() {
 
   const { customer } = query.data;
   const clientStatus = deriveClientStatus(subscriptions);
+  // POL-01 D2: the header keeps the most advanced subscription; a count tells several are open.
+  const openSubscriptions = subscriptions.filter((s) => isOpenSubscription(s.status)).length;
   const place = [customer.city, customer.country].filter(Boolean).join(", ");
 
   return (
@@ -163,7 +165,10 @@ export function ClientProfilePage() {
           <Avatar name={customer.fullName} size="lg" />
           <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2.5">
-              <StatusPill status={clientStatus} />
+              <Tooltip content="Statut global : abonnement le plus avancé">
+                <span tabIndex={0} className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"><StatusPill status={clientStatus} /></span>
+              </Tooltip>
+              {openSubscriptions > 1 ? <Pill tone="neutral" dot={false}>{openSubscriptions} abonnements ouverts</Pill> : null}
             </div>
             <ul className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-muted-foreground">
               <li className="flex items-center gap-1.5 tabular-nums">

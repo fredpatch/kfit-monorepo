@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CalendarPlus, MoreHorizontal } from "lucide-react";
-import type { AppointmentAction, AppointmentDetail, AppointmentListResponse } from "@kfit/shared";
+import { isAppointmentToClose, type AppointmentAction, type AppointmentDetail, type AppointmentListResponse } from "@kfit/shared";
 import { Button } from "../../components/ui/button.js";
 import { Input, NativeSelect, Textarea } from "../../components/ui/input.js";
 import { Field } from "../../components/ui/field.js";
@@ -80,6 +80,10 @@ export function AppointmentsTab({ subscriptionId }: { subscriptionId: string }) 
   const canSchedule = data.subscriptionStatus === "active";
   const upcoming = data.appointments.filter((a) => upcomingStates.has(a.status)).sort((a, b) => Date.parse(a.scheduledStart) - Date.parse(b.scheduledStart));
   const past = data.appointments.filter((a) => !upcomingStates.has(a.status)).sort((a, b) => Date.parse(b.scheduledStart) - Date.parse(a.scheduledStart));
+  // POL-01 D8: a scheduled or confirmed appointment that has ended waits to be closed; it no longer counts as « À venir ».
+  const now = new Date();
+  const toClose = upcoming.filter((a) => isAppointmentToClose(a, now));
+  const comingUp = upcoming.filter((a) => !isAppointmentToClose(a, now));
   const next = upcoming.find((a) => Date.parse(a.scheduledEnd) > Date.now());
   const toAnswer = upcoming.filter((a) => a.status === "reschedule_requested").length;
 
@@ -107,6 +111,30 @@ export function AppointmentsTab({ subscriptionId }: { subscriptionId: string }) 
     );
   };
 
+  const upcomingRow = (a: AppointmentDetail, closing: boolean) => {
+    const d = day(a.scheduledStart), primary = primaryAction(a);
+    return (
+      <li key={a.id} id={`appointment-${a.id}`} className="flex flex-wrap items-center gap-3 py-3.5">
+        <span aria-hidden="true" className="flex size-14 shrink-0 flex-col items-center justify-center rounded-lg bg-muted leading-tight">
+          <span className="text-[11px] font-bold text-muted-foreground">{d.dow}</span>
+          <span className="text-lg font-extrabold">{d.day}</span>
+          <span className="text-[11px] font-bold text-muted-foreground">{d.mon}</span>
+        </span>
+        <div className="flex min-w-0 flex-1 basis-56 flex-col gap-1">
+          <p className="text-[15px] font-extrabold tabular-nums"><span className="sr-only">{dateTimeFr(a.scheduledStart)} · </span>{slotLabel(a)}</p>
+          <p className="text-[13px] text-muted-foreground">{[a.locationOrChannel ?? "Lieu à préciser", a.component?.labelSnapshot ?? "Sans prestation liée"].join(" · ")}</p>
+          <span className="flex flex-wrap gap-1.5">
+            <StatusPill size="sm" status={closing ? { label: "À clôturer", tone: "warning" } : describeStatus(appointmentStatus, a.status)} />
+            {a.customerResponseStatus !== a.status ? <StatusPill size="sm" status={describeStatus(customerAppointmentResponse, a.customerResponseStatus)} /> : null}
+          </span>
+          {a.rescheduleNote ? <p className="rounded-md bg-warning-soft px-2.5 py-2 text-[13px]">Message de la cliente : {a.rescheduleNote}</p> : null}
+        </div>
+        {primary ? <Button size="sm" variant="secondary" onClick={() => open({ appointment: a, action: primary })}>{primary === "reschedule" ? "Proposer un nouveau créneau" : actionLabels[primary]}</Button> : null}
+        {menu(a, primary)}
+      </li>
+    );
+  };
+
   return (
     <section aria-labelledby="appointments-title" className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
@@ -131,34 +159,16 @@ export function AppointmentsTab({ subscriptionId }: { subscriptionId: string }) 
         ))}
       </ul>
 
+      {toClose.length > 0 ? (
+        <Card className="gap-1 p-5">
+          <CardHeader><CardTitle className="text-[15px]">À clôturer · {toClose.length}</CardTitle></CardHeader>
+          <ul className="flex flex-col divide-y divide-border-subtle">{toClose.map((a) => upcomingRow(a, true))}</ul>
+        </Card>
+      ) : null}
       <Card className="gap-1 p-5">
         <CardHeader><CardTitle className="text-[15px]">À venir</CardTitle></CardHeader>
-        {upcoming.length === 0 ? <p className="py-3 text-sm text-muted-foreground">Aucun rendez-vous à venir.</p> : (
-          <ul className="flex flex-col divide-y divide-border-subtle">
-            {upcoming.map((a) => {
-              const d = day(a.scheduledStart), primary = primaryAction(a);
-              return (
-                <li key={a.id} id={`appointment-${a.id}`} className="flex flex-wrap items-center gap-3 py-3.5">
-                  <span aria-hidden="true" className="flex size-14 shrink-0 flex-col items-center justify-center rounded-lg bg-muted leading-tight">
-                    <span className="text-[11px] font-bold text-muted-foreground">{d.dow}</span>
-                    <span className="text-lg font-extrabold">{d.day}</span>
-                    <span className="text-[11px] font-bold text-muted-foreground">{d.mon}</span>
-                  </span>
-                  <div className="flex min-w-0 flex-1 basis-56 flex-col gap-1">
-                    <p className="text-[15px] font-extrabold tabular-nums"><span className="sr-only">{dateTimeFr(a.scheduledStart)} · </span>{slotLabel(a)}</p>
-                    <p className="text-[13px] text-muted-foreground">{[a.locationOrChannel ?? "Lieu à préciser", a.component?.labelSnapshot ?? "Sans prestation liée"].join(" · ")}</p>
-                    <span className="flex flex-wrap gap-1.5">
-                      <StatusPill size="sm" status={describeStatus(appointmentStatus, a.status)} />
-                      {a.customerResponseStatus !== a.status ? <StatusPill size="sm" status={describeStatus(customerAppointmentResponse, a.customerResponseStatus)} /> : null}
-                    </span>
-                    {a.rescheduleNote ? <p className="rounded-md bg-warning-soft px-2.5 py-2 text-[13px]">Message de la cliente : {a.rescheduleNote}</p> : null}
-                  </div>
-                  {primary ? <Button size="sm" variant="secondary" onClick={() => open({ appointment: a, action: primary })}>{primary === "reschedule" ? "Proposer un nouveau créneau" : actionLabels[primary]}</Button> : null}
-                  {menu(a, primary)}
-                </li>
-              );
-            })}
-          </ul>
+        {comingUp.length === 0 ? <p className="py-3 text-sm text-muted-foreground">Aucun rendez-vous à venir.</p> : (
+          <ul className="flex flex-col divide-y divide-border-subtle">{comingUp.map((a) => upcomingRow(a, false))}</ul>
         )}
       </Card>
 

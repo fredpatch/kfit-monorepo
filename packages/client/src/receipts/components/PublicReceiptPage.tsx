@@ -2,13 +2,15 @@ import { useRef, useState } from "react";
 import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Download } from "lucide-react";
-import type { FinancePaymentMethod, ReceiptCorrectionState } from "@kfit/shared";
+import axios from "axios";
+import { isReceiptLinkClosed, type FinancePaymentMethod, type ReceiptCorrectionState } from "@kfit/shared";
 import { Button } from "../../components/ui/button.js";
 import { PublicCard, PublicLoading, PublicNote, PublicShell, PublicTitle, PublicUnavailable, moneyFcfa, publicPrimaryClass } from "../../components/public/PublicShell.js";
 import { cn } from "../../lib/utils.js";
 import { dateTimeFr } from "../../lib/format.js";
 import { receiptsApi, receiptErrorMessage, downloadReceipt } from "../api/receipts-api.js";
 
+const errorCode = (failure: unknown): unknown => (axios.isAxiosError<{ error?: unknown }>(failure) ? failure.response?.data?.error : null);
 const methods: Record<FinancePaymentMethod, string> = { cash: "Espèces", bank_transfer: "Virement bancaire", mobile_money: "Mobile Money" };
 const corrections: Record<Exclude<ReceiptCorrectionState, "none">, string> = {
   partially_corrected: "Le paiement associé a été partiellement corrigé.",
@@ -22,30 +24,45 @@ export function PublicReceiptPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // POL-01 D3: once the link is used up, expired or revoked, the page stays readable but cannot download again.
+  const [closed, setClosed] = useState(false);
   const inFlight = useRef(false);
 
   async function download() {
-    if (inFlight.current || !query.data) return;
+    if (inFlight.current || !query.data || closed) return;
     inFlight.current = true; setBusy(true); setError(null); setNotice(null);
-    try { downloadReceipt(await receiptsApi.publicPdf(token), query.data.receiptNumber); setNotice("Reçu téléchargé. Il conserve les informations figées à son émission."); }
-    catch (failure) { setError(receiptErrorMessage(failure)); }
-    finally { inFlight.current = false; setBusy(false); }
+    try {
+      downloadReceipt(await receiptsApi.publicPdf(token), query.data.receiptNumber);
+      setNotice("Reçu téléchargé. Il conserve les informations figées à son émission.");
+      const fresh = await query.refetch();
+      if (fresh.isError && isReceiptLinkClosed(errorCode(fresh.error))) setClosed(true);
+    } catch (failure) {
+      setError(receiptErrorMessage(failure));
+      if (isReceiptLinkClosed(errorCode(failure))) setClosed(true);
+    } finally { inFlight.current = false; setBusy(false); }
   }
 
   if (token && query.isPending) return <PublicLoading label="Chargement du reçu…" tag="Reçu" />;
-  if (!token || query.isError || !query.data) return <PublicUnavailable title="Reçu indisponible" message={receiptErrorMessage(query.error)} tag="Reçu" onRetry={() => void query.refetch()} />;
+  // A refetch that fails after a download keeps the receipt on screen; only a first load failure refuses the page.
+  if (!token || !query.data) return <PublicUnavailable title="Reçu indisponible" message={receiptErrorMessage(query.error)} tag="Reçu" onRetry={() => void query.refetch()} />;
 
   const r = query.data;
   const voided = r.state === "voided";
+  const remaining = closed ? 0 : r.remainingDownloads;
 
   return (
     <PublicShell
       tag={r.receiptNumber}
       actions={
-        <Button className={publicPrimaryClass} disabled={busy || !r.canDownload} onClick={() => void download()}>
-          <Download aria-hidden="true" />
-          {busy ? "Téléchargement…" : voided ? "Télécharger le reçu d'origine" : "Télécharger le reçu (PDF)"}
-        </Button>
+        <>
+          <p className="text-center text-xs text-muted-foreground" aria-live="polite">
+            {remaining > 0 ? `${remaining} téléchargement${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""}` : "Plus aucun téléchargement disponible avec ce lien."}
+          </p>
+          <Button className={publicPrimaryClass} disabled={busy || closed || !r.canDownload} onClick={() => void download()}>
+            <Download aria-hidden="true" />
+            {busy ? "Téléchargement…" : voided ? "Télécharger le reçu d'origine" : "Télécharger le reçu (PDF)"}
+          </Button>
+        </>
       }
     >
       <div className="flex flex-col gap-1.5">

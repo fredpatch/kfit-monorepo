@@ -1,11 +1,11 @@
-import { businessDateKey, type DashboardAlert, type DashboardAlertsResponse, type TodayTaskKind } from "@kfit/shared";
+import { type DashboardAlert, type DashboardAlertsResponse, type TodayTaskKind } from "@kfit/shared";
 import type { DashboardActor, TodayService } from "./today.service.js";
 import type { DrizzleDashboardAlertsRepository } from "../repositories/alerts.repository.js";
 
 export class DashboardAlertsService {
   constructor(private readonly repository: Pick<DrizzleDashboardAlertsRepository, "snapshot">, private readonly today: Pick<TodayService, "today">, private readonly clock: () => Date = () => new Date()) {}
   async alerts(actor: DashboardActor): Promise<DashboardAlertsResponse> {
-    const now = this.clock(), day = businessDateKey(now);
+    const now = this.clock();
     const [source, current] = await Promise.all([this.repository.snapshot(now), this.today.today(actor)]);
     const alerts: DashboardAlert[] = [];
     const taskKinds: Partial<Record<TodayTaskKind, { kind: DashboardAlert["kind"]; title: string; tab: string }>> = {
@@ -17,19 +17,25 @@ export class DashboardAlertsService {
     };
     const profile = (customerId: string, subscriptionId: string, tab: string) => `/admin/clients/${customerId}?abonnement=${subscriptionId}&onglet=${tab}`;
     for (const task of current.tasks) {
+      // POL-01 D5: the two finance kinds come from the « À traiter » tasks; same fields and key order as the former loops.
+      if (task.kind === "installment_overdue" || task.kind === "payment_proof_pending") {
+        const owner = source.owners.find(row => row.subscriptionId === task.subscriptionId); if (!owner) continue;
+        alerts.push(task.kind === "installment_overdue"
+          ? { ...owner, kind: "installment_overdue", severity: "warning", requestId: null, resourceId: task.resourceId ?? null,
+            title: "Échéance en retard", summary: `${(task.amountXaf ?? 0).toLocaleString("fr-FR")} FCFA restant à régler`, referenceAt: task.at, deepLink: profile(owner.customerId, owner.subscriptionId, "finance") }
+          : { ...owner, kind: "payment_proof_pending", severity: "info", requestId: null, resourceId: task.resourceId ?? null,
+            title: "Justificatif à examiner", summary: "Une action est attendue dans le dossier client.", referenceAt: task.at, deepLink: profile(owner.customerId, owner.subscriptionId, "finance") });
+        continue;
+      }
       const definition = taskKinds[task.kind]; if (!definition) continue;
       if (task.customerId && !source.owners.some(owner => owner.customerId === task.customerId && owner.subscriptionId === task.subscriptionId)) continue;
       alerts.push({ kind: definition.kind, severity: "warning", customerId: task.customerId, customerDisplayName: task.name, subscriptionId: task.subscriptionId, requestId: task.requestId, resourceId: null,
         title: definition.title, summary: task.offer, referenceAt: task.at, deepLink: task.requestId ? `/admin/demandes?demande=${task.requestId}` : profile(task.customerId!, task.subscriptionId!, definition.tab) });
     }
-    for (const view of source.finance) {
-      const owner = source.owners.find(row => row.subscriptionId === view.subscriptionId); if (!owner) continue;
-      for (const item of view.activePaymentPlan?.installments ?? []) if (item.remainingXaf > 0 && businessDateKey(new Date(item.dueDate)) < day) alerts.push({ ...owner, kind: "installment_overdue", severity: "warning", requestId: null, resourceId: item.id,
-        title: "Échéance en retard", summary: `${item.remainingXaf.toLocaleString("fr-FR")} FCFA restant à régler`, referenceAt: item.dueDate, deepLink: profile(owner.customerId, owner.subscriptionId, "finance") });
-    }
-    for (const [rows, kind, title] of [[source.proofs, "payment_proof_pending", "Justificatif à examiner"], [source.quoteChanges, "quote_action_required", "Modification de devis demandée"]] as const) for (const row of rows) {
+    // Quote changes stay alerts-only (POL-01 D5).
+    for (const row of source.quoteChanges) {
       const owner = source.owners.find(item => item.subscriptionId === row.subscriptionId); if (!owner) continue;
-      alerts.push({ ...owner, kind, severity: "info", requestId: null, resourceId: row.resourceId, title, summary: "Une action est attendue dans le dossier client.", referenceAt: row.referenceAt.toISOString(), deepLink: profile(owner.customerId, owner.subscriptionId, kind === "quote_action_required" ? "devis" : "finance") });
+      alerts.push({ ...owner, kind: "quote_action_required", severity: "info", requestId: null, resourceId: row.resourceId, title: "Modification de devis demandée", summary: "Une action est attendue dans le dossier client.", referenceAt: row.referenceAt.toISOString(), deepLink: profile(owner.customerId, owner.subscriptionId, "devis") });
     }
     alerts.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "warning" ? -1 : 1) || (a.referenceAt ?? "").localeCompare(b.referenceAt ?? "") || a.kind.localeCompare(b.kind) || (a.resourceId ?? a.subscriptionId ?? a.requestId ?? "").localeCompare(b.resourceId ?? b.subscriptionId ?? b.requestId ?? ""));
     return { asOf: now.toISOString(), alerts };

@@ -24,11 +24,17 @@ test("dashboard request alerts link directly to the request detail", async () =>
   assert.equal((await service.alerts(actor)).alerts[0]!.deepLink, "/admin/demandes?demande=request-id");
 });
 test("dashboard pending proof and quote changes link to finance and devis", async () => {
-  const { source, service } = fixture(); source.proofs.push({ resourceId: "proof", subscriptionId: "sub", referenceAt: now }); source.quoteChanges.push({ resourceId: "quote", subscriptionId: "sub", referenceAt: now });
+  const { source, today, service } = fixture(); today.tasks = [{ ...task("payment_proof_pending"), days: null, item: null, resourceId: "proof" }]; source.quoteChanges.push({ resourceId: "quote", subscriptionId: "sub", referenceAt: now });
   const view = await service.alerts(actor); assert.equal(view.alerts.length, 2);
   assert.ok(view.alerts.some(alert => alert.kind === "payment_proof_pending" && alert.deepLink.endsWith("onglet=finance"))); assert.ok(view.alerts.some(alert => alert.kind === "quote_action_required" && alert.deepLink.endsWith("onglet=devis")));
 });
 test("dashboard alerts exclude unavailable customer owners and harmless today tasks", async () => {
   const { source, today, service } = fixture(); source.owners = []; today.tasks = [task("follow_up_overdue"), task("preparation_ready"), task("follow_up_due")];
-  source.proofs.push({ resourceId: "proof", subscriptionId: "sub", referenceAt: now }); assert.deepEqual((await service.alerts(actor)).alerts, []);
+  today.tasks.push({ ...task("payment_proof_pending"), resourceId: "proof" }, { ...task("installment_overdue"), resourceId: "installment", amountXaf: 1000 }); assert.deepEqual((await service.alerts(actor)).alerts, []);
+});
+
+test("POL-01 D5: finance alerts mapped from today tasks keep the former fields and key order", async () => {
+  const { today, service } = fixture(); today.tasks = [{ ...task("installment_overdue"), at: "2026-10-20T00:00:00.000Z", item: null, resourceId: "installment", amountXaf: 25000 }];
+  assert.deepEqual(JSON.stringify((await service.alerts(actor)).alerts), JSON.stringify([{ subscriptionId: "sub", customerId: "customer", customerDisplayName: "Synthetic Customer", kind: "installment_overdue", severity: "warning", requestId: null, resourceId: "installment",
+    title: "Échéance en retard", summary: "25 000 FCFA restant à régler", referenceAt: "2026-10-20T00:00:00.000Z", deepLink: "/admin/clients/customer?abonnement=sub&onglet=finance" }]));
 });

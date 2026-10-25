@@ -30,9 +30,12 @@ export function readReceiptSnapshot(value: unknown): ReceiptSnapshot | null {
     || !Array.isArray(v.allocations) || !v.allocations.length || !v.allocations.every(a => a && typeof a === "object" && typeof a.installmentId === "string" && typeof a.paymentPlanId === "string" && typeof a.dueDate === "string" && Number.isInteger(a.sequenceNumber) && a.sequenceNumber > 0 && validXaf(a.amountXaf))) return null;
   return v as unknown as ReceiptSnapshot;
 }
-export function publicReceipt(r: Receipt): PublicReceiptMetadata {
-  const s = r.snapshot;
-  return { receiptNumber: r.receiptNumber, customerName: s.customerName, subscriptionReference: s.subscriptionReference, issuedAt: s.issuedAt, amountXaf: s.amountXaf, currency: "XAF", paymentMethod: s.paymentMethod, occurredAt: s.occurredAt, state: r.state, canDownload: true,
+/** POL-01 D3: downloads left on the share link that opened the page. */
+export const remainingDownloads = (link: { maxUses: number; useCount: number }) => Math.max(0, link.maxUses - link.useCount);
+export function publicReceipt(r: Receipt, link: { maxUses: number; useCount: number }): PublicReceiptMetadata {
+  const s = r.snapshot, remaining = remainingDownloads(link);
+  return { receiptNumber: r.receiptNumber, customerName: s.customerName, subscriptionReference: s.subscriptionReference, issuedAt: s.issuedAt, amountXaf: s.amountXaf, currency: "XAF", paymentMethod: s.paymentMethod, occurredAt: s.occurredAt, state: r.state,
+    remainingDownloads: remaining, canDownload: remaining > 0,
     originalAmountXaf: r.originalAmountXaf, correctedAmountXaf: r.correctedAmountXaf, effectiveAmountXaf: r.effectiveAmountXaf, correctionState: r.correctionState };
 }
 const esc = (value: string) => value.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);

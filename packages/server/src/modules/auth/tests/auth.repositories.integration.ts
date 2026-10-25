@@ -1,6 +1,6 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
-import { after, test } from "node:test";
+import { after, before, test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db, pool } from "../../../db/client.js";
@@ -9,18 +9,27 @@ import { AuditService } from "../services/audit.service.js";
 import { OtpChallengeService } from "../services/otp-challenge.service.js";
 import { SessionService } from "../services/session.service.js";
 import { DrizzleOtpChallengeRepository, DrizzleSessionRepository } from "../repositories/auth.repositories.js";
+import { assertLocalTestDatabase, cleanupInOrder } from "../../../testing/integration-fixtures.js";
 
 const pepper = "a-secure-integration-pepper-that-is-longer-than-32-characters";
 const now = new Date("2026-08-25T08:00:00Z");
 const userId = randomUUID();
 const requestId = randomUUID();
+let safe = false;
+
+before(() => { assertLocalTestDatabase(); safe = true; });
 
 after(async () => {
-  await db.delete(auditEvents).where(eq(auditEvents.requestId, requestId));
-  await db.delete(otpChallenges).where(eq(otpChallenges.userId, userId));
-  await db.delete(authSessions).where(eq(authSessions.userId, userId));
-  await db.delete(users).where(eq(users.id, userId));
-  await pool.end();
+  try {
+    if (safe) await cleanupInOrder([
+      ["audit events", () => db.delete(auditEvents).where(eq(auditEvents.requestId, requestId))],
+      ["otp challenges", () => db.delete(otpChallenges).where(eq(otpChallenges.userId, userId))],
+      ["sessions", () => db.delete(authSessions).where(eq(authSessions.userId, userId))],
+      ["user", () => db.delete(users).where(eq(users.id, userId))],
+    ]);
+  } finally {
+    await pool.end();
+  }
 });
 
 test("Drizzle auth repositories persist session, OTP and audit lifecycle data", async () => {

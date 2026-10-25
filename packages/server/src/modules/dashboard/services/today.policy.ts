@@ -1,4 +1,4 @@
-import { todayTaskKinds, type AdminCustomerOverviewResponse, type AdminServiceRequestSummary, type FollowUpQueueItem, type OnboardingDetail, type TodayTask } from "@kfit/shared";
+import { businessDateKey, businessDayStartFromKey, todayTaskKinds, type AdminCustomerOverviewResponse, type AdminServiceRequestSummary, type FollowUpQueueItem, type OnboardingDetail, type TodayTask } from "@kfit/shared";
 
 /*
  * « À traiter » (UX-9). Rules validated by Fred on 2026-10-22, in this order:
@@ -7,11 +7,26 @@ import { todayTaskKinds, type AdminCustomerOverviewResponse, type AdminServiceRe
  *  3. new requests (submitted, oldest first), then requests whose scheduled next action has passed;
  *  4. preparations: reservation expired, ready to validate, waiting (first missing required item);
  *  5. end reviews (completion_due).
- * Every state comes from the existing calculations (S5.3 cadence, S3 requests, S4 onboarding).
+ * POL-01 D5 inserts overdue installments after overdue follow-ups and pending payment proofs after follow-ups due today.
+ * Every state comes from the existing calculations (S5.3 cadence, S3 requests, S4 onboarding, S6 finance).
  */
 
 export type PreparationInput = { subscriptionId: string; customerId: string; customerName: string; offer: string; detail: OnboardingDetail | null };
 export type CompletionInput = { subscriptionId: string; customerId: string; customerName: string; offer: string; plannedEndDate: string | null };
+/** POL-01 D5: the dashboard collections snapshot (DrizzleDashboardAlertsRepository); owners already exclude archived and anonymized customers. */
+export type FinanceCollectionsInput = {
+  owners: Array<{ subscriptionId: string; customerId: string; customerDisplayName: string }>;
+  finance: Array<{ subscriptionId: string; activePaymentPlan: { installments: Array<{ id: string; dueDate: string; remainingXaf: number }> } | null }>;
+  proofs: Array<{ resourceId: string; subscriptionId: string; referenceAt: Date }>;
+};
+
+const dayMs = 86_400_000;
+/** POL-01 D5: overdue once the Libreville due date is before today (due today is not late). */
+export function installmentDaysLate(dueDate: string, now: Date): number | null {
+  const today = businessDateKey(now), due = businessDateKey(new Date(dueDate));
+  if (due >= today) return null;
+  return Math.round((businessDayStartFromKey(today)!.getTime() - businessDayStartFromKey(due)!.getTime()) / dayMs);
+}
 
 export function buildTodayTasks(input: {
   now: Date;
@@ -21,12 +36,30 @@ export function buildTodayTasks(input: {
   requests: AdminServiceRequestSummary[];
   preparations: PreparationInput[];
   completions: CompletionInput[];
+  collections?: FinanceCollectionsInput;
 }): TodayTask[] {
   const tasks: TodayTask[] = [];
   const offer = (subscriptionId: string) => input.offerOfSubscription.get(subscriptionId) ?? "";
 
   const overdue = input.followUps.filter((f) => f.cadenceState === "overdue").sort((a, b) => (b.overdueByDays ?? 0) - (a.overdueByDays ?? 0));
   for (const f of overdue) tasks.push({ kind: "follow_up_overdue", customerId: f.customer.id, name: f.customer.fullName, subscriptionId: f.subscriptionId, requestId: null, offer: offer(f.subscriptionId), at: f.latestMeaningfulActivityAt, days: f.overdueByDays ?? 0, item: null });
+
+  const collections = input.collections ?? { owners: [], finance: [], proofs: [] };
+  const owner = (subscriptionId: string) => collections.owners.find((o) => o.subscriptionId === subscriptionId);
+  const lateInstallments: TodayTask[] = [];
+  for (const view of collections.finance) {
+    const o = owner(view.subscriptionId); if (!o) continue;
+    for (const item of view.activePaymentPlan?.installments ?? []) {
+      const days = item.remainingXaf > 0 ? installmentDaysLate(item.dueDate, input.now) : null;
+      if (days !== null) lateInstallments.push({ kind: "installment_overdue", customerId: o.customerId, name: o.customerDisplayName, subscriptionId: o.subscriptionId, requestId: null,
+        offer: offer(o.subscriptionId), at: item.dueDate, days, item: null, resourceId: item.id, amountXaf: item.remainingXaf });
+    }
+  }
+  tasks.push(...lateInstallments.sort((a, b) => (b.days ?? 0) - (a.days ?? 0) || (a.at ?? "").localeCompare(b.at ?? "") || (a.resourceId ?? "").localeCompare(b.resourceId ?? "")));
+  const proofs = collections.proofs.flatMap((p) => { const o = owner(p.subscriptionId); return o ? [{ p, o }] : []; })
+    .sort((a, b) => a.p.referenceAt.getTime() - b.p.referenceAt.getTime() || a.p.resourceId.localeCompare(b.p.resourceId));
+  for (const { p, o } of proofs) tasks.push({ kind: "payment_proof_pending", customerId: o.customerId, name: o.customerDisplayName, subscriptionId: o.subscriptionId, requestId: null,
+    offer: offer(o.subscriptionId), at: p.referenceAt.toISOString(), days: null, item: null, resourceId: p.resourceId });
 
   const due = input.followUps
     .filter((f) => f.cadenceState !== "overdue" && f.cadenceEligible && f.nextFollowUpDueAt !== null && new Date(f.nextFollowUpDueAt) <= input.endOfDay)

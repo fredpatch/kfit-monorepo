@@ -2,6 +2,15 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-10-25 — Recette fixes (REG-F1 → REG-F11)
+
+- REG-F1 variant-less offers qualify and convert: `001f55d` (validated by Fred).
+- REG-F6/F7 optional consents and consent texts: CONS-02a `2aae7f9` (server), CONS-02b `b0af0a1` (client), both validated by Fred.
+- REG-F2 catalogue variants, prestations and rules editable with a pre-publication checklist: CAT-03a `5c5325b` (server, migration 0016), CAT-03b `949d710` (client), validated by Fred.
+- REG-F3/F4/F5/F8/F9/F10/F11 polish: POL-01 `fix(recette): polish findings …` — test fixtures guarded and isolated, « À traiter » gains overdue installments and pending proofs (alerts byte-identical), notification tab counts open items, receipt links show remaining downloads, past appointments « À clôturer », clearer profile header and document dialogs. Committed on Fred's instruction; manual checks listed in sprint-7.md § POL-01 execution.
+- Validation (agent): shared 69/69, server 607/607, PostgreSQL 594/594 (last full run), typecheck/build green.
+- Known: integration runs share kfit_dev with the dev API jobs (notifications reconcile can write on test fixtures) — stop dev:api while running integration; one flaky requests concurrency test.
+
 ## 2026-10-24 — Refonte UI (Track B) closed
 
 - Every admin and public screen now follows the validated boards (canvas « K'FIT — Refonte UI »); business rules unchanged except where Fred decided below.

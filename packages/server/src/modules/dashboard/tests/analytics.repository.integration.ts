@@ -16,6 +16,7 @@ import { DrizzleDashboardAnalyticsRepository } from "../repositories/analytics.r
 import { DrizzleDashboardAlertsRepository } from "../repositories/alerts.repository.js";
 import { DashboardAnalyticsService } from "../services/analytics.service.js";
 import { analyticsBuckets } from "../services/analytics.policy.js";
+import { buildTodayTasks } from "../services/today.policy.js";
 import { DashboardAlertsService } from "../services/alerts.service.js";
 import { TodayService } from "../services/today.service.js";
 import { DrizzleTodayRepository } from "../repositories/today.repository.js";
@@ -185,6 +186,7 @@ test("PostgreSQL operational alerts reuse real current owner queues and source d
     async catalogueOverview() { return { asOf: now.toISOString(), services: [] }; },
     async requests() { return (await requestsRepository.listQueue({})).filter(row => requestIds.includes(row.id)); },
     async onboarding(id, context) { const result = await onboardingRepository.execute(id, { action: "read" }, context); assert.equal(result.status, "ok"); return result.status === "ok" ? result.onboarding : null; },
+    collections: at => alertRepository.snapshot(at),
   }, () => now);
   const result = await new DashboardAlertsService(alertRepository, today, () => now).alerts(actor);
   const own = result.alerts.filter(alert => alert.customerId === customerId || requestIds.includes(alert.requestId ?? ""));
@@ -192,4 +194,16 @@ test("PostgreSQL operational alerts reuse real current owner queues and source d
   assert.ok(own.filter(alert => alert.kind === "installment_overdue" || alert.kind === "payment_proof_pending").every(alert => alert.deepLink.endsWith("onglet=finance")));
   assert.ok(own.some(alert => alert.kind === "request_to_contact" && alert.deepLink.includes("/admin/demandes?demande=")));
   assert.ok(!JSON.stringify(own).includes("PRIVATE"));
+});
+
+test("POL-01 D5: an anonymized customer leaves the collections owners, so no finance task or alert is derived", async () => {
+  const visible = await alertRepository.snapshot(now);
+  assert.ok(visible.owners.some(row => row.customerId === customerId), "fixture customer is an owner before anonymization");
+  await db.update(customers).set({ anonymizedAt: now }).where(eq(customers.id, customerId));
+  try {
+    const hidden = await alertRepository.snapshot(now);
+    assert.ok(!hidden.owners.some(row => row.customerId === customerId));
+    const tasks = buildTodayTasks({ now, endOfDay: now, followUps: [], offerOfSubscription: new Map(), requests: [], preparations: [], completions: [], collections: hidden });
+    assert.ok(!tasks.some(task => task.customerId === customerId || subIds.includes(task.subscriptionId ?? "")));
+  } finally { await db.update(customers).set({ anonymizedAt: null }).where(eq(customers.id, customerId)); }
 });

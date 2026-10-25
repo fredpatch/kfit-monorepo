@@ -138,10 +138,11 @@ export class DrizzleNotificationsRepository {
     return { items: page.map(toItem), nextCursor: rows.length > limit && last?.resolvedAt ? Buffer.from(`${last.resolvedAt.toISOString()}|${last.id}`).toString("base64url") : null };
   }
 
-  async unreadCount(userId: string): Promise<number> {
-    const [row] = await this.db.select({ n: sql<number>`count(*)::int` }).from(notifications)
-      .where(and(eq(notifications.recipientUserId, userId), isNull(notifications.resolvedAt), isNull(notifications.readAt)));
-    return row?.n ?? 0;
+  /** POL-01 D7: bell badge (unread) and « À traiter » tab (open = not resolved, read or not), one query. */
+  async counts(userId: string): Promise<{ unread: number; open: number }> {
+    const [row] = await this.db.select({ unread: sql<number>`(count(*) filter (where ${notifications.readAt} is null))::int`, open: sql<number>`count(*)::int` })
+      .from(notifications).where(and(eq(notifications.recipientUserId, userId), isNull(notifications.resolvedAt)));
+    return { unread: row?.unread ?? 0, open: row?.open ?? 0 };
   }
 
   /** Read never resolves (Gate 1). Idempotent: a second read keeps the first readAt and writes no new audit. */

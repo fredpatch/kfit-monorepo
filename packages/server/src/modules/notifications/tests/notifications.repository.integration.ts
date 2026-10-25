@@ -68,9 +68,14 @@ test("reconcile: one open notification per condition, active admins only, read n
   assert.equal(others.length, 0, "inactive, archived admins and coaches receive nothing");
   assert.equal((await myMail()).length, 0, "e-mail disabled still creates in-app notifications but no outbox");
 
-  assert.equal(await repository.unreadCount(admin), (await repository.list(admin, "active", null, 30)).items.filter((i) => !i.readAt).length);
+  const active = (await repository.list(admin, "active", null, 30)).items;
+  const before = await repository.counts(admin);
+  assert.deepEqual(before, { unread: active.filter((i) => !i.readAt).length, open: active.length });
   const read = await repository.markRead(rows[0]!.id, actor, at(2));
   assert.ok(read?.readAt && !read.resolvedAt, "read does not resolve");
+  const after = await repository.counts(admin);
+  assert.deepEqual(after, { unread: before.unread - 1, open: before.open }, "POL-01 D7: a read but unresolved notification leaves the badge and stays open");
+  assert.ok(after.open >= after.unread);
   assert.equal((await repository.markRead(rows[0]!.id, actor, at(3)))?.readAt, read.readAt, "read is idempotent");
   assert.equal(await repository.markRead(rows[0]!.id, { ...actor, userId: coach }, at(3)), null, "another user cannot read it");
   await repository.reconcile([candidate(resourceA)], at(4));

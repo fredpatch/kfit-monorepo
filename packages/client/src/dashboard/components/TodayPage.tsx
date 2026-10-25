@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "react-router";
 import { AlertTriangle, CalendarCheck, Inbox, Users } from "lucide-react";
-import type { DashboardPeriod, TodayTask, TodayTaskKind } from "@kfit/shared";
+import { isAppointmentToClose, todayHeaderCounts, type DashboardPeriod, type TodayTask, type TodayTaskKind } from "@kfit/shared";
 import { DashboardAlerts, DashboardFinance, DashboardRequests, dashboardTrendProps, useDashboardAnalytics } from "./DashboardAnalytics.js";
 import { dashboardApi, dashboardErrorMessage } from "../api/dashboard-api.js";
 import { AdminPage } from "../../app/layout/AdminPage.js";
@@ -20,6 +20,7 @@ import { dateFr, dateTimeFr, longDayFr, relativeDaysFr, timeFr } from "../../lib
 type Filter = "all" | "follow" | "requests" | "subscriptions";
 const filterOf: Record<TodayTaskKind, Filter> = {
   follow_up_overdue: "follow", follow_up_due: "follow",
+  installment_overdue: "subscriptions", payment_proof_pending: "subscriptions",
   request_new: "requests", request_follow_up: "requests",
   preparation_expired: "subscriptions", preparation_ready: "subscriptions", preparation_waiting: "subscriptions", completion_due: "subscriptions",
 };
@@ -31,6 +32,11 @@ function describe(t: TodayTask): { status: StatusDescriptor; meta: string; actio
   switch (t.kind) {
     case "follow_up_overdue":
       return { status: { label: `En retard · ${t.days ?? 0} j`, tone: "danger" }, meta: `${t.offer} · dernier contact ${dateFr(t.at)}`, action: "Enregistrer le suivi", to: `${profile("suivis")}&nouveau=suivi` };
+    // POL-01 D6: the two finance tasks open the client's Finance tab.
+    case "installment_overdue":
+      return { status: { label: `En retard · ${t.days ?? 0} j`, tone: "danger" }, meta: [t.offer, `${(t.amountXaf ?? 0).toLocaleString("fr-FR")} FCFA restant`].filter(Boolean).join(" · "), action: "Enregistrer le paiement", to: profile("finance") };
+    case "payment_proof_pending":
+      return { status: { label: "À examiner", tone: "warning" }, meta: [t.offer, `justificatif envoyé le ${dateFr(t.at)}`].filter(Boolean).join(" · "), action: "Examiner le justificatif", to: profile("finance") };
     case "follow_up_due":
       return { status: { label: "Suivi à faire", tone: "warning" }, meta: `${t.offer} · prévu ${dateTimeFr(t.at)}`, action: "Enregistrer le suivi", to: `${profile("suivis")}&nouveau=suivi` };
     case "request_new":
@@ -46,6 +52,13 @@ function describe(t: TodayTask): { status: StatusDescriptor; meta: string; actio
     case "completion_due":
       return { status: { label: "Revue de fin", tone: "warning" }, meta: `${t.offer}${t.at ? ` · fin prévue le ${dateFr(t.at)}` : ""}`, action: "Ouvrir la revue", to: profile("apercu") };
   }
+}
+
+/** POL-01 D6: « N action(s) à traiter aujourd'hui, dont X suivi(s) en retard, Y échéance(s) en retard. » Each part only when > 0. */
+function headerSentence(c: ReturnType<typeof todayHeaderCounts>): string {
+  if (!c.total) return "Rien d'urgent à traiter aujourd'hui.";
+  const late = [c.followUpsOverdue ? `${c.followUpsOverdue} suivi(s) en retard` : null, c.installmentsOverdue ? `${c.installmentsOverdue} échéance(s) en retard` : null].filter(Boolean);
+  return `${c.total} action(s) à traiter aujourd'hui${late.length ? `, dont ${late.join(", ")}` : ""}.`;
 }
 
 /** Board 02 shows a short list; longer queues expand on demand. */
@@ -79,13 +92,13 @@ export function TodayPage() {
   const tasks = (data?.tasks ?? []).filter((t) => filter === "all" || filterOf[t.kind] === filter);
   const visibleTasks = showAllTasks ? tasks : tasks.slice(0, TASKS_PREVIEW);
   const day = businessDayLabel(data?.businessDate);
-  const overdue = data?.kpis.followUpsOverdue ?? 0;
+  const header = todayHeaderCounts(data?.tasks ?? []);
 
   return (
     <AdminPage
       title="Bonjour"
       breadcrumb={<span className="text-[13px] font-semibold text-muted-foreground">{day}</span>}
-      description={data ? (counts.all ? `${counts.all} action(s) à traiter aujourd'hui${overdue ? `, dont ${overdue} suivi(s) en retard` : ""}.` : "Rien d'urgent à traiter aujourd'hui.") : "Ta journée en un coup d'œil."}
+      description={data ? headerSentence(header) : "Ta journée en un coup d'œil."}
     >
       {query.isPending ? (
         <p role="status" className="text-sm text-muted-foreground">Chargement de la journée…</p>
@@ -185,7 +198,8 @@ export function TodayPage() {
                             <span className="truncate text-sm font-bold">{a.customer.fullName}</span>
                             <span className="truncate text-xs text-muted-foreground">{a.componentLabel ?? a.serviceName}{a.locationOrChannel ? ` · ${a.locationOrChannel}` : ""}</span>
                           </span>
-                          <StatusPill size="sm" status={describeStatus(appointmentStatus, a.status)} />
+                          {/* POL-01 D8: a past scheduled or confirmed appointment is shown « À clôturer ». */}
+                          <StatusPill size="sm" status={isAppointmentToClose(a, new Date(data.asOf)) ? { label: "À clôturer", tone: "warning" } : describeStatus(appointmentStatus, a.status)} />
                         </NavLink>
                       </li>
                     ))}

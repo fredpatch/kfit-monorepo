@@ -22,7 +22,7 @@ const kindIcons: Record<NotificationKind, LucideIcon> = {
   completion_due: Flag,
 };
 
-/** Shared by the bell badge and the panel: unread unresolved notifications of the session user. */
+/** Shared by the bell badge and the panel: unread and open counts of the session user (POL-01 D7). */
 export function useUnreadNotifications() {
   return useQuery({ queryKey: notificationKeys.unread, queryFn: () => notificationsApi.unreadCount(), refetchInterval: 60_000 });
 }
@@ -129,6 +129,8 @@ export function NotificationCenter() {
   const queryClient = useQueryClient();
   const unread = useUnreadNotifications();
   const count = unread.data?.unread ?? 0;
+  // POL-01 D7: the badge counts unread; the « À traiter » tab counts every open notification, read or not.
+  const openCount = unread.data?.open ?? 0;
   const readAll = useMutation({
     mutationFn: () => notificationsApi.readAll(),
     onSuccess: (result) => toast.success(result.updated > 1 ? `${result.updated} notifications marquées comme lues.` : "Notifications marquées comme lues."),
@@ -178,7 +180,7 @@ export function NotificationCenter() {
               value={view}
               onValueChange={setView}
               options={[
-                { value: "active", label: count ? `À traiter · ${count}` : "À traiter" },
+                { value: "active", label: openCount ? `À traiter · ${openCount}` : "À traiter" },
                 { value: "resolved", label: "Résolues" },
               ]}
             />

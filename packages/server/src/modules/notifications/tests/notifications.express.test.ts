@@ -19,7 +19,7 @@ async function withServer(run: (url: string, calls: string[]) => Promise<void>, 
     firstDetectedAt: "2026-10-24T08:00:00.000Z", lastDetectedAt: "2026-10-24T08:00:00.000Z", readAt: null, resolvedAt: null } as const;
   const repository = {
     async list(userId: string, view: string) { if (fail) throw new Error("secret health note"); calls.push(`list:${userId}:${view}`); return { items: [item], nextCursor: null }; },
-    async unreadCount() { return 4; },
+    async counts() { return { unread: 4, open: 6 }; },
     async markRead(id: string, actor: { userId: string }) { calls.push(`read:${id}:${actor.userId}`); return id === known ? { ...item, readAt: "2026-10-24T09:00:00.000Z" } : null; },
     async markAllRead() { calls.push("read_all"); return 3; },
     async settings() { return { settings: notificationSettingDefaults(), updatedAt: null }; },
@@ -44,7 +44,7 @@ test("admin reads own notifications with no-store; list views and cursors are va
     const response = await fetch(`${url}/admin/notifications`);
     assert.equal(response.status, 200); assert.equal(response.headers.get("cache-control"), "no-store");
     assert.equal(((await response.json()) as { items: unknown[] }).items.length, 1);
-    assert.deepEqual(await (await fetch(`${url}/admin/notifications/unread-count`)).json(), { unread: 4 });
+    assert.deepEqual(await (await fetch(`${url}/admin/notifications/unread-count`)).json(), { unread: 4, open: 6 });
     assert.equal((await fetch(`${url}/admin/notifications?vue=resolved`)).status, 200);
     for (const query of ["vue=all", "vue=active&curseur=abc", "vue=resolved&curseur=bad", "autre=1"]) assert.equal((await fetch(`${url}/admin/notifications?${query}`)).status, 400, query);
     assert.deepEqual(calls, [`list:${admin.userId}:active`, `list:${admin.userId}:resolved`]);

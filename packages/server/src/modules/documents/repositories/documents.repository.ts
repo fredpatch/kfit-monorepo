@@ -1,3 +1,4 @@
+import { assertCustomerWritable, type CustomerWriteScope } from "../../privacy/repositories/subject-freeze.js";
 import { and, eq, inArray } from "drizzle-orm";
 import type { DocumentDeliveryLinkSummary, DocumentStatus, PersonalizedDocument, PersonalizedDocumentType } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
@@ -94,6 +95,31 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
     await tx.update(documents).set({currentVersionId:version.id,updatedAt:now}).where(eq(documents.id,doc.id));
     return {ok:true,doc:{...doc,currentVersionId:version.id},version} as const;
   }
+  /** ARCH-01 D1: subscription owning a document write, resolved with plain reads before any row lock. */
+  private async writeScope(tx:Tx, id:string, command:DocumentCommand):Promise<CustomerWriteScope|null> {
+    const owner=async(documentId:string)=>{
+      const [doc]=await tx.select({ownerType:documents.ownerType,ownerId:documents.ownerId}).from(documents).where(eq(documents.id,documentId));
+      return doc?.ownerType==="subscription"?{subscriptionId:doc.ownerId}:null;
+    };
+    const versionOwner=async(versionId:string)=>{
+      const [version]=await tx.select({documentId:documentVersions.documentId}).from(documentVersions).where(eq(documentVersions.id,versionId));
+      return version?owner(version.documentId):null;
+    };
+    switch(command.action){
+      case "create-upload": case "generate-summary": return {subscriptionId:id};
+      case "add-photo": {
+        const [measurement]=await tx.select({subscriptionId:progressMeasurements.subscriptionId}).from(progressMeasurements).where(eq(progressMeasurements.id,command.measurementId));
+        return measurement?{subscriptionId:measurement.subscriptionId}:null;
+      }
+      case "add-version": case "revoke": case "archive": return owner(id);
+      case "issue-link": return versionOwner(id);
+      case "revoke-link": {
+        const [token]=await tx.select({resourceId:secureAccessTokens.resourceId}).from(secureAccessTokens).where(eq(secureAccessTokens.id,id));
+        return token?versionOwner(token.resourceId):null;
+      }
+      default: return null;
+    }
+  }
   async summaryData(subscriptionId:string):Promise<DocumentResult> {
     return this.database.transaction(async tx=>{
       const [sub]=await tx.select().from(subscriptions).where(eq(subscriptions.id,subscriptionId));
@@ -126,6 +152,7 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
     }
     if(command.action==="create-upload" || command.action==="generate-summary"){
       return this.database.transaction(async tx=>{
+        await assertCustomerWritable(tx,await this.writeScope(tx,id,command));
         if(command.action==="generate-summary"){
           const [sub]=await tx.select().from(subscriptions).where(eq(subscriptions.id,id)).for("update");
           if(!sub) return {ok:false,error:"DOCUMENT_NOT_FOUND"};
@@ -144,6 +171,7 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
     }
     if(command.action==="add-photo"){
       return this.database.transaction(async tx=>{
+        await assertCustomerWritable(tx,await this.writeScope(tx,id,command));
         const [measurement]=await tx.select().from(progressMeasurements).where(eq(progressMeasurements.id,command.measurementId)).for("share");
         if(!measurement) return {ok:false,error:"DOCUMENT_MEASUREMENT_INVALID"};
         const [sub]=await tx.select().from(subscriptions).where(eq(subscriptions.id,measurement.subscriptionId)).for("update");
@@ -162,6 +190,7 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
     }
     if(command.action==="add-version"){
       return this.database.transaction(async tx=>{
+        await assertCustomerWritable(tx,await this.writeScope(tx,id,command));
         const [doc]=await tx.select().from(documents).where(and(eq(documents.id,id),eq(documents.ownerType,"subscription"))).for("update");
         if(!doc) return {ok:false,error:"DOCUMENT_NOT_FOUND"};
         if(!["available","draft"].includes(doc.status)) return {ok:false,error:"DOCUMENT_STATUS_INVALID"};
@@ -186,6 +215,7 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
     }
     if(command.action==="revoke" || command.action==="archive"){
       return this.database.transaction(async tx=>{
+        await assertCustomerWritable(tx,await this.writeScope(tx,id,command));
         const [doc]=await tx.select().from(documents).where(and(eq(documents.id,id),eq(documents.ownerType,"subscription"))).for("update");
         if(!doc) return {ok:false,error:"DOCUMENT_NOT_FOUND"};
         if(["revoked","archived","pending_purge","purged"].includes(doc.status)) return {ok:false,error:"DOCUMENT_STATUS_INVALID"};
@@ -202,6 +232,7 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
     }
     if(command.action==="issue-link"){
       return this.database.transaction(async tx=>{
+        await assertCustomerWritable(tx,await this.writeScope(tx,id,command));
         const [version]=await tx.select().from(documentVersions).where(eq(documentVersions.id,id)).for("share");
         if(!version) return {ok:false,error:"DOCUMENT_VERSION_NOT_FOUND"};
         const [doc]=await tx.select().from(documents).where(and(eq(documents.id,version.documentId),eq(documents.ownerType,"subscription"))).for("update");
@@ -221,6 +252,7 @@ export class DrizzleDocumentsRepository implements DocumentRepository {
     }
     if(command.action==="revoke-link"){
       return this.database.transaction(async tx=>{
+        await assertCustomerWritable(tx,await this.writeScope(tx,id,command));
         const [token]=await tx.select().from(secureAccessTokens).where(and(eq(secureAccessTokens.id,id),eq(secureAccessTokens.resourceType,tokenScope.resourceType),
           eq(secureAccessTokens.action,tokenScope.action))).for("update");
         if(!token) return {ok:false,error:"DOCUMENT_LINK_INVALID"};

@@ -1,3 +1,4 @@
+import { assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
 import { createHash, randomBytes } from "node:crypto";
 import { and, asc, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { catalogueMedicalClearancePolicies, validateQuestionnaireAnswers, parseQuestionnaireAnswers, type CatalogueMedicalClearancePolicy, type ConsentLinkState, type PublicQuestionnaireSubmitInput, type QuestionnaireDetail,
@@ -187,6 +188,7 @@ export class DrizzleQuestionnaireRepository implements QuestionnaireRepository {
   }
   async execute(subscriptionId: string, command: QuestionnaireCommand, actor: QuestionnaireActor): Promise<QuestionnaireResult> {
     return this.database.transaction(async tx => {
+      if (command.action !== "read" && command.action !== "view_answers") await assertCustomerWritable(tx, { subscriptionId });
       const [subscription] = await tx.select().from(subscriptions).where(eq(subscriptions.id, subscriptionId)).for("update");
       if (!subscription) return questionnaireFailure("QUESTIONNAIRE_NOT_FOUND");
       if (command.action !== "read" && command.action !== "revoke_link" && command.action !== "view_answers" && subscription.status !== "onboarding") return questionnaireFailure("QUESTIONNAIRE_INVALID_STATE");
@@ -221,6 +223,7 @@ export class DrizzleQuestionnaireRepository implements QuestionnaireRepository {
       tokenId = initial?.id ?? null;
       if (rejectedInput) { await event(tx, "QUESTIONNAIRE_INVALID_INPUT"); return questionnaireFailure("QUESTIONNAIRE_INVALID_INPUT"); }
       if (!initial) { await event(tx, "QUESTIONNAIRE_LINK_INVALID"); return questionnaireFailure("QUESTIONNAIRE_LINK_INVALID"); }
+      if (input) await assertCustomerWritable(tx, { subscriptionId: initial.resourceId });
       const [subscription] = await tx.select().from(subscriptions).where(eq(subscriptions.id, initial.resourceId)).for("update");
       const [token] = await tx.select().from(secureAccessTokens).where(eq(secureAccessTokens.id, initial.id)).for("update");
       const invalid = token ? validateQuestionnaireToken(token) : "QUESTIONNAIRE_LINK_INVALID";

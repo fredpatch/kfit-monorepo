@@ -26,6 +26,9 @@ export const privacyApiRoutes = {
   anonymizeProspect: "/admin/prospects/:prospectId/anonymize",
   holds: "/admin/retention-holds",
   releaseHold: "/admin/retention-holds/:holdId/release",
+  /** ARCH-01 D6. */
+  unarchiveCustomer: "/admin/customers/:customerId/unarchive",
+  unarchiveProspect: "/admin/prospects/:prospectId/unarchive",
 } as const;
 
 export const privacyErrorCodes = [
@@ -33,6 +36,8 @@ export const privacyErrorCodes = [
   "PRIVACY_ADMIN_FORBIDDEN",
   "PRIVACY_SUBJECT_NOT_FOUND",
   "PRIVACY_SUBJECT_NOT_ARCHIVED",
+  /** ARCH-01 D6: anonymization is irreversible, so an anonymized subject cannot be unarchived. */
+  "PRIVACY_SUBJECT_ANONYMIZED",
   "PRIVACY_SUBJECT_HAS_ACTIVE_SUBSCRIPTION",
   "PRIVACY_SUBJECT_HAS_OPEN_REQUEST",
   "PRIVACY_CONFIRMATION_MISMATCH",
@@ -43,6 +48,21 @@ export const privacyErrorCodes = [
   "PRIVACY_ROUTE_UNEXPECTED_FAILURE",
 ] as const;
 export type PrivacyErrorCode = (typeof privacyErrorCodes)[number];
+
+/** ARCH-01 D1: every writer on an archived (or anonymized) customer or prospect answers 409 with one of these. */
+export const subjectArchivedErrorCodes = ["CUSTOMER_ARCHIVED", "PROSPECT_ARCHIVED"] as const;
+export type SubjectArchivedErrorCode = (typeof subjectArchivedErrorCodes)[number];
+
+/** ARCH-01 D6: closed list of reasons; only the code is stored in the audit. */
+export const unarchiveReasons = ["accounting_correction", "returning_customer", "archived_by_mistake"] as const;
+export type UnarchiveReason = (typeof unarchiveReasons)[number];
+export const unarchiveReasonLabels: Record<UnarchiveReason, string> = {
+  accounting_correction: "Correction comptable",
+  returning_customer: "Client de retour",
+  archived_by_mistake: "Archivé par erreur",
+};
+export type UnarchiveSubjectInput = { reason: UnarchiveReason };
+export type UnarchiveSubjectResponse = { subjectType: PrivacySubjectType; subjectId: string; archivedAt: null };
 
 /** D6: the only privacy key of the widened settings registry (declared in notifications/contracts.ts). */
 export const privacyPurgeDelayDaysKey = "privacy.purge.delay_days" as const;
@@ -87,6 +107,12 @@ export function parseAnonymizeSubjectInput(input: unknown): AnonymizeSubjectInpu
   const { confirmName } = input as { confirmName?: unknown };
   if (typeof confirmName !== "string" || confirmName.trim() === "" || confirmName.length > CONFIRM_NAME_MAX) return null;
   return { confirmName };
+}
+
+export function parseUnarchiveSubjectInput(input: unknown): UnarchiveSubjectInput | null {
+  if (!input || typeof input !== "object" || Array.isArray(input) || !onlyKeys(input, ["reason"])) return null;
+  const { reason } = input as { reason?: unknown };
+  return isOneOf(unarchiveReasons, reason) ? { reason } : null;
 }
 
 export function parseCreateRetentionHoldInput(input: unknown): CreateRetentionHoldInput | null {

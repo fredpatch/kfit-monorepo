@@ -66,8 +66,11 @@ export type AdminCustomerSubscriptionSummary = {
 };
 /** S7.3b D1: the fiche also opens archived and anonymized customers; an anonymized one has no contact (whatsapp/email null). */
 export type AdminCustomerDetail = Omit<AdminCustomer, "whatsapp"> & { whatsapp: string | null };
-/** S7.3b D1: archivable = not archived and every subscription completed or cancelled; activeHolds = active customer-scope holds. */
-export type AdminCustomerPrivacy = { archivedAt: string | null; anonymizedAt: string | null; archivable: boolean; activeHolds: number };
+/**
+ * S7.3b D1: archivable = not archived and every subscription completed or cancelled; activeHolds = active customer-scope holds.
+ * ARCH-01 D9: unarchivable = archived and not anonymized.
+ */
+export type AdminCustomerPrivacy = { archivedAt: string | null; anonymizedAt: string | null; archivable: boolean; unarchivable: boolean; activeHolds: number };
 export type AdminCustomerDetailResponse = { customer: AdminCustomerDetail; subscriptions: AdminCustomerSubscriptionSummary[]; privacy: AdminCustomerPrivacy };
 /** S7.3b D2: archived list line. An anonymized customer shows only the stored pseudonym. */
 export type AdminArchivedCustomer = { id: string; displayName: string; archivedAt: string; anonymizedAt: string | null; activeHolds: number };

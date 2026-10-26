@@ -12,7 +12,7 @@ import { CustomersService, type CustomersRepository } from "../services/customer
 
 const session: AuthenticatedSessionContext = { userId: "11111111-1111-1111-1111-111111111111", sessionId: "22222222-2222-2222-2222-222222222222", role: "admin" };
 const customer = { id: "33333333-3333-3333-3333-333333333333", fullName: "Synthetic Customer", whatsapp: "+24100000000", email: null, city: null, country: null, prospectId: null, preferredContactChannel: "whatsapp", createdAt: "2026-10-20T08:00:00.000Z" };
-const privacy = { archivedAt: null, anonymizedAt: null, archivable: true, activeHolds: 0 };
+const privacy = { archivedAt: null, anonymizedAt: null, archivable: true, unarchivable: false, activeHolds: 0 };
 const archived = { id: "55555555-5555-5555-5555-555555555555", displayName: "Client anonymisé · 1A2B", archivedAt: "2026-10-25T08:00:00.000Z", anonymizedAt: "2026-10-25T09:00:00.000Z", activeHolds: 1 };
 const csrf = "synthetic-csrf-token";
 const headers = { "content-type": "application/json", cookie: `${authCookieNames.csrfToken}=${csrf}`, "x-csrf-token": csrf };

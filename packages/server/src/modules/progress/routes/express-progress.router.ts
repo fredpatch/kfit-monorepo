@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { progressApiRoutes } from "@kfit/shared";
@@ -21,7 +22,7 @@ export function createExpressProgressRouter(deps: { controller: ProgressControll
         const param = request.params.goalId ?? request.params.subscriptionId;
         const result = guard ?? await deps.controller.execute(context, typeof param === "string" ? param : "", action, request.method === "GET" ? {} : request.body ?? {});
         response.status(result.status).json(result.body);
-      } catch { response.status(500).json({ error: "PROGRESS_ROUTE_UNEXPECTED_FAILURE" }); }
+      } catch (error) { if (!respondIfSubjectArchived(response, error)) response.status(500).json({ error: "PROGRESS_ROUTE_UNEXPECTED_FAILURE" }); }
     };
   }
   router.get(progressApiRoutes.progress, handle("progress"));

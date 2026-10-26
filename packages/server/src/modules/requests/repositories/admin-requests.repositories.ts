@@ -1,3 +1,4 @@
+import { assertProspectWritable } from "../../privacy/repositories/subject-freeze.js";
 import { and, asc, count, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import type {
   AdminContactAttempt,
@@ -317,6 +318,7 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
     now: Date,
   ): Promise<{ contactAttempt: AdminContactAttempt; request: AdminServiceRequestSummary } | "not_found"> {
     return this.database.transaction(async (tx) => {
+      await assertProspectWritable(tx, { requestId });
       const [requestRow] = await tx
         .select({ id: serviceRequests.id, prospectId: serviceRequests.prospectId })
         .from(serviceRequests)
@@ -394,6 +396,7 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
     now: Date,
   ): Promise<{ request: AdminServiceRequestSummary } | "not_found" | "invalid_transition"> {
     return this.database.transaction(async (tx) => {
+      await assertProspectWritable(tx, { requestId });
       const [requestRow] = await tx
         .select({ id: serviceRequests.id, status: serviceRequests.status })
         .from(serviceRequests)
@@ -455,6 +458,7 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
     | FinalVariantRefusal
   > {
     return this.database.transaction(async (tx) => {
+      await assertProspectWritable(tx, { requestId });
       const [requestRow] = await tx
         .select({ id: serviceRequests.id, status: serviceRequests.status, serviceId: serviceRequests.serviceId })
         .from(serviceRequests)
@@ -572,6 +576,7 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
     | "variant_invalid"
   > {
     return this.database.transaction(async (tx) => {
+      await assertProspectWritable(tx, { requestId });
       const [requestRow] = await tx
         .select({
           id: serviceRequests.id,
@@ -690,6 +695,7 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
     | "entry_not_found"
   > {
     return this.database.transaction(async (tx) => {
+      await assertProspectWritable(tx, { requestId });
       const [requestRow] = await tx
         .select({ id: serviceRequests.id, status: serviceRequests.status })
         .from(serviceRequests)

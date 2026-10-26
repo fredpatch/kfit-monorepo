@@ -1,3 +1,4 @@
+import { assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
 import { and, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import { financeEventTypes, financePaymentMethods, type FinanceDetail, type FinancePaymentEvent, type FinancePlan, type FinancePlanStatus } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
@@ -163,6 +164,7 @@ export class DrizzleFinanceRepository implements FinanceRepository {
           const scopes = await tx.selectDistinct({ subscriptionId: paymentAllocations.subscriptionId }).from(paymentAllocations).where(eq(paymentAllocations.paymentEventId, id));
           if (scopes.length !== 1) return financeFailure(scopes.length ? "FINANCE_CORRECTION_INVALID" : "FINANCE_NOT_FOUND"); subscriptionId = scopes[0]!.subscriptionId;
         }
+        await assertCustomerWritable(tx, { subscriptionId });
         const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, subscriptionId)).for("update");
         if (!sub) return financeFailure("FINANCE_NOT_FOUND");
         // All finance writers use parent -> plan -> installment -> target event ordering.

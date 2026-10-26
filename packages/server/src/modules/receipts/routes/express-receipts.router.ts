@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import { Router, type Request } from "express";
 import { receiptApiRoutes } from "@kfit/shared";
@@ -25,7 +26,7 @@ export function createExpressReceiptsRouter(deps: { controller: ReceiptsControll
         const result = await deps.controller.execute(c, typeof id === "string" ? id : "", action, q.method === "GET" ? q.query : q.body ?? {});
         if ("binary" in result) s.status(result.status).set({ "Content-Type": result.binary.mimeType, "Content-Disposition": `attachment; filename="${result.binary.filename.replace(/[\r\n"]/g, "_")}"` }).send(result.binary.bytes);
         else s.status(result.status).json(result.body);
-      } catch { s.status(500).json({ error: "RECEIPT_ROUTE_UNEXPECTED_FAILURE" }); }
+      } catch (error) { if (!respondIfSubjectArchived(s, error)) s.status(500).json({ error: "RECEIPT_ROUTE_UNEXPECTED_FAILURE" }); }
     };
   }
   router.get(receiptApiRoutes.list, handler("list")); router.get(receiptApiRoutes.detail, handler("read")); router.post(receiptApiRoutes.issue, handler("issue"));

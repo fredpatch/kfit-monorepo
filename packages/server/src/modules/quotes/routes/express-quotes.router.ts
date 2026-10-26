@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { quoteApiRoutes } from "@kfit/shared";
@@ -25,7 +26,7 @@ export function createExpressQuotesRouter(deps: { controller: QuotesController; 
         const result = await deps.controller.execute(context, typeof id === "string" ? id : "", action, req.method === "GET" ? {} : req.body ?? {});
         if ("binary" in result) res.status(result.status).set({ "Content-Type": result.binary.mimeType, "Content-Disposition": `attachment; filename="${result.binary.filename.replace(/[\r\n"]/g, "_")}"` }).send(result.binary.bytes);
         else res.status(result.status).json(result.body);
-      } catch { res.status(500).json({ error: "QUOTE_ROUTE_UNEXPECTED_FAILURE" }); }
+      } catch (error) { if (!respondIfSubjectArchived(res, error)) res.status(500).json({ error: "QUOTE_ROUTE_UNEXPECTED_FAILURE" }); }
     };
   }
   router.get(quoteApiRoutes.list, handle("list")); router.get(quoteApiRoutes.detail, handle("read"));

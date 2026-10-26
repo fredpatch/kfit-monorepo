@@ -1,3 +1,4 @@
+import { assertProspectWritable } from "../../privacy/repositories/subject-freeze.js";
 import { randomUUID } from "node:crypto";
 import { and, eq, isNull, or } from "drizzle-orm";
 import { normalizeWhatsapp, type RequestConversionResponse } from "@kfit/shared";
@@ -26,6 +27,7 @@ export class DrizzleRequestConversionRepository implements RequestConversionRepo
     try {
       return await this.database.transaction(async tx => {
         await lockCadenceWrites(tx);
+        await assertProspectWritable(tx, { requestId });
         const [request] = await tx.select().from(serviceRequests).where(eq(serviceRequests.id, requestId)).for("update");
         if (!request) return { status: "not_found" };
         const [sourceSubscription] = await tx.select({ id: subscriptions.id }).from(subscriptions).where(eq(subscriptions.sourceRequestId, requestId)).limit(1);

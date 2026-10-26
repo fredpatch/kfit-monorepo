@@ -33,6 +33,8 @@ export function createExpressPrivacyRouter(deps: { controller: PrivacyController
   };
   router.post(privacyApiRoutes.archiveCustomer, handle("archive_customer", "customerId"));
   router.post(privacyApiRoutes.archiveProspect, handle("archive_prospect", "prospectId"));
+  router.post(privacyApiRoutes.unarchiveCustomer, handle("unarchive_customer", "customerId"));
+  router.post(privacyApiRoutes.unarchiveProspect, handle("unarchive_prospect", "prospectId"));
   router.post(privacyApiRoutes.anonymizeCustomer, handle("anonymize_customer", "customerId"));
   router.post(privacyApiRoutes.anonymizeProspect, handle("anonymize_prospect", "prospectId"));
   router.get(privacyApiRoutes.holds, handle("holds_list"));

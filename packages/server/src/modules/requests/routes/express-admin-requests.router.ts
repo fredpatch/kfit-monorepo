@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import type { Request, Response, Router } from "express";
 import { Router as createRouter } from "express";
@@ -67,7 +68,8 @@ export function createExpressAdminRequestsRouter(deps: ExpressAdminRequestsRoute
         const requestId = routeParam(request.params.requestId);
         if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
         applyJsonResponse(response, await controller.convert(context, requestId, request.body ?? {}));
-      } catch {
+      } catch (error) {
+        if (respondIfSubjectArchived(response, error)) return;
         response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
       }
     });
@@ -78,7 +80,8 @@ export function createExpressAdminRequestsRouter(deps: ExpressAdminRequestsRoute
       const context = await toAuthContext(request, deps.resolveSession);
       const status = routeParam(request.query.status as string | string[] | undefined) ?? undefined;
       applyJsonResponse(response, await deps.controller.listQueue(context, status));
-    } catch {
+    } catch (error) {
+      if (respondIfSubjectArchived(response, error)) return;
       response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
     }
   });
@@ -89,7 +92,8 @@ export function createExpressAdminRequestsRouter(deps: ExpressAdminRequestsRoute
       const requestId = routeParam(request.params.requestId);
       if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
       applyJsonResponse(response, await deps.controller.getDetail(context, requestId));
-    } catch {
+    } catch (error) {
+      if (respondIfSubjectArchived(response, error)) return;
       response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
     }
   });
@@ -102,7 +106,8 @@ export function createExpressAdminRequestsRouter(deps: ExpressAdminRequestsRoute
       const requestId = routeParam(request.params.requestId);
       if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
       applyJsonResponse(response, await deps.controller.logContactAttempt(context, requestId, request.body ?? {}));
-    } catch {
+    } catch (error) {
+      if (respondIfSubjectArchived(response, error)) return;
       response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
     }
   });
@@ -115,7 +120,8 @@ export function createExpressAdminRequestsRouter(deps: ExpressAdminRequestsRoute
       const requestId = routeParam(request.params.requestId);
       if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
       applyJsonResponse(response, await deps.controller.transitionStatus(context, requestId, request.body ?? {}));
-    } catch {
+    } catch (error) {
+      if (respondIfSubjectArchived(response, error)) return;
       response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
     }
   });
@@ -128,7 +134,8 @@ export function createExpressAdminRequestsRouter(deps: ExpressAdminRequestsRoute
       const requestId = routeParam(request.params.requestId);
       if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
       applyJsonResponse(response, await deps.controller.recordQualificationReview(context, requestId, request.body ?? {}));
-    } catch {
+    } catch (error) {
+      if (respondIfSubjectArchived(response, error)) return;
       response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
     }
   });
@@ -141,7 +148,8 @@ export function createExpressAdminRequestsRouter(deps: ExpressAdminRequestsRoute
       const requestId = routeParam(request.params.requestId);
       if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
       applyJsonResponse(response, await deps.controller.createWaitlistEntry(context, requestId, request.body ?? {}));
-    } catch {
+    } catch (error) {
+      if (respondIfSubjectArchived(response, error)) return;
       response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
     }
   });
@@ -154,7 +162,8 @@ export function createExpressAdminRequestsRouter(deps: ExpressAdminRequestsRoute
       const requestId = routeParam(request.params.requestId);
       if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
       applyJsonResponse(response, await deps.controller.withdrawWaitlistEntry(context, requestId));
-    } catch {
+    } catch (error) {
+      if (respondIfSubjectArchived(response, error)) return;
       response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
     }
   });

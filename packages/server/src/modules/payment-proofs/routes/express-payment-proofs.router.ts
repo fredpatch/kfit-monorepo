@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import { Router, raw, type Request, type Response } from "express";
 import { paymentProofApiRoutes, paymentProofClaimsHeader } from "@kfit/shared";
@@ -33,8 +34,8 @@ export function createExpressPaymentProofsRouter(deps: { controller: PaymentProo
           if (typeof value === "string" && value.length <= 12000 && typeof name === "string" && name.length <= 3000 && !Object.keys(q.query).length) { claims = JSON.parse(decodeURIComponent(value)); filename = decodeURIComponent(name); }
         } catch { claims = null; }
         const upload = async (invalid = false) => send(s, await deps.controller.upload(c, id(q), claims, { bytes: !invalid && Buffer.isBuffer(q.body) ? q.body : Buffer.alloc(0), mimeType: q.headers["content-type"] ?? "", originalFilename: filename }));
-        await new Promise<void>(resolve => { parse(q, s, error => { void upload(Boolean(error)).catch(() => { s.status(500).json({ error: "PAYMENT_PROOF_ROUTE_UNEXPECTED_FAILURE" }); }).finally(resolve); }); });
-      } catch { s.status(500).json({ error: "PAYMENT_PROOF_ROUTE_UNEXPECTED_FAILURE" }); }
+        await new Promise<void>(resolve => { parse(q, s, error => { void upload(Boolean(error)).catch((error: unknown) => { if (!respondIfSubjectArchived(s, error)) s.status(500).json({ error: "PAYMENT_PROOF_ROUTE_UNEXPECTED_FAILURE" }); }).finally(resolve); }); });
+      } catch (error) { if (!respondIfSubjectArchived(s, error)) s.status(500).json({ error: "PAYMENT_PROOF_ROUTE_UNEXPECTED_FAILURE" }); }
     };
   }
   router.get(paymentProofApiRoutes.list, handler("list")); router.get(paymentProofApiRoutes.detail, handler("read")); router.get(paymentProofApiRoutes.document, handler("document"));

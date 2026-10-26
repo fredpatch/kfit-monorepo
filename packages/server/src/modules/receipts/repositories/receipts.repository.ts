@@ -1,3 +1,4 @@
+import { assertCustomerWritable, type CustomerWriteScope } from "../../privacy/repositories/subject-freeze.js";
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import type { Receipt, ReceiptSnapshot, ReceiptErrorCode } from "@kfit/shared";
@@ -87,10 +88,30 @@ export class DrizzleReceiptsRepository implements ReceiptsRepository {
     }
     await this.access(tx, token, actor, event, "success"); return { ok: true, body: publicReceipt(detail, { maxUses: token.maxUses, useCount: token.useCount }) };
   }
+  /** ARCH-01 D1/D4: customer a receipt write acts on (issue, share, void, link revoke), via plain reads before any lock. */
+  private async writeScope(tx: Tx, id: string, command: ReceiptCommand): Promise<CustomerWriteScope | null> {
+    const ofReceipt = async (receiptId: string) => {
+      const [row] = await tx.select({ customerId: receipts.customerId }).from(receipts).where(eq(receipts.id, receiptId));
+      return row ? { customerId: row.customerId } : null;
+    };
+    switch (command.action) {
+      case "issue": {
+        const [payment] = await tx.select({ customerId: paymentEvents.customerId }).from(paymentEvents).where(eq(paymentEvents.id, id));
+        return payment ? { customerId: payment.customerId } : null;
+      }
+      case "share": case "void": return ofReceipt(id);
+      case "revoke": {
+        const [token] = await tx.select({ resourceId: secureAccessTokens.resourceId, resourceType: secureAccessTokens.resourceType }).from(secureAccessTokens).where(eq(secureAccessTokens.id, id));
+        return token?.resourceType === "receipt" ? ofReceipt(token.resourceId) : null;
+      }
+      default: return null;
+    }
+  }
   async execute(id: string, command: ReceiptCommand, actor: ReceiptActor): Promise<ReceiptResult> {
     let key: string | null = null;
     try {
       return await this.database.transaction(async tx => {
+        await assertCustomerWritable(tx, await this.writeScope(tx, id, command));
         if (command.action === "public-read" || command.action === "public-pdf" || command.action === "invalid-public-input") return this.publicCommand(tx, id, command, actor);
         if (command.action === "list") {
           const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, id)); if (!sub) return receiptFailure("RECEIPT_NOT_FOUND");
@@ -103,7 +124,7 @@ export class DrizzleReceiptsRepository implements ReceiptsRepository {
           const { sub, view, source } = await this.lockFinance(tx, id);
           const [existing] = await tx.select().from(receipts).where(eq(receipts.paymentEventId, id));
           if (existing) return { ok: true, body: { receipt: await this.detail(tx, existing), replayed: true } };
-          const [customer] = await tx.select().from(customers).where(eq(customers.id, sub.customerId)); if (!customer || customer.archivedAt) return receiptFailure("RECEIPT_INVALID_PAYMENT");
+          const [customer] = await tx.select().from(customers).where(eq(customers.id, sub.customerId)); if (!customer) return receiptFailure("RECEIPT_INVALID_PAYMENT");
           const now = this.clock(), year = quoteYear(now), receiptId = randomUUID();
           // Validate historical reconstruction before allocating a number or creating an artifact.
           buildReceiptSnapshot(view, source, { receiptNumber: "pending", customerName: customer.fullName, subscriptionReference: sub.reference, issuedAt: now.toISOString() });

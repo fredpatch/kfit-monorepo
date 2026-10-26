@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, inArray, isNull, lte, notInArray, or, sql, type SQL } from "drizzle-orm";
-import { privacyPurgeDelayDaysKey, type PrivacySubjectType, type RetentionHoldItem, type RetentionHoldScopeType, type RetentionHoldType } from "@kfit/shared";
+import { privacyPurgeDelayDaysKey, type PrivacySubjectType, type UnarchiveReason, type RetentionHoldItem, type RetentionHoldScopeType, type RetentionHoldType } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
 import { customers, subscriptions } from "../../../db/schema/customers.js";
 import { documents, documentVersions, secureAccessTokens } from "../../../db/schema/documents.js";
@@ -34,7 +34,8 @@ export type LinkedSubject = { subjectType: PrivacySubjectType; subjectId: string
 export type ExecutedPrivacyEvent = { eventId: string; subjectType: PrivacySubjectType; subjectId: string; executedAt: Date; planVersion: number; linkedSubjects: LinkedSubject[] };
 export type PlanTouch = { table: string; columns: string[]; rows: number };
 
-export type ArchiveResult = { ok: true; archivedAt: Date } | { ok: false; error: "PRIVACY_SUBJECT_NOT_FOUND" | "PRIVACY_SUBJECT_HAS_ACTIVE_SUBSCRIPTION" | "PRIVACY_SUBJECT_HAS_OPEN_REQUEST" };
+export type ArchiveResult = { ok: true; archivedAt: Date; tokensRevoked: number } | { ok: false; error: "PRIVACY_SUBJECT_NOT_FOUND" | "PRIVACY_SUBJECT_HAS_ACTIVE_SUBSCRIPTION" | "PRIVACY_SUBJECT_HAS_OPEN_REQUEST" };
+export type UnarchiveResult = { ok: true } | { ok: false; error: "PRIVACY_SUBJECT_NOT_FOUND" | "PRIVACY_SUBJECT_NOT_ARCHIVED" | "PRIVACY_SUBJECT_ANONYMIZED" };
 export type AnonymizeResult =
   | { ok: true; event: ExecutedPrivacyEvent; alreadyAnonymized: boolean }
   | { ok: false; error: "PRIVACY_SUBJECT_NOT_FOUND" | "PRIVACY_SUBJECT_NOT_ARCHIVED" | "PRIVACY_CONFIRMATION_MISMATCH" | "PRIVACY_RETENTION_HOLD_ACTIVE" };
@@ -75,7 +76,12 @@ export class DrizzlePrivacyRepository {
       await lockSubject(tx, subjectType, subjectId);
       const table = subjectType === "customer" ? customers : prospects;
       const [row] = await tx.select({ archivedAt: table.archivedAt }).from(table).where(eq(table.id, subjectId)).for("update");
-      if (row?.archivedAt) return { ok: true, archivedAt: row.archivedAt };
+      if (row?.archivedAt) {
+        // ARCH-01 D5: re-archiving stays idempotent and closes links left open by an archive made before ARCH-01.
+        const tokensRevoked = await this.revokeArchivedSubjectLinks(tx, subjectType, subjectId, now);
+        if (tokensRevoked) await this.audit(tx, actor, "privacy.subject_links_revoked", subjectType, subjectId, { subjectType, tokensRevoked });
+        return { ok: true, archivedAt: row.archivedAt, tokensRevoked };
+      }
       const refusal = subjectType === "customer"
         ? customerArchiveRefusal({ exists: Boolean(row) }, (await tx.select({ status: subscriptions.status }).from(subscriptions).where(eq(subscriptions.customerId, subjectId))).map((s) => s.status))
         : prospectArchiveRefusal({ exists: Boolean(row) }, (await tx.select({ status: serviceRequests.status }).from(serviceRequests).where(eq(serviceRequests.prospectId, subjectId))).map((r) => r.status));
@@ -83,8 +89,40 @@ export class DrizzlePrivacyRepository {
       if (refusal === "has_active_subscription") return { ok: false, error: "PRIVACY_SUBJECT_HAS_ACTIVE_SUBSCRIPTION" };
       if (refusal === "has_open_request") return { ok: false, error: "PRIVACY_SUBJECT_HAS_OPEN_REQUEST" };
       await tx.update(table).set({ archivedAt: now }).where(eq(table.id, subjectId));
-      await this.audit(tx, actor, "privacy.subject_archived", subjectType, subjectId, { subjectType });
-      return { ok: true, archivedAt: now };
+      const tokensRevoked = await this.revokeArchivedSubjectLinks(tx, subjectType, subjectId, now);
+      await this.audit(tx, actor, "privacy.subject_archived", subjectType, subjectId, { subjectType, tokensRevoked });
+      return { ok: true, archivedAt: now, tokensRevoked };
+    });
+  }
+
+  /**
+   * ARCH-01 D5: every live public link of the archived subject. A customer covers its subscriptions, documents, proofs, quotes
+   * and receipts (not the requests of its source prospect); a prospect covers its requests. Links stay revoked after unarchive.
+   */
+  private async revokeArchivedSubjectLinks(tx: Tx, subjectType: PrivacySubjectType, subjectId: string, now: Date): Promise<number> {
+    const scope = await this.scopeOf(tx, subjectType, subjectId, subjectType === "prospect" ? subjectId : null);
+    const docs = await this.documentIdsOf(tx, scope);
+    return this.revokeLinks(tx, await this.tokenResourceIds(tx, scope, docs.all), now);
+  }
+
+  private async revokeLinks(tx: Tx, resourceIds: string[], now: Date): Promise<number> {
+    if (!resourceIds.length) return 0;
+    const revoked = await tx.update(secureAccessTokens).set({ revokedAt: now }).where(and(isNull(secureAccessTokens.revokedAt), inArray(secureAccessTokens.resourceId, resourceIds))).returning({ id: secureAccessTokens.id });
+    return revoked.length;
+  }
+
+  /** ARCH-01 D6: same locks as archive. Anonymization is irreversible; active holds do not block. Only the reason code is audited. */
+  async unarchive(subjectType: PrivacySubjectType, subjectId: string, reason: UnarchiveReason, actor: PrivacyActor): Promise<UnarchiveResult> {
+    return this.db.transaction(async (tx) => {
+      await lockSubject(tx, subjectType, subjectId);
+      const table = subjectType === "customer" ? customers : prospects;
+      const [row] = await tx.select({ archivedAt: table.archivedAt, anonymizedAt: table.anonymizedAt }).from(table).where(eq(table.id, subjectId)).for("update");
+      if (!row) return { ok: false, error: "PRIVACY_SUBJECT_NOT_FOUND" };
+      if (row.anonymizedAt) return { ok: false, error: "PRIVACY_SUBJECT_ANONYMIZED" };
+      if (!row.archivedAt) return { ok: false, error: "PRIVACY_SUBJECT_NOT_ARCHIVED" };
+      await tx.update(table).set({ archivedAt: null }).where(eq(table.id, subjectId));
+      await this.audit(tx, actor, "privacy.subject_unarchived", subjectType, subjectId, { subjectType, reason });
+      return { ok: true };
     });
   }
 
@@ -236,10 +274,8 @@ export class DrizzlePrivacyRepository {
     const marked = docs.owned.length
       ? await tx.update(documents).set({ status: "pending_purge", purgeAfter: purgeAt, updatedAt: now })
         .where(and(inArray(documents.id, docs.owned), notInArray(documents.status, ["pending_purge", "purged"]))).returning({ id: documents.id }) : [];
-    const resourceIds = await this.tokenResourceIds(tx, scope, docs.all);
-    const revoked = resourceIds.length
-      ? await tx.update(secureAccessTokens).set({ revokedAt: now }).where(and(isNull(secureAccessTokens.revokedAt), inArray(secureAccessTokens.resourceId, resourceIds))).returning({ id: secureAccessTokens.id }) : [];
-    return { touched, documentsMarked: marked.length, tokensRevoked: revoked.length, outboxDeadLettered: outbox.rowCount ?? 0 };
+    const tokensRevoked = await this.revokeLinks(tx, await this.tokenResourceIds(tx, scope, docs.all), now);
+    return { touched, documentsMarked: marked.length, tokensRevoked, outboxDeadLettered: outbox.rowCount ?? 0 };
   }
 
   /**

@@ -1,8 +1,8 @@
-import type { PrivacySubjectType, RetentionHoldScopeType, RetentionHoldType } from "@kfit/shared";
+import type { PrivacySubjectType, RetentionHoldScopeType, RetentionHoldType, UnarchiveReason } from "@kfit/shared";
 import type { AnonymizeResult, DrizzlePrivacyRepository, PrivacyActor } from "../repositories/privacy.repository.js";
 import type { PrivacyJournal } from "./privacy-journal.js";
 
-export type PrivacyRepositoryPort = Pick<DrizzlePrivacyRepository, "archive" | "anonymize" | "createHold" | "releaseHold" | "listHolds">;
+export type PrivacyRepositoryPort = Pick<DrizzlePrivacyRepository, "archive" | "unarchive" | "anonymize" | "createHold" | "releaseHold" | "listHolds">;
 /** Receives the error type only: journal failures must not leak paths or event content into logs. */
 export type JournalFailureLog = (errorType: string) => void;
 
@@ -17,6 +17,10 @@ export class PrivacyService {
 
   archive(subjectType: PrivacySubjectType, subjectId: string, actor: PrivacyActor) {
     return this.repository.archive(subjectType, subjectId, actor, this.clock());
+  }
+
+  unarchive(subjectType: PrivacySubjectType, subjectId: string, reason: UnarchiveReason, actor: PrivacyActor) {
+    return this.repository.unarchive(subjectType, subjectId, reason, actor);
   }
 
   async anonymize(subjectType: PrivacySubjectType, subjectId: string, confirmName: string, actor: PrivacyActor): Promise<AnonymizeResult> {

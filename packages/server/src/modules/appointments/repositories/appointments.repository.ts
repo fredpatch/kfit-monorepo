@@ -8,6 +8,7 @@ import { services, serviceVariants, servicePolicies } from "../../../db/schema/c
 import { secureAccessTokens, externalAccessEvents } from "../../../db/schema/documents.js";
 import { AuditService, hashAuditContext, type AuditMetadata } from "../../auth/services/audit.service.js";
 import { appointmentFailure, type AppointmentActor, type AppointmentCommand, type AppointmentResult, type AppointmentsRepository } from "../services/appointments.service.js";
+import { assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
 import { appointmentTokenScope, appointmentTransitions, consumptiveEvents, isLateCancellation, publicActions, resolveAppointmentPolicy, validateAppointmentToken } from "../services/appointment.policy.js";
 
 type Tx = Parameters<Parameters<typeof appDb.transaction>[0]>[0];
@@ -62,6 +63,7 @@ export class DrizzleAppointmentsRepository implements AppointmentsRepository {
   async execute(id: string, command: AppointmentCommand, actor: AppointmentActor): Promise<AppointmentResult> {
     return this.database.transaction(async tx => {
       if (command.action === "list" || command.action === "schedule") {
+        if (command.action === "schedule") await assertCustomerWritable(tx, { subscriptionId: id });
         const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, id)).for(command.action === "list" ? "share" : "update");
         if (!sub) return appointmentFailure("APPOINTMENT_NOT_FOUND");
         if (command.action === "list") {
@@ -94,6 +96,7 @@ export class DrizzleAppointmentsRepository implements AppointmentsRepository {
       }
       const [initial] = await tx.select({ subscriptionId: appointments.subscriptionId }).from(appointments).where(eq(appointments.id, id));
       if (!initial) return appointmentFailure("APPOINTMENT_NOT_FOUND");
+      if (command.action !== "read") await assertCustomerWritable(tx, { subscriptionId: initial.subscriptionId });
       // Every writer takes the parent first, including lifecycle commands. Components/tokens
       // are locked only after the parent and appointment, never in the reverse order.
       const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, initial.subscriptionId)).for(command.action === "read" ? "share" : "update");
@@ -198,6 +201,7 @@ export class DrizzleAppointmentsRepository implements AppointmentsRepository {
       if (!initial || initial.resourceType !== appointmentTokenScope.resourceType || initial.action !== appointmentTokenScope.action) return reject("APPOINTMENT_TOKEN_INVALID");
       const [owner] = await tx.select({ subscriptionId: appointments.subscriptionId }).from(appointments).where(eq(appointments.id, initial.resourceId));
       if (!owner) return reject("APPOINTMENT_TOKEN_INVALID");
+      if (command) await assertCustomerWritable(tx, { subscriptionId: owner.subscriptionId });
       const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, owner.subscriptionId)).for("update");
       const [app] = await tx.select().from(appointments).where(eq(appointments.id, initial.resourceId)).for("update");
       const [token] = await tx.select().from(secureAccessTokens).where(eq(secureAccessTokens.id, initial.id)).for("update");

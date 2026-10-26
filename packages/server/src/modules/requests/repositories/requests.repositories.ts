@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { db as appDb } from "../../../db/client.js";
 import { prospects, serviceRequests } from "../../../db/schema/prospects.js";
 import { services, serviceVariants } from "../../../db/schema/catalogue.js";
@@ -70,10 +70,11 @@ export class DrizzleRequestsRepository implements RequestsRepository {
     }
 
     return this.database.transaction(async (tx) => {
+      // ARCH-01 D7: an archived or anonymized prospect is never reused; a returning person gets a new prospect row.
       const [existingProspect] = await tx
         .select({ id: prospects.id })
         .from(prospects)
-        .where(eq(prospects.whatsapp, input.whatsapp))
+        .where(and(eq(prospects.whatsapp, input.whatsapp), isNull(prospects.archivedAt), isNull(prospects.anonymizedAt)))
         .limit(1);
 
       const prospectId = existingProspect

@@ -1,3 +1,4 @@
+import { assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { subscriptionCommands, type SubscriptionDetail } from "@kfit/shared";
@@ -62,6 +63,8 @@ export class DrizzleSubscriptionsRepository implements SubscriptionsRepository {
   async execute(id: string, command: LifecycleCommand, actor: LifecycleActor): Promise<LifecycleResult> {
     return this.database.transaction(async tx => {
       if (["activate", "renew", "resume", "resume-active"].includes(command.action)) await lockCadenceWrites(tx);
+      // ARCH-01 D4: renew from a completed subscription is refused here too.
+      if (command.action !== "read") await assertCustomerWritable(tx, { subscriptionId: id });
       const query = tx.select().from(subscriptions).where(eq(subscriptions.id, id));
       // Shared read lock produces a coherent detail while mutations serialize on this row.
       const [sub] = await query.for(command.action === "read" ? "share" : "update");

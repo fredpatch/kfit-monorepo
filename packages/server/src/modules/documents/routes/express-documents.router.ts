@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import { Router, raw, type Request, type Response } from "express";
 import { documentApiRoutes } from "@kfit/shared";
@@ -31,7 +32,7 @@ export function createExpressDocumentsRouter(deps:{controller:DocumentsControlle
       const guard=requireSameOrigin(ctx)??(mutating?requireCsrf(ctx):null);
       if(guard){res.status(guard.status).json(guard.body);return;}
       send(res,await fn(ctx));
-    }catch{res.status(500).json({error:"DOCUMENT_ROUTE_UNEXPECTED_FAILURE"});}
+    }catch(error){if(!respondIfSubjectArchived(res,error))res.status(500).json({error:"DOCUMENT_ROUTE_UNEXPECTED_FAILURE"});}
   }
   const payload=(req:Request)=>({bytes:Buffer.isBuffer(req.body)?req.body:Buffer.alloc(0),mimeType:req.headers["content-type"]??"",
     originalFilename:typeof req.headers["x-file-name"]==="string"?req.headers["x-file-name"]:"document"});
@@ -51,7 +52,7 @@ export function createExpressDocumentsRouter(deps:{controller:DocumentsControlle
   async function publicRoute(req:Request,res:Response,fn:(ctx:AuthHttpRequestContext)=>Promise<DocumentControllerResult>){
     res.set({"Cache-Control":"no-store","Referrer-Policy":"no-referrer","X-Content-Type-Options":"nosniff"});
     if(!limiter.allow(req.ip??"unknown")){res.status(429).json({error:"DOCUMENT_RATE_LIMITED"});return;}
-    try{send(res,await fn(await context(req,true)));}catch{res.status(500).json({error:"DOCUMENT_ROUTE_UNEXPECTED_FAILURE"});}
+    try{send(res,await fn(await context(req,true)));}catch(error){if(!respondIfSubjectArchived(res,error))res.status(500).json({error:"DOCUMENT_ROUTE_UNEXPECTED_FAILURE"});}
   }
   router.get(documentApiRoutes.publicMeta,(q,s)=>void publicRoute(q,s,c=>deps.controller.publicMeta(param(q,"token"),c)));
   router.post(documentApiRoutes.publicVerify,(q,s)=>void publicRoute(q,s,c=>deps.controller.publicVerify(param(q,"token"),q.body??{},c)));

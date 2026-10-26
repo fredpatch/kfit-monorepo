@@ -1,3 +1,4 @@
+import { assertCustomerWritable, type CustomerWriteScope } from "../../privacy/repositories/subject-freeze.js";
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { financePaymentMethods, paymentProofStatuses, paymentProofMimeTypes, paymentProofMaxBytes, paymentProofDocumentType, paymentProofDocumentOwnerType, type PaymentProof, type PaymentProofLink, type PaymentProofErrorCode } from "@kfit/shared";
@@ -89,9 +90,29 @@ export class DrizzlePaymentProofsRepository implements PaymentProofsRepository {
     await this.audit(tx, actor, "payment_proof.submitted", proofId, { proofId, subscriptionId: sub.id, documentId: doc.id, documentVersionId: version.id, tokenId: token.id, amountXaf: c.claims.claimedAmountXaf, paymentMethod: c.claims.claimedPaymentMethod, toStatus: "pending_review" });
     await this.access(tx, token, actor, event, "success"); return { ok: true, body: { submitted: true } };
   }
+  /** ARCH-01 D1: subscription a proof write acts on, resolved with plain reads before the token/proof/subscription locks. */
+  private async writeScope(tx: Tx, id: string, c: ProofCommand): Promise<CustomerWriteScope | null> {
+    switch (c.action) {
+      case "prepare-upload": case "commit-upload": {
+        const [token] = await tx.select({ resourceId: secureAccessTokens.resourceId, resourceType: secureAccessTokens.resourceType }).from(secureAccessTokens).where(eq(secureAccessTokens.tokenHash, hashDocumentBearer(id, this.options.tokenPepper)));
+        return token?.resourceType === scope.resourceType ? { subscriptionId: token.resourceId } : null;
+      }
+      case "issue-link": return { subscriptionId: id };
+      case "revoke-link": {
+        const [token] = await tx.select({ resourceId: secureAccessTokens.resourceId, resourceType: secureAccessTokens.resourceType }).from(secureAccessTokens).where(eq(secureAccessTokens.id, id));
+        return token?.resourceType === scope.resourceType ? { subscriptionId: token.resourceId } : null;
+      }
+      case "confirm": case "partially-confirm": case "request-correction": case "reject": case "mark-duplicate": {
+        const [proof] = await tx.select({ subscriptionId: paymentProofs.subscriptionId }).from(paymentProofs).where(eq(paymentProofs.id, id));
+        return proof ? { subscriptionId: proof.subscriptionId } : null;
+      }
+      default: return null;
+    }
+  }
   async execute(id: string, c: ProofCommand, actor: ProofActor): Promise<ProofResult> {
     try {
       return await this.database.transaction(async tx => {
+        await assertCustomerWritable(tx, await this.writeScope(tx, id, c));
         if (c.action === "metadata" || c.action === "prepare-upload" || c.action === "commit-upload" || c.action === "upload-failed") return this.publicCommand(tx, id, c, actor);
         if (c.action === "list") {
           const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, id)); if (!sub) return proofFailure("PAYMENT_PROOF_NOT_FOUND");

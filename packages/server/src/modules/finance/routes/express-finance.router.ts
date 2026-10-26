@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { financeApiRoutes } from "@kfit/shared";
@@ -20,7 +21,7 @@ export function createExpressFinanceRouter(deps: { controller: FinanceController
         const param = request.params.subscriptionId ?? request.params.paymentPlanId ?? request.params.paymentEventId;
         const result = guard ?? await deps.controller.execute(context, typeof param === "string" ? param : "", action, request.method === "GET" ? {} : request.body ?? {});
         response.status(result.status).json(result.body);
-      } catch { response.status(500).json({ error: "FINANCE_ROUTE_UNEXPECTED_FAILURE" }); }
+      } catch (error) { if (!respondIfSubjectArchived(response, error)) response.status(500).json({ error: "FINANCE_ROUTE_UNEXPECTED_FAILURE" }); }
     };
   }
   router.get(financeApiRoutes.detail, handle("read")); router.post(financeApiRoutes.plans, handle("create"));

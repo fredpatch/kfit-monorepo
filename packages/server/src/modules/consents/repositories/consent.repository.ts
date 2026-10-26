@@ -1,3 +1,4 @@
+import { assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
 import { createHash } from "node:crypto";
 import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { consentTypes, optionalConsentTypes, requiredConsentTypes, type ConsentDecisions, type ConsentDefinition, type ConsentDefinitionSummary, type ConsentDecision, type ConsentDetail,
@@ -128,6 +129,8 @@ export class DrizzleConsentRepository implements ConsentRepository, ConsentDefin
   }
   async execute(subscriptionId: string, command: ConsentCommand, actor: ConsentActor): Promise<ConsentResult> {
     return this.database.transaction(async tx => {
+      // ARCH-01 D3: revoking a consent (withdrawal) stays possible on an archived customer.
+      if (command.action !== "read" && command.action !== "revoke") await assertCustomerWritable(tx, { subscriptionId });
       const [subscription] = await tx.select().from(subscriptions).where(eq(subscriptions.id, subscriptionId)).for("update");
       if (!subscription) return failure("CONSENT_NOT_FOUND");
       // Lock order: subscription, then tokens, then definitions (same as public submission).
@@ -213,6 +216,7 @@ export class DrizzleConsentRepository implements ConsentRepository, ConsentDefin
         userAgentHash: hashAuditContext(actor.userAgent, this.options.auditHashPepper) });
       if (rejectedInput) { await event(attemptedTokenId, rejectedInput); return failure(rejectedInput); }
       if (!initial) { await event(null, "CONSENT_LINK_INVALID"); return failure("CONSENT_LINK_INVALID"); }
+      if (decisions) await assertCustomerWritable(tx, { subscriptionId: initial.resourceId });
       // Same lock order for public submission, coach capture, link revocation and readiness.
       const [subscription] = await tx.select().from(subscriptions).where(eq(subscriptions.id, initial.resourceId)).for("update");
       const [token] = await tx.select().from(secureAccessTokens).where(eq(secureAccessTokens.id, initial.id)).for("update");

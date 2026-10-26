@@ -77,7 +77,7 @@ test("S7.3b D1: an active customer's fiche is unchanged and gains a privacy bloc
   assert.deepEqual(result.detail.customer, listed);
   assert.deepEqual(Object.keys(result.detail), ["customer", "subscriptions", "privacy"]);
   assert.equal(result.detail.subscriptions.length, 2);
-  assert.deepEqual(result.detail.privacy, { archivedAt: null, anonymizedAt: null, archivable: false, activeHolds: 0 });
+  assert.deepEqual(result.detail.privacy, { archivedAt: null, anonymizedAt: null, archivable: false, unarchivable: false, activeHolds: 0 });
 
   const finished = await seedCustomer(["completed", "cancelled"]);
   const done = await service.getDetail(finished.id);
@@ -101,7 +101,7 @@ test("S7.3b D1/D2: an archived customer opens on the fiche and the archived list
   assert.equal(result.detail.customer.fullName, subject.name);
   assert.equal(result.detail.customer.whatsapp, subject.whatsapp);
   assert.ok(result.detail.privacy.archivedAt);
-  assert.deepEqual({ ...result.detail.privacy, archivedAt: "set" }, { archivedAt: "set", anonymizedAt: null, archivable: false, activeHolds: 1 });
+  assert.deepEqual({ ...result.detail.privacy, archivedAt: "set" }, { archivedAt: "set", anonymizedAt: null, archivable: false, unarchivable: true, activeHolds: 1 });
   assert.deepEqual(await visible(subject.id), { list: false, search: false, overview: false, analytics: "not_found" });
 
   const line = (await repository.listArchived()).find((c) => c.id === subject.id);

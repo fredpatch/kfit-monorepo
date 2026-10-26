@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { notificationSettingDefaults, operationalSettingRegistry, parseNotificationSettingsUpdate } from "../notifications/contracts.js";
-import { parseAnonymizeSubjectInput, parseCreateRetentionHoldInput, parseRetentionHoldListQuery, privacyPurgeDelayDaysKey } from "./contracts.js";
+import { parseAnonymizeSubjectInput, parseCreateRetentionHoldInput, parseRetentionHoldListQuery, parseUnarchiveSubjectInput, privacyApiRoutes, privacyErrorCodes, privacyPurgeDelayDaysKey, subjectArchivedErrorCodes, unarchiveReasonLabels, unarchiveReasons } from "./contracts.js";
 
 const id = "11111111-1111-4111-8111-111111111111";
 
@@ -30,4 +30,15 @@ test("hold input accepts the closed scopes and types only (D7) and trims the rea
   assert.equal(parseCreateRetentionHoldInput({ scopeType: "customer", scopeId: id, holdType: "legal", reason: "ab" }), null);
   assert.deepEqual(parseRetentionHoldListQuery({ scopeType: "prospect", scopeId: id }), { scopeType: "prospect", scopeId: id });
   assert.equal(parseRetentionHoldListQuery({ scopeType: "prospect" }), null);
+});
+
+test("ARCH-01 D6 unarchive accepts only a reason from the closed list; every reason has a French label", () => {
+  for (const reason of unarchiveReasons) assert.deepEqual(parseUnarchiveSubjectInput({ reason }), { reason });
+  for (const input of [null, [], {}, { reason: "other" }, { reason: "returning_customer", note: "x" }, { reason: 1 }]) assert.equal(parseUnarchiveSubjectInput(input), null, JSON.stringify(input));
+  assert.deepEqual(Object.keys(unarchiveReasonLabels).sort(), [...unarchiveReasons].sort());
+  assert.equal(unarchiveReasonLabels.returning_customer, "Client de retour");
+  assert.deepEqual([...subjectArchivedErrorCodes], ["CUSTOMER_ARCHIVED", "PROSPECT_ARCHIVED"]);
+  assert.ok(privacyErrorCodes.includes("PRIVACY_SUBJECT_ANONYMIZED"));
+  assert.equal(privacyApiRoutes.unarchiveCustomer, "/admin/customers/:customerId/unarchive");
+  assert.equal(privacyApiRoutes.unarchiveProspect, "/admin/prospects/:prospectId/unarchive");
 });

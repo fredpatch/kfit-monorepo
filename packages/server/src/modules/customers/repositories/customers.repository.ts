@@ -6,7 +6,7 @@ import { servicePolicies, serviceVariants, services } from "../../../db/schema/c
 import { appointmentEvents, appointments, followUps } from "../../../db/schema/coaching.js";
 import { secureAccessTokens } from "../../../db/schema/documents.js";
 import { retentionHolds } from "../../../db/schema/operations.js";
-import { customerArchivable } from "../../privacy/services/privacy.policy.js";
+import { customerArchivable, subjectUnarchivable } from "../../privacy/services/privacy.policy.js";
 import { consumptiveEvents } from "../../appointments/services/appointment.policy.js";
 import { resolveCadence } from "../../follow-ups/services/follow-up-cadence.policy.js";
 import type { AnalyticsSource } from "../services/customer-analytics.policy.js";
@@ -86,7 +86,8 @@ export class DrizzleCustomersRepository implements CustomersRepository {
       })),
       privacy: {
         archivedAt: iso(archivedAt), anonymizedAt: iso(anonymizedAt),
-        archivable: customerArchivable(archivedAt, rows.map((subscription) => subscription.status)), activeHolds: holds,
+        archivable: customerArchivable(archivedAt, rows.map((subscription) => subscription.status)),
+        unarchivable: subjectUnarchivable(archivedAt, anonymizedAt), activeHolds: holds,
       },
     };
   }

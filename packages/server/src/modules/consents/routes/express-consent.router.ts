@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { consentApiRoutes, consentDefinitionApiRoutes } from "@kfit/shared";
@@ -32,7 +33,7 @@ export function createExpressConsentRouter(deps: { controller: ConsentController
           : isDefinitionAction(action) ? await deps.controller.definitions(context, action, request.body ?? {}, parameter(request, "definitionId"))
           : await deps.controller.execute(context, parameter(request, "subscriptionId"), action, request.body ?? {}, parameter(request, action === "revoke" ? "consentType" : "tokenId")));
         res.status(result.status).json(result.body);
-      } catch { res.status(500).json({ error: "CONSENT_ROUTE_UNEXPECTED_FAILURE" }); }
+      } catch (error) { if (!respondIfSubjectArchived(res, error)) res.status(500).json({ error: "CONSENT_ROUTE_UNEXPECTED_FAILURE" }); }
     };
   }
   router.get(consentApiRoutes.detail, handle("read"));

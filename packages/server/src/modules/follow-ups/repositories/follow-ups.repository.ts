@@ -1,3 +1,4 @@
+import { assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
 import { and, desc, eq } from "drizzle-orm";
 import { followUpTypes, type FollowUp, type FollowUpDetail, type FollowUpQueueItem } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
@@ -68,6 +69,7 @@ export class DrizzleFollowUpsRepository implements FollowUpsRepository {
         const initial = command.action === "complete" || command.action === "cancel" ? (await tx.select({ subscriptionId: followUps.subscriptionId }).from(followUps).where(eq(followUps.id, id)))[0] : null;
         if ((command.action === "complete" || command.action === "cancel") && !initial) return followUpFailure("FOLLOW_UP_NOT_FOUND");
         const subscriptionId = initial?.subscriptionId ?? id;
+        await assertCustomerWritable(tx, { subscriptionId });
         // Parent first agrees with lifecycle and appointment writers, then the follow-up.
         const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, subscriptionId)).for("update");
         if (!sub) return followUpFailure("FOLLOW_UP_NOT_FOUND");

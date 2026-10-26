@@ -3,6 +3,7 @@ import {
   parseAnonymizeSubjectInput,
   parseCreateRetentionHoldInput,
   parseRetentionHoldListQuery,
+  parseUnarchiveSubjectInput,
   type PrivacyErrorCode,
   type PrivacySubjectType,
 } from "@kfit/shared";
@@ -12,7 +13,7 @@ import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/
 import type { FreshOtpCheck } from "../../questionnaires/controllers/questionnaire.controller.js";
 import type { PrivacyService } from "../services/privacy.service.js";
 
-export type PrivacyAction = "archive_customer" | "archive_prospect" | "anonymize_customer" | "anonymize_prospect" | "holds_list" | "hold_create" | "hold_release";
+export type PrivacyAction = "archive_customer" | "archive_prospect" | "unarchive_customer" | "unarchive_prospect" | "anonymize_customer" | "anonymize_prospect" | "holds_list" | "hold_create" | "hold_release";
 
 const statusOf: Record<PrivacyErrorCode, number> = {
   PRIVACY_INVALID_INPUT: 400,
@@ -21,6 +22,7 @@ const statusOf: Record<PrivacyErrorCode, number> = {
   PRIVACY_SUBJECT_NOT_FOUND: 404,
   PRIVACY_HOLD_NOT_FOUND: 404,
   PRIVACY_SUBJECT_NOT_ARCHIVED: 409,
+  PRIVACY_SUBJECT_ANONYMIZED: 409,
   PRIVACY_SUBJECT_HAS_ACTIVE_SUBSCRIPTION: 409,
   PRIVACY_SUBJECT_HAS_OPEN_REQUEST: 409,
   PRIVACY_RETENTION_HOLD_ACTIVE: 409,
@@ -33,7 +35,7 @@ const emptyBody = (body: unknown) => body === undefined || (typeof body === "obj
 
 /** Admin-only. Anonymization also needs a fresh sensitive-action OTP (rule 2) and the typed name (D9, compared in the repository). */
 export class PrivacyController {
-  constructor(private readonly service: Pick<PrivacyService, "archive" | "anonymize" | "createHold" | "releaseHold" | "listHolds">, private readonly freshOtp: FreshOtpCheck) {}
+  constructor(private readonly service: Pick<PrivacyService, "archive" | "unarchive" | "anonymize" | "createHold" | "releaseHold" | "listHolds">, private readonly freshOtp: FreshOtpCheck) {}
 
   async handle(context: AuthHttpRequestContext, action: PrivacyAction, input: { id?: string | undefined; query?: Record<string, unknown>; body?: unknown }): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
@@ -47,6 +49,14 @@ export class PrivacyController {
         if (!isPrivacyUuid(input.id) || !emptyBody(input.body)) return fail("PRIVACY_INVALID_INPUT");
         const result = await this.service.archive(subjectType, input.id, actor);
         return result.ok ? { status: 200, body: { subjectType, subjectId: input.id, archivedAt: result.archivedAt.toISOString() } } : fail(result.error);
+      }
+      case "unarchive_customer":
+      case "unarchive_prospect": {
+        const subjectType: PrivacySubjectType = action === "unarchive_customer" ? "customer" : "prospect";
+        const parsed = parseUnarchiveSubjectInput(input.body);
+        if (!isPrivacyUuid(input.id) || !parsed) return fail("PRIVACY_INVALID_INPUT");
+        const result = await this.service.unarchive(subjectType, input.id, parsed.reason, actor);
+        return result.ok ? { status: 200, body: { subjectType, subjectId: input.id, archivedAt: null } } : fail(result.error);
       }
       case "anonymize_customer":
       case "anonymize_prospect": {

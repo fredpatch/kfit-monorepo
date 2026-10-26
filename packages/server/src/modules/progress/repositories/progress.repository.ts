@@ -1,3 +1,4 @@
+import { assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
 import { and, eq, inArray, lte } from "drizzle-orm";
 import { goalMetricKeys, goalOutcomes, progressMetrics, type CoachingGoal, type GoalMetricKey, type GoalOutcome, type GoalStatus,
   type MetricObservation, type ProgressMeasurement, type ProgressMetric, type ProgressDetail, type GoalsDetail } from "@kfit/shared";
@@ -103,6 +104,7 @@ export class DrizzleProgressRepository implements ProgressRepository {
       const initial = goalCommand ? (await tx.select({ subscriptionId: goals.subscriptionId }).from(goals).where(eq(goals.id, id)))[0] : null;
       if (goalCommand && !initial) return progressFailure("GOAL_NOT_FOUND");
       const subscriptionId = initial?.subscriptionId ?? id;
+      await assertCustomerWritable(tx, { subscriptionId });
       // Parent first in every command: compatible with consent/lifecycle writers and measurement goal refresh.
       const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, subscriptionId)).for("update");
       if (!sub) return progressFailure(command.action === "measurement" ? "PROGRESS_MEASUREMENT_NOT_FOUND" : "GOAL_NOT_FOUND");

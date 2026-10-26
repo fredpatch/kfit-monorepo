@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { onboardingApiRoutes } from "@kfit/shared";
@@ -24,7 +25,7 @@ export function createExpressOnboardingRouter(deps: { controller: OnboardingCont
         const itemId = typeof request.params.itemId === "string" ? request.params.itemId : undefined;
         const result = guard ?? await deps.controller.execute(context, subscriptionId, action, action === "read" ? {} : request.body ?? {}, itemId);
         response.status(result.status).json(result.body);
-      } catch { response.status(500).json({ error: "ONBOARDING_ROUTE_UNEXPECTED_FAILURE" }); }
+      } catch (error) { if (!respondIfSubjectArchived(response, error)) response.status(500).json({ error: "ONBOARDING_ROUTE_UNEXPECTED_FAILURE" }); }
     };
   }
   router.get(onboardingApiRoutes.detail, handle("read"));

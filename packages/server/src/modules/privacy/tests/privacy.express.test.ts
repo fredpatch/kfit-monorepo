@@ -14,6 +14,7 @@ import { PrivacyService } from "../services/privacy.service.js";
 
 const admin: AuthenticatedSessionContext = { userId: "11111111-1111-4111-8111-111111111111", sessionId: "22222222-2222-4222-8222-222222222222", role: "admin" };
 const customerId = "33333333-3333-4333-8333-333333333333", holdId = "44444444-4444-4444-8444-444444444444", eventId = "55555555-5555-4555-8555-555555555555";
+const anonymizedId = "77777777-7777-4777-8777-777777777777";
 const csrf = "synthetic-privacy-csrf", now = new Date("2026-10-25T10:00:00.000Z");
 const headers = { "content-type": "application/json", cookie: `${authCookieNames.csrfToken}=${csrf}`, "x-csrf-token": csrf };
 const executed = { eventId, subjectType: "customer" as const, subjectId: customerId, executedAt: now, planVersion: 1, linkedSubjects: [] };
@@ -23,7 +24,11 @@ type Options = { session?: AuthenticatedSessionContext | null; otpAt?: Date | nu
 async function withServer(run: (url: string, calls: string[], journal: string[]) => Promise<void>, options: Options = {}) {
   const calls: string[] = [], journal: string[] = [];
   const repository = {
-    async archive(type: string, id: string) { calls.push(`archive:${type}:${id}`); return id === customerId ? { ok: true as const, archivedAt: now } : { ok: false as const, error: "PRIVACY_SUBJECT_NOT_FOUND" as const }; },
+    async archive(type: string, id: string) { calls.push(`archive:${type}:${id}`); return id === customerId ? { ok: true as const, archivedAt: now, tokensRevoked: 0 } : { ok: false as const, error: "PRIVACY_SUBJECT_NOT_FOUND" as const }; },
+    async unarchive(type: string, id: string, reason: string) {
+      calls.push(`unarchive:${type}:${id}:${reason}`);
+      return id === customerId ? { ok: true as const } : id === anonymizedId ? { ok: false as const, error: "PRIVACY_SUBJECT_ANONYMIZED" as const } : { ok: false as const, error: "PRIVACY_SUBJECT_NOT_ARCHIVED" as const };
+    },
     async anonymize(type: string, id: string, confirmName: string) {
       if (options.fail) throw Object.assign(new Error(`duplicate key ${confirmName} +24177000000`), { code: "23505" });
       calls.push(`anonymize:${type}:${id}`); return options.anonymize ?? { ok: true as const, event: executed, alreadyAnonymized: false };
@@ -128,4 +133,23 @@ test("an unexpected failure answers a generic 500 and logs only the error type a
     (logger as unknown as { error: typeof original }).error = original;
   }
   assert.deepEqual(lines, ["privacy anonymize_customer failed: Error (23505)"]);
+});
+
+test("ARCH-01 D6 unarchive: CSRF and same origin, reason from the closed list, anonymized and not-archived subjects answer 409", async () => {
+  await withServer(async (url, calls) => {
+    const path = `${url}/admin/customers/${customerId}/unarchive`;
+    assert.equal((await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason: "returning_customer" }) })).status, 403);
+    assert.equal((await post(path, { reason: "returning_customer" }, { origin: "https://evil.example" })).status, 403);
+    for (const body of [{}, { reason: "other" }, { reason: "returning_customer", note: "x" }]) assert.equal((await post(path, body)).status, 400, JSON.stringify(body));
+    const ok = await post(path, { reason: "returning_customer" });
+    assert.equal(ok.status, 200);
+    assert.deepEqual(await ok.json(), { subjectType: "customer", subjectId: customerId, archivedAt: null });
+    const anonymized = await post(`${url}/admin/customers/${anonymizedId}/unarchive`, { reason: "archived_by_mistake" });
+    assert.equal(anonymized.status, 409);
+    assert.deepEqual(await anonymized.json(), { error: "PRIVACY_SUBJECT_ANONYMIZED" });
+    const notArchived = await post(`${url}/admin/prospects/66666666-6666-4666-8666-666666666666/unarchive`, { reason: "accounting_correction" });
+    assert.equal(notArchived.status, 409);
+    assert.deepEqual(await notArchived.json(), { error: "PRIVACY_SUBJECT_NOT_ARCHIVED" });
+    assert.deepEqual(calls, [`unarchive:customer:${customerId}:returning_customer`, `unarchive:customer:${anonymizedId}:archived_by_mistake`, "unarchive:prospect:66666666-6666-4666-8666-666666666666:accounting_correction"]);
+  });
 });

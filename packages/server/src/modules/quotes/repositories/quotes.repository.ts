@@ -1,3 +1,4 @@
+import { assertCustomerWritable, type CustomerWriteScope } from "../../privacy/repositories/subject-freeze.js";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { quoteStatuses, type QuoteDetail, type QuoteDecision, type QuoteSnapshot, type QuoteVersion } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
@@ -102,10 +103,34 @@ export class DrizzleQuotesRepository implements QuotesRepository {
     await this.access(tx, token, actor, eventType, "success");
     return { ok: true, body: { snapshot, response, canRespond: !response && !token.usedAt && token.useCount === 0 && q.status === "issued" } };
   }
+  /** ARCH-01 D1: customer a quote write acts on, resolved with plain reads before the token/subscription/quote locks. */
+  private async writeScope(tx: Tx, id: string, command: QuoteCommand): Promise<CustomerWriteScope | null> {
+    const ofQuote = async (quoteId: string) => {
+      const [row] = await tx.select({ customerId: quotes.customerId }).from(quotes).where(eq(quotes.id, quoteId));
+      return row ? { customerId: row.customerId } : null;
+    };
+    const ofVersion = async (versionId: string) => {
+      const [row] = await tx.select({ quoteId: quoteVersions.quoteId }).from(quoteVersions).where(eq(quoteVersions.id, versionId));
+      return row ? ofQuote(row.quoteId) : null;
+    };
+    const ofToken = async (where: ReturnType<typeof eq>) => {
+      const [token] = await tx.select({ resourceId: secureAccessTokens.resourceId, resourceType: secureAccessTokens.resourceType }).from(secureAccessTokens).where(where);
+      return token?.resourceType === "quote_version" ? ofVersion(token.resourceId) : null;
+    };
+    switch (command.action) {
+      case "create": return { subscriptionId: id };
+      case "version": case "cancel": return ofQuote(id);
+      case "edit": case "issue": case "share": case "synchronize": return ofVersion(id);
+      case "revoke": return ofToken(eq(secureAccessTokens.id, id));
+      case "respond": return ofToken(eq(secureAccessTokens.tokenHash, hashDocumentBearer(id, this.options.tokenPepper)));
+      default: return null;
+    }
+  }
   async execute(id: string, command: QuoteCommand, actor: QuoteActor): Promise<QuoteResult> {
     let finalizedKey: string | null = null;
     try {
       return await this.database.transaction(async tx => {
+        await assertCustomerWritable(tx, await this.writeScope(tx, id, command));
         if (command.action === "public-read" || command.action === "public-pdf" || command.action === "respond" || command.action === "invalid-public-input") return this.publicCommand(tx, id, command, actor);
         if (command.action === "list" || command.action === "create") {
           const [sub] = await tx.select().from(subscriptions).where(eq(subscriptions.id, id)).for(command.action === "create" ? "update" : "share");
@@ -181,7 +206,7 @@ export class DrizzleQuotesRepository implements QuotesRepository {
           const [customer] = await tx.select().from(customers).where(eq(customers.id, sub.customerId));
           const [service] = await tx.select().from(services).where(eq(services.id, sub.serviceId));
           const [variant] = sub.variantId ? await tx.select().from(serviceVariants).where(eq(serviceVariants.id, sub.variantId)) : [];
-          if (!customer || customer.archivedAt || !service) return quoteFailure("QUOTE_INVALID_STATE");
+          if (!customer || !service) return quoteFailure("QUOTE_INVALID_STATE");
           const components = await tx.select().from(subscriptionComponents).where(eq(subscriptionComponents.subscriptionId, sub.id)).orderBy(subscriptionComponents.id);
           const now = this.clock(); let number = q.quoteNumber;
           if (!number) {

@@ -28,8 +28,9 @@ TEST-01         integration DB kfit_test + dev « Données de test » cleanup �
 Backlog (V1.1)    « RDV à clôturer dans À traiter » (POL-01 D8: display-only in POL-01)
 S7.4 prereqs      production guard: refuse production start if any published consent definition title contains « DÉMONSTRATION » (D9, not implemented)
 S7.4 prereqs      CI integration DB = kfit_test (port alignment 5433 vs 5432 still open)
-Next action       S7.3b-1 server read slice delivered and committed 2026-10-26 → Fred: validate (sprint-7.md § S7.3b-1 execution); then S7.3b-2 client
-S7.3b D3 backlog  archived customers: renew-from-completed and several writers not refused; archive does not revoke public tokens (sprint-7.md § S7.3b-1 execution)
+S7.3b-1         server read slice — validated, committed d6fdf61
+Next action       ARCH-01 archived freeze + unarchive — delivered and committed 2026-10-26 → Fred: validate (sprint-7.md § ARCH-01 execution); then S7.3b-2 client
+Backlog           « Flaky express unit tests (fetch failed, random test) — diagnose with the pgErrorInfo fix »
 Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser
 
 UI refonte        UX-1 → UX-15 done; Fred local checks of UX-9d, UX-10, UX-13 passed (2026-10-24)

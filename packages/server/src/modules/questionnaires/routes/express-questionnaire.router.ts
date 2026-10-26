@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { questionnaireApiRoutes } from "@kfit/shared";
@@ -25,7 +26,7 @@ export function createExpressQuestionnaireRouter(deps: { controller: Questionnai
         const result = guard ?? (isPublic ? await deps.controller.publicAccess(param(request, "token"), request.body, action === "public_submit", { userId: null, requestId: context.requestId, ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null })
           : await deps.controller.admin(context, action, request.body ?? {}, param(request, "subscriptionId"), param(request, action === "revoke_link" ? "tokenId" : action === "view_answers" ? "submissionId" : "templateId")));
         res.status(result.status).json(result.body);
-      } catch { res.status(500).json({ error: "QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE" }); }
+      } catch (error) { if (!respondIfSubjectArchived(res, error)) res.status(500).json({ error: "QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE" }); }
     };
   }
   router.get(questionnaireApiRoutes.templates, handle("list")); router.post(questionnaireApiRoutes.templates, handle("create"));

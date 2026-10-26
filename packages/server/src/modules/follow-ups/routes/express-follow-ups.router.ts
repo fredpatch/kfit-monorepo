@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { followUpApiRoutes } from "@kfit/shared";
@@ -20,7 +21,7 @@ export function createExpressFollowUpsRouter(deps: { controller: FollowUpsContro
         const param = action === "complete" || action === "cancel" ? request.params.followUpId : request.params.subscriptionId;
         const result = guard ?? await deps.controller.execute(context, typeof param === "string" ? param : "", action, request.method === "GET" ? {} : request.body ?? {});
         response.status(result.status).json(result.body);
-      } catch { response.status(500).json({ error: "FOLLOW_UP_ROUTE_UNEXPECTED_FAILURE" }); }
+      } catch (error) { if (!respondIfSubjectArchived(response, error)) response.status(500).json({ error: "FOLLOW_UP_ROUTE_UNEXPECTED_FAILURE" }); }
     };
   }
   router.get(followUpApiRoutes.queue, handle("queue")); router.get(followUpApiRoutes.list, handle("read")); router.post(followUpApiRoutes.list, handle("create"));

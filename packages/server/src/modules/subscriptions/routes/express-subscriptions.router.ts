@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { subscriptionApiRoutes, subscriptionCommands } from "@kfit/shared";
@@ -23,7 +24,7 @@ export function createExpressSubscriptionsRouter(deps: { controller: Subscriptio
         const id = typeof request.params.subscriptionId === "string" ? request.params.subscriptionId : "";
         const result = guard ?? await deps.controller.execute(context, id, action, action === "read" ? {} : request.body ?? {});
         response.status(result.status).json(result.body);
-      } catch { response.status(500).json({ error: "SUBSCRIPTION_ROUTE_UNEXPECTED_FAILURE" }); }
+      } catch (error) { if (!respondIfSubjectArchived(response, error)) response.status(500).json({ error: "SUBSCRIPTION_ROUTE_UNEXPECTED_FAILURE" }); }
     };
   }
   router.get(subscriptionApiRoutes.detail, handle("read"));

@@ -1,3 +1,4 @@
+import { respondIfSubjectArchived } from "../../privacy/routes/subject-archived.response.js";
 import { randomUUID } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { appointmentActions, appointmentApiRoutes } from "@kfit/shared";
@@ -25,7 +26,7 @@ export function createExpressAppointmentsRouter(deps: { controller: Appointments
           ? await deps.controller.publicAccess(param(req, "token"), req.body, action === "public_submit", { userId: null, requestId: context.requestId, ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null })
           : await deps.controller.admin(context, param(req, action === "list" || action === "schedule" ? "subscriptionId" : "appointmentId"), action, req.method === "GET" ? {} : req.body ?? {}));
         res.status(result.status).json(result.body);
-      } catch { res.status(500).json({ error: "APPOINTMENT_ROUTE_UNEXPECTED_FAILURE" }); }
+      } catch (error) { if (!respondIfSubjectArchived(res, error)) res.status(500).json({ error: "APPOINTMENT_ROUTE_UNEXPECTED_FAILURE" }); }
     };
   }
   router.get(appointmentApiRoutes.list, handle("list")); router.post(appointmentApiRoutes.list, handle("schedule")); router.get(appointmentApiRoutes.detail, handle("read"));

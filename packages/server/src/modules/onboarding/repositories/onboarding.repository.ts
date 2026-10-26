@@ -1,3 +1,4 @@
+import { assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
 import { and, count, eq, isNull, ne, or } from "drizzle-orm";
 import type { OnboardingDetail } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
@@ -16,6 +17,7 @@ export class DrizzleOnboardingRepository implements OnboardingRepository {
 
   async execute(subscriptionId: string, command: OnboardingCommand, actor: OnboardingActor): Promise<OnboardingResult> {
     return this.database.transaction(async tx => {
+      if (command.action !== "read") await assertCustomerWritable(tx, { subscriptionId });
       const query = tx.select().from(subscriptions).where(eq(subscriptions.id, subscriptionId));
       const [subscription] = command.action === "read" ? await query : await query.for("update");
       if (!subscription) return { status: "not_found" };

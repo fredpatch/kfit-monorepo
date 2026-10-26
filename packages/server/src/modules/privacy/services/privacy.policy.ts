@@ -57,6 +57,10 @@ export function prospectArchiveRefusal(prospect: { exists: boolean }, requestSta
 export function customerArchivable(archivedAt: Date | null, subscriptionStatuses: readonly string[]): boolean {
   return archivedAt === null && customerArchiveRefusal({ exists: true }, subscriptionStatuses) === null;
 }
+/** ARCH-01 D9: « Désarchiver » is offered for an archived subject that is not anonymized (anonymization is irreversible, D6). */
+export function subjectUnarchivable(archivedAt: Date | null, anonymizedAt: Date | null): boolean {
+  return archivedAt !== null && anonymizedAt === null;
+}
 /** S7.3b D5: same for a prospect on the request detail. */
 export function prospectArchivable(archivedAt: Date | null, requestStatuses: readonly string[]): boolean {
   return archivedAt === null && prospectArchiveRefusal({ exists: true }, requestStatuses) === null;

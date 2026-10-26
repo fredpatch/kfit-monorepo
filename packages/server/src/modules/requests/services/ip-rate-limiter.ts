@@ -7,7 +7,8 @@
 export class IpRateLimiter {
   private readonly hits = new Map<string, { count: number; windowStartedAt: number }>();
 
-  constructor(private readonly options: { windowMs: number; maxPerWindow: number }) {}
+  /** `onRefused` counts each refusal (S7.4b B9); it must not throw. */
+  constructor(private readonly options: { windowMs: number; maxPerWindow: number; onRefused?: (() => void) | undefined }) {}
 
   allow(ip: string, now: number = Date.now()): boolean {
     const key = ip || "unknown";
@@ -19,6 +20,7 @@ export class IpRateLimiter {
     }
 
     if (entry.count >= this.options.maxPerWindow) {
+      this.options.onRefused?.();
       return false;
     }
 

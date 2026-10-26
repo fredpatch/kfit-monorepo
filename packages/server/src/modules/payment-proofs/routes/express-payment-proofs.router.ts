@@ -9,8 +9,8 @@ import type { ExpressAuthSessionResolver } from "../../auth/routes/express-auth.
 import { IpRateLimiter } from "../../requests/services/ip-rate-limiter.js";
 import type { PaymentProofsController, ProofControllerResult } from "../controllers/payment-proofs.controller.js";
 import type { ProofAction } from "../services/payment-proofs.types.js";
-export function createExpressPaymentProofsRouter(deps: { controller: PaymentProofsController; resolveSession: ExpressAuthSessionResolver; rateLimiter?: IpRateLimiter }) {
-  const router = Router(), limiter = deps.rateLimiter ?? new IpRateLimiter({ windowMs: 60000, maxPerWindow: 20 }), parse = raw({ type: () => true, limit: "11mb" });
+export function createExpressPaymentProofsRouter(deps: { controller: PaymentProofsController; resolveSession: ExpressAuthSessionResolver; rateLimiter?: IpRateLimiter; onRateLimited?: (() => void) | undefined }) {
+  const router = Router(), limiter = deps.rateLimiter ?? new IpRateLimiter({ windowMs: 60000, maxPerWindow: 20, onRefused: deps.onRateLimited }), parse = raw({ type: () => true, limit: "11mb" });
   const id = (q: Request) => { const value = q.params.subscriptionId ?? q.params.proofId ?? q.params.tokenId ?? q.params.token; return typeof value === "string" ? value : ""; };
   async function context(q: Request, isPublic: boolean): Promise<AuthHttpRequestContext> {
     const headers: Record<string, string | undefined> = {}; for (const [k, v] of Object.entries(q.headers)) headers[k] = Array.isArray(v) ? v[0] : v;

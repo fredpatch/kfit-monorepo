@@ -9,8 +9,8 @@ import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js
 import { IpRateLimiter } from "../../requests/services/ip-rate-limiter.js";
 import type { AppointmentsController } from "../controllers/appointments.controller.js";
 import type { AppointmentsService } from "../services/appointments.service.js";
-export function createExpressAppointmentsRouter(deps: { controller: AppointmentsController; resolveSession: ExpressAuthSessionResolver; rateLimiter?: IpRateLimiter }) {
-  const router = Router(), limiter = deps.rateLimiter ?? new IpRateLimiter({ windowMs: 60000, maxPerWindow: 30 });
+export function createExpressAppointmentsRouter(deps: { controller: AppointmentsController; resolveSession: ExpressAuthSessionResolver; rateLimiter?: IpRateLimiter; onRateLimited?: (() => void) | undefined }) {
+  const router = Router(), limiter = deps.rateLimiter ?? new IpRateLimiter({ windowMs: 60000, maxPerWindow: 30, onRefused: deps.onRateLimited });
   const param = (req: Request, name: string) => typeof req.params[name] === "string" ? req.params[name] : "";
   function handle(action: Parameters<AppointmentsService["admin"]>[1] | "public_read" | "public_submit") {
     return async (req: Request, res: Response) => {

@@ -9,8 +9,8 @@ import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js
 import { IpRateLimiter } from "../../requests/services/ip-rate-limiter.js";
 import type { QuestionnaireController } from "../controllers/questionnaire.controller.js";
 import type { QuestionnaireCommand, TemplateCommand } from "../services/questionnaire.service.js";
-export function createExpressQuestionnaireRouter(deps: { controller: QuestionnaireController; resolveSession: ExpressAuthSessionResolver; rateLimiter?: IpRateLimiter }) {
-  const router = Router(); const limiter = deps.rateLimiter ?? new IpRateLimiter({ windowMs: 60000, maxPerWindow: 30 });
+export function createExpressQuestionnaireRouter(deps: { controller: QuestionnaireController; resolveSession: ExpressAuthSessionResolver; rateLimiter?: IpRateLimiter; onRateLimited?: (() => void) | undefined }) {
+  const router = Router(); const limiter = deps.rateLimiter ?? new IpRateLimiter({ windowMs: 60000, maxPerWindow: 30, onRefused: deps.onRateLimited });
   const param = (request: Request, key: string) => typeof request.params[key] === "string" ? request.params[key] : "";
   function handle(action: QuestionnaireCommand["action"] | TemplateCommand["action"] | "public_read" | "public_submit") {
     return async (request: Request, res: Response) => {

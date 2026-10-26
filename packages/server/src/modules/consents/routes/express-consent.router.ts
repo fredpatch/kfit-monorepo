@@ -13,9 +13,9 @@ type DefinitionAction = ConsentDefinitionCommand["action"];
 const definitionActions: readonly DefinitionAction[] = ["definitions_list", "definition_read", "definition_create", "definition_update", "definition_delete", "definition_impact", "definition_publish"];
 const isDefinitionAction = (action: string): action is DefinitionAction => definitionActions.some(known => known === action);
 
-export function createExpressConsentRouter(deps: { controller: ConsentController; resolveSession: ExpressAuthSessionResolver; rateLimiter?: IpRateLimiter }) {
+export function createExpressConsentRouter(deps: { controller: ConsentController; resolveSession: ExpressAuthSessionResolver; rateLimiter?: IpRateLimiter; onRateLimited?: (() => void) | undefined }) {
   const router = Router();
-  const limiter = deps.rateLimiter ?? new IpRateLimiter({ windowMs: 60_000, maxPerWindow: 30 });
+  const limiter = deps.rateLimiter ?? new IpRateLimiter({ windowMs: 60_000, maxPerWindow: 30, onRefused: deps.onRateLimited });
   const parameter = (request: Request, name: string) => typeof request.params[name] === "string" ? request.params[name] : "";
   function handle(action: ConsentCommand["action"] | DefinitionAction | "public_read" | "public_submit") {
     return async (request: Request, res: Response) => {

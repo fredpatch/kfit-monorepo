@@ -48,6 +48,7 @@ import { SensitiveActionOtpService } from "./modules/auth/services/sensitive-act
 import { createHttpLogger } from "./logging/http-logger.js";
 import { logger } from "./logging/logger.js";
 import { assertRuntimeSecurityFloor } from "./security/runtime-floor.startup.js";
+import { createSecurityEventCounter, drizzleSecurityCounterStore } from "./security/security-event-counters.js";
 import { PrivacyController } from "./modules/privacy/controllers/privacy.controller.js";
 import { privacyPurgeJob } from "./modules/privacy/jobs/privacy-purge.job.js";
 import { DrizzlePrivacyRepository } from "./modules/privacy/repositories/privacy.repository.js";
@@ -268,6 +269,7 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
   const receiptStorage = new PrivateDocumentStorage(), receiptRenderer = new PuppeteerReceiptRenderer();
   const app = createServerApp({
     requestLogger: createHttpLogger(),
+    recordSecurityEvent: createSecurityEventCounter(drizzleSecurityCounterStore(db), { warn: (line) => logger.warn(line) }),
     receiptsController: new ReceiptsController(new ReceiptsService(new DrizzleReceiptsRepository(db,
       { auditHashPepper: authConfig.auditHashPepper, tokenPepper: authConfig.otpPepper }, {
         render: snapshot => receiptRenderer.render(snapshot), persist: input => receiptStorage.persist(input), read: key => receiptStorage.read(key), remove: key => receiptStorage.remove(key),

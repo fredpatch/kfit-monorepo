@@ -10,8 +10,8 @@ import { IpRateLimiter } from "../../requests/services/ip-rate-limiter.js";
 import type { DocumentsController, DocumentControllerResult } from "../controllers/documents.controller.js";
 
 const uploadRaw=raw({type:["application/pdf","image/jpeg","image/png","image/webp"],limit:"11mb"});
-export function createExpressDocumentsRouter(deps:{controller:DocumentsController;resolveSession:ExpressAuthSessionResolver;rateLimiter?:IpRateLimiter}){
-  const router=Router(), limiter=deps.rateLimiter??new IpRateLimiter({windowMs:60_000,maxPerWindow:30});
+export function createExpressDocumentsRouter(deps:{controller:DocumentsController;resolveSession:ExpressAuthSessionResolver;rateLimiter?:IpRateLimiter;onRateLimited?:(() => void) | undefined}){
+  const router=Router(), limiter=deps.rateLimiter??new IpRateLimiter({windowMs:60_000,maxPerWindow:30,onRefused:deps.onRateLimited});
   const param=(req:Request,name:string)=>typeof req.params[name]==="string"?req.params[name]:"";
   async function context(req:Request,isPublic=false):Promise<AuthHttpRequestContext>{
     const headers:Record<string,string|undefined>={}; for(const [k,v] of Object.entries(req.headers)) headers[k]=Array.isArray(v)?v[0]:v;

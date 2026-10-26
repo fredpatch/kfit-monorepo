@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { check, date, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { idColumn } from "./_helpers.js";
 import { users } from "./auth.js";
 
@@ -14,6 +14,13 @@ export const scheduledJobRuns = pgTable("scheduled_job_runs", {
   resultJson: jsonb("result_json"),
   errorCode: text("error_code"),
 }, (t) => [uniqueIndex("scheduled_job_runs_run_uq").on(t.jobKey, t.runKey), index("scheduled_job_runs_status_idx").on(t.jobKey, t.status, t.startedAt)]);
+
+/** S7.4 D12 / S7.4b B9: 415 and 429 refusals counted per Africa/Libreville day and code (no IP, no path). Read by OPS-01. */
+export const securityEventCounters = pgTable("security_event_counters", {
+  day: date("day").notNull(),
+  code: text("code").notNull(),
+  count: integer("count").notNull().default(0),
+}, (t) => [primaryKey({ columns: [t.day, t.code] })]);
 
 export const retentionHolds = pgTable("retention_holds", {
   id: idColumn(),

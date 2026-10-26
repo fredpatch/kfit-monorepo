@@ -20,10 +20,12 @@ export type StoredDocumentFile = {
 export class DocumentStorageError extends Error {
   constructor(public readonly code: "DOCUMENT_FILE_TOO_LARGE" | "DOCUMENT_FILE_TYPE_UNSUPPORTED" | "DOCUMENT_FILE_SIGNATURE_INVALID" | "DOCUMENT_FILE_INFECTED" | "DOCUMENT_FILE_SCAN_FAILED" | "DOCUMENT_STORAGE_FAILURE") { super(code); }
 }
+/** PRIVATE_STORAGE_ROOT, or storage/private/documents at the repository root when the API runs from packages/server. Shared with the ops scripts (S7.4b). */
+export const resolvePrivateStorageRoot = (root: string | undefined) => path.resolve(root ?? path.join(process.cwd(), "../../storage/private/documents"));
 export class PrivateDocumentStorage {
   private readonly root: string;
   constructor(private readonly options: { root?: string; clamavHost?: string; clamavPort?: number } = {}) {
-    this.root = path.resolve(options.root ?? process.env.PRIVATE_STORAGE_ROOT ?? path.join(process.cwd(), "../../storage/private/documents"));
+    this.root = resolvePrivateStorageRoot(options.root ?? process.env.PRIVATE_STORAGE_ROOT);
   }
   validate(bytes: Buffer, mimeType: string, originalFilename?: string) {
     if (!bytes.length || bytes.length > MAX_DOCUMENT_BYTES) throw new DocumentStorageError("DOCUMENT_FILE_TOO_LARGE");

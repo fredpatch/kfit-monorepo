@@ -10,8 +10,8 @@ import { IpRateLimiter } from "../../requests/services/ip-rate-limiter.js";
 import type { QuotesController } from "../controllers/quotes.controller.js";
 import type { QuoteAction } from "../services/quotes.service.js";
 
-export function createExpressQuotesRouter(deps: { controller: QuotesController; resolveSession: ExpressAuthSessionResolver; rateLimiter?: IpRateLimiter }) {
-  const router = Router(), limiter = deps.rateLimiter ?? new IpRateLimiter({ windowMs: 60000, maxPerWindow: 30 });
+export function createExpressQuotesRouter(deps: { controller: QuotesController; resolveSession: ExpressAuthSessionResolver; rateLimiter?: IpRateLimiter; onRateLimited?: (() => void) | undefined }) {
+  const router = Router(), limiter = deps.rateLimiter ?? new IpRateLimiter({ windowMs: 60000, maxPerWindow: 30, onRefused: deps.onRateLimited });
   function handle(action: QuoteAction, isPublic = false) {
     return async (req: Request, res: Response) => {
       res.set({ "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff" });

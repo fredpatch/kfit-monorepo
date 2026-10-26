@@ -13,3 +13,5 @@ coverage/
 storage/
 tmp/
 docs/diffs
+privacy-journal/
+backups/

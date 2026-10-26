@@ -9,8 +9,8 @@ import type { ExpressAuthSessionResolver } from "../../auth/routes/express-auth.
 import { IpRateLimiter } from "../../requests/services/ip-rate-limiter.js";
 import type { ReceiptsController } from "../controllers/receipts.controller.js";
 import type { ReceiptAction } from "../services/receipts.types.js";
-export function createExpressReceiptsRouter(deps: { controller: ReceiptsController; resolveSession: ExpressAuthSessionResolver; rateLimiter?: IpRateLimiter }) {
-  const router = Router(), limiter = deps.rateLimiter ?? new IpRateLimiter({ windowMs: 60000, maxPerWindow: 30 });
+export function createExpressReceiptsRouter(deps: { controller: ReceiptsController; resolveSession: ExpressAuthSessionResolver; rateLimiter?: IpRateLimiter; onRateLimited?: (() => void) | undefined }) {
+  const router = Router(), limiter = deps.rateLimiter ?? new IpRateLimiter({ windowMs: 60000, maxPerWindow: 30, onRefused: deps.onRateLimited });
   async function context(q: Request, publicAccess: boolean): Promise<AuthHttpRequestContext> {
     const headers: Record<string, string | undefined> = {}; for (const [k, v] of Object.entries(q.headers)) headers[k] = Array.isArray(v) ? v[0] : v;
     return { requestId: randomUUID(), method: q.method as AuthHttpRequestContext["method"], path: publicAccess ? "/public/receipts/[redacted]" : q.path, headers, cookies: parseCookieHeader(headers.cookie), session: publicAccess ? null : await deps.resolveSession(q), ipAddress: q.ip ?? null, userAgent: headers["user-agent"] ?? null };

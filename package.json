@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
+    "security:check": "node packages/server/scripts/security/check-runtime-floor.mjs",
     "seed:cadence-history": "npm run seed:cadence-history --workspace @kfit/server",
     "db:generate:cadence-history": "npm run db:generate:cadence-history --workspace @kfit/server",
     "preflight:cadence-history": "npm run preflight:cadence-history --workspace @kfit/server",
@@ -51,7 +52,7 @@
     "preflight:catalogue-seed": "npm run preflight:catalogue-seed --workspace @kfit/server"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.23.4"
   },
   "devDependencies": {
     "@types/node": "^26.3.0"

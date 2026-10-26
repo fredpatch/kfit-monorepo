@@ -47,6 +47,7 @@ import { InMemoryRecoveryRateLimiter, PasswordRecoveryService } from "./modules/
 import { SensitiveActionOtpService } from "./modules/auth/services/sensitive-action-otp.service.js";
 import { createHttpLogger } from "./logging/http-logger.js";
 import { logger } from "./logging/logger.js";
+import { assertRuntimeSecurityFloor } from "./security/runtime-floor.startup.js";
 import { PrivacyController } from "./modules/privacy/controllers/privacy.controller.js";
 import { privacyPurgeJob } from "./modules/privacy/jobs/privacy-purge.job.js";
 import { DrizzlePrivacyRepository } from "./modules/privacy/repositories/privacy.repository.js";
@@ -90,6 +91,8 @@ export function createDevelopmentApp() {
 
 /** App plus the S7.2 scheduled jobs (started by scripts/dev/api-server.mjs, not by tests that only need the app). */
 export function createDevelopmentRuntime() {
+  // SEC-01 D2: before anything else; refuses production below the runtime floor, warns once elsewhere.
+  assertRuntimeSecurityFloor({ nodeEnv: process.env.NODE_ENV, log: logger });
   const authConfig = loadAuthConfig(process.env);
   const audit = new AuditService(db, { auditHashPepper: authConfig.auditHashPepper });
   const passwords = new PasswordService();

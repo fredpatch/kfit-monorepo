@@ -42,8 +42,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
+
+      # SEC-01 D3 (CVE-2026-111497): refuse a runner below the runtime security floor.
+      - name: Runtime security floor
+        run: node packages/server/scripts/security/check-runtime-floor.mjs
 
       - name: Install (lockfile must be in sync)
         run: npm ci

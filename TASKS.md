@@ -10,8 +10,8 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 ```text
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
-Active slice      FIX-02 — error-handling hardening after S7.3
-Workflow state    AWAITING_HUMAN_VALIDATION — FIX-02 delivered 2026-10-26, uncommitted
+Active slice      S7.4 — SEC-01 security floor (CVE-2026-111497)
+Workflow state    AWAITING_HUMAN_VALIDATION — SEC-01 delivered 2026-10-26, uncommitted
 S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) — validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
 Last validated    S7.2 — validated by Fred 2026-10-25
 Implementation    2dc7c43 (S7.2a server) + 0eac6d4 (S7.2b client, UX-16)
@@ -32,7 +32,10 @@ S7.4 prereqs      CI integration DB = kfit_test (port alignment 5433 vs 5432 sti
 S7.3b-1         server read slice — validated, committed d6fdf61
 ARCH-01           archived freeze + unarchive — committed 356070a; validated live by Fred 2026-10-26
 S7.3b-2           privacy client — validated live by Fred 2026-10-26, committed 544b57d
-Next action       FIX-02 error-handling hardening — delivered 2026-10-26, uncommitted → Fred: validate (sprint-7.md § FIX-02 execution); next S7.4
+FIX-02            validated, committed 8d66297 (D5 flaky kept in backlog)
+SEC-01            security floor CVE-2026-111497 — delivered 2026-10-26, uncommitted → Fred: validate (sprint-7.md § SEC-01 execution)
+S7.4 prereqs      base image pinned to an exact patched Node tag; smoke test records node --version; security:check in the image build (SEC-01 D6)
+Next action       Fred: validate SEC-01; then S7.4 Gate 1 (backup/restore + production hardening)
 Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »
 Backlog           « Flaky express unit tests (fetch failed, random test) — diagnose with the pgErrorInfo fix »
 Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser

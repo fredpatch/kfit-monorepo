@@ -45,6 +45,7 @@ import type { DevToolsController } from "./modules/dev-tools/controllers/dev-too
 import { createExpressDevToolsRouter } from "./modules/dev-tools/routes/express-dev-tools.router.js";
 import type { QuestionnaireController } from "./modules/questionnaires/controllers/questionnaire.controller.js";
 import { createExpressQuestionnaireRouter } from "./modules/questionnaires/routes/express-questionnaire.router.js";
+import { rejectEncodedRequestBodies } from "./security/reject-encoded-request-bodies.js";
 
 export type ServerAppDeps = {
   /** Mounted before every route, so each request is logged once it finishes. */
@@ -81,6 +82,8 @@ export function createServerApp(deps: ServerAppDeps): Express {
 
   app.disable("x-powered-by");
   if (deps.requestLogger) app.use(deps.requestLogger);
+  // SEC-01 D4 (CVE-2026-111497): before every body parser, including the routers' raw() uploads.
+  app.use(rejectEncodedRequestBodies);
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/health", (_request, response) => {

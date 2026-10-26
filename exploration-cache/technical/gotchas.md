@@ -89,3 +89,10 @@ Category: Tests.
 - POL-01 incident (2026-10-25): integration tests and the dev API shared kfit_dev. The dev jobs (notifications reconcile, delivery, privacy purge) wrote rows on live test fixtures, so cleanups failed on FKs.
 - Result: 58 leaked subscriptions and a published synthetic consent text stayed in kfit_dev until a manual, id-scoped delete.
 - Rule: integration = kfit_test only (localhost:5433/kfit_test, root `.env.test`, `npm run db:test:prepare`). The single guard is `assertLocalTestDatabase` in src/testing/integration-fixtures.ts; the dev API refuses to start on kfit_test.
+
+## Security: runtime floor (SEC-01)
+
+Category: Security.
+- CVE-2026-111497 (published 2026-10-22): Node's Brotli decoder has an out-of-bounds write; patched in 22.23.4, 24.22.1, 26.12.1.
+- Express 5 / body-parser 2.x decode `Content-Encoding: br` (and gzip/deflate) request bodies by default; the API now answers 415 REQUEST_ENCODING_UNSUPPORTED to any request body encoding other than identity, before every parser.
+- The runtime floor is enforced by the security-floor registry (packages/server/src/security/security-floor.ts): startup refuses production below it, CI and `npm run security:check` fail below it. A new runtime advisory = one registry entry.

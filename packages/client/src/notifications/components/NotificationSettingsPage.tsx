@@ -6,6 +6,7 @@ import {
   notificationKinds,
   notificationSettingKeys,
   notificationSettingRegistry,
+  privacyPurgeDelayDaysKey,
   reminderDaysKey,
   type NotificationSettingDefinition,
   type NotificationSettingKey,
@@ -14,6 +15,8 @@ import {
 import { AdminPage } from "../../app/layout/AdminPage.js";
 import { Button } from "../../components/ui/button.js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card.js";
+import { Field } from "../../components/ui/field.js";
+import { Input } from "../../components/ui/input.js";
 import { Switch } from "../../components/ui/switch.js";
 import { dateTimeFr } from "../../lib/format.js";
 import { notificationErrorMessage, notificationKeys, notificationsApi } from "../api/notifications-api.js";
@@ -75,6 +78,8 @@ export function NotificationSettingsPage() {
 
   const set = (key: NotificationSettingKey, value: boolean | number) => setDraft((current) => (current ? { ...current, [key]: value } : current));
   const emailOn = draft?.["notifications.email.enabled"] === true;
+  const purgeDelay = draft?.[privacyPurgeDelayDaysKey], purgeBounds = range(privacyPurgeDelayDaysKey);
+  const purgeDelayValid = typeof purgeDelay === "number" && Number.isInteger(purgeDelay) && purgeDelay >= purgeBounds.min && purgeDelay <= purgeBounds.max;
 
   return (
     <AdminPage
@@ -168,6 +173,33 @@ export function NotificationSettingsPage() {
                   </SettingRow>
                 );
               })}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Confidentialité</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* S7.3b-2 D9: the only privacy key of the registry; saved with the rest of the page. */}
+              <Field
+                label={definition(privacyPurgeDelayDaysKey).label}
+                hint="Les fichiers d'un client anonymisé sont supprimés définitivement après ce délai."
+                error={purgeDelayValid ? undefined : `Saisis un nombre entier de jours, de ${purgeBounds.min} à ${purgeBounds.max}.`}
+              >
+                {(control) => (
+                  <Input
+                    {...control}
+                    type="number"
+                    inputMode="numeric"
+                    min={purgeBounds.min}
+                    max={purgeBounds.max}
+                    step={1}
+                    className="w-28"
+                    value={Number.isNaN(purgeDelay) ? "" : String(purgeDelay)}
+                    onChange={(event) => set(privacyPurgeDelayDaysKey, event.target.value === "" ? Number.NaN : Number(event.target.value))}
+                  />
+                )}
+              </Field>
             </CardContent>
           </Card>
           {query.data?.updatedAt ? <p className="text-xs text-muted-foreground">Dernière modification : {dateTimeFr(query.data.updatedAt)}</p> : null}

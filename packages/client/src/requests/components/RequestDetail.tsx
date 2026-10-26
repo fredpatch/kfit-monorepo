@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "react-router";
 import { toast } from "sonner";
 import { ArrowLeft, Check, Clock, MessageCircle, MoreHorizontal, PhoneCall } from "lucide-react";
-import { adminRequestAllowedTransitions, type AdminServiceRequestDetail, type ServiceRequestStatus } from "@kfit/shared";
+import { adminRequestAllowedTransitions, prospectPrivacyMenu, subjectMode, type AdminServiceRequestDetail, type PrivacyMenuAction, type ServiceRequestStatus } from "@kfit/shared";
+import { AnonymizeDialog, ArchiveDialog, PrivacyMenuItems, UnarchiveDialog, usePrivacyDialog } from "../../privacy/components/SubjectPrivacyDialogs.js";
 import { adminRequestsApiClient } from "../api/admin-requests-api.js";
 import { extractRequestErrorCode, translateRequestError } from "../lib/request-error-messages.js";
 import { channelLabels, directionLabels, outcomeLabels, qualificationOutcomeLabels, requestSteps, transitionLabels, waitlistEntryStatusLabels } from "../lib/request-labels.js";
@@ -79,6 +80,7 @@ export function RequestDetail({ requestId, onBack }: { requestId: string; onBack
   const query = useQuery({ queryKey: ["requests", "admin-detail", requestId], queryFn: () => adminRequestsApiClient.getDetail(requestId) });
   const refresh = useRequestRefresh(requestId);
   const [open, setOpen] = useState<Action | null>(null);
+  const privacyDialog = usePrivacyDialog<PrivacyMenuAction>();
 
   if (query.isPending) return <p role="status" className="p-6 text-sm text-muted-foreground">Chargement de la demande…</p>;
   if (query.isError) {
@@ -92,10 +94,14 @@ export function RequestDetail({ requestId, onBack }: { requestId: string; onBack
 
   const request = query.data.request;
   const step = nextStep(request);
-  const allowed = adminRequestAllowedTransitions[request.status] ?? [];
+  // S7.3b-2 D8: an archived or anonymized prospect is frozen (ARCH-01): no decision is offered, only its privacy actions.
+  const mode = subjectMode(request.prospect.privacy);
+  const frozen = mode !== "active";
+  const privacyMenu = prospectPrivacyMenu(request.prospect.privacy);
+  const allowed = frozen ? [] : adminRequestAllowedTransitions[request.status] ?? [];
   const activeWaitlist = request.waitlistEntries.find((e) => e.status === "active" && e.leftAt === null);
-  const canWaitlist = ["submitted", "contacting", "qualification_in_progress"].includes(request.status) && !activeWaitlist;
-  const canWithdraw = Boolean(activeWaitlist) && request.status === "waitlisted";
+  const canWaitlist = !frozen && ["submitted", "contacting", "qualification_in_progress"].includes(request.status) && !activeWaitlist;
+  const canWithdraw = !frozen && Boolean(activeWaitlist) && request.status === "waitlisted";
   // « ⋯ » holds every other allowed decision; abandon and withdraw are destructive and confirmed.
   const menu: Action[] = [
     ...allowed.filter((t) => t !== step.primary && t !== "abandoned"),
@@ -140,22 +146,26 @@ export function RequestDetail({ requestId, onBack }: { requestId: string; onBack
             <h2 className="text-xl font-extrabold leading-tight">{request.prospect.fullName}</h2>
             <StatusPill size="sm" status={requestStatus[request.status]} />
             {request.duplicateOfRequestId ? <StatusPill size="sm" status={{ label: "Doublon possible", tone: "warning" }} /> : null}
+            {mode === "archived" ? <StatusPill size="sm" status={{ label: "Prospect archivé", tone: "neutral" }} /> : null}
+            {mode === "anonymized" ? <StatusPill size="sm" status={{ label: "Prospect anonymisé", tone: "warning" }} /> : null}
           </span>
           <span className="text-[13px] text-muted-foreground tabular-nums">
-            {request.reference} · {request.prospect.whatsapp}
-            {request.prospect.email ? ` · ${request.prospect.email}` : ""} · reçue le {dateTimeFr(request.submittedAt)}
+            {request.reference}
+            {mode === "anonymized" ? "" : ` · ${request.prospect.whatsapp}${request.prospect.email ? ` · ${request.prospect.email}` : ""}`} · reçue le {dateTimeFr(request.submittedAt)}
           </span>
         </div>
         <div className="flex gap-2">
-          <Button asChild variant="secondary" size="sm" className="h-9">
-            <a href={waLink(request.prospect.whatsapp)} target="_blank" rel="noopener noreferrer">
-              <MessageCircle /> WhatsApp
-            </a>
-          </Button>
-          {menu.length + destructiveMenu.length > 0 ? (
+          {mode === "anonymized" ? null : (
+            <Button asChild variant="secondary" size="sm" className="h-9">
+              <a href={waLink(request.prospect.whatsapp)} target="_blank" rel="noopener noreferrer">
+                <MessageCircle /> WhatsApp
+              </a>
+            </Button>
+          )}
+          {menu.length + destructiveMenu.length + privacyMenu.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="secondary" size="icon-sm" className="size-9" aria-label="Autres décisions">
+                <Button ref={privacyDialog.trigger} variant="secondary" size="icon-sm" className="size-9" aria-label={frozen ? "Actions sur le prospect" : "Autres décisions"}>
                   <MoreHorizontal />
                 </Button>
               </DropdownMenuTrigger>
@@ -167,6 +177,7 @@ export function RequestDetail({ requestId, onBack }: { requestId: string; onBack
                     {destructiveMenu.map((a) => <DropdownMenuItem key={a} destructive onSelect={() => run(a)}>{labelOf(a)}</DropdownMenuItem>)}
                   </>
                 ) : null}
+                <PrivacyMenuItems menu={privacyMenu} subjectType="prospect" onSelect={privacyDialog.open} separatorBefore={menu.length > 0 && destructiveMenu.length === 0} />
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
@@ -181,8 +192,8 @@ export function RequestDetail({ requestId, onBack }: { requestId: string; onBack
           <span className="text-[13px] text-muted-foreground">{step.detail}</span>
         </span>
         <span className="flex flex-wrap gap-2">
-          {step.secondary ? <Button variant="secondary" onClick={() => run(step.secondary!)}><PhoneCall /> {labelOf(step.secondary)}</Button> : null}
-          {step.primary ? <Button onClick={() => run(step.primary!)}>{labelOf(step.primary)}</Button> : null}
+          {step.secondary && !frozen ? <Button variant="secondary" onClick={() => run(step.secondary!)}><PhoneCall /> {labelOf(step.secondary)}</Button> : null}
+          {step.primary && !frozen ? <Button onClick={() => run(step.primary!)}>{labelOf(step.primary)}</Button> : null}
           {request.status === "converted" && request.convertedSubscriptionId ? (
             <Button asChild>
               <NavLink to={`/admin/abonnements/${encodeURIComponent(request.convertedSubscriptionId)}`}>Ouvrir la fiche client</NavLink>
@@ -239,7 +250,7 @@ export function RequestDetail({ requestId, onBack }: { requestId: string; onBack
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-bold">Tentatives de contact</h3>
-          {step.secondary !== "attempt" && !["converted", "rejected", "closed_duplicate"].includes(request.status) ? (
+          {!frozen && step.secondary !== "attempt" && !["converted", "rejected", "closed_duplicate"].includes(request.status) ? (
             <Button variant="ghost" size="sm" onClick={() => setOpen("attempt")}>+ Tentative</Button>
           ) : null}
         </div>
@@ -303,6 +314,9 @@ export function RequestDetail({ requestId, onBack }: { requestId: string; onBack
           toast.success("Demande retirée de la liste d'attente.");
         }}
       />
+      {privacyDialog.dialog === "archive" ? <ArchiveDialog subjectType="prospect" subjectId={request.prospect.id} name={request.prospect.fullName} onClose={privacyDialog.close} restoreFocus={privacyDialog.restoreFocus} /> : null}
+      {privacyDialog.dialog === "unarchive" ? <UnarchiveDialog subjectType="prospect" subjectId={request.prospect.id} name={request.prospect.fullName} onClose={privacyDialog.close} restoreFocus={privacyDialog.restoreFocus} /> : null}
+      {privacyDialog.dialog === "anonymize" ? <AnonymizeDialog subjectType="prospect" subjectId={request.prospect.id} name={request.prospect.fullName} activeHolds={0} onClose={privacyDialog.close} restoreFocus={privacyDialog.restoreFocus} /> : null}
     </div>
   );
 }

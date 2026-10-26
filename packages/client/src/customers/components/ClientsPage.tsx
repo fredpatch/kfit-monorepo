@@ -17,6 +17,8 @@ import { clientStatus } from "../../lib/client-status.js";
 import { familyMeta, familyOfSlug, offerFamilies } from "../../lib/families.js";
 import { dateTimeFr, relativeDaysFr } from "../../lib/format.js";
 import { NewCustomerSheet } from "./NewCustomerSheet.js";
+import { useArchivedCustomers } from "../../privacy/api/privacy-queries.js";
+import { ArchivedCustomersList } from "../../privacy/components/ArchivedCustomersList.js";
 
 const viewLabels: Record<CustomerOverviewView, string> = {
   all: "Tous",
@@ -27,6 +29,25 @@ const viewLabels: Record<CustomerOverviewView, string> = {
   former: "Anciens clients",
 };
 const viewParam: Record<CustomerOverviewView, string> = { all: "tous", active: "actifs", overdue: "en-retard", preparation: "en-preparation", paused: "en-pause", former: "anciens" };
+/** S7.3b-2 D1: archived customers are not part of the overview; this view has its own query. */
+const archivedViewParam = "archives";
+
+function ViewButton({ selected, onClick, label, count, hot }: { selected: boolean; onClick: () => void; label: string; count: number; hot: boolean }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        "-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+        selected ? "border-primary font-bold text-foreground" : "border-transparent font-semibold text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {label}
+      <span className={cn("rounded-full px-1.5 text-[11px] font-bold tabular-nums", hot ? "bg-danger-soft text-danger" : "bg-muted text-muted-foreground")}>{count}</span>
+    </button>
+  );
+}
 
 /** Flattened row for sorting / faceting. */
 type Row = AdminCustomerOverviewRow & { family: string; cadenceKey: string; lastContactMs: number; nextMs: number | undefined };
@@ -146,6 +167,8 @@ export function ClientsPage() {
   const [creating, setCreating] = useState(false);
   const query = useQuery({ queryKey: ["customers", "overview"], queryFn: () => customersApi.overview(), refetchInterval: 60_000 });
   const view = customerOverviewViews.find((v) => viewParam[v] === params.get("vue")) ?? "all";
+  const archivedView = params.get("vue") === archivedViewParam;
+  const archived = useArchivedCustomers();
 
   const rows = useMemo<Row[]>(
     () =>
@@ -162,10 +185,10 @@ export function ClientsPage() {
   const visible = useMemo(() => rows.filter((r) => r.views.includes(view)), [rows, view]);
   const counts = query.data?.counts;
 
-  const setView = (next: CustomerOverviewView) => {
+  const setView = (next: CustomerOverviewView | typeof archivedViewParam) => {
     const merged = new URLSearchParams(params);
     if (next === "all") merged.delete("vue");
-    else merged.set("vue", viewParam[next]);
+    else merged.set("vue", next === archivedViewParam ? next : viewParam[next]);
     setParams(merged, { replace: true });
   };
 
@@ -179,34 +202,23 @@ export function ClientsPage() {
         </Button>
       }
     >
-      {query.isPending ? (
-        <p role="status" className="text-sm text-muted-foreground">Chargement des clients…</p>
-      ) : query.isError ? (
-        <EmptyState title="Impossible de charger les clients" description={customerErrorMessage(query.error)} action={<Button variant="secondary" onClick={() => void query.refetch()}>Réessayer</Button>} />
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div role="group" aria-label="Vues" className="-mx-1 flex gap-1 overflow-x-auto border-b border-border px-1">
-            {customerOverviewViews.map((v) => {
-              const selected = v === view;
-              const hot = v === "overdue" && (counts?.overdue ?? 0) > 0;
-              return (
-                <button
-                  key={v}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => setView(v)}
-                  className={cn(
-                    "-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-                    selected ? "border-primary font-bold text-foreground" : "border-transparent font-semibold text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {viewLabels[v]}
-                  <span className={cn("rounded-full px-1.5 text-[11px] font-bold tabular-nums", hot ? "bg-danger-soft text-danger" : "bg-muted text-muted-foreground")}>{counts?.[v] ?? 0}</span>
-                </button>
-              );
-            })}
-          </div>
-
+      <div className="flex flex-col gap-4">
+        <div role="group" aria-label="Vues" className="-mx-1 flex gap-1 overflow-x-auto border-b border-border px-1">
+          {customerOverviewViews.map((v) => {
+            const hot = v === "overdue" && (counts?.overdue ?? 0) > 0;
+            return (
+              <ViewButton key={v} selected={!archivedView && v === view} onClick={() => setView(v)} label={viewLabels[v]} count={counts?.[v] ?? 0} hot={hot} />
+            );
+          })}
+          <ViewButton selected={archivedView} onClick={() => setView(archivedViewParam)} label="Archivés" count={archived.data?.customers.length ?? 0} hot={false} />
+        </div>
+        {archivedView ? (
+          <ArchivedCustomersList />
+        ) : query.isPending ? (
+          <p role="status" className="text-sm text-muted-foreground">Chargement des clients…</p>
+        ) : query.isError ? (
+          <EmptyState title="Impossible de charger les clients" description={customerErrorMessage(query.error)} action={<Button variant="secondary" onClick={() => void query.refetch()}>Réessayer</Button>} />
+        ) : (
           <DataTable
             key={view}
             columns={columns}
@@ -227,8 +239,8 @@ export function ClientsPage() {
             emptyDescription={view === "all" ? "Crée une fiche ou convertis une demande pour commencer." : "Change de vue ou de filtres."}
             mobileCard={(r) => <MobileCard row={r} />}
           />
-        </div>
-      )}
+        )}
+      </div>
       <NewCustomerSheet open={creating} onOpenChange={setCreating} />
     </AdminPage>
   );

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { PrivacySubjectType } from "@kfit/shared";
+import { confirmationMatches, type PrivacySubjectType } from "@kfit/shared";
 
 /*
  * S7.3 privacy policy (Gate 1 approved 2026-10-25). Pure: no I/O. Business rules are the named constants below.
@@ -31,13 +31,8 @@ export function pseudonymFor(subjectId: string): string {
 /** D2a: WhatsApp placeholder (the column stays NOT NULL). */
 export const whatsappPlaceholderFor = (subjectId: string) => `anon-${subjectId}`;
 
-/** D9: trim + Unicode NFC + collapsed inner whitespace, case-sensitive. */
-export function normalizeConfirmName(value: string): string {
-  return value.normalize("NFC").trim().replace(/\s+/gu, " ");
-}
-export function confirmationMatches(typed: string, displayedName: string): boolean {
-  return normalizeConfirmName(typed) === normalizeConfirmName(displayedName);
-}
+/** D9: the confirmation rule lives in @kfit/shared so the client dialog enables exactly what this accepts (S7.3b-2 D5). */
+export { confirmationMatches, normalizeConfirmName } from "@kfit/shared";
 
 export function purgeAfter(anonymizedAt: Date, delayDays: number): Date {
   return new Date(anonymizedAt.getTime() + delayDays * 86_400_000);

@@ -25,3 +25,4 @@ export * from "./payment-proofs/contracts.js";
 export * from "./receipts/contracts.js";
 export * from "./notifications/contracts.js";
 export * from "./privacy/contracts.js";
+export * from "./privacy/subject-view.js";

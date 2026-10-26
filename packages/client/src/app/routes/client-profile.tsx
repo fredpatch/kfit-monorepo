@@ -2,9 +2,24 @@ import { lazy, Suspense, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NavLink, useParams, useSearchParams } from "react-router";
 import { isAxiosError } from "axios";
-import { Mail, MapPin, MessageCircle, Phone, Plus } from "lucide-react";
-import { consentScopeAllows, customerAnalyticsPeriods, isOpenSubscription, type AdminCustomerSubscriptionSummary, type CustomerAnalyticsPeriod } from "@kfit/shared";
+import { Archive, Mail, MapPin, MessageCircle, MoreHorizontal, Phone, Plus } from "lucide-react";
+import {
+  consentScopeAllows,
+  customerAnalyticsPeriods,
+  customerPrivacyMenu,
+  ficheReadOnly,
+  ficheTabVisibility,
+  isOpenSubscription,
+  subjectMode,
+  type AdminCustomerSubscriptionSummary,
+  type CustomerAnalyticsPeriod,
+  type PrivacyMenuAction,
+  type RetentionHoldItem,
+} from "@kfit/shared";
 import { customersApi } from "../../customers/api/customers-api.js";
+import { AddHoldDialog, CustomerHoldsCard, ReleaseHoldDialog } from "../../privacy/components/CustomerHoldsCard.js";
+import { AnonymizeDialog, ArchiveDialog, PrivacyMenuItems, UnarchiveDialog, usePrivacyDialog } from "../../privacy/components/SubjectPrivacyDialogs.js";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../../components/ui/dropdown-menu.js";
 import { isOnboardingEditable } from "../../profile/preparation/editable.js";
 import { OverviewTab } from "../../profile/overview/OverviewTab.js";
 import { Avatar } from "../../components/ui/avatar.js";
@@ -52,6 +67,13 @@ const tabAliases: Record<string, ProfileTab> = { finance: "paiements", devis: "p
 
 const waLink = (phone: string) => `https://wa.me/${phone.replace(/[^0-9]/g, "")}`;
 
+type FicheDialog = { kind: PrivacyMenuAction } | { kind: "release"; hold: RetentionHoldItem };
+
+/** S7.3b-2 D2: one native boundary disables every write control of the tabs; links and tab switching stay usable. */
+function ReadOnlyFiche({ readOnly, children }: { readOnly: boolean; children: React.ReactNode }) {
+  return <fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0">{children}</fieldset>;
+}
+
 function SubscriptionChip({ subscription, selected, onSelect }: { subscription: AdminCustomerSubscriptionSummary; selected: boolean; onSelect: () => void }) {
   const family = familyOfSlug(subscription.serviceSlug);
   const status = describeStatus(subscriptionStatus, subscription.status);
@@ -82,6 +104,7 @@ export function ClientProfilePage() {
   const [params, setParams] = useSearchParams();
   const valid = uuidPattern.test(id);
   const query = useQuery({ queryKey: ["customers", "detail", id], queryFn: () => customersApi.detail(id), enabled: valid });
+  const privacyDialog = usePrivacyDialog<FicheDialog>();
 
   const subscriptions = query.data?.subscriptions ?? [];
   const requested = params.get("abonnement");
@@ -139,11 +162,17 @@ export function ClientProfilePage() {
     );
   }
 
-  const { customer } = query.data;
+  const { customer, privacy } = query.data;
   const clientStatus = deriveClientStatus(subscriptions);
   // POL-01 D2: the header keeps the most advanced subscription; a count tells several are open.
   const openSubscriptions = subscriptions.filter((s) => isOpenSubscription(s.status)).length;
   const place = [customer.city, customer.country].filter(Boolean).join(", ");
+  const mode = subjectMode(privacy);
+  const readOnly = ficheReadOnly(mode);
+  const shownTab: ProfileTab = ficheTabVisibility(mode, tab) === "hidden" ? "apercu" : tab;
+  const { dialog, open: openDialog, close: closeDialog, restoreFocus, trigger } = privacyDialog;
+  const erasedOn = privacy.anonymizedAt ? dateFr(privacy.anonymizedAt) : "";
+  const erased = (value: ProfileTab) => ficheTabVisibility(mode, value) === "erased";
 
   return (
     <AdminPage
@@ -169,20 +198,24 @@ export function ClientProfilePage() {
                 <span tabIndex={0} className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"><StatusPill status={clientStatus} /></span>
               </Tooltip>
               {openSubscriptions > 1 ? <Pill tone="neutral" dot={false}>{openSubscriptions} abonnements ouverts</Pill> : null}
+              {mode === "anonymized" ? <Pill tone="warning">Anonymisé</Pill> : null}
             </div>
+            {/* S7.3b-2 D6: an anonymized customer keeps no contact line. */}
             <ul className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-muted-foreground">
-              <li className="flex items-center gap-1.5 tabular-nums">
-                <Phone className="size-3.5" aria-hidden="true" />
-                {customer.whatsapp}
-                {customer.preferredContactChannel === "whatsapp" ? " · WhatsApp préféré" : ""}
-              </li>
-              {customer.email ? (
+              {customer.whatsapp && mode !== "anonymized" ? (
+                <li className="flex items-center gap-1.5 tabular-nums">
+                  <Phone className="size-3.5" aria-hidden="true" />
+                  {customer.whatsapp}
+                  {customer.preferredContactChannel === "whatsapp" ? " · WhatsApp préféré" : ""}
+                </li>
+              ) : null}
+              {customer.email && mode !== "anonymized" ? (
                 <li className="flex items-center gap-1.5">
                   <Mail className="size-3.5" aria-hidden="true" />
                   {customer.email}
                 </li>
               ) : null}
-              {place ? (
+              {place && mode !== "anonymized" ? (
                 <li className="flex items-center gap-1.5">
                   <MapPin className="size-3.5" aria-hidden="true" />
                   {place}
@@ -192,7 +225,7 @@ export function ClientProfilePage() {
             </ul>
           </div>
           <div className="flex flex-wrap gap-2">
-            {customer.whatsapp ? (
+            {customer.whatsapp && mode !== "anonymized" ? (
               <Button asChild variant="whatsapp">
                 <a href={waLink(customer.whatsapp)} target="_blank" rel="noreferrer">
                   <MessageCircle aria-hidden="true" />
@@ -200,6 +233,16 @@ export function ClientProfilePage() {
                 </a>
               </Button>
             ) : null}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button ref={trigger} variant="secondary" size="icon" aria-label="Autres actions sur la fiche">
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <PrivacyMenuItems menu={customerPrivacyMenu(privacy)} subjectType="customer" onSelect={(kind) => openDialog({ kind })} />
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -208,28 +251,46 @@ export function ClientProfilePage() {
           {subscriptions.map((s) => (
             <SubscriptionChip key={s.id} subscription={s} selected={s.id === selected?.id} onSelect={() => update({ abonnement: s.id })} />
           ))}
-          <Tooltip content="Création depuis la fiche : bientôt. Pour l'instant, convertis une demande.">
-            <span>
-              <Button variant="secondary" size="sm" className="border-dashed" disabled>
-                <Plus aria-hidden="true" />
-                Nouvel abonnement
-              </Button>
-            </span>
-          </Tooltip>
+          {readOnly ? null : (
+            <Tooltip content="Création depuis la fiche : bientôt. Pour l'instant, convertis une demande.">
+              <span>
+                <Button variant="secondary" size="sm" className="border-dashed" disabled>
+                  <Plus aria-hidden="true" />
+                  Nouvel abonnement
+                </Button>
+              </span>
+            </Tooltip>
+          )}
         </div>
       </section>
 
-        <Tabs value={tab} onValueChange={(value) => update({ onglet: value })}>
+      {mode === "archived" && privacy.archivedAt ? (
+        <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-muted px-4 py-3">
+          <Archive className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <p className="min-w-0 flex-[1_1_220px] text-sm font-semibold">Client archivé le {dateFr(privacy.archivedAt)} · fiche en lecture seule.</p>
+          {privacy.unarchivable ? <Button variant="secondary" size="sm" onClick={() => openDialog({ kind: "unarchive" })}>Désarchiver…</Button> : null}
+        </div>
+      ) : null}
+      {mode === "anonymized" ? (
+        <div role="status" className="flex items-center gap-3 rounded-xl border border-border bg-muted px-4 py-3">
+          <Archive className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <p className="text-sm font-semibold">Données effacées le {erasedOn}. Les paiements, devis et reçus sont conservés.</p>
+        </div>
+      ) : null}
+      <CustomerHoldsCard customerId={id} onRelease={(hold) => openDialog({ kind: "release", hold })} />
+
+        <Tabs value={shownTab} onValueChange={(value) => update({ onglet: value })}>
           <TabsList aria-label="Sections de la fiche" className="overflow-x-auto">
-            {profileTabs.map((t) => (
+            {profileTabs.filter((t) => ficheTabVisibility(mode, t.value) !== "hidden").map((t) => (
               <TabsTrigger key={t.value} value={t.value}>
                 {t.label}
                 {t.value === "paiements" && selected ? <PendingProofsBadge subscriptionId={selected.id} /> : null}
               </TabsTrigger>
             ))}
           </TabsList>
+          <ReadOnlyFiche readOnly={readOnly}>
           {!selected ? (
-            <TabsContent value={tab}>
+            <TabsContent value={shownTab}>
               <EmptyState
                 title={tab === "documents" ? "Documents indisponibles" : "Aucun abonnement"}
                 description={tab === "documents"
@@ -270,14 +331,18 @@ export function ClientProfilePage() {
             </Suspense>
           </TabsContent>
           <TabsContent value="progression">
-            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement de la progression…</p>}>
-              <ProgressTab key={selected.id} subscriptionId={selected.id} />
-            </Suspense>
+            {erased("progression") ? <ErasedTab on={erasedOn} /> : (
+              <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement de la progression…</p>}>
+                <ProgressTab key={selected.id} subscriptionId={selected.id} />
+              </Suspense>
+            )}
           </TabsContent>
           <TabsContent value="documents">
-            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement des documents…</p>}>
-              <DocumentsTab key={selected.id} subscriptionId={selected.id} />
-            </Suspense>
+            {erased("documents") ? <ErasedTab on={erasedOn} /> : (
+              <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement des documents…</p>}>
+                <DocumentsTab key={selected.id} subscriptionId={selected.id} />
+              </Suspense>
+            )}
           </TabsContent>
           <TabsContent value="paiements">
             <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement des paiements…</p>}>
@@ -285,14 +350,28 @@ export function ClientProfilePage() {
             </Suspense>
           </TabsContent>
           <TabsContent value="sante">
-            <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement…</p>}>
-              <HealthTab key={selected.id} subscriptionId={selected.id} editable={isOnboardingEditable(selected.status)} optionalEditable={consentScopeAllows("optional", selected.status)} />
-            </Suspense>
+            {erased("sante") ? <ErasedTab on={erasedOn} /> : (
+              <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement…</p>}>
+                <HealthTab key={selected.id} subscriptionId={selected.id} editable={isOnboardingEditable(selected.status)} optionalEditable={consentScopeAllows("optional", selected.status)} />
+              </Suspense>
+            )}
           </TabsContent>
           </>}
+          </ReadOnlyFiche>
         </Tabs>
+
+      {dialog?.kind === "archive" ? <ArchiveDialog subjectType="customer" subjectId={id} name={customer.fullName} onClose={closeDialog} restoreFocus={restoreFocus} /> : null}
+      {dialog?.kind === "unarchive" ? <UnarchiveDialog subjectType="customer" subjectId={id} name={customer.fullName} onClose={closeDialog} restoreFocus={restoreFocus} /> : null}
+      {dialog?.kind === "anonymize" ? <AnonymizeDialog subjectType="customer" subjectId={id} name={customer.fullName} activeHolds={privacy.activeHolds} onClose={closeDialog} restoreFocus={restoreFocus} /> : null}
+      {dialog?.kind === "add_hold" ? <AddHoldDialog customerId={id} onClose={closeDialog} restoreFocus={restoreFocus} /> : null}
+      {dialog?.kind === "release" ? <ReleaseHoldDialog hold={dialog.hold} onClose={closeDialog} restoreFocus={restoreFocus} /> : null}
     </AdminPage>
   );
+}
+
+/** S7.3b-2 D6: health, progress and document data are erased by anonymization (S7.3 D2). */
+function ErasedTab({ on }: { on: string }) {
+  return <EmptyState title={`Données effacées le ${on}`} description="Ces informations ont été supprimées lors de l'anonymisation du client." />;
 }
 
 /** Count of payment proofs waiting for the coach (board 15a tab badge). Shares the proof list query of the tab. */

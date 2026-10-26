@@ -1,5 +1,5 @@
 import axios, { AxiosHeaders } from "axios";
-import { adminCustomersApiRoutes, authCsrfHeaderName, type AdminCustomerDetailResponse, type AdminCustomerOverviewResponse, type AdminCustomersResponse, type CreateCustomerInput, type CreateCustomerResponse,
+import { adminCustomersApiRoutes, authCsrfHeaderName, type AdminArchivedCustomersResponse, type AdminCustomerDetailResponse, type AdminCustomerOverviewResponse, type AdminCustomersResponse, type CreateCustomerInput, type CreateCustomerResponse,
   type CustomerAnalyticsPeriod, type CustomerAnalyticsResponse } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
 
@@ -24,6 +24,10 @@ export const customersApi = {
   },
   async search(whatsapp: string): Promise<AdminCustomersResponse> {
     return (await http.get<AdminCustomersResponse>(adminCustomersApiRoutes.search, { params: { whatsapp } })).data;
+  },
+  /** Archived and anonymized customers (S7.3b-1 D2), archivedAt desc. */
+  async archived(): Promise<AdminArchivedCustomersResponse> {
+    return (await http.get<AdminArchivedCustomersResponse>(adminCustomersApiRoutes.archived)).data;
   },
   async detail(customerId: string): Promise<AdminCustomerDetailResponse> {
     return (await http.get<AdminCustomerDetailResponse>(adminCustomersApiRoutes.detail.replace(":customerId", encodeURIComponent(customerId)))).data;

@@ -29,7 +29,9 @@ Backlog (V1.1)    « RDV à clôturer dans À traiter » (POL-01 D8: display-onl
 S7.4 prereqs      production guard: refuse production start if any published consent definition title contains « DÉMONSTRATION » (D9, not implemented)
 S7.4 prereqs      CI integration DB = kfit_test (port alignment 5433 vs 5432 still open)
 S7.3b-1         server read slice — validated, committed d6fdf61
-Next action       ARCH-01 archived freeze + unarchive — delivered and committed 2026-10-26 → Fred: validate (sprint-7.md § ARCH-01 execution); then S7.3b-2 client
+ARCH-01           archived freeze + unarchive — committed 356070a; live validation together with S7.3b-2
+S7.3b-2           privacy client — delivered 2026-10-26, uncommitted (sprint-7.md § S7.3b-2 execution)
+Next action       Fred: validate S7.3b-2 + ARCH-01 live; then S7.3 ready to close
 Backlog           « Flaky express unit tests (fetch failed, random test) — diagnose with the pgErrorInfo fix »
 Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser
 

@@ -25,6 +25,7 @@ import {
   type CatalogueVariantWrite,
   type DeliverabilityInput,
 } from "../services/catalogue-content.policy.js";
+import { isPgUniqueViolation } from "../../../db/pg-error.js";
 
 type Database = typeof appDb;
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -44,13 +45,6 @@ const variantFields = ["name", "slug", "priceXaf", "durationValue", "durationUni
 const componentFields = ["componentType", "label", "quantity", "isMandatory", "consumptionPolicy"] as const;
 const rulesFields = ["followUpFrequencyDays", "lateCancelNoticeHours", "lateCancelConsumesComponent", "missedConsumesComponent", "medicalClearancePolicy"] as const;
 
-function isUniqueViolation(error: unknown): boolean {
-  for (let current: unknown = error; current && typeof current === "object"; current = (current as { cause?: unknown }).cause) {
-    if ((current as { code?: unknown }).code === "23505") return true;
-    if ((current as { cause?: unknown }).cause === current) break;
-  }
-  return false;
-}
 function variantDto(row: typeof serviceVariants.$inferSelect): CatalogueAdminVariant {
   return { id: row.id, serviceId: row.serviceId, name: row.name, slug: row.slug, priceXaf: row.priceXaf, durationValue: row.durationValue,
     durationUnit: row.durationUnit as CatalogueDurationUnit | null, capacityLimit: row.capacityLimit, availabilityStatus: row.availabilityStatus as CatalogueAvailabilityStatus,
@@ -100,7 +94,7 @@ export class DrizzleCatalogueContentRepository {
     return variant;
   }
   private async withSlugGuard<T>(work: () => Promise<CatalogueContentResult<T>>): Promise<CatalogueContentResult<T>> {
-    try { return await work(); } catch (error) { if (isUniqueViolation(error)) return fail("variant_slug_conflict"); throw error; }
+    try { return await work(); } catch (error) { if (isPgUniqueViolation(error)) return fail("variant_slug_conflict"); throw error; }
   }
 
   createVariant(serviceId: string, input: CatalogueVariantWrite, actor: CatalogueContentActor): Promise<CatalogueContentResult<CatalogueAdminVariant>> {

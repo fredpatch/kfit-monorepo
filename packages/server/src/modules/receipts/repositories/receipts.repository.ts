@@ -13,15 +13,11 @@ import { createDocumentBearer, hashDocumentBearer } from "../../documents/servic
 import { quoteYear } from "../../quotes/services/quote-snapshot.js";
 import { receiptFailure, ReceiptDomainError, type ReceiptActor, type ReceiptArtifacts, type ReceiptCommand, type ReceiptResult, type ReceiptsRepository } from "../services/receipts.types.js";
 import { buildReceiptSnapshot, readReceiptSnapshot, receiptNumber, correctionOf, publicReceipt } from "../services/receipt-snapshot.js";
+import { pgErrorInfo } from "../../../db/pg-error.js";
 type Database = typeof appDb;
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type Row = typeof receipts.$inferSelect;
 type Token = typeof secureAccessTokens.$inferSelect;
-function dbCode(error: unknown): { code: string; constraint: string } | null {
-  if (!error || typeof error !== "object") return null;
-  if ("code" in error && typeof error.code === "string") return { code: error.code, constraint: "constraint" in error && typeof error.constraint === "string" ? error.constraint : "" };
-  return "cause" in error && error.cause !== error ? dbCode(error.cause) : null;
-}
 export class DrizzleReceiptsRepository implements ReceiptsRepository {
   private readonly finance: DrizzleFinanceRepository;
   constructor(private readonly database: Database, private readonly options: { auditHashPepper: string; tokenPepper: string }, private readonly artifacts: ReceiptArtifacts, private readonly clock: () => Date = () => new Date()) {
@@ -176,7 +172,7 @@ export class DrizzleReceiptsRepository implements ReceiptsRepository {
       if (key) await this.artifacts.remove(key);
       if (error instanceof ReceiptDomainError) return receiptFailure(error.code);
       if (error instanceof FinanceInvariantError) return receiptFailure("RECEIPT_INVALID_PAYMENT");
-      const failure = dbCode(error);
+      const failure = pgErrorInfo(error);
       if (failure?.code === "23505") return receiptFailure(failure.constraint === "receipts_number_uq" ? "RECEIPT_NUMBER_CONFLICT" : "RECEIPT_ALREADY_EXISTS");
       if (failure?.code === "40001" || failure?.code === "40P01") return receiptFailure("RECEIPT_CONCURRENCY_CONFLICT");
       throw error;

@@ -12,12 +12,12 @@ import { FinanceService } from "../../finance/services/finance.service.js";
 import { FinanceInvariantError } from "../../finance/services/finance.policy.js";
 import { createDocumentBearer, hashDocumentBearer } from "../../documents/services/document-token.crypto.js";
 import { proofFailure, proofLineage, type ProofActor, type ProofCommand, type ProofResult, type ProofStorage, type PaymentProofsRepository } from "../services/payment-proofs.types.js";
+import { pgErrorInfo } from "../../../db/pg-error.js";
 type Database = typeof appDb;
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type Proof = typeof paymentProofs.$inferSelect;
 type Token = typeof secureAccessTokens.$inferSelect;
 const scope = { resourceType: "subscription", action: "payment_proof_upload" };
-function databaseCode(error: unknown): string | null { return error && typeof error === "object" ? "code" in error && typeof error.code === "string" ? error.code : "cause" in error && error.cause !== error ? databaseCode(error.cause) : null : null; }
 export class DrizzlePaymentProofsRepository implements PaymentProofsRepository {
   private readonly finance: DrizzleFinanceRepository;
   constructor(private readonly database: Database, private readonly options: { auditHashPepper: string; tokenPepper: string }, private readonly storage: Pick<ProofStorage, "read">, private readonly clock: () => Date = () => new Date()) {
@@ -169,7 +169,7 @@ export class DrizzlePaymentProofsRepository implements PaymentProofsRepository {
       });
     } catch (error) {
       if (error instanceof FinanceInvariantError) return proofFailure("PAYMENT_PROOF_FINANCE_CONFLICT");
-      const code = databaseCode(error);
+      const code = pgErrorInfo(error)?.code;
       if (code === "23505" || code === "40001" || code === "40P01") return proofFailure("PAYMENT_PROOF_REVIEW_CONFLICT");
       throw error;
     }

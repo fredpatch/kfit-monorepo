@@ -29,12 +29,12 @@ export function PublicDocumentPage() {
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const meta = useQuery({ queryKey: ["public-document", token], queryFn: () => documentsApi.publicMeta(token), enabled: Boolean(token), retry: false });
-  const verify = useMutation({ mutationFn: () => documentsApi.verify(token, code), onSuccess: () => { setVerified(true); setError(null); }, onError: (e) => setError(documentErrorMessage(e)) });
-  const download = useMutation({ mutationFn: () => documentsApi.publicDownload(token), onSuccess: (b) => { save(b); setError(null); }, onError: (e) => setError(documentErrorMessage(e)) });
+  const verify = useMutation({ mutationFn: () => documentsApi.verify(token, code), onSuccess: () => { setVerified(true); setError(null); }, onError: (e) => setError(documentErrorMessage(e, "public")) });
+  const download = useMutation({ mutationFn: () => documentsApi.publicDownload(token), onSuccess: (b) => { save(b); setError(null); }, onError: (e) => setError(documentErrorMessage(e, "public")) });
 
   const tag = "Document personnel";
   if (meta.isPending) return <PublicLoading label="Chargement du document…" tag={tag} />;
-  if (meta.isError || !meta.data) return <PublicUnavailable title="Lien indisponible" message={documentErrorMessage(meta.error)} tag={tag} />;
+  if (meta.isError || !meta.data) return <PublicUnavailable title="Lien indisponible" message={documentErrorMessage(meta.error, "public")} tag={tag} />;
 
   const d = meta.data.document;
   const needsCode = d.requiresVerification && !verified;

@@ -42,7 +42,7 @@ function Content({ token, queryId }: { token: string; queryId: string }) {
     inFlight.current = true; setBusy(true); setError(null);
     void appointmentsApi.publicSubmit(token, { action, ...(action === "request_reschedule" ? { rescheduleNote: note } : {}) })
       .then(() => { setConfirmDecline(false); setSubmitted(action); })
-      .catch(async (failure) => { setError(appointmentErrorMessage(failure)); setConfirmDecline(false); await query.refetch(); })
+      .catch(async (failure) => { setError(appointmentErrorMessage(failure, "public")); setConfirmDecline(false); await query.refetch(); })
       .finally(() => { inFlight.current = false; setBusy(false); });
   }
 
@@ -58,7 +58,7 @@ function Content({ token, queryId }: { token: string; queryId: string }) {
     );
   }
   if (query.isPending) return <PublicLoading label="Chargement du rendez-vous…" tag="Rendez-vous" />;
-  if (query.isError || !query.data) return <PublicUnavailable title="Rendez-vous indisponible" message={appointmentErrorMessage(query.error)} tag="Rendez-vous" />;
+  if (query.isError || !query.data) return <PublicUnavailable title="Rendez-vous indisponible" message={appointmentErrorMessage(query.error, "public")} tag="Rendez-vous" />;
 
   const a = query.data.appointment;
   const actions = a.availableActions;

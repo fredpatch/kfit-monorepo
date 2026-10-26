@@ -14,6 +14,11 @@ export class SubjectArchivedError extends Error {
   }
 }
 
+/** FIX-02 D3: a public access event records the freeze code (CUSTOMER_ARCHIVED / PROSPECT_ARCHIVED), not an unexpected failure. */
+export function accessFailureResult(error: unknown, unexpected: string): string {
+  return error instanceof SubjectArchivedError ? error.code : unexpected;
+}
+
 export type CustomerWriteScope = { customerId: string } | { subscriptionId: string };
 export type ProspectWriteScope = { prospectId: string } | { requestId: string };
 

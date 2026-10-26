@@ -9,16 +9,10 @@ import type {
   RequestsRepository,
   ServiceAvailabilityRecord,
 } from "../services/requests.service.js";
+import { isPgUniqueViolation } from "../../../db/pg-error.js";
 
 type RequestsDb = typeof appDb;
 
-function isUniqueViolation(error: unknown, constraint?: string): boolean {
-  if (typeof error !== "object" || error === null || !("code" in error)) return false;
-  const pgError = error as { code?: unknown; constraint?: unknown };
-  if (pgError.code !== "23505") return false;
-  if (!constraint) return true;
-  return pgError.constraint === constraint;
-}
 
 function generateReference(): string {
   return `REQ-${Date.now().toString(36).toUpperCase()}-${randomBytes(3).toString("hex").toUpperCase()}`;
@@ -124,7 +118,7 @@ export class DrizzleRequestsRepository implements RequestsRepository {
 
           return { outcome: "created", request: created };
         } catch (error) {
-          if (isUniqueViolation(error, "service_requests_submission_token_uq")) {
+          if (isPgUniqueViolation(error, "service_requests_submission_token_uq")) {
             const [replayed] = await tx
               .select({ id: serviceRequests.id, reference: serviceRequests.reference, submittedAt: serviceRequests.submittedAt })
               .from(serviceRequests)
@@ -132,7 +126,7 @@ export class DrizzleRequestsRepository implements RequestsRepository {
               .limit(1);
             if (replayed) return { outcome: "replayed", request: replayed };
           }
-          if (isUniqueViolation(error, "service_requests_reference_uq") && attempt < 2) {
+          if (isPgUniqueViolation(error, "service_requests_reference_uq") && attempt < 2) {
             continue;
           }
           throw error;

@@ -38,20 +38,20 @@ export function PublicQuotePage() {
     if (!decision || inFlight.current) return;
     inFlight.current = true; setBusy(true); setError(null);
     try { const result = await quotesApi.respond(token, decision); client.setQueryData(queryKey, result); setDecision(null); }
-    catch (failure) { setError(quoteErrorMessage(failure)); await query.refetch(); }
+    catch (failure) { setError(quoteErrorMessage(failure, "public")); await query.refetch(); }
     finally { inFlight.current = false; setBusy(false); }
   }
   async function pdf() {
     if (inFlight.current || !query.data) return;
     inFlight.current = true; setBusy(true); setError(null);
     try { downloadQuote(await quotesApi.publicPdf(token), `${query.data.snapshot.quoteNumber}-v${query.data.snapshot.versionNumber}.pdf`); }
-    catch (failure) { setError(quoteErrorMessage(failure)); }
+    catch (failure) { setError(quoteErrorMessage(failure, "public")); }
     finally { inFlight.current = false; setBusy(false); }
   }
   const ask = (value: QuoteDecision) => (event: React.MouseEvent<HTMLButtonElement>) => { opener.current = event.currentTarget; setDecision(value); setError(null); };
 
   if (token && query.isPending) return <PublicLoading label="Chargement du devis…" tag="Devis" />;
-  if (!token || query.isError || !query.data) return <PublicUnavailable title="Devis indisponible" message={quoteErrorMessage(query.error)} tag="Devis" onRetry={() => void query.refetch()} />;
+  if (!token || query.isError || !query.data) return <PublicUnavailable title="Devis indisponible" message={quoteErrorMessage(query.error, "public")} tag="Devis" onRetry={() => void query.refetch()} />;
 
   const data = query.data;
   const s = data.snapshot;

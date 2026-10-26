@@ -18,6 +18,7 @@ import {
   type CatalogueDeliverabilityResponse,
 } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
 
 export type CatalogueApiClientOptions = {
   baseUrl?: string;
@@ -169,9 +170,6 @@ const catalogueMessages: Record<string, string> = {
   CATALOGUE_COMPONENT_ARCHIVED: "Cette prestation est retirée et ne peut plus être modifiée.",
   CATALOGUE_RULES_OVERRIDE_NOT_FOUND: "Cette variante suit déjà les règles de l'offre.",
   CATALOGUE_RULES_OVERRIDE_HAS_QUESTIONNAIRE: "Cette variante a son propre questionnaire : retire d'abord l'affectation dans Questionnaires.",
-  AUTH_SESSION_REQUIRED: "Ta session a expiré. Reconnecte-toi.",
-  AUTH_CSRF_INVALID: "La vérification de sécurité a échoué. Recharge la page.",
-  AUTH_ORIGIN_INVALID: "La vérification de sécurité a échoué. Recharge la page.",
 };
 const reasonMessages: Record<string, string> = {
   name_required: "Renseigne le nom de l'offre.",
@@ -199,6 +197,8 @@ const reasonMessages: Record<string, string> = {
 export function catalogueErrorMessage(error: unknown): string {
   const data: unknown = axios.isAxiosError<{ error?: unknown; reason?: unknown }>(error) ? error.response?.data : undefined;
   const { error: code, reason } = (data ?? {}) as { error?: unknown; reason?: unknown };
+  const common = commonApiErrorMessage(code);
+  if (common) return common;
   if (typeof reason === "string" && reasonMessages[reason]) return reasonMessages[reason] as string;
   if (typeof code === "string" && catalogueMessages[code]) return catalogueMessages[code] as string;
   return "L'action n'a pas pu être enregistrée. Réessaie dans un instant.";

@@ -2,6 +2,7 @@ import axios, { AxiosHeaders } from "axios";
 import { authCsrfHeaderName, progressApiRoutes, type CreateGoalInput, type CreateMeasurementInput, type GoalAction,
   type GoalCommandInput, type ConfirmGoalOutcomeInput, type GoalsResponse, type ProgressResponse, type ProgressErrorCode } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
 const http = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "", withCredentials: true, headers: { accept: "application/json" } });
 http.interceptors.request.use(config => {
   if (requiresCsrfHeader(config.method)) { const headers = AxiosHeaders.from(config.headers), token = buildCsrfHeaders(config.method)[authCsrfHeaderName]; if (token) headers.set(authCsrfHeaderName, token); config.headers = headers; }
@@ -33,7 +34,7 @@ const messages: Record<ProgressErrorCode, string> = {
 };
 export function progressErrorMessage(error: unknown): string {
   const code: unknown = axios.isAxiosError<{ error?: unknown }>(error) ? error.response?.data.error : undefined;
-  if (code === "AUTH_SESSION_REQUIRED") return "Ta session a expiré. Reconnecte-toi.";
-  if (code === "AUTH_CSRF_INVALID" || code === "AUTH_ORIGIN_INVALID") return "La vérification de sécurité a échoué. Recharge la page.";
+  const common = commonApiErrorMessage(code);
+  if (common) return common;
   return typeof code === "string" && Object.hasOwn(messages, code) ? messages[code as ProgressErrorCode] : "Impossible de charger la progression. Réessaie dans un instant.";
 }

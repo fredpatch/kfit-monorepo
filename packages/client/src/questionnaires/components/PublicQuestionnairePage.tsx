@@ -40,7 +40,7 @@ function QuestionnaireContent({ token, queryId }: { token: string; queryId: stri
     );
   }
   if (query.isPending) return <PublicLoading label="Chargement du questionnaire…" tag={tag} />;
-  if (query.isError || !query.data) return <PublicUnavailable title="Questionnaire indisponible" message={questionnaireErrorMessage(query.error)} tag={tag} />;
+  if (query.isError || !query.data) return <PublicUnavailable title="Questionnaire indisponible" message={questionnaireErrorMessage(query.error, "public")} tag={tag} />;
 
   return (
     <PublicQuestionnaireSteps
@@ -51,7 +51,7 @@ function QuestionnaireContent({ token, queryId }: { token: string; queryId: stri
         if (inFlight.current) return;
         inFlight.current = true; setBusy(true); setError(null);
         try { const response = await questionnaireApi.publicSubmit(token, { answers, ...(healthDataDecision ? { healthDataDecision } : {}) }); setOutcome(response.result.outcome); }
-        catch (failure) { setError(questionnaireErrorMessage(failure)); await query.refetch(); }
+        catch (failure) { setError(questionnaireErrorMessage(failure, "public")); await query.refetch(); }
         finally { inFlight.current = false; setBusy(false); }
       }}
     />

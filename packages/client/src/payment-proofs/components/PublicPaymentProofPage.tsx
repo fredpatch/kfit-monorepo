@@ -48,7 +48,7 @@ export function PublicPaymentProofPage() {
       setSubmittedToken(token);
       setFile(null);
     } catch (failure) {
-      setError(paymentProofErrorMessage(failure));
+      setError(paymentProofErrorMessage(failure, "public"));
     } finally {
       inFlight.current = false; setBusy(false);
     }
@@ -66,7 +66,7 @@ export function PublicPaymentProofPage() {
     );
   }
   if (token && query.isPending) return <PublicLoading label="Chargement du lien de dépôt…" tag={tag} />;
-  if (!token || query.isError || !query.data) return <PublicUnavailable title="Lien de dépôt indisponible" message={paymentProofErrorMessage(query.error)} tag={tag} onRetry={() => void query.refetch()} />;
+  if (!token || query.isError || !query.data) return <PublicUnavailable title="Lien de dépôt indisponible" message={paymentProofErrorMessage(query.error, "public")} tag={tag} onRetry={() => void query.refetch()} />;
 
   const data = query.data;
   return (

@@ -13,7 +13,7 @@ import {
   type QualificationReviewOutcome,
 } from "@kfit/shared";
 import { adminRequestsApiClient } from "../api/admin-requests-api.js";
-import { extractRequestErrorCode, translateRequestError } from "../lib/request-error-messages.js";
+import { extractRequestErrorCode, requestErrorMessage } from "../lib/request-error-messages.js";
 import { channelLabels, outcomeLabels, qualificationOutcomeLabels } from "../lib/request-labels.js";
 import { Dialog, DialogClose, DialogContent, Sheet, SheetClose, SheetContent } from "../../components/ui/dialog.js";
 import { Button } from "../../components/ui/button.js";
@@ -42,7 +42,7 @@ function ServerError({ message }: { message: string | null }) {
   ) : null;
 }
 
-const errorOf = (failure: unknown) => translateRequestError(extractRequestErrorCode(failure));
+const errorOf = (failure: unknown) => requestErrorMessage(failure);
 
 /* ------------------------------------------------------------------ */
 /* Contact attempt — same fields as S3.3; occurredAt / nextActionAt   */

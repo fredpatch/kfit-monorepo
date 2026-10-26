@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { RequestErrorCode, RequestErrorResponse } from "@kfit/shared";
+import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
 
 const requestErrorMessages: Record<RequestErrorCode, string> = {
   REQUEST_ROUTE_UNEXPECTED_FAILURE: "Une erreur est survenue. Réessaie dans un instant.",
@@ -71,6 +72,11 @@ export function extractRequestErrorCode(error: unknown): RequestErrorCode | unde
 export function translateRequestError(code: RequestErrorCode | undefined): string {
   if (code && isKnownRequestErrorCode(code)) return requestErrorMessages[code];
   return fallbackMessage;
+}
+
+/** FIX-02 D6: admin screens; AUTH and archive codes first, then the request codes. */
+export function requestErrorMessage(error: unknown): string {
+  return commonApiErrorMessage(axios.isAxiosError<{ error?: unknown }>(error) ? error.response?.data?.error : undefined) ?? translateRequestError(extractRequestErrorCode(error));
 }
 
 export type RequestErrorKind = "transient" | "terminal" | "correctable";

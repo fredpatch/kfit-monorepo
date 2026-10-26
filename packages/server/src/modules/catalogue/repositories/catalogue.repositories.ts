@@ -16,6 +16,7 @@ import type {
   CatalogueServiceVariantRecord,
   CatalogueServiceWriteInput,
 } from "../services/catalogue.service.js";
+import { isPgUniqueViolation } from "../../../db/pg-error.js";
 
 type CatalogueDb = typeof appDb;
 
@@ -132,9 +133,6 @@ function toPatch(input: CatalogueServicePatchInput, now: Date) {
   };
 }
 
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && (error as { code?: unknown }).code === "23505";
-}
 
 export class DrizzleCatalogueRepository implements CatalogueRepository {
   constructor(private readonly database: CatalogueDb) {}
@@ -247,7 +245,7 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
       if (!created) throw new Error("Catalogue service insert returned no row");
       return mapAdminService(created);
     } catch (error) {
-      if (isUniqueViolation(error)) return "slug_conflict";
+      if (isPgUniqueViolation(error)) return "slug_conflict";
       throw error;
     }
   }
@@ -262,7 +260,7 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
       if (!updated) return "not_found";
       return mapAdminService(updated);
     } catch (error) {
-      if (isUniqueViolation(error)) return "slug_conflict";
+      if (isPgUniqueViolation(error)) return "slug_conflict";
       throw error;
     }
   }

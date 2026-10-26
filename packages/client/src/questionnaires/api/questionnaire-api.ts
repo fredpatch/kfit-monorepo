@@ -2,6 +2,7 @@ import axios, { AxiosHeaders } from "axios";
 import { authCsrfHeaderName, questionnaireApiRoutes, type QuestionnaireDetail, type QuestionnaireDocument, type QuestionnaireSubmitInput, type QuestionnaireSubmitResult,
   type QuestionnaireTemplate, type QuestionnaireTemplateInput, type QuestionnaireAssignmentInput, type QuestionnaireAssignmentScope, type PublicQuestionnaireSubmitInput, type ConsentLinkState, type QuestionnaireRevisionAnswers } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import { commonApiErrorMessage, type ApiErrorAudience } from "../../lib/api-error-messages.js";
 const admin = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "", withCredentials: true, headers: { accept: "application/json" } });
 admin.interceptors.request.use(config => {
   if (requiresCsrfHeader(config.method)) { const headers = AxiosHeaders.from(config.headers); const token = buildCsrfHeaders(config.method)[authCsrfHeaderName]; if (token) headers.set(authCsrfHeaderName, token); config.headers = headers; }
@@ -25,8 +26,10 @@ export const questionnaireApi = {
   async publicGet(token: string) { return (await publicHttp.get<{ document: QuestionnaireDocument }>(questionnaireApiRoutes.public.replace(":token", encodeURIComponent(token)))).data; },
   async publicSubmit(token: string, input: PublicQuestionnaireSubmitInput) { return (await publicHttp.post<{ result: QuestionnaireSubmitResult }>(questionnaireApiRoutes.public.replace(":token", encodeURIComponent(token)), input)).data; },
 };
-export function questionnaireErrorMessage(error: unknown): string {
+export function questionnaireErrorMessage(error: unknown, audience: ApiErrorAudience = "admin"): string {
   const code: unknown = axios.isAxiosError(error) ? error.response?.data?.error : null;
+  const common = commonApiErrorMessage(code, audience);
+  if (common) return common;
   const messages: Record<string, string> = {
     QUESTIONNAIRE_INVALID_INPUT: "Vérifie les informations saisies et la date d’expiration.", QUESTIONNAIRE_TEMPLATE_INVALID: "Vérifie les questions, les choix, les limites et les règles de signalement.",
     QUESTIONNAIRE_ANSWERS_INVALID: "Vérifie les réponses obligatoires et les limites de chaque question.", QUESTIONNAIRE_NOT_FOUND: "Modèle, abonnement ou lien introuvable.",
@@ -38,8 +41,7 @@ export function questionnaireErrorMessage(error: unknown): string {
     QUESTIONNAIRE_LINK_INVALID: "Ce lien est invalide. Demande un nouveau lien au coach.", QUESTIONNAIRE_LINK_EXPIRED: "Ce lien a expiré. Demande un nouveau lien au coach.",
     QUESTIONNAIRE_LINK_REVOKED: "Ce lien a été révoqué. Demande un nouveau lien au coach.", QUESTIONNAIRE_LINK_CONSUMED: "Ce lien a déjà été utilisé. Aucun nouvel envoi n’est possible avec ce lien.",
     QUESTIONNAIRE_LINK_STALE: "Le questionnaire ou le consentement a changé, ou une réponse a déjà été enregistrée. Demande un nouveau lien au coach.",
-    QUESTIONNAIRE_RATE_LIMITED: "Trop de tentatives. Réessaie dans une minute.", AUTH_SESSION_REQUIRED: "Reconnecte-toi pour gérer les questionnaires.",
-    AUTH_CSRF_INVALID: "Actualise la page puis réessaie.", AUTH_ORIGIN_INVALID: "Cette action doit être envoyée depuis le site K’FIT.",
+    QUESTIONNAIRE_RATE_LIMITED: "Trop de tentatives. Réessaie dans une minute.",
   };
   return typeof code === "string" && messages[code] ? messages[code] : "Impossible de traiter le questionnaire. Actualise et vérifie l’état avant de réessayer.";
 }

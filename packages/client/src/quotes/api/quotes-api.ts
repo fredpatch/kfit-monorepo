@@ -1,6 +1,7 @@
 import axios, { AxiosHeaders } from "axios";
 import { authCsrfHeaderName, quoteApiRoutes, type QuoteDraftInput, type QuoteDecision, type QuoteErrorCode, type QuoteResponse, type QuotesResponse, type PublicQuoteResponse } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import { commonApiErrorMessage, type ApiErrorAudience } from "../../lib/api-error-messages.js";
 const http = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "", withCredentials: true, headers: { accept: "application/json" } });
 http.interceptors.request.use(config => {
   if (requiresCsrfHeader(config.method) && !config.url?.startsWith("/public/")) {
@@ -34,8 +35,10 @@ const messages: Record<QuoteErrorCode, string> = {
   QUOTE_RATE_LIMITED: "Trop de tentatives. Patiente avant de réessayer.", QUOTE_ADMIN_FORBIDDEN: "Cet espace est réservé à l’administrateur.",
   QUOTE_ROUTE_UNEXPECTED_FAILURE: "L’opération n’a pas pu être confirmée. Actualise le devis avant de réessayer.",
 };
-export function quoteErrorMessage(error: unknown): string {
+export function quoteErrorMessage(error: unknown, audience: ApiErrorAudience = "admin"): string {
   const data: unknown = axios.isAxiosError(error) ? error.response?.data : null;
+  const common = commonApiErrorMessage(data && typeof data === "object" && "error" in data ? data.error : undefined, audience);
+  if (common) return common;
   if (data && typeof data === "object" && "error" in data && typeof data.error === "string") {
     const key = Object.keys(messages).find(key => key === data.error) as QuoteErrorCode | undefined;
     if (key) return messages[key];

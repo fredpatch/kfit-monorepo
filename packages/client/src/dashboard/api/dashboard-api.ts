@@ -1,5 +1,6 @@
 import axios from "axios";
 import { dashboardApiRoutes, type AgendaResponse, type TodayResponse, type DashboardAnalyticsResponse, type DashboardAlertsResponse, type DashboardPeriod } from "@kfit/shared";
+import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
 
 const http = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "", withCredentials: true, headers: { accept: "application/json" } });
 
@@ -21,7 +22,8 @@ export const dashboardApi = {
 
 export function dashboardErrorMessage(error: unknown): string {
   const code: unknown = axios.isAxiosError<{ error?: unknown }>(error) ? error.response?.data?.error : undefined;
-  if (code === "AUTH_SESSION_REQUIRED") return "Ta session a expiré. Reconnecte-toi.";
+  const common = commonApiErrorMessage(code);
+  if (common) return common;
   if (code === "DASHBOARD_ADMIN_FORBIDDEN") return "Cet espace est réservé à l'administrateur.";
   if (code === "DASHBOARD_INVALID_INPUT") return "La période demandée est invalide.";
   return "Impossible de charger le tableau de bord. Réessaie dans un instant.";

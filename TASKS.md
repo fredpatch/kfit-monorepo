@@ -10,8 +10,9 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 ```text
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
-Active slice      S7.3a — privacy server (archive, anonymize, holds, purge job, journal + replay)
-Workflow state    AWAITING_HUMAN_VALIDATION — S7.3a delivered 2026-10-25, uncommitted (sprint-7.md § S7.3a execution)
+Active slice      FIX-02 — error-handling hardening after S7.3
+Workflow state    AWAITING_HUMAN_VALIDATION — FIX-02 delivered 2026-10-26, uncommitted
+S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) — validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
 Last validated    S7.2 — validated by Fred 2026-10-25
 Implementation    2dc7c43 (S7.2a server) + 0eac6d4 (S7.2b client, UX-16)
 S7.2 delivered    S7.2a server (engine, outbox, jobs, API, migration 0014) + S7.2b client (UX-16 bell, panel, Réglages)
@@ -29,9 +30,10 @@ Backlog (V1.1)    « RDV à clôturer dans À traiter » (POL-01 D8: display-onl
 S7.4 prereqs      production guard: refuse production start if any published consent definition title contains « DÉMONSTRATION » (D9, not implemented)
 S7.4 prereqs      CI integration DB = kfit_test (port alignment 5433 vs 5432 still open)
 S7.3b-1         server read slice — validated, committed d6fdf61
-ARCH-01           archived freeze + unarchive — committed 356070a; live validation together with S7.3b-2
-S7.3b-2           privacy client — delivered 2026-10-26, uncommitted (sprint-7.md § S7.3b-2 execution)
-Next action       Fred: validate S7.3b-2 + ARCH-01 live; then S7.3 ready to close
+ARCH-01           archived freeze + unarchive — committed 356070a; validated live by Fred 2026-10-26
+S7.3b-2           privacy client — validated live by Fred 2026-10-26, committed 544b57d
+Next action       FIX-02 error-handling hardening — delivered 2026-10-26, uncommitted → Fred: validate (sprint-7.md § FIX-02 execution); next S7.4
+Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »
 Backlog           « Flaky express unit tests (fetch failed, random test) — diagnose with the pgErrorInfo fix »
 Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser
 

@@ -1,6 +1,7 @@
 import axios, { AxiosHeaders } from "axios";
 import { authCsrfHeaderName, subscriptionApiRoutes, type SubscriptionCommand, type SubscriptionInput, type SubscriptionResponse, type SubscriptionErrorCode } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
 const http = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "", withCredentials: true, headers: { accept: "application/json" } });
 http.interceptors.request.use(config => {
   if (requiresCsrfHeader(config.method)) {
@@ -27,7 +28,7 @@ const messages: Record<SubscriptionErrorCode, string> = {
 };
 export function subscriptionErrorMessage(error: unknown): string {
   const code: unknown = axios.isAxiosError<{ error?: unknown }>(error) ? error.response?.data.error : undefined;
-  if (code === "AUTH_SESSION_REQUIRED") return "Ta session a expiré. Reconnecte-toi.";
-  if (code === "AUTH_ORIGIN_INVALID" || code === "AUTH_CSRF_INVALID") return "La vérification de sécurité a échoué. Recharge la page.";
+  const common = commonApiErrorMessage(code);
+  if (common) return common;
   return typeof code === "string" && Object.hasOwn(messages, code) ? messages[code as SubscriptionErrorCode] : "Impossible de charger l’abonnement. Réessaie dans un instant.";
 }

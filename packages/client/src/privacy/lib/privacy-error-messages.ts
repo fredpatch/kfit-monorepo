@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { PrivacyErrorCode, PrivacySubjectType, SubjectArchivedErrorCode } from "@kfit/shared";
+import { archivedSubjectMessages, commonApiErrorMessage } from "../../lib/api-error-messages.js";
 
 /** S7.3b-2 D10: one map for every privacy and archive-freeze code. AUTH_FRESH_OTP_REQUIRED is handled by the anonymize flow. */
 const messages: Record<PrivacyErrorCode | SubjectArchivedErrorCode, string> = {
@@ -16,8 +17,8 @@ const messages: Record<PrivacyErrorCode | SubjectArchivedErrorCode, string> = {
   PRIVACY_HOLD_NOT_FOUND: "Ce blocage est introuvable. La liste a été actualisée.",
   PRIVACY_HOLD_ALREADY_RELEASED: "Ce blocage a déjà été levé. La liste a été actualisée.",
   PRIVACY_ROUTE_UNEXPECTED_FAILURE: "L'action n'a pas pu être confirmée. Réessaie dans un instant.",
-  CUSTOMER_ARCHIVED: "Ce client est archivé : désarchive-le pour modifier sa fiche.",
-  PROSPECT_ARCHIVED: "Ce prospect est archivé : désarchive-le pour modifier sa demande.",
+  CUSTOMER_ARCHIVED: archivedSubjectMessages.CUSTOMER_ARCHIVED,
+  PROSPECT_ARCHIVED: archivedSubjectMessages.PROSPECT_ARCHIVED,
 };
 /** S7.3b-2 D5: shown before submit when a hold is active, and after a 409 PRIVACY_RETENTION_HOLD_ACTIVE. */
 export const holdActiveMessage = (subjectType: PrivacySubjectType) =>
@@ -31,8 +32,8 @@ export function privacyErrorCode(error: unknown): string | null {
 export function privacyErrorMessage(error: unknown, subjectType: PrivacySubjectType = "customer"): string {
   const code = privacyErrorCode(error);
   if (code === "PRIVACY_RETENTION_HOLD_ACTIVE") return holdActiveMessage(subjectType);
-  if (code === "AUTH_SESSION_REQUIRED") return "Ta session a expiré. Reconnecte-toi pour continuer.";
-  if (code === "AUTH_CSRF_INVALID" || code === "AUTH_ORIGIN_INVALID") return "La vérification de sécurité a échoué. Recharge la page puis réessaie.";
+  const common = commonApiErrorMessage(code);
+  if (common) return common;
   if (code !== null && code in messages) return messages[code as keyof typeof messages];
   return axios.isAxiosError(error) && !error.response ? "Serveur injoignable. Vérifie ta connexion et réessaie." : "L'action n'a pas pu être confirmée. Réessaie dans un instant.";
 }

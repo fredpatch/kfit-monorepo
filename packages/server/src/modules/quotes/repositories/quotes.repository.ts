@@ -10,6 +10,7 @@ import { AuditService, hashAuditContext, type AuditMetadata } from "../../auth/s
 import { createDocumentBearer, hashDocumentBearer } from "../../documents/services/document-token.crypto.js";
 import { quoteFailure, type Draft, type QuoteActor, type QuoteArtifacts, type QuoteCommand, type QuoteResult, type QuotesRepository } from "../services/quotes.service.js";
 import { quoteYear, quoteNumber, readQuoteSnapshot } from "../services/quote-snapshot.js";
+import { pgErrorInfo } from "../../../db/pg-error.js";
 
 type Database = typeof appDb;
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -18,11 +19,6 @@ type Version = typeof quoteVersions.$inferSelect;
 type Token = typeof secureAccessTokens.$inferSelect;
 const decisionOf = (v: Version): QuoteDecision | null => v.acceptedAt ? "accepted" : v.declinedAt ? "declined" : v.changesRequestedAt ? "changes_requested" : null;
 const termsOf = (v: Version) => v.termsSnapshotJson && typeof v.termsSnapshotJson === "object" && "terms" in v.termsSnapshotJson && typeof v.termsSnapshotJson.terms === "string" ? v.termsSnapshotJson.terms : "";
-function dbCode(error: unknown): { code: string; constraint: string } | null {
-  if (!error || typeof error !== "object") return null;
-  if ("code" in error && typeof error.code === "string") return { code: error.code, constraint: "constraint" in error && typeof error.constraint === "string" ? error.constraint : "" };
-  return "cause" in error && error.cause !== error ? dbCode(error.cause) : null;
-}
 export class DrizzleQuotesRepository implements QuotesRepository {
   constructor(private readonly database: Database, private readonly options: { auditHashPepper: string; tokenPepper: string }, private readonly artifacts: QuoteArtifacts, private readonly clock: () => Date = () => new Date()) {}
   private audit(tx: Tx, actor: QuoteActor, eventType: string, q: Quote, v?: Version, extra: AuditMetadata = {}) {
@@ -263,7 +259,7 @@ export class DrizzleQuotesRepository implements QuotesRepository {
     } catch (error) {
       if (finalizedKey) await this.artifacts.remove(finalizedKey);
       if (error instanceof QuoteIssueExpired) return quoteFailure("QUOTE_INVALID_STATE");
-      const failure = dbCode(error);
+      const failure = pgErrorInfo(error);
       if (failure?.code === "23505") return quoteFailure(failure.constraint === "quotes_number_uq" ? "QUOTE_NUMBER_CONFLICT" : "QUOTE_VERSION_CONFLICT");
       if (failure?.code === "40001" || failure?.code === "40P01") return quoteFailure("QUOTE_VERSION_CONFLICT");
       throw error;

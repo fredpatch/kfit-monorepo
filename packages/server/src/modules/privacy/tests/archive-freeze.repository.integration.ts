@@ -1,11 +1,11 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, pool } from "../../../db/client.js";
 import {
-  appointments, auditEvents, customers, documents, documentVersions, prospects, quotes, quoteVersions, secureAccessTokens, serviceRequests, services, subscriptions, users,
+  appointments, auditEvents, customers, documents, documentVersions, externalAccessEvents, prospects, quotes, quoteVersions, secureAccessTokens, serviceRequests, services, subscriptions, users,
 } from "../../../db/schema/index.js";
 import { assertLocalTestDatabase, testFixtureName, uniqueTestWhatsapp } from "../../../testing/integration-fixtures.js";
 import { DrizzleAppointmentsRepository } from "../../appointments/repositories/appointments.repository.js";
@@ -17,6 +17,7 @@ import { DrizzleDocumentsRepository } from "../../documents/repositories/documen
 import { DrizzleFinanceRepository } from "../../finance/repositories/finance.repository.js";
 import { DrizzleFollowUpsRepository } from "../../follow-ups/repositories/follow-ups.repository.js";
 import { DrizzlePaymentProofsRepository } from "../../payment-proofs/repositories/payment-proofs.repository.js";
+import { DrizzleQuestionnaireRepository } from "../../questionnaires/repositories/questionnaire.repository.js";
 import { DrizzleProgressRepository } from "../../progress/repositories/progress.repository.js";
 import { DrizzleQuotesRepository } from "../../quotes/repositories/quotes.repository.js";
 import { DrizzleAdminRequestsRepository } from "../../requests/repositories/admin-requests.repositories.js";
@@ -276,4 +277,31 @@ test("ARCH-01 D6: unarchive reopens writers, keeps revoked links revoked, refuse
   assert.ok((await privacy.anonymize("customer", subject.customerId, subject.name, actor, new Date())).ok);
   assert.deepEqual(await privacy.unarchive("customer", subject.customerId, "accounting_correction", actor), { ok: false, error: "PRIVACY_SUBJECT_ANONYMIZED" });
   assert.deepEqual(await privacy.unarchive("customer", randomUUID(), "accounting_correction", actor), { ok: false, error: "PRIVACY_SUBJECT_NOT_FOUND" });
+});
+
+test("FIX-02 D3: a public appointment response, consent submit or questionnaire submit refused by the freeze records CUSTOMER_ARCHIVED in its access event", async () => {
+  const { customerId, subscriptionId } = await seedCustomer();
+  const appointmentId = randomUUID();
+  await db.insert(appointments).values({ id: appointmentId, subscriptionId, scheduledStart: later(2), scheduledEnd: later(2.05) });
+  await archive(customerId);
+  // A link issued around the archive (archive revokes every live link): inserted after it to reach the freeze guard.
+  const raw = () => randomUUID().replaceAll("-", "").padEnd(43, "A");
+  const [appointmentRaw, consentRaw, questionnaireRaw] = [raw(), raw(), raw()];
+  const sha = (value: string) => createHash("sha256").update(value).digest("hex");
+  const rows = await db.insert(secureAccessTokens).values([
+    { tokenHash: sha(appointmentRaw), resourceType: "appointment", resourceId: appointmentId, action: "appointment_response", expiresAt: later(5), maxUses: 1 },
+    { tokenHash: hashConsentToken(consentRaw), resourceType: "subscription", resourceId: subscriptionId, action: "onboarding_consent", expiresAt: later(5), maxUses: 1 },
+    { tokenHash: sha(questionnaireRaw), resourceType: "subscription", resourceId: subscriptionId, action: "questionnaire_submit", expiresAt: later(5), maxUses: 1 },
+  ]).returning({ id: secureAccessTokens.id });
+  const publicActor = { userId: null, requestId: randomUUID(), ipAddress: null, userAgent: null };
+  const questionnaires = new DrizzleQuestionnaireRepository(db, options);
+
+  await assert.rejects(repos.appointments.publicAccess(appointmentRaw, { action: "confirm" }, publicActor), archivedError("CUSTOMER_ARCHIVED"), "appointment response");
+  await assert.rejects(repos.consents.publicAccess(consentRaw, { service_terms: "granted" }, publicActor), archivedError("CUSTOMER_ARCHIVED"), "consent submit");
+  await assert.rejects(questionnaires.publicAccess(questionnaireRaw, { answers: [] }, publicActor), archivedError("CUSTOMER_ARCHIVED"), "questionnaire submit");
+
+  const events = await db.select({ tokenId: externalAccessEvents.secureAccessTokenId, eventType: externalAccessEvents.eventType, result: externalAccessEvents.result })
+    .from(externalAccessEvents).where(inArray(externalAccessEvents.secureAccessTokenId, rows.map((row) => row.id)));
+  assert.deepEqual(events.map((e) => [e.eventType, e.result]).sort(),
+    [["appointment.respond", "CUSTOMER_ARCHIVED"], ["consent.submit", "CUSTOMER_ARCHIVED"], ["questionnaire.submit", "CUSTOMER_ARCHIVED"]]);
 });

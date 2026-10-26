@@ -2,6 +2,7 @@ import axios, { AxiosHeaders } from "axios";
 import { authCsrfHeaderName, documentApiRoutes, type DocumentsResponse, type DocumentResponse, type IssueDocumentLinkInput,
   type IssueDocumentLinkResponse, type PublicDocumentMetaResponse, type VerifyDocumentResponse, type PersonalizedDocumentType, type DocumentErrorCode } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import { commonApiErrorMessage, type ApiErrorAudience } from "../../lib/api-error-messages.js";
 
 const admin=axios.create({baseURL:import.meta.env.VITE_API_BASE_URL??"",withCredentials:true,headers:{accept:"application/json"}});
 admin.interceptors.request.use(config=>{if(requiresCsrfHeader(config.method)){const headers=AxiosHeaders.from(config.headers),token=buildCsrfHeaders(config.method)[authCsrfHeaderName];if(token)headers.set(authCsrfHeaderName,token);config.headers=headers;}return config;});
@@ -41,7 +42,9 @@ const messages:Partial<Record<DocumentErrorCode,string>>={
   DOCUMENT_LINK_EXPIRED:"Ce lien a expiré.",DOCUMENT_LINK_REVOKED:"Ce lien a été révoqué.",DOCUMENT_LINK_EXHAUSTED:"Ce lien a atteint son nombre maximal de téléchargements.",
   DOCUMENT_VERIFICATION_REQUIRED:"Saisis le code de vérification communiqué par le coach.",DOCUMENT_VERIFICATION_INVALID:"Code incorrect.",DOCUMENT_VERIFICATION_LOCKED:"Trop de tentatives incorrectes. Demande un nouveau lien au coach.",
 };
-export function documentErrorMessage(error:unknown){
+export function documentErrorMessage(error: unknown, audience: ApiErrorAudience = "admin"){
   const code:unknown=axios.isAxiosError<{error?:unknown}>(error)?error.response?.data.error:undefined;
+  const common=commonApiErrorMessage(code, audience);
+  if (common) return common;
   return typeof code==="string"&&Object.hasOwn(messages,code)?messages[code as DocumentErrorCode]??"Action impossible.":"Action impossible. Réessaie dans un instant.";
 }

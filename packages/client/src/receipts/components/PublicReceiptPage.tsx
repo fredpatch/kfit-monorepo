@@ -37,14 +37,14 @@ export function PublicReceiptPage() {
       const fresh = await query.refetch();
       if (fresh.isError && isReceiptLinkClosed(errorCode(fresh.error))) setClosed(true);
     } catch (failure) {
-      setError(receiptErrorMessage(failure));
+      setError(receiptErrorMessage(failure, "public"));
       if (isReceiptLinkClosed(errorCode(failure))) setClosed(true);
     } finally { inFlight.current = false; setBusy(false); }
   }
 
   if (token && query.isPending) return <PublicLoading label="Chargement du reçu…" tag="Reçu" />;
   // A refetch that fails after a download keeps the receipt on screen; only a first load failure refuses the page.
-  if (!token || !query.data) return <PublicUnavailable title="Reçu indisponible" message={receiptErrorMessage(query.error)} tag="Reçu" onRetry={() => void query.refetch()} />;
+  if (!token || !query.data) return <PublicUnavailable title="Reçu indisponible" message={receiptErrorMessage(query.error, "public")} tag="Reçu" onRetry={() => void query.refetch()} />;
 
   const r = query.data;
   const voided = r.state === "voided";

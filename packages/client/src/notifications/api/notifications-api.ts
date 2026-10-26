@@ -12,6 +12,7 @@ import {
   type NotificationUnreadCountResponse,
 } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
 
 const http = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "", withCredentials: true, headers: { accept: "application/json" } });
 http.interceptors.request.use((config) => {
@@ -62,7 +63,7 @@ const messages: Record<NotificationErrorCode, string> = {
 
 export function notificationErrorMessage(error: unknown): string {
   const code: unknown = axios.isAxiosError<{ error?: unknown }>(error) ? error.response?.data?.error : undefined;
-  if (code === "AUTH_SESSION_REQUIRED") return "Ta session a expiré. Reconnecte-toi.";
-  if (code === "AUTH_CSRF_INVALID" || code === "AUTH_ORIGIN_INVALID") return "La session de sécurité a expiré. Actualise la page.";
+  const common = commonApiErrorMessage(code);
+  if (common) return common;
   return typeof code === "string" && code in messages ? messages[code as NotificationErrorCode] : "Impossible de charger les notifications. Réessaie dans un instant.";
 }

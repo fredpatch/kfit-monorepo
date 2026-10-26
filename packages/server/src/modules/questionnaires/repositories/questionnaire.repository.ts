@@ -1,4 +1,4 @@
-import { assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
+import { accessFailureResult, assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
 import { createHash, randomBytes } from "node:crypto";
 import { and, asc, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { catalogueMedicalClearancePolicies, validateQuestionnaireAnswers, parseQuestionnaireAnswers, type CatalogueMedicalClearancePolicy, type ConsentLinkState, type PublicQuestionnaireSubmitInput, type QuestionnaireDetail,
@@ -243,7 +243,7 @@ export class DrizzleQuestionnaireRepository implements QuestionnaireRepository {
       await event(tx, "result" in result.body && result.body.result.outcome === "health_consent_refused" ? "health_consent_refused" : "success");
       return result;
     }); } catch (error) {
-      await event(this.database, error instanceof RejectedQuestionnaireAccess ? error.code : "QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE");
+      await event(this.database, error instanceof RejectedQuestionnaireAccess ? error.code : accessFailureResult(error, "QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE"));
       if (error instanceof RejectedQuestionnaireAccess) return questionnaireFailure(error.code);
       throw error;
     }

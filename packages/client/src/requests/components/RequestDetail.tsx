@@ -6,7 +6,7 @@ import { ArrowLeft, Check, Clock, MessageCircle, MoreHorizontal, PhoneCall } fro
 import { adminRequestAllowedTransitions, prospectPrivacyMenu, subjectMode, type AdminServiceRequestDetail, type PrivacyMenuAction, type ServiceRequestStatus } from "@kfit/shared";
 import { AnonymizeDialog, ArchiveDialog, PrivacyMenuItems, UnarchiveDialog, usePrivacyDialog } from "../../privacy/components/SubjectPrivacyDialogs.js";
 import { adminRequestsApiClient } from "../api/admin-requests-api.js";
-import { extractRequestErrorCode, translateRequestError } from "../lib/request-error-messages.js";
+import { requestErrorMessage } from "../lib/request-error-messages.js";
 import { channelLabels, directionLabels, outcomeLabels, qualificationOutcomeLabels, requestSteps, transitionLabels, waitlistEntryStatusLabels } from "../lib/request-labels.js";
 import { ConfirmDialog, ContactAttemptSheet, ConversionDialog, QualificationSheet, WaitlistDialog, conversionState, useRequestRefresh } from "./request-actions.js";
 import { Avatar } from "../../components/ui/avatar.js";
@@ -86,7 +86,7 @@ export function RequestDetail({ requestId, onBack }: { requestId: string; onBack
   if (query.isError) {
     return (
       <div className="flex flex-col items-start gap-3 p-6">
-        <p role="alert" className="text-sm text-danger">{translateRequestError(extractRequestErrorCode(query.error))}</p>
+        <p role="alert" className="text-sm text-danger">{requestErrorMessage(query.error)}</p>
         <Button variant="secondary" onClick={() => void query.refetch()}>Réessayer</Button>
       </div>
     );
@@ -120,7 +120,7 @@ export function RequestDetail({ requestId, onBack }: { requestId: string; onBack
       await refresh();
       toast.success("Statut mis à jour.");
     } catch (failure) {
-      toast.error(translateRequestError(extractRequestErrorCode(failure)));
+      toast.error(requestErrorMessage(failure));
       await refresh();
     }
   }

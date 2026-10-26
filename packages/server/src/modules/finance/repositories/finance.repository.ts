@@ -7,6 +7,7 @@ import { installments, paymentAllocations, paymentEvents, paymentPlans } from ".
 import { AuditService, type AuditMetadata } from "../../auth/services/audit.service.js";
 import { financeFailure, type FinanceActor, type FinanceCommand, type FinanceRepository, type FinanceResult } from "../services/finance.service.js";
 import { allocateFifo, financialStatus, installmentStatus, sumXaf, FinanceInvariantError } from "../services/finance.policy.js";
+import { pgErrorInfo } from "../../../db/pg-error.js";
 
 type Database = typeof appDb;
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -20,11 +21,6 @@ const validPlanStatus = (value: string): FinancePlanStatus => {
   if (value === "draft" || value === "active" || value === "superseded" || value === "settled" || value === "cancelled") return value;
   throw new FinanceInvariantError();
 };
-function databaseFailure(error: unknown): { code: string; constraint: string | null } | null {
-  if (!error || typeof error !== "object") return null;
-  if ("code" in error && typeof error.code === "string") return { code: error.code, constraint: "constraint" in error && typeof error.constraint === "string" ? error.constraint : null };
-  return "cause" in error && error.cause !== error ? databaseFailure(error.cause) : null;
-}
 export class DrizzleFinanceRepository implements FinanceRepository {
   constructor(private readonly database: Database, private readonly options: { auditHashPepper: string }, private readonly clock: () => Date = () => new Date()) {}
   private async read(tx: Tx, sub: Subscription, now: Date): Promise<FinanceDetail> {
@@ -127,7 +123,7 @@ export class DrizzleFinanceRepository implements FinanceRepository {
       return await this.database.transaction(tx => this.executeMutation(tx, id, command, actor));
     } catch (error) {
       if (error instanceof FinanceInvariantError) return financeFailure("FINANCE_INVALID_STATE");
-      const failure = databaseFailure(error);
+      const failure = pgErrorInfo(error);
       if (failure?.code === "23505" && failure.constraint === "payment_events_command_key_uq") return financeFailure("FINANCE_DUPLICATE_PAYMENT");
       if (failure?.code === "23505" && failure.constraint === "payment_plans_one_active_uq") return financeFailure("FINANCE_PLAN_ALREADY_ACTIVE");
       if (failure?.code === "40001" || failure?.code === "40P01") return financeFailure("FINANCE_CONCURRENCY_CONFLICT");

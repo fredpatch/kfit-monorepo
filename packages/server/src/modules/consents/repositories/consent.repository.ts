@@ -1,4 +1,4 @@
-import { assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
+import { accessFailureResult, assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
 import { createHash } from "node:crypto";
 import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { consentTypes, optionalConsentTypes, requiredConsentTypes, type ConsentDecisions, type ConsentDefinition, type ConsentDefinitionSummary, type ConsentDecision, type ConsentDetail,
@@ -248,7 +248,7 @@ export class DrizzleConsentRepository implements ConsentRepository, ConsentDefin
     }); } catch (error) {
       // Business transaction has rolled back. Only sanitized failure evidence survives.
       await this.database.insert(externalAccessEvents).values({ secureAccessTokenId: attemptedTokenId, eventType: decisions || rejectedInput ? "consent.submit" : "consent.view",
-        result: error instanceof RejectedConsentAccess ? error.code : "CONSENT_ROUTE_UNEXPECTED_FAILURE", ipHash: hashAuditContext(actor.ipAddress, this.options.auditHashPepper),
+        result: error instanceof RejectedConsentAccess ? error.code : accessFailureResult(error, "CONSENT_ROUTE_UNEXPECTED_FAILURE"), ipHash: hashAuditContext(actor.ipAddress, this.options.auditHashPepper),
         userAgentHash: hashAuditContext(actor.userAgent, this.options.auditHashPepper) });
       if (error instanceof RejectedConsentAccess) return failure(error.code);
       throw error;

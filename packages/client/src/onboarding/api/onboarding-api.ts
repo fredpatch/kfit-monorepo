@@ -1,6 +1,7 @@
 import axios, { AxiosHeaders } from "axios";
 import { onboardingApiRoutes, authCsrfHeaderName, type OnboardingResponse, type OnboardingErrorCode } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
 
 const http = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "", withCredentials: true, headers: { accept: "application/json" } });
 http.interceptors.request.use(config => {
@@ -31,8 +32,8 @@ const messages: Record<OnboardingErrorCode, string> = {
 };
 export function onboardingErrorMessage(error: unknown): string {
   const code: unknown = axios.isAxiosError<{ error?: unknown }>(error) ? error.response?.data.error : undefined;
-  if (code === "AUTH_SESSION_REQUIRED") return "Ta session a expiré. Reconnecte-toi.";
-  if (code === "AUTH_CSRF_INVALID" || code === "AUTH_ORIGIN_INVALID") return "La vérification de sécurité a échoué. Recharge la page.";
+  const common = commonApiErrorMessage(code);
+  if (common) return common;
   if (typeof code === "string" && Object.hasOwn(messages, code)) return messages[code as OnboardingErrorCode];
   return "Impossible de charger l’onboarding. Réessaie dans un instant.";
 }

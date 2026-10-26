@@ -8,7 +8,7 @@ import { services, serviceVariants, servicePolicies } from "../../../db/schema/c
 import { secureAccessTokens, externalAccessEvents } from "../../../db/schema/documents.js";
 import { AuditService, hashAuditContext, type AuditMetadata } from "../../auth/services/audit.service.js";
 import { appointmentFailure, type AppointmentActor, type AppointmentCommand, type AppointmentResult, type AppointmentsRepository } from "../services/appointments.service.js";
-import { assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
+import { accessFailureResult, assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
 import { appointmentTokenScope, appointmentTransitions, consumptiveEvents, isLateCancellation, publicActions, resolveAppointmentPolicy, validateAppointmentToken } from "../services/appointment.policy.js";
 
 type Tx = Parameters<Parameters<typeof appDb.transaction>[0]>[0];
@@ -219,7 +219,7 @@ export class DrizzleAppointmentsRepository implements AppointmentsRepository {
       if (!updated) throw new Error("Appointment disappeared");
       return { ok: true, body: { appointment: await this.publicDocument(tx, updated), submitted: true } };
     }); } catch (error) {
-      await event(this.database, error instanceof ExpiredAppointmentAccess ? "APPOINTMENT_TOKEN_EXPIRED" : "APPOINTMENT_ROUTE_UNEXPECTED_FAILURE");
+      await event(this.database, error instanceof ExpiredAppointmentAccess ? "APPOINTMENT_TOKEN_EXPIRED" : accessFailureResult(error, "APPOINTMENT_ROUTE_UNEXPECTED_FAILURE"));
       if (error instanceof ExpiredAppointmentAccess) return appointmentFailure("APPOINTMENT_TOKEN_EXPIRED");
       throw error;
     }

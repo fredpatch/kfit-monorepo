@@ -3,6 +3,7 @@ import { authCsrfHeaderName, consentApiRoutes, consentDefinitionApiRoutes, type 
   type ConsentDefinitionListResponse, type ConsentDefinitionResponse, type ConsentLinkResponse, type ConsentPublicResponse, type ConsentPublishImpactResponse, type ConsentResponse,
   type ConsentType, type OptionalConsentType } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import { commonApiErrorMessage, type ApiErrorAudience } from "../../lib/api-error-messages.js";
 const admin = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "", withCredentials: true, headers: { accept: "application/json" } });
 admin.interceptors.request.use(config => {
   if (requiresCsrfHeader(config.method)) { const headers = AxiosHeaders.from(config.headers); const token = buildCsrfHeaders(config.method)[authCsrfHeaderName]; if (token) headers.set(authCsrfHeaderName, token); config.headers = headers; }
@@ -36,8 +37,10 @@ export function consentErrorCode(error: unknown): string | null {
   const code: unknown = axios.isAxiosError(error) ? error.response?.data?.error : null;
   return typeof code === "string" ? code : null;
 }
-export function consentErrorMessage(error: unknown): string {
+export function consentErrorMessage(error: unknown, audience: ApiErrorAudience = "admin"): string {
   const code: unknown = axios.isAxiosError(error) ? error.response?.data?.error : null;
+  const common = commonApiErrorMessage(code, audience);
+  if (common) return common;
   const messages: Record<string, string> = {
     CONSENT_INVALID_INPUT: "Vérifie les choix et la date d’expiration.", CONSENT_DEFINITIONS_MISSING: "Chaque texte demandé doit être publié avant tout recueil (Configuration › Textes de consentement).",
     CONSENT_TYPE_NOT_REQUESTED: "Ce lien ne concerne pas ce consentement. Demande un nouveau lien au coach.",
@@ -50,7 +53,6 @@ export function consentErrorMessage(error: unknown): string {
     CONSENT_LINK_REVOKED: "Ce lien a été révoqué. Demande un nouveau lien au coach.", CONSENT_LINK_CONSUMED: "Ce lien a déjà été utilisé. Tes choix ne peuvent pas être renvoyés avec ce lien.",
     CONSENT_LINK_STALE: "Les documents de ce lien ont changé. Demande un nouveau lien au coach.", CONSENT_RATE_LIMITED: "Trop de tentatives. Réessaie dans une minute.",
     CONSENT_REVOCATION_FORBIDDEN: "Ce type d’acceptation ne peut pas être révoqué ici.", CONSENT_DECISION_MISSING: "Aucun accord actuel ne peut être retiré pour ce consentement.",
-    AUTH_SESSION_REQUIRED: "Reconnecte-toi pour gérer les consentements.", AUTH_CSRF_INVALID: "Actualise la page puis réessaie.", AUTH_ORIGIN_INVALID: "Cette action doit être envoyée depuis le site K’FIT.",
   };
   return typeof code === "string" && messages[code] ? messages[code] : "Impossible de traiter les consentements. Actualise la page et vérifie l’état avant de réessayer.";
 }

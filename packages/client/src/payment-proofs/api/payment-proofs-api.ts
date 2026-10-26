@@ -1,6 +1,7 @@
 import axios, { AxiosHeaders } from "axios";
 import { authCsrfHeaderName, paymentProofApiRoutes, paymentProofClaimsHeader, type PaymentProofClaims, type PaymentProofConfirmInput, type PaymentProofReviewInput, type PaymentProofLinkInput, type PaymentProofLinkResponse, type PaymentProofResponse, type PaymentProofsResponse, type PublicPaymentProofMetadata, type PaymentProofErrorCode } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import { commonApiErrorMessage, type ApiErrorAudience } from "../../lib/api-error-messages.js";
 
 const http = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL ?? "", withCredentials: true, headers: { accept: "application/json" } });
 http.interceptors.request.use(config => {
@@ -42,9 +43,9 @@ const messages: Record<PaymentProofErrorCode, string> = {
   PAYMENT_PROOF_RATE_LIMITED: "Trop de tentatives. Patiente une minute avant de réessayer.",
   PAYMENT_PROOF_ROUTE_UNEXPECTED_FAILURE: "L’opération n’a pas pu être confirmée. Vérifie son état avant de réessayer.",
 };
-export function paymentProofErrorMessage(error: unknown): string {
+export function paymentProofErrorMessage(error: unknown, audience: ApiErrorAudience = "admin"): string {
   const code: unknown = axios.isAxiosError<{ error?: unknown }>(error) ? error.response?.data.error : undefined;
-  if (code === "AUTH_SESSION_REQUIRED") return "Ta session a expiré. Reconnecte-toi.";
-  if (code === "AUTH_CSRF_INVALID" || code === "AUTH_ORIGIN_INVALID") return "La vérification de sécurité a échoué. Recharge la page.";
+  const common = commonApiErrorMessage(code, audience);
+  if (common) return common;
   return typeof code === "string" && Object.hasOwn(messages, code) ? messages[code as PaymentProofErrorCode] : "Impossible de confirmer l’opération. Vérifie son état avant de réessayer.";
 }

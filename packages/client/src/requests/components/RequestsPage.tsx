@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router";
 import { Search } from "lucide-react";
 import type { AdminServiceRequestSummary } from "@kfit/shared";
 import { adminRequestsApiClient } from "../api/admin-requests-api.js";
-import { extractRequestErrorCode, translateRequestError } from "../lib/request-error-messages.js";
+import { requestErrorMessage } from "../lib/request-error-messages.js";
 import { requestViewLabels, requestViewStatuses, requestViews, type RequestView } from "../lib/request-labels.js";
 import { RequestDetail } from "./RequestDetail.js";
 import { AdminPage } from "../../app/layout/AdminPage.js";
@@ -118,7 +118,7 @@ export function RequestsPage() {
       {query.isPending ? (
         <p role="status" className="text-sm text-muted-foreground">Chargement des demandes…</p>
       ) : query.isError ? (
-        <EmptyState title="Impossible de charger les demandes" description={translateRequestError(extractRequestErrorCode(query.error))} action={<Button variant="secondary" onClick={() => void query.refetch()}>Réessayer</Button>} />
+        <EmptyState title="Impossible de charger les demandes" description={requestErrorMessage(query.error)} action={<Button variant="secondary" onClick={() => void query.refetch()}>Réessayer</Button>} />
       ) : (
         <div className="flex flex-col gap-4">
           <div role="group" aria-label="Vues" className="-mx-1 flex gap-1 overflow-x-auto border-b border-border px-1">

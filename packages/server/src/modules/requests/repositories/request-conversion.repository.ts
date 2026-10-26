@@ -12,13 +12,8 @@ import { activeCustomerWhatsappMatches, lockCustomerWhatsapp } from "../../custo
 import { resolveConversionDecision, type ConversionActor, type ConversionResult, type RequestConversionRepository } from "../services/request-conversion.service.js";
 import { lockCadenceWrites, recordEffectiveCadence, resolvedCadence } from "../../follow-ups/repositories/cadence-history.repository.js";
 import { activeVariant } from "../../catalogue/repositories/catalogue-content.repository.js";
+import { isPgUniqueViolation } from "../../../db/pg-error.js";
 
-function isConversionLinkConflict(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  if ("code" in error && error.code === "23505" && "constraint" in error
-    && (error.constraint === "subscriptions_source_request_uq" || error.constraint === "service_requests_converted_subscription_uq")) return true;
-  return "cause" in error && error.cause !== error ? isConversionLinkConflict(error.cause) : false;
-}
 
 export class DrizzleRequestConversionRepository implements RequestConversionRepository {
   constructor(private readonly database: typeof appDb, private readonly options: { auditHashPepper: string }) {}
@@ -94,7 +89,7 @@ export class DrizzleRequestConversionRepository implements RequestConversionRepo
       }, { isolationLevel: "read committed" });
     } catch (error) {
       // Interpret only link-uniqueness conflicts after the failed transaction has rolled back.
-      if (isConversionLinkConflict(error)) return { status: "already_converted" };
+      if (isPgUniqueViolation(error, "subscriptions_source_request_uq") || isPgUniqueViolation(error, "service_requests_converted_subscription_uq")) return { status: "already_converted" };
       throw error;
     }
   }

@@ -45,7 +45,7 @@ function PublicConsentContent({ token, queryId }: { token: string; queryId: stri
     if (definitions.length === 0 || Object.keys(decisions).length !== definitions.length || inFlight.current) return;
     inFlight.current = true; setBusy(true); setError(null);
     try { await consentApi.publicSubmit(token, decisions); setSubmitted(true); }
-    catch (failure) { setError(consentErrorMessage(failure)); await query.refetch(); }
+    catch (failure) { setError(consentErrorMessage(failure, "public")); await query.refetch(); }
     finally { inFlight.current = false; setBusy(false); }
   }
 
@@ -62,7 +62,7 @@ function PublicConsentContent({ token, queryId }: { token: string; queryId: stri
     );
   }
   if (query.isPending) return <PublicLoading label="Chargement des documents…" tag={tag} />;
-  if (query.isError || !query.data) return <PublicUnavailable title="Documents indisponibles" message={consentErrorMessage(query.error)} tag={tag} />;
+  if (query.isError || !query.data) return <PublicUnavailable title="Documents indisponibles" message={consentErrorMessage(query.error, "public")} tag={tag} />;
 
   const answered = definitions.filter((d) => choices[d.consentType]).length;
   const complete = answered === definitions.length && definitions.length > 0;

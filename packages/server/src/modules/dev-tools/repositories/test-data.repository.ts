@@ -8,6 +8,7 @@ import {
   testDataDetachedColumns, testDataForeignKeys, testDataPolymorphicLinks, testDataPolymorphicTypes, testDataPurgePlan, testDataRootLabels, testDataTable,
 } from "../services/test-data.plan.js";
 import { classifyTestData, type TestDataClassification, type TestDataRef, type TestDataRows } from "../services/test-data.policy.js";
+import { isPgForeignKeyViolation } from "../../../db/pg-error.js";
 
 type AppDb = typeof appDb;
 type Tx = Parameters<Parameters<AppDb["transaction"]>[0]>[0];
@@ -23,13 +24,6 @@ export const SYNTHETIC_USER_EMAIL_PATTERN = "%@example.invalid";
 const PURGE_LOCK = "kfit:dev:test-data-purge";
 
 class TestDataChanged extends Error {}
-function isForeignKeyViolation(error: unknown): boolean {
-  for (let current: unknown = error; current && typeof current === "object"; current = (current as { cause?: unknown }).cause) {
-    if ((current as { code?: unknown }).code === "23503") return true;
-    if ((current as { cause?: unknown }).cause === current) break;
-  }
-  return false;
-}
 
 export class DrizzleTestDataRepository {
   constructor(
@@ -99,7 +93,7 @@ export class DrizzleTestDataRepository {
         return { status: "purged", counts, files } as const;
       });
     } catch (error) {
-      if (error instanceof TestDataChanged || isForeignKeyViolation(error)) return { status: "changed" };
+      if (error instanceof TestDataChanged || isPgForeignKeyViolation(error)) return { status: "changed" };
       throw error;
     }
   }

@@ -9,7 +9,7 @@ Deliver the V1 Core operational layer: dashboard KPIs and alert workspaces, noti
 1. S7.1 — Core dashboard KPIs and operational alert workspaces — CLOSED / validated 2026-10-23.
 2. S7.2 — Dashboard and email notification engine with configurable reminders — CLOSED / validated 2026-10-25.
 3. S7.3 — Retention, anonymization, soft-delete purge and privacy-action replay — APPROVED_FOR_IMPLEMENTATION (Gate 1 approved 2026-10-25; S7.3a server in progress).
-4. S7.4 — Backup/restore and production-hardening acceptance — CLOSED until S7.3 validation.
+4. S7.4 — Backup/restore and production-hardening acceptance — APPROVED_FOR_IMPLEMENTATION (Gate 1 approved 2026-10-26, D1–D11; S7.4a in progress)
 
 ## Dependency notes
 
@@ -1514,3 +1514,69 @@ Status: delivered, uncommitted → Fred: validate.
 
 ## S7.4 prerequisites (SEC-01 D6)
 - base image pinned to an exact patched tag (e.g. node:22.23.4-alpine, never node:22); smoke test records `node --version`; security:check runs in the image build.
+
+## S7.4 Gate 1 — approved 2026-10-26
+
+Scope: code-side production readiness + proven backup/restore. Actual staging/production deployment, Dockerfile, nginx, Certbot, host timer install and off-server destination = Sprint 9.
+D1 shared runtime factory, createProductionRuntime(), dev tools never mounted in production.
+D2 production refuse-to-start: security floor, required env present and not placeholder, KFIT_APP_BASE_URL https, DB not kfit_dev/kfit_test, privacy journal dir writable, no published consent titled « DÉMONSTRATION ».
+D3 privacy jobs always on in production; KFIT_PRIVACY_JOBS=off refused.
+D4 global X-Request-Id: valid UUID kept, otherwise generated; echoed in the response.
+D5 outbound HTTP: none in runtime; dev preflights dev-only; SEC-01 audit closed.
+D6 ops:backup → encrypted bundle (pg_dump custom + private files + privacy journal + SHA-256 manifest) to BACKUP_DIR, copied to BACKUP_SECONDARY_DIR; BACKUP_ENCRYPTION_KEY never logged.
+D7 retention 7 daily + 4 weekly (named constants), rotated by the script.
+D8 scheduling by host timer calling the script (not node-cron); documented in S7.4, installed in Sprint 9.
+D9 ops:restore: verify manifest first; restore into a named target DB; refuse non-empty target without --confirm-overwrite; restore files + journal; run privacy:replay automatically before traffic; audit event with counts only; replay guard widened to the confirmed restore target, still refuses kfit_dev.
+D10 automated restore drill test: backup → anonymize after backup → restore → subject re-anonymized, files and counts match.
+D11 runbook docs/runbooks/backup-restore.md + production start checklist; Fred runs a full local drill on the prod compose = S7.4 acceptance.
+Then SEC-02 (trusted devices / suspicious-device OTP) before Sprint 8 UAT.
+
+## S7.4a scope
+
+### Context (verified on main 580fca4)
+- Only runtime: src/dev-app.ts createDevelopmentRuntime() (l.~93), started by scripts/dev/api-server.mjs (loads ../.env, refuses kfit_test, runStartupChecks, starts notification + privacy jobs, listens 127.0.0.1, SIGINT/SIGTERM shutdown). AuthRouteService cookieMode hard-coded "development" (l.119) → cookies not Secure. devToolsController always passed (l.306). No `trust proxy`.
+- Privacy jobs: api-server.mjs l.35 `KFIT_PRIVACY_JOBS=off` disables; journal optional (dev-app.ts l.247 createPrivacyJournal(process.env.KFIT_PRIVACY_JOURNAL_DIR), warning only).
+- Env read by src: DATABASE_URL, NODE_ENV, LOG_LEVEL, KFIT_APP_BASE_URL, PRIVATE_STORAGE_ROOT, CLAMAV_HOST/PORT, SMTP_HOST (+ SMTP_* in .env.example), AUTH_ACCESS_TOKEN_SECRET, AUTH_AUDIT_HASH_PEPPER, AUTH_OTP_PEPPER, AUTH_RECOVERY_TOKEN_SECRET, AUTH_REFRESH_TOKEN_PEPPER (loadAuthConfig), KFIT_PRIVACY_JOURNAL_DIR, plus document/other peppers — grep and list the complete set. .env.prod.example only has POSTGRES_* + DATABASE_URL.
+- consent_definitions (db/schema/onboarding.ts l.35): title, status ("draft" default; published state value — confirm), publishedAt, retiredAt.
+- X-Request-Id: 13 routers read headers["x-request-id"] (auth, customers, requests, admin-requests, onboarding, privacy, catalogue, today, analytics, subscriptions, documents, notifications, dev-tools); only notifications and dev-tools validate it. audit_events.request_id is uuid → a non-UUID header makes audited writes fail (500).
+- database-target.ts has namesIntegrationTestDatabase().
+
+### Decisions (Gate 1 D1–D5, detailed)
+A1 (D1). Runtime factory: extract the shared wiring of createDevelopmentRuntime into createRuntime(options: { mode: "development" | "production"; env }) in src/runtime.ts; createDevelopmentRuntime() and new createProductionRuntime() are thin wrappers. Production: cookieMode "production"; devToolsController NOT passed (and dev-tools module not imported by the production entry chain if feasible — report); `app.set("trust proxy", "loopback")` (nginx on the same host, Sprint 9). Dev behaviour byte-for-byte unchanged (existing tests prove it).
+A2 (D1). Entrypoint: scripts/prod/api-server.mjs — no dotenv (env comes from the process/compose), NODE_ENV must equal "production" else exit 1; runs the production guards (A3) BEFORE listen; binds KFIT_API_HOST (default 127.0.0.1) and KFIT_API_PORT; starts notification + privacy jobs; graceful shutdown like dev. Root/server script `start:prod` (requires prior build). Not wired into any compose file yet (Sprint 9).
+A3 (D2). Guards in src/runtime/production-guards.ts — pure checks + one async DB check, each failure has a code; all failures collected then one error listing codes (no secret values in messages):
+  - SECURITY_FLOOR (existing assertRuntimeSecurityFloor, production throws);
+  - ENV_MISSING: named constant PRODUCTION_REQUIRED_ENV (complete list from Context grep, incl. SMTP_*, PRIVATE_STORAGE_ROOT, CLAMAV_*, KFIT_PRIVACY_JOURNAL_DIR, KFIT_APP_BASE_URL, all AUTH_* secrets/peppers); empty or placeholder values (named PLACEHOLDER_PATTERNS: "change-me", "changeme", "example", "dev-", "xxx", "todo", case-insensitive) count as missing; secrets shorter than 32 chars → ENV_WEAK_SECRET;
+  - APP_BASE_URL_NOT_HTTPS;
+  - DATABASE_TARGET_FORBIDDEN: database name kfit_dev or kfit_test, or host localhost:5433 (dev port);
+  - PRIVACY_JOURNAL_UNAVAILABLE: dir exists, is a directory, writable (write+remove a probe file);
+  - PRIVACY_JOBS_DISABLED: KFIT_PRIVACY_JOBS=off in production (D3); KFIT_NOTIFICATION_JOBS=off allowed but logged as warning;
+  - DEMO_CONSENT_PUBLISHED (S7.3 D9): any consent_definitions row currently published (status published, retiredAt null) whose title contains « DÉMONSTRATION » (case-insensitive, accent-insensitive: also DEMONSTRATION) → refuse; message gives count and consent types only.
+  Exported runProductionGuards({ env, pool/db, version }) → { ok } | { ok:false, failures:[{code, detail}] }.
+A4 (D3). Privacy jobs always start in production; journal mandatory (A3). Dev unchanged.
+A5 (D4). Global middleware requestIdMiddleware mounted first in createServerApp (before the SEC-01 encoding guard): keep header if it is a canonical UUID (any version, case-insensitive, single value), otherwise overwrite req.headers["x-request-id"] with randomUUID(); always set response header X-Request-Id. Remove the now-redundant local guards in notifications and dev-tools only if trivially equivalent; leave the other 11 routers reading the header (they now always get a UUID). Named constant cites S7.4 D4.
+A6 (D5). Outbound HTTP: record in sprint-7.md "SEC-01 D5 audit closed: runtime has no outbound HTTP; dev preflight scripts are dev-only (auth-staging, password-recovery/Mailpit)". No code change.
+A7. .env.prod.example: add every PRODUCTION_REQUIRED_ENV key with an obvious placeholder value (so the guard rejects an unedited copy) and a one-line French comment per group. No real values. .env.staging.example: same keys.
+No migration. No API contract change except the always-present X-Request-Id response header.
+
+Status: S7.4a APPROVED_FOR_IMPLEMENTATION
+
+## S7.4a execution — 2026-10-26 (Claude)
+
+Status: delivered, uncommitted → Fred: validate.
+
+- Node v24.22.1; `npm run security:check` ✔. Counts: shared 77 → 77; server unit 643 → 656 (655 pass + 1 skipped: read-only journal dir on Windows); integration on kfit_test 618 → 623, also 623/623 without the root .env (CI-like).
+- A1: `src/runtime.ts` `createRuntime({ mode, env, devToolsController? })` holds the whole composition (moved verbatim from dev-app.ts; `process.env` → `env`; cookieMode = mode). `dev-app.ts` = development wrapper injecting the dev-tools factory; `prod-app.ts` `createProductionRuntime(env)`. Production: Secure cookies, `trust proxy` = "loopback" (PRODUCTION_TRUST_PROXY), dev tools never mounted.
+  - Dev-tools exclusion: runtime.ts and prod-app.ts import only the DevToolsController type; controller, service and repository are loaded by dev-app.ts only. app.ts still imports the dev-tools router module (routing code, mounted only when a controller is passed) — not loaded: the destructive service/repository.
+- A2: `scripts/prod/api-server.mjs` (no dotenv; NODE_ENV must be "production"; guards before anything listens; DB client loaded only when the guards need it; runStartupChecks; privacy jobs always, notification jobs unless KFIT_NOTIFICATION_JOBS=off; binds KFIT_API_HOST (default 127.0.0.1) : KFIT_API_PORT; SIGINT/SIGTERM shutdown). `npm run start:prod` (root + server). Not wired into compose (Sprint 9).
+- A3: `src/runtime/production-guards.ts`. Codes: SECURITY_FLOOR, ENV_MISSING, ENV_WEAK_SECRET, APP_BASE_URL_NOT_HTTPS, DATABASE_TARGET_FORBIDDEN, PRIVACY_JOURNAL_UNAVAILABLE, PRIVACY_JOBS_DISABLED, DEMO_CONSENT_PUBLISHED. All collected, one log line `CODE (detail)` with key names / counts / consent types only.
+  - PRODUCTION_REQUIRED_ENV: DATABASE_URL, KFIT_APP_BASE_URL, PRIVATE_STORAGE_ROOT, KFIT_PRIVACY_JOURNAL_DIR, CLAMAV_HOST, CLAMAV_PORT, SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, SMTP_FROM, AUTH_OTP_PEPPER, AUTH_AUDIT_HASH_PEPPER, AUTH_REFRESH_TOKEN_PEPPER, AUTH_ACCESS_TOKEN_SECRET, AUTH_RECOVERY_TOKEN_SECRET (secrets = the 5 AUTH_*, ≥ 32 chars). Optional, defaulted: NODE_ENV, LOG_LEVEL, AUTH_*_TTL/limits (loadAuthConfig), KFIT_API_HOST/PORT, KFIT_NOTIFICATION_JOBS.
+  - PLACEHOLDER_PATTERNS also contains "change_me" (deviation: the existing .env.*.example values are CHANGE_ME_WITH_A_STRONG_SECRET, which the brief's list did not match).
+  - A key already ENV_MISSING is not probed again (journal dir, database). The demo-consent query is read-only and also runs on a forbidden target; an unreachable database reports DEMO_CONSENT_PUBLISHED "not verified".
+- A4: privacy jobs always start in the production entry; the journal is required by the guards. Dev unchanged.
+- A5: `src/http/request-id.middleware.ts` mounted first in createServerApp (before the request logger and the SEC-01 guard): canonical UUID kept, anything else (absent, empty, malformed, oversized, repeated → Node joins "a, b") replaced by randomUUID(); X-Request-Id always on the response. Routers touched: none — the 11 reading the header now always get a UUID; the local guards in notifications and dev-tools were kept because both routers are also mounted alone in their own express tests (in the app they are now no-ops).
+- A6: SEC-01 D5 audit closed: runtime has no outbound HTTP; dev preflight scripts are dev-only (auth-staging, password-recovery/Mailpit).
+- A7: .env.prod.example and .env.staging.example gain every PRODUCTION_REQUIRED_ENV key with a « change-me » placeholder and a French comment per group. Unedited copies refused with ENV_MISSING only (verified by running the entry with each file).
+- Tests: guards (unit, each code alone, all-good, multiple, placeholders, short secrets, targets, journal missing / file / read-only skipped on Windows), demo consent (integration: draft/retired ok, published and unaccented refused), runtime (integration: Secure cookies, trust proxy, dev tools 404 in production; dev unchanged), request id (express: kept / replaced / echoed / seen by the route; integration: login with "not-a-uuid" → 200 and audited with the generated UUID — fails when the middleware is removed), entry smoke (spawn: NODE_ENV ≠ production → 1; empty production env → 1, ENV_MISSING, planted value never printed).
+- Verified by hand: dev API restarted unchanged (same startup lines); `x-request-id: nope` on the dev API → generated UUID echoed; NODE_ENV=production with the dev .env → ENV_MISSING, DATABASE_TARGET_FORBIDDEN, DEMO_CONSENT_PUBLISHED (refused before listen).
+- Limits: no production start was attempted (by design); runStartupChecks is reused from dev/ (it checks DB, SMTP, ClamAV). Read-only journal-dir test runs on Linux CI only.

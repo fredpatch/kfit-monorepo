@@ -20,6 +20,7 @@
     "test:integration": "npm run build && node --env-file-if-exists=../../.env --env-file=../../.env.test --test --test-concurrency=1 \"dist/**/*.integration.js\"",
     "dev:api": "npm run build && node ./scripts/dev/api-server.mjs",
     "dev:api:watch": "node ./scripts/dev/api-watch.mjs",
+    "start:prod": "node ./scripts/prod/api-server.mjs",
     "dev:auth-staging-smoke": "node ./scripts/dev/auth-staging-smoke-server.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

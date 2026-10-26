@@ -46,6 +46,7 @@ import { createExpressDevToolsRouter } from "./modules/dev-tools/routes/express-
 import type { QuestionnaireController } from "./modules/questionnaires/controllers/questionnaire.controller.js";
 import { createExpressQuestionnaireRouter } from "./modules/questionnaires/routes/express-questionnaire.router.js";
 import { rejectEncodedRequestBodies } from "./security/reject-encoded-request-bodies.js";
+import { requestIdMiddleware } from "./http/request-id.middleware.js";
 
 export type ServerAppDeps = {
   /** Mounted before every route, so each request is logged once it finishes. */
@@ -81,6 +82,8 @@ export function createServerApp(deps: ServerAppDeps): Express {
   const app = express();
 
   app.disable("x-powered-by");
+  // S7.4 D4: first, so the logger, the encoding guard and every router see the same canonical request id.
+  app.use(requestIdMiddleware);
   if (deps.requestLogger) app.use(deps.requestLogger);
   // SEC-01 D4 (CVE-2026-111497): before every body parser, including the routers' raw() uploads.
   app.use(rejectEncodedRequestBodies);

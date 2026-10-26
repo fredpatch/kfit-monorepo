@@ -28,7 +28,7 @@ Recette 2026-10-25 fixes
 TEST-01         integration DB kfit_test + dev « Données de test » cleanup — delivered and committed 2026-10-25 (sprint-7.md § TEST-01 execution); validated by Fred 2026-10-26
 Backlog (V1.1)    « RDV à clôturer dans À traiter » (POL-01 D8: display-only in POL-01)
 S7.4 prereqs      production guard: refuse production start if any published consent definition title contains « DÉMONSTRATION » (D9, not implemented)
-S7.4 prereqs      CI integration DB = kfit_test (port alignment 5433 vs 5432 still open)
+CI integration    kfit_test aligned 2026-10-26: service on 5433, .env.test written by CI, db:test:prepare (migrations + catalogue seed); was failing since TEST-01 (exit 9, .env.test absent)
 S7.3b-1         server read slice — validated, committed d6fdf61
 ARCH-01           archived freeze + unarchive — committed 356070a; validated live by Fred 2026-10-26
 S7.3b-2           privacy client — validated live by Fred 2026-10-26, committed 544b57d

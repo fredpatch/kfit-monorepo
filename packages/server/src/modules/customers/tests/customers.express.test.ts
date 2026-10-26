@@ -12,10 +12,12 @@ import { CustomersService, type CustomersRepository } from "../services/customer
 
 const session: AuthenticatedSessionContext = { userId: "11111111-1111-1111-1111-111111111111", sessionId: "22222222-2222-2222-2222-222222222222", role: "admin" };
 const customer = { id: "33333333-3333-3333-3333-333333333333", fullName: "Synthetic Customer", whatsapp: "+24100000000", email: null, city: null, country: null, prospectId: null, preferredContactChannel: "whatsapp", createdAt: "2026-10-20T08:00:00.000Z" };
+const privacy = { archivedAt: null, anonymizedAt: null, archivable: true, activeHolds: 0 };
+const archived = { id: "55555555-5555-5555-5555-555555555555", displayName: "Client anonymisé · 1A2B", archivedAt: "2026-10-25T08:00:00.000Z", anonymizedAt: "2026-10-25T09:00:00.000Z", activeHolds: 1 };
 const csrf = "synthetic-csrf-token";
 const headers = { "content-type": "application/json", cookie: `${authCookieNames.csrfToken}=${csrf}`, "x-csrf-token": csrf };
 async function withServer(run: (url: string) => Promise<void>, auth: AuthenticatedSessionContext | null = session, overrides: Partial<CustomersRepository> = {}) {
-  const repository: CustomersRepository = { async listActive() { return [customer]; }, async searchActive() { return [customer]; }, async createManual() { return { status: "ok", customer }; }, async getDetail() { return { customer, subscriptions: [] }; }, async getAnalyticsSource() { return { customerId: customer.id, subscriptions: [], appointments: [], followUps: [], links: [], rescheduleRequests: [] }; }, async getOverviewSource() { return { customers: [customer], subscriptions: [], completedAppointments: [], followUps: [], upcomingAppointments: [] }; }, ...overrides };
+  const repository: CustomersRepository = { async listActive() { return [customer]; }, async searchActive() { return [customer]; }, async createManual() { return { status: "ok", customer }; }, async getDetail() { return { customer, subscriptions: [], privacy }; }, async listArchived() { return [archived]; }, async getAnalyticsSource() { return { customerId: customer.id, subscriptions: [], appointments: [], followUps: [], links: [], rescheduleRequests: [] }; }, async getOverviewSource() { return { customers: [customer], subscriptions: [], completedAppointments: [], followUps: [], upcomingAppointments: [] }; }, ...overrides };
   const app = express();
   app.use(express.json());
   app.use(createExpressCustomersRouter({ controller: new CustomersController(new CustomersService(repository)), resolveSession: () => auth }));
@@ -30,11 +32,11 @@ for (const role of [null, "coach"] as const) {
   test(`all customer routes reject ${role ?? "unauthenticated"} callers before persistence`, async () => {
     const fail = async (): Promise<never> => assert.fail("unauthorized persistence access");
     await withServer(async url => {
-      for (const [path, method] of [["/admin/customers", "GET"], ["/admin/customers/search?whatsapp=123456", "GET"], ["/admin/customers", "POST"], [`/admin/customers/${customer.id}`, "GET"], [`/admin/customers/${customer.id}/analytics`, "GET"], ["/admin/customers/overview", "GET"]] as const) {
+      for (const [path, method] of [["/admin/customers", "GET"], ["/admin/customers/search?whatsapp=123456", "GET"], ["/admin/customers", "POST"], [`/admin/customers/${customer.id}`, "GET"], [`/admin/customers/${customer.id}/analytics`, "GET"], ["/admin/customers/overview", "GET"], ["/admin/customers/archived", "GET"]] as const) {
         const response = await fetch(url + path, { method, headers, ...(method === "POST" ? { body: "{}" } : {}) });
         assert.equal(response.status, role ? 403 : 401);
       }
-    }, role ? { ...session, role } : null, { listActive: fail, searchActive: fail, createManual: fail, getDetail: fail, getAnalyticsSource: fail, getOverviewSource: fail });
+    }, role ? { ...session, role } : null, { listActive: fail, searchActive: fail, createManual: fail, getDetail: fail, listArchived: fail, getAnalyticsSource: fail, getOverviewSource: fail });
   });
 }
 
@@ -85,19 +87,19 @@ test("customer HTTP duplicate is a stable 409 conflict", async () => {
 test("customer HTTP persistence failures do not expose PII or internal causes", async () => {
   const fail = async (): Promise<never> => { throw new Error("secret database detail"); };
   await withServer(async url => {
-    for (const [path, method] of [["/admin/customers", "GET"], ["/admin/customers/search?whatsapp=123456", "GET"], ["/admin/customers", "POST"], [`/admin/customers/${customer.id}`, "GET"], [`/admin/customers/${customer.id}/analytics`, "GET"], ["/admin/customers/overview", "GET"]] as const) {
+    for (const [path, method] of [["/admin/customers", "GET"], ["/admin/customers/search?whatsapp=123456", "GET"], ["/admin/customers", "POST"], [`/admin/customers/${customer.id}`, "GET"], [`/admin/customers/${customer.id}/analytics`, "GET"], ["/admin/customers/overview", "GET"], ["/admin/customers/archived", "GET"]] as const) {
       const response = await fetch(url + path, { method, headers, ...(method === "POST" ? { body: JSON.stringify(customer) } : {}) });
       assert.equal(response.status, 500);
       assert.deepEqual(await response.json(), { error: "CUSTOMER_ROUTE_UNEXPECTED_FAILURE" });
     }
-  }, session, { listActive: fail, searchActive: fail, createManual: fail, getDetail: fail, getAnalyticsSource: fail, getOverviewSource: fail });
+  }, session, { listActive: fail, searchActive: fail, createManual: fail, getDetail: fail, listArchived: fail, getAnalyticsSource: fail, getOverviewSource: fail });
 });
 
 test("customer detail returns the profile, 404 for unknown ids, 400 for malformed ids, and keeps /search routed", async () => {
   await withServer(async url => {
     const ok = await fetch(`${url}/admin/customers/${customer.id}`, { headers });
     assert.equal(ok.status, 200);
-    assert.deepEqual(await ok.json(), { customer, subscriptions: [] });
+    assert.deepEqual(await ok.json(), { customer, subscriptions: [], privacy });
     const missing = await fetch(`${url}/admin/customers/44444444-4444-4444-4444-444444444444`, { headers });
     assert.equal(missing.status, 404);
     assert.deepEqual(await missing.json(), { error: "CUSTOMER_NOT_FOUND" });
@@ -106,7 +108,18 @@ test("customer detail returns the profile, 404 for unknown ids, 400 for malforme
     const search = await fetch(`${url}/admin/customers/search?whatsapp=%2B24100000000`, { headers });
     assert.equal(search.status, 200);
     assert.deepEqual(await search.json(), { customers: [customer] });
-  }, session, { async getDetail(id) { return id === customer.id ? { customer, subscriptions: [] } : null; } });
+  }, session, { async getDetail(id) { return id === customer.id ? { customer, subscriptions: [], privacy } : null; } });
+});
+
+test("S7.3b D1/D2: the fiche reads archived customers too, and /archived is not captured by :customerId", async () => {
+  const visibilities: string[] = [];
+  await withServer(async url => {
+    const list = await fetch(`${url}/admin/customers/archived`, { headers });
+    assert.equal(list.status, 200);
+    assert.deepEqual(await list.json(), { customers: [archived] });
+    assert.equal((await fetch(`${url}/admin/customers/${customer.id}`, { headers })).status, 200);
+    assert.deepEqual(visibilities, ["include_archived"]);
+  }, session, { async getDetail(_id, visibility) { visibilities.push(visibility); return { customer, subscriptions: [], privacy }; } });
 });
 
 test("customer analytics returns the read-only analytics, 404 for unknown ids and 400 for invalid queries", async () => {

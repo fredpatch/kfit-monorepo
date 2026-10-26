@@ -53,6 +53,15 @@ export function prospectArchiveRefusal(prospect: { exists: boolean }, requestSta
   return requestStatuses.every((status) => (TERMINAL_REQUEST_STATUSES as readonly string[]).includes(status)) ? null : "has_open_request";
 }
 
+/** S7.3b D1: « Archiver » is offered on the fiche exactly when the archive command would accept it. */
+export function customerArchivable(archivedAt: Date | null, subscriptionStatuses: readonly string[]): boolean {
+  return archivedAt === null && customerArchiveRefusal({ exists: true }, subscriptionStatuses) === null;
+}
+/** S7.3b D5: same for a prospect on the request detail. */
+export function prospectArchivable(archivedAt: Date | null, requestStatuses: readonly string[]): boolean {
+  return archivedAt === null && prospectArchiveRefusal({ exists: true }, requestStatuses) === null;
+}
+
 export type AnonymizeDecision =
   | { outcome: "refused"; reason: "not_found" | "not_archived" | "hold_active" | "confirmation_mismatch" }
   | { outcome: "already_anonymized" }

@@ -46,6 +46,7 @@ function makeService(overrides: Partial<AdminRequestsServiceFake> = {}): AdminRe
         status: "ok",
         detail: {
           ...summary,
+          prospect: { ...summary.prospect, privacy: { archivedAt: null, anonymizedAt: null, archivable: false } },
           objective: null,
           preferredStartDate: null,
           message: null,

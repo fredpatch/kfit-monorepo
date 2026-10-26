@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => {
         "/admin/catalogue": apiProxy,
         "/admin/requests": apiProxy,
         "/admin/customers": apiProxy,
+        // S7.3b D7: prospect archive/anonymize and retention holds.
+        "/admin/prospects": apiProxy,
+        "/admin/retention-holds": apiProxy,
         "/admin/subscriptions": apiProxy,
         "/admin/consent-definitions": apiProxy,
         "/admin/appointments": apiProxy,

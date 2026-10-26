@@ -30,6 +30,7 @@ function summary(overrides: Partial<AdminServiceRequestSummary> = {}): AdminServ
 class FakeAdminRequestsRepository implements AdminRequestsRepository {
   detail: AdminServiceRequestDetail | null = {
     ...summary(),
+    prospect: { ...summary().prospect, privacy: { archivedAt: null, anonymizedAt: null, archivable: false } },
     objective: null,
     preferredStartDate: null,
     message: null,

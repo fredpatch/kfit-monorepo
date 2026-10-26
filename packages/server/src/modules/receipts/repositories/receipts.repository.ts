@@ -103,7 +103,7 @@ export class DrizzleReceiptsRepository implements ReceiptsRepository {
           const { sub, view, source } = await this.lockFinance(tx, id);
           const [existing] = await tx.select().from(receipts).where(eq(receipts.paymentEventId, id));
           if (existing) return { ok: true, body: { receipt: await this.detail(tx, existing), replayed: true } };
-          const [customer] = await tx.select().from(customers).where(eq(customers.id, sub.customerId)); if (!customer) return receiptFailure("RECEIPT_INVALID_PAYMENT");
+          const [customer] = await tx.select().from(customers).where(eq(customers.id, sub.customerId)); if (!customer || customer.archivedAt) return receiptFailure("RECEIPT_INVALID_PAYMENT");
           const now = this.clock(), year = quoteYear(now), receiptId = randomUUID();
           // Validate historical reconstruction before allocating a number or creating an artifact.
           buildReceiptSnapshot(view, source, { receiptNumber: "pending", customerName: customer.fullName, subscriptionReference: sub.reference, issuedAt: now.toISOString() });

@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 import test from "node:test";
 import {
   ANONYMIZATION_PLAN,
+  customerArchivable,
+  prospectArchivable,
   PRIVACY_INVENTORY_NON_KEEP,
   PRIVACY_KEEP_COLUMNS,
   anonymizeDecision,
@@ -71,4 +73,14 @@ test("anonymize decision: not found, already anonymized is idempotent, archived 
 
 test("purge_after = anonymization time + delay days (D3c)", () => {
   assert.equal(purgeAfter(new Date("2026-10-25T10:00:00Z"), 30).toISOString(), "2026-11-24T10:00:00.000Z");
+});
+
+test("S7.3b D1/D5: archivable flags mirror the archive refusal rules and are false once archived", () => {
+  assert.equal(customerArchivable(null, []), true);
+  assert.equal(customerArchivable(null, ["completed", "cancelled"]), true);
+  assert.equal(customerArchivable(null, ["completed", "active"]), false);
+  assert.equal(customerArchivable(new Date(), ["completed"]), false);
+  assert.equal(prospectArchivable(null, ["rejected", "converted"]), true);
+  assert.equal(prospectArchivable(null, ["rejected", "contacting"]), false);
+  assert.equal(prospectArchivable(new Date(), ["rejected"]), false);
 });

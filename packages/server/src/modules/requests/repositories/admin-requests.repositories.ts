@@ -26,6 +26,7 @@ import type {
 } from "../services/admin-requests.service.js";
 import { finalVariantRefusal, finalVariantRuleFor, type FinalVariantRefusal } from "../services/admin-requests.service.js";
 import { activeVariant } from "../../catalogue/repositories/catalogue-content.repository.js";
+import { prospectArchivable } from "../../privacy/services/privacy.policy.js";
 
 type AdminRequestsDb = typeof appDb;
 
@@ -281,9 +282,21 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
       .orderBy(asc(waitlistEntries.enteredAt), asc(waitlistEntries.id));
 
     const summary = toSummary(row, attempts[0]?.occurredAt ?? null, attempts[0]?.nextActionAt ?? null);
+    // S7.3b D5: privacy flags of the prospect, computed over every request they made.
+    const [privacy] = await this.database.select({ archivedAt: prospects.archivedAt, anonymizedAt: prospects.anonymizedAt })
+      .from(prospects).where(eq(prospects.id, row.prospectId)).limit(1);
+    const requestStatuses = await this.database.select({ status: serviceRequests.status }).from(serviceRequests).where(eq(serviceRequests.prospectId, row.prospectId));
+    const archivedAt = privacy?.archivedAt ?? null;
 
     return {
       ...summary,
+      prospect: {
+        ...summary.prospect,
+        privacy: {
+          archivedAt: archivedAt?.toISOString() ?? null, anonymizedAt: privacy?.anonymizedAt?.toISOString() ?? null,
+          archivable: prospectArchivable(archivedAt, requestStatuses.map((request) => request.status)),
+        },
+      },
       objective: row.objective,
       preferredStartDate: row.preferredStartDate ? row.preferredStartDate.toISOString() : null,
       message: row.message,

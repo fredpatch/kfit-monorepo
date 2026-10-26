@@ -137,6 +137,7 @@ test("admin requests shared contracts type-check queue, detail, contact-attempt 
   const detailResponse: AdminRequestDetailResponse = {
     request: {
       ...summary,
+      prospect: { ...summary.prospect, privacy: { archivedAt: null, anonymizedAt: null, archivable: false } },
       objective: null,
       preferredStartDate: null,
       message: null,

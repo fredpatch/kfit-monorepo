@@ -1,4 +1,4 @@
-import { customerAnalyticsPeriods, normalizeWhatsapp, type AdminCustomer, type AdminCustomerOverviewResponse, type AdminCustomerDetailResponse, type CustomerAnalytics, type CustomerAnalyticsPeriod } from "@kfit/shared";
+import { customerAnalyticsPeriods, normalizeWhatsapp, type AdminArchivedCustomer, type AdminCustomer, type AdminCustomerOverviewResponse, type AdminCustomerDetailResponse, type CustomerAnalytics, type CustomerAnalyticsPeriod } from "@kfit/shared";
 import { computeCustomerAnalytics, selectFocusSubscription, type AnalyticsSource } from "./customer-analytics.policy.js";
 import { computeCustomerOverview, type OverviewSource } from "./customer-overview.policy.js";
 
@@ -20,12 +20,16 @@ export type CreateCustomerResult =
   | { status: "ok"; customer: AdminCustomer }
   | { status: "duplicate" }
   | { status: "invalid"; reason: string };
+/** S7.3b D1: the fiche reads archived and anonymized customers too; every other reader stays active-only (S7.3 D5). */
+export type CustomerDetailVisibility = "active" | "include_archived";
 export interface CustomersRepository {
   listActive(): Promise<AdminCustomer[]>;
   searchActive(whatsapp: string): Promise<AdminCustomer[]>;
   createManual(input: NormalizedCustomerInput, actor: CustomerActorContext): Promise<Exclude<CreateCustomerResult, { status: "invalid" }>>;
-  /** Active customer with all their subscriptions (any status), newest first. Null when unknown, archived or anonymized. */
-  getDetail(customerId: string): Promise<AdminCustomerDetailResponse | null>;
+  /** Customer with all their subscriptions (any status), newest first, and the privacy block. Null when unknown or outside the visibility. */
+  getDetail(customerId: string, visibility: CustomerDetailVisibility): Promise<AdminCustomerDetailResponse | null>;
+  /** S7.3b D2: archived and anonymized customers, archivedAt desc. */
+  listArchived(): Promise<AdminArchivedCustomer[]>;
   /** Raw rows for the client analytics (UX-4c). Null when the customer is unknown, archived or anonymized. */
   getAnalyticsSource(customerId: string): Promise<AnalyticsSource | null>;
   /** Raw rows for the clients overview (UX-5): active customers and their subscription activity. */
@@ -83,10 +87,14 @@ export class CustomersService {
     return this.repository.listActive();
   }
 
+  listArchived(): Promise<AdminArchivedCustomer[]> {
+    return this.repository.listArchived();
+  }
+
   /** Read-only client profile (UX-4). No business rule changes: it only aggregates existing rows. */
   async getDetail(customerId: unknown): Promise<CustomerDetailResult> {
     if (typeof customerId !== "string" || !uuidPattern.test(customerId)) return { status: "invalid", reason: "customer_id_invalid" };
-    const detail = await this.repository.getDetail(customerId.toLowerCase());
+    const detail = await this.repository.getDetail(customerId.toLowerCase(), "include_archived");
     return detail ? { status: "ok", detail } : { status: "not_found" };
   }
 

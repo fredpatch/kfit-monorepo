@@ -1,16 +1,18 @@
-import { and, desc, eq, gte, inArray, isNull, or, sql } from "drizzle-orm";
-import type { AdminCustomer, AdminCustomerDetailResponse } from "@kfit/shared";
+import { and, count, desc, eq, gte, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
+import type { AdminArchivedCustomer, AdminCustomer, AdminCustomerDetailResponse } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
 import { componentEvents, customers, subscriptionComponents, subscriptionPauses, subscriptions } from "../../../db/schema/customers.js";
 import { servicePolicies, serviceVariants, services } from "../../../db/schema/catalogue.js";
 import { appointmentEvents, appointments, followUps } from "../../../db/schema/coaching.js";
 import { secureAccessTokens } from "../../../db/schema/documents.js";
+import { retentionHolds } from "../../../db/schema/operations.js";
+import { customerArchivable } from "../../privacy/services/privacy.policy.js";
 import { consumptiveEvents } from "../../appointments/services/appointment.policy.js";
 import { resolveCadence } from "../../follow-ups/services/follow-up-cadence.policy.js";
 import type { AnalyticsSource } from "../services/customer-analytics.policy.js";
 import type { OverviewSource } from "../services/customer-overview.policy.js";
 import { AuditService } from "../../auth/services/audit.service.js";
-import type { CustomerActorContext, CustomersRepository, NormalizedCustomerInput } from "../services/customers.service.js";
+import type { CustomerActorContext, CustomerDetailVisibility, CustomersRepository, NormalizedCustomerInput } from "../services/customers.service.js";
 
 const active = and(isNull(customers.archivedAt), isNull(customers.anonymizedAt));
 const fields = {
@@ -32,6 +34,15 @@ export function activeCustomerWhatsappMatches(whatsapp: string) {
   return and(active, phoneMatches(whatsapp));
 }
 
+/** S7.3b D1/D2: active customer-scope holds per customer (document-scope holds stay API-only, D6). */
+async function activeHoldCounts(database: Pick<typeof appDb, "select">, customerIds: string[]): Promise<Map<string, number>> {
+  if (customerIds.length === 0) return new Map();
+  const rows = await database.select({ customerId: retentionHolds.scopeId, holds: count() }).from(retentionHolds)
+    .where(and(eq(retentionHolds.scopeType, "customer"), eq(retentionHolds.status, "active"), inArray(retentionHolds.scopeId, customerIds)))
+    .groupBy(retentionHolds.scopeId);
+  return new Map(rows.map((row) => [row.customerId, row.holds]));
+}
+
 export async function lockCustomerWhatsapp(transaction: Pick<typeof appDb, "execute">, whatsapp: string): Promise<void> {
   await transaction.execute(sql`select pg_advisory_xact_lock(hashtextextended(${'customer-whatsapp:' + whatsapp}, 0))`);
 }
@@ -43,9 +54,11 @@ export class DrizzleCustomersRepository implements CustomersRepository {
     return (await this.database.select(fields).from(customers).where(active).orderBy(desc(customers.createdAt), customers.id)).map(toDto);
   }
 
-  async getDetail(customerId: string): Promise<AdminCustomerDetailResponse | null> {
-    const [customer] = await this.database.select(fields).from(customers).where(and(active, eq(customers.id, customerId))).limit(1);
-    if (!customer) return null;
+  async getDetail(customerId: string, visibility: CustomerDetailVisibility): Promise<AdminCustomerDetailResponse | null> {
+    const [row] = await this.database.select({ ...fields, archivedAt: customers.archivedAt, anonymizedAt: customers.anonymizedAt })
+      .from(customers).where(visibility === "active" ? and(active, eq(customers.id, customerId)) : eq(customers.id, customerId)).limit(1);
+    if (!row) return null;
+    const { archivedAt, anonymizedAt, ...customer } = row;
     const rows = await this.database
       .select({
         id: subscriptions.id, reference: subscriptions.reference, status: subscriptions.status,
@@ -61,15 +74,31 @@ export class DrizzleCustomersRepository implements CustomersRepository {
       .where(eq(subscriptions.customerId, customerId))
       .orderBy(desc(subscriptions.createdAt), subscriptions.id);
     const iso = (value: Date | null) => (value ? value.toISOString() : null);
+    const holds = (await activeHoldCounts(this.database, [customerId])).get(customerId) ?? 0;
     return {
-      customer: toDto(customer),
+      // S7.3b D1: an anonymized customer keeps only the stored pseudonym; the WhatsApp placeholder is never shown as contact.
+      customer: anonymizedAt ? { ...toDto(customer), whatsapp: null, email: null } : toDto(customer),
       subscriptions: rows.map((row) => ({
         ...row,
         plannedStartDate: iso(row.plannedStartDate), actualStartDate: iso(row.actualStartDate),
         plannedEndDate: iso(row.plannedEndDate), actualEndDate: iso(row.actualEndDate),
         createdAt: row.createdAt.toISOString(),
       })),
+      privacy: {
+        archivedAt: iso(archivedAt), anonymizedAt: iso(anonymizedAt),
+        archivable: customerArchivable(archivedAt, rows.map((subscription) => subscription.status)), activeHolds: holds,
+      },
     };
+  }
+
+  async listArchived(): Promise<AdminArchivedCustomer[]> {
+    const rows = await this.database.select({ id: customers.id, displayName: customers.fullName, archivedAt: customers.archivedAt, anonymizedAt: customers.anonymizedAt })
+      .from(customers).where(isNotNull(customers.archivedAt)).orderBy(desc(customers.archivedAt), customers.id);
+    const holds = await activeHoldCounts(this.database, rows.map((row) => row.id));
+    return rows.map((row) => ({
+      id: row.id, displayName: row.displayName, archivedAt: row.archivedAt!.toISOString(), anonymizedAt: row.anonymizedAt?.toISOString() ?? null,
+      activeHolds: holds.get(row.id) ?? 0,
+    }));
   }
 
   /** Read-only snapshot for the clients overview (UX-5). Batched queries, no per-customer loop. */

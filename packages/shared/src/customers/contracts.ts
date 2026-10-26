@@ -7,6 +7,8 @@ export const adminCustomersApiRoutes = {
   create: "/admin/customers",
   /** Enriched list (UX-5). Registered before :customerId. */
   overview: "/admin/customers/overview",
+  /** S7.3b D2: archived and anonymized customers. Registered before :customerId. */
+  archived: "/admin/customers/archived",
   detail: "/admin/customers/:customerId",
   analytics: "/admin/customers/:customerId/analytics",
 } as const;
@@ -62,7 +64,14 @@ export type AdminCustomerSubscriptionSummary = {
   renewedFromSubscriptionId: string | null;
   createdAt: string;
 };
-export type AdminCustomerDetailResponse = { customer: AdminCustomer; subscriptions: AdminCustomerSubscriptionSummary[] };
+/** S7.3b D1: the fiche also opens archived and anonymized customers; an anonymized one has no contact (whatsapp/email null). */
+export type AdminCustomerDetail = Omit<AdminCustomer, "whatsapp"> & { whatsapp: string | null };
+/** S7.3b D1: archivable = not archived and every subscription completed or cancelled; activeHolds = active customer-scope holds. */
+export type AdminCustomerPrivacy = { archivedAt: string | null; anonymizedAt: string | null; archivable: boolean; activeHolds: number };
+export type AdminCustomerDetailResponse = { customer: AdminCustomerDetail; subscriptions: AdminCustomerSubscriptionSummary[]; privacy: AdminCustomerPrivacy };
+/** S7.3b D2: archived list line. An anonymized customer shows only the stored pseudonym. */
+export type AdminArchivedCustomer = { id: string; displayName: string; archivedAt: string; anonymizedAt: string | null; activeHolds: number };
+export type AdminArchivedCustomersResponse = { customers: AdminArchivedCustomer[] };
 
 /* ------------------------------------------------------------------ */
 /* Client analytics (UX-4c, board 03b). Read-only, computed on demand. */

@@ -204,7 +204,12 @@ export type AdminServiceRequestSummary = {
   nextActionAt: string | null;
 };
 
-export type AdminServiceRequestDetail = AdminServiceRequestSummary & {
+/** S7.3b D5: archivable = not archived and every request of the prospect in a terminal status. */
+export type AdminServiceRequestProspectPrivacy = { archivedAt: string | null; anonymizedAt: string | null; archivable: boolean };
+export type AdminServiceRequestDetailProspect = AdminServiceRequestProspect & { privacy: AdminServiceRequestProspectPrivacy };
+
+export type AdminServiceRequestDetail = Omit<AdminServiceRequestSummary, "prospect"> & {
+  prospect: AdminServiceRequestDetailProspect;
   convertedSubscriptionId: string | null;
   objective: string | null;
   preferredStartDate: string | null;

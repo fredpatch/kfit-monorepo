@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { adminCustomersApiRoutes, customerAnalyticsPeriods, customerErrorCodes, customerOverviewViews, deriveClientStatusKey, pickDefaultSubscription, normalizeWhatsapp, type AdminCustomer } from "../index.js";
 
-test("customer routes and stable codes expose the approved S4.1 surface plus the UX-4 profile/analytics and UX-5 overview", () => {
-  assert.deepEqual(adminCustomersApiRoutes, { list: "/admin/customers", search: "/admin/customers/search", create: "/admin/customers", overview: "/admin/customers/overview", detail: "/admin/customers/:customerId", analytics: "/admin/customers/:customerId/analytics" });
+test("customer routes and stable codes expose the approved S4.1 surface plus the UX-4 profile/analytics, UX-5 overview and S7.3b archived list", () => {
+  assert.deepEqual(adminCustomersApiRoutes, { list: "/admin/customers", search: "/admin/customers/search", create: "/admin/customers", overview: "/admin/customers/overview", archived: "/admin/customers/archived", detail: "/admin/customers/:customerId", analytics: "/admin/customers/:customerId/analytics" });
   assert.deepEqual(customerOverviewViews, ["all", "active", "overdue", "preparation", "paused", "former"]);
   assert.deepEqual(customerAnalyticsPeriods, ["30j", "abonnement", "tout"]);
   assert.ok(customerErrorCodes.includes("CUSTOMER_DUPLICATE_WHATSAPP"));

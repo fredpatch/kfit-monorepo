@@ -192,12 +192,14 @@ export function ClientProfilePage() {
             </ul>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="whatsapp">
-              <a href={waLink(customer.whatsapp)} target="_blank" rel="noreferrer">
-                <MessageCircle aria-hidden="true" />
-                WhatsApp
-              </a>
-            </Button>
+            {customer.whatsapp ? (
+              <Button asChild variant="whatsapp">
+                <a href={waLink(customer.whatsapp)} target="_blank" rel="noreferrer">
+                  <MessageCircle aria-hidden="true" />
+                  WhatsApp
+                </a>
+              </Button>
+            ) : null}
           </div>
         </div>
 

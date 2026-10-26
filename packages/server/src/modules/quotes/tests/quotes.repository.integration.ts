@@ -266,3 +266,8 @@ test("PostgreSQL quote list returns every quote of the subscription with its ver
   const listed = await call(id, "list"); assert.ok(listed.ok && "body" in listed && "quotes" in listed.body, JSON.stringify(listed)); if (!listed.ok || !("body" in listed) || !("quotes" in listed.body)) throw new Error("Missing quotes");
   assert.deepEqual(listed.body.quotes.map(q => q.id).sort(), [a.id, b.id].sort()); assert.ok(listed.body.quotes.every(q => q.versions.length > 0));
 });
+test("S7.3b D3: a quote is not issued for an archived customer", async () => {
+  const q = await create(), count = await counter(); await db.update(customers).set({ archivedAt: new Date() }).where(eq(customers.id, customerId));
+  try { assert.deepEqual(await call(current(q).id, "issue"), failure("QUOTE_INVALID_STATE")); assert.equal(await counter(), count); }
+  finally { await db.update(customers).set({ archivedAt: null }).where(eq(customers.id, customerId)); }
+});

@@ -1317,3 +1317,43 @@ Status: delivered; committed and pushed 2026-10-25 on Fred's instruction. Manual
 - Checks (agent-run): tsc shared/server/client clean; shared 71/71; server unit 623/623 (was 607); integration on kfit_test 597/597 (POL-01: 594; +3 purge tests); kfit_dev counts before/after the full run unchanged (services 8, subscriptions 12, consent_definitions 9, customers 13, prospects 9, notifications 62); client build: 0 files contain « Données de test » / test-data/purge / DEV_TEST_DATA_CHANGED (control string from the same page found).
 - Read-only analysis of kfit_dev (no purge): 3 services to delete (the legacy « Integration test service » rows), nothing kept.
 - Limits: the dev API was not running during the integration run (Fred's manual step 1 covers it). No client test runner, so the bundle check is the build + grep. Fixtures named without "[TEST] " (e.g. « Synthetic Dashboard ») are not detected, by design (D5).
+
+## S7.3b Gate 1 — approved 2026-10-26 (privacy client)
+
+### Context (verified on main fa06b35)
+- customers.repository.ts l.15: `const active = and(isNull(archivedAt), isNull(anonymizedAt))` is applied to listActive, getDetail (l.46), getOverviewSource, getAnalyticsSource, searchActive. After « Archiver » the fiche (GET /admin/customers/:customerId) returns 404 → « Anonymiser… » and the anonymized view are unreachable. This is the gap.
+- Anonymization (S7.3a) already writes the pseudonym into customers.full_name, WhatsApp → `anon-<id>`, email → null.
+- shared customers/contracts.ts: AdminCustomer (l.23), AdminCustomerDetailResponse (l.65), routes (l.4–11; `detail: "/admin/customers/:customerId"`).
+- shared requests/contracts.ts: AdminServiceRequestProspect (l.178) = { id, fullName, whatsapp, email }. admin-requests.repositories.ts l.214 hides anonymized prospects from the queue (keep).
+- server privacy/services/privacy.policy.ts: TERMINAL_REQUEST_STATUSES (l.18), prospect eligibility (l.53); customer archive eligibility (D1 precision: every subscription completed|cancelled).
+- Holds: GET /admin/retention-holds supports scopeType/scopeId filters (privacy.controller.ts l.65).
+- client/vite.config.ts: no proxy entry for /admin/prospects nor /admin/retention-holds (Fred has a local uncommitted line for the latter — overwrite it with the committed version, report it).
+
+### Decisions (Fred 2026-10-26)
+D1. Customer read path: GET /admin/customers/:customerId also returns archived and anonymized customers. Response gains `privacy: { archivedAt: string|null; anonymizedAt: string|null; archivable: boolean; activeHolds: number }`. archivable = not archived AND every subscription completed|cancelled (reuse the privacy policy rule, no copy). Anonymized: customer.whatsapp and customer.email returned as null (type: detail customer whatsapp string|null), fullName = stored pseudonym. List, search, overview, analytics, alerts, notifications stay unchanged (S7.3 D5): analytics still 404 for archived/anonymized.
+D2. New GET /admin/customers/archived → { customers: [{ id, displayName, archivedAt, anonymizedAt, activeHolds }] }, archivedAt desc, archived (named) + anonymized (pseudonym only, no contact fields). Registered BEFORE /:customerId.
+D3. Archived fiche is read-only in the UI (S7.3b-2). Server: audit every writer that takes a customerId or acts on its subscriptions and report whether an archived/anonymized customer is refused (cite line). Fix only with a one-line guard returning an existing error code; anything bigger → report, do not fix.
+D4. Dialog error order (UI, S7.3b-2): button disabled when activeHolds > 0; on submit name mismatch 400 → OTP 403 → hold 409 fallback. Server unchanged.
+D5. Prospects: request detail `prospect` gains `privacy: { archivedAt, anonymizedAt, archivable }`, archivable = not archived AND every request of the prospect in TERMINAL_REQUEST_STATUSES. UI actions live in the request detail ⋯ menu (S7.3b-2).
+D6. Holds card on customer fiche only (active + archived). Document-scope holds stay API-only (backlog). No server change.
+D7. Réglages « Confidentialité » uses the existing settings API (privacy.purge.delay_days already in the registry). Commit Vite proxy entries /admin/prospects and /admin/retention-holds in this slice.
+D8. Slices: S7.3b-1 server (this run) → S7.3b-2 client.
+No migration. All API changes additive.
+
+Status: S7.3b-1 APPROVED_FOR_IMPLEMENTATION
+
+## S7.3b-1 execution — 2026-10-26 (Claude)
+
+Status: delivered; committed and pushed 2026-10-26 on Fred's instruction → Fred: validate; then S7.3b-2 (client).
+
+- Routes: GET /admin/customers/:customerId now also returns archived and anonymized customers, plus `privacy { archivedAt, anonymizedAt, archivable, activeHolds }` (D1); anonymized → whatsapp/email null, fullName = stored pseudonym. New GET /admin/customers/archived → { customers: [{ id, displayName, archivedAt, anonymizedAt, activeHolds }] }, archivedAt desc, registered before /:customerId (D2). Request detail `prospect.privacy { archivedAt, anonymizedAt, archivable }` (D5). All admin-session reads, no audit (as before), no migration.
+- Implementation: repository `getDetail(id, visibility: "active" | "include_archived")` (service passes include_archived; list, search, overview, analytics, alerts, notifications untouched). archivable via `customerArchivable` / `prospectArchivable` in privacy.policy.ts, built on the existing archive refusal rules. activeHolds = active customer-scope holds (document-scope holds stay API-only, D6).
+- D3 writer audit (archived ⇒ every subscription completed|cancelled; nothing checks customers.archived_at except conversion matching):
+  - Refused by subscription-status guards: subscription lifecycle commands except renew (subscriptions.repository.ts:70), appointment schedule/reschedule (appointments.repository.ts:73, :137), follow-up create/cadence (follow-ups.repository.ts:86, :75), measurement/create-goal (progress.repository.ts:110, :132), consents issue/capture/optional (consent.repository.ts:141, public :223), questionnaires (questionnaire.repository.ts:192, public :228), onboarding (onboarding.repository.ts:22-23).
+  - Fixed with a one-line guard (existing codes): receipts issue (receipts.repository.ts:106 → RECEIPT_INVALID_PAYMENT), quotes issue (quotes.repository.ts:184 → QUOTE_INVALID_STATE). Integration-tested, mutation-checked.
+  - Not refused, bigger change needed (reported, not fixed): **renew from completed** (policy :5; creates a new onboarding subscription for the archived customer, which then reopens every onboarding writer); appointment status actions / restore-component / response-link (appointments.repository.ts:106-135); follow-up complete/cancel (follow-ups.repository.ts:96-103); goal pause/resume/cancel/confirm-outcome (progress.repository.ts:145-158); documents upload/summary/photo/version/link (documents.repository.ts:81+); finance plans/payments/corrections (finance.repository.ts:166); payment-proof link + review; receipts share/void; quotes create/version/edit/share/cancel/synchronize; consents revoke (likely intended). Status guards there would also block legitimate work on completed subscriptions, so a customer-level check is needed.
+  - Public tokens: archiving revokes none (privacy.repository.ts:77-87); payment-proof upload, quote respond, appointment response and document view stay live for an archived customer until anonymization (which revokes them, :239-241).
+- Vite: /admin/prospects and /admin/retention-holds proxied. No local uncommitted vite.config.ts line was present (working tree clean at start).
+- Client: minimal type adaptation only (WhatsApp button hidden when whatsapp is null).
+- Checks (agent-run): tsc shared/server/client clean; client build ok; shared 71/71; server unit 625/625 (TEST-01: 623); integration on kfit_test 604/604 (TEST-01: 597; +5 customers-privacy, +1 receipts, +1 quotes).
+- Flaky (pre-existing, unrelated): express unit tests occasionally fail with `fetch failed` (a different test each time: dashboard GET, notification settings, admin requests contact-attempt); 3 of 5 full unit runs passed.

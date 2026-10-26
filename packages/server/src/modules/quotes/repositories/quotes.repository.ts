@@ -181,7 +181,7 @@ export class DrizzleQuotesRepository implements QuotesRepository {
           const [customer] = await tx.select().from(customers).where(eq(customers.id, sub.customerId));
           const [service] = await tx.select().from(services).where(eq(services.id, sub.serviceId));
           const [variant] = sub.variantId ? await tx.select().from(serviceVariants).where(eq(serviceVariants.id, sub.variantId)) : [];
-          if (!customer || !service) return quoteFailure("QUOTE_INVALID_STATE");
+          if (!customer || customer.archivedAt || !service) return quoteFailure("QUOTE_INVALID_STATE");
           const components = await tx.select().from(subscriptionComponents).where(eq(subscriptionComponents.subscriptionId, sub.id)).orderBy(subscriptionComponents.id);
           const now = this.clock(); let number = q.quoteNumber;
           if (!number) {

@@ -55,6 +55,7 @@ Missing → stop and report `⏳ Awaiting — developer's plan approval`. Do not
 2. Review `git diff` against AGENTS §9.
 3. Do not stage, commit, push, stash, rebase or merge.
 4. Do not edit `TASKS.md` unless the developer asked; include the handoff block in your report.
+5. Update the affected `docs/` in the same change set and end the report with a `Docs impact` line (WORKFLOW §16 Documentation (DOC-01)).
 
 Report with AGENTS §13, marking each validation line `agent-run` or `NOT VALIDATED`, set Workflow state → `AWAITING_REVIEW`, and use "Send to Review".
 

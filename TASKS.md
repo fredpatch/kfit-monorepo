@@ -10,8 +10,8 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 ```text
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
-Active slice      S7.4b — backup/restore tooling
-Workflow state    AWAITING_HUMAN_VALIDATION — S7.4b delivered 2026-10-26, uncommitted (sprint-7.md § S7.4b execution)
+Active slice      DOC-01a documentation foundation + S7.4c runbook
+Workflow state    AWAITING_HUMAN_VALIDATION — DOC-01a delivered 2026-10-26, uncommitted (sprint-7.md § DOC-01a execution)
 S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) — validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
 Last validated    S7.2 — validated by Fred 2026-10-25
 Implementation    2dc7c43 (S7.2a server) + 0eac6d4 (S7.2b client, UX-16)
@@ -35,8 +35,10 @@ FIX-02            validated, committed 8d66297 (D5 flaky kept in backlog)
 SEC-01            validated, committed 92d352a, CI green 2026-10-26
 S7.4 prereqs      base image pinned to an exact patched Node tag; smoke test records node --version; security:check in the image build (SEC-01 D6)
 S7.4a             production entrypoint + refuse-to-start guards + X-Request-Id — validated, committed 302902d, CI green
-S7.4b             backup/restore tooling + security counters (migration 0017) — delivered 2026-10-26 → Fred: validate
-Next action       Fred: validate S7.4b; then S7.4c runbook + drill, SEC-02, OPS-01 Supervision page, then Sprint 8 UAT
+S7.4b             backup/restore tooling + security counters (migration 0017) — validated, committed d2fc5df
+S7.4c             merged into DOC-01a (runbook) — Fred runs the drill from the runbook
+DOC-01a           documentation foundation + S7.4c runbook — delivered 2026-10-26 → Fred: review docs + run S7.4c drill from the runbook
+Next action       Fred: S7.4c drill from the runbook; DOC-01b guides; SEC-02; OPS-01; Sprint 8 UAT
 Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »
 Backlog           « Flaky express unit tests (fetch failed, random test) — diagnose with the pgErrorInfo fix »
 Backlog           « OPS-01 Supervision (jobs, sauvegardes, contrôle de restauration, confidentialité, sécurité) — après SEC-02, avant UAT »

@@ -1632,3 +1632,65 @@ Status: delivered, uncommitted → Fred: validate.
 - Local run (docker mode, kfit_dev): ops:backup → bundle 4.63 MB (dump 0.32 MB, 26 files 4.28 MB, 57 tables / 1 900 rows, journal 2 lines) in 1.25 s; ops:restore-drill → all counts matched, replay 2 events, 0 missing, 0 purge failures, 3.5 s; no kfit_restore_* database left, temp dir removed; kfit_dev has one ops.backup and one ops.restore_drill row (succeeded).
 - Deviations: migration number 0017; error code ENV_INVALID added to the B8 list (env/usage refusals); wrong key reported as BACKUP_KEY_INVALID (fingerprint checked before the MAC); restore failures before pg_restore are recorded in the source database (no target table yet); the drill reads the live journal without appending to it.
 - Limits: ops:restore CLI not run by hand (library path covered by the integration test; never against kfit_dev). kfit_dev not migrated to 0017 (counter writes there log one warning/min until `npm run db:migrate`). In production, the scripts need DATABASE_URL reachable from where they run (records, counts, replay) while pg tools go through docker exec — Sprint 9 decides (publish on 127.0.0.1 or run inside the network).
+
+## DOC-01 Gate 1 — approved 2026-10-26
+
+S7.4c: merged into DOC-01a (runbook) — Fred runs the drill from the runbook.
+
+### Decisions (Fred 2026-10-26)
+DC1. Location: repo `docs/` is the single source of truth (versioned with code). Coach-facing guides get published as shareable documents for UAT (later, not in this run).
+DC2. Language: French for every human-facing doc (guides, runbooks, maintenance, references, conformité, recette, notes de version); English for docs/architecture/. Tutoiement in the coach guide (same tone as the UI), vouvoiement nowhere else needed — keep neutral impersonal French in ops docs.
+DC3. Every doc starts with a front-matter block:
+  ---
+  titre: …
+  public: coach | administrateur | exploitation | développeur | juriste
+  statut: brouillon | à jour | à revoir
+  vérifié-sur: <short commit sha>
+  couvre: [S7.4a, S7.4b, …]
+  ---
+DC4. Structure (create exactly this; empty sections get « À rédiger — <slice> » placeholders, not invented text):
+  docs/README.md — index: one table (document, public, statut, vérifié-sur) + « Comment maintenir cette documentation ».
+  docs/guides/guide-coach.md — skeleton only (chapter headings per workflow, DOC-01b fills).
+  docs/guides/guide-administrateur.md — skeleton only (DOC-01b fills).
+  docs/runbooks/README.md — list + when to use each.
+  docs/runbooks/sauvegarde-restauration.md — FULL (S7.4c, see DC5).
+  docs/runbooks/demarrage-production.md — FULL: production start checklist from S7.4a guards (each guard code → meaning → fix), prerequisites, start/stop commands, what « healthy » looks like (/health, startup log lines). Sprint 9 items (nginx, TLS, compose service for the API, host timer) marked « Sprint 9 ».
+  docs/runbooks/plancher-securite.md — FULL: what the security floor is, how to add the next advisory (one entry in security-floor.ts + test), how to upgrade Node (.nvmrc, engines, CI, image tag), how to check (`npm run security:check`).
+  docs/runbooks/incident.md, rotation-secrets.md, panne-dependances.md (ClamAV/SMTP/PostgreSQL down), echec-job.md — skeletons with the known facts only (job keys from scheduled_job_runs, env var names, refusal codes); « À rédiger » elsewhere.
+  docs/maintenance/manuel-maintenance.md — skeleton + what exists today: environments (from docs/docker-environments.md), migrations (db:generate/db:migrate/db:check, test db prepare), npm scripts catalogue (generated, DC6), logs (logger, LOG_LEVEL), monthly `npm audit` + security floor review; deployment = « Sprint 9 ».
+  docs/architecture/README.md (EN): system overview (monorepo packages, layering controller → service → repository, Express app composition order: request id → encoding guard → json → routers), module map (one line per module in packages/server/src/modules), security model summary (cookies/CSRF/origin, sessions, public tokens hashed + scoped + expiring, archived-subject freeze, security floor, startup guards), data/privacy model summary; LINK to exploration-cache/project/* files instead of copying them.
+  docs/reference/codes-erreur.md and docs/reference/variables-environnement.md and docs/reference/scripts-npm.md — GENERATED (DC6).
+  docs/reference/jobs.md — job keys (notification reconcile/delivery, privacy purge, ops.backup/ops.restore/ops.restore_drill), schedule, lock, idempotency, where recorded; written by hand from code.
+  docs/conformite/README.md + registre-traitements.md + politique-conservation.md + mesures-securite.md + sous-traitants.md + notice-confidentialite-brouillon.md — DRAFTS, each with a banner « Brouillon technique — à faire valider par un juriste avant toute mise en production. Ne constitue pas un avis juridique. » Fill only facts from code: data categories per table group (identity, contact, health questionnaire answers, progress photos/sensitive_health documents, payments, consents, audit), purposes as implemented, retention values as configured (purge delay setting, prospect retention, holds), security measures implemented (encryption of backups, hashed tokens/peppers, ClamAV, CSRF, archive freeze, anonymization + replay journal, security floor). Legal bases, authority notification, transfers, applicable Gabonese law details = « À compléter par le juriste ». Subprocessors: list only technical dependencies that will process data (hosting provider TBD Sprint 9, SMTP provider TBD) as TBD lines.
+  docs/recette/ — move docs/RECETTE_V1_CORE.md here (git mv not allowed → copy content, delete old file, report it); README pointing to Sprint 8.
+  docs/notes-de-version/README.md — format only (per version: « Ce qui change pour toi », « Corrections », « À savoir »).
+  docs/archive/ — move the 5 historical files (preflight-backup-restore, preflight-private-files, sprint-1-auth-*, docker-environments after its content is reused) with a one-line header « Archivé — remplacé par <doc> ».
+DC5. S7.4c runbook docs/runbooks/sauvegarde-restauration.md, written for an operator who did not build it, step by step with exact commands and expected output (counts lines, exit codes), from scripts/ops/* and src/ops/* as implemented:
+  1. Principes (bundle contents, chiffrement, manifeste signé, rotation 7 j + 4 sem., copie secondaire, journal de confidentialité jamais écrasé — fusion par eventId, pourquoi).
+  2. Préparer (env vars, génération de la clé, où la conserver HORS du serveur et hors du dépôt, BACKUP_PG_MODE docker/native).
+  3. Sauvegarder manuellement + vérifier (scheduled_job_runs row).
+  4. Planifier (timer hôte — exemple systemd timer + cron, marqué « installé au Sprint 9 »).
+  5. Contrôle de restauration (ops:restore-drill) — fréquence hebdomadaire recommandée, lecture du résultat.
+  6. Restaurer en situation réelle — ordre exact: couper le trafic → vérifier le bundle → restaurer dans une base cible → fichiers → journal (fusion) → replay automatique → contrôles → réouvrir le trafic; commandes, flags (--confirm-overwrite), refus attendus (kfit_dev/kfit_test), codes d'erreur → action.
+  7. Exercice complet S7.4c (pour Fred) — checklist on local docker using docker-compose.prod.yml where possible, otherwise kfit_restore_* on the dev cluster; explicitly list which steps are possible locally today and which wait for Sprint 9.
+  8. Dépannage — every B8 error code → cause → action.
+DC6. Generated references (no new dependency): packages/server/scripts/docs/generate-references.mjs, npm scripts `docs:generate` and `docs:check` (regenerate to a temp dir and diff; exit 1 on drift). Sources:
+  - codes-erreur.md: every `*ErrorCodes` const array in packages/shared/src/**/contracts.ts (+ server-only codes exported as named constants if a list exists: SECURITY_FLOOR_NOT_MET, startup guard codes, REQUEST_ENCODING_UNSUPPORTED, ops error codes) → table: code | module | message affiché (French text from the client message maps when found, else « — ») . Parse the TS sources as text with a strict regex; fail loudly if an expected array is not found (no silent empty table).
+  - variables-environnement.md: keys from .env.example (+ comments as description), flag « requis en production » from PRODUCTION_REQUIRED_ENV, « scripts ops » for BACKUP_*; never print values from .env (read only .env.example).
+  - scripts-npm.md: root + packages scripts with their command.
+  Generated files carry a header « Fichier généré — ne pas modifier à la main (npm run docs:generate) ».
+  CI: add a `docs:check` step after Typecheck in .github/workflows/ci.yml.
+DC7. Docs impact rule: WORKFLOW.md gets a section « Documentation (DOC-01) »: Definition of Done includes updating the affected docs in the same change set; every implementer report ends with a « Docs impact » line (files touched or « aucun »); front-matter vérifié-sur updated on every touched doc; generated references via docs:generate. AGENTS.md + .github/agents/implementer.agent.md + reviewer.agent.md: one line each pointing to that section (reviewer checks it).
+DC8. README.md (root): short « Documentation » section linking docs/README.md.
+
+## DOC-01a execution — 2026-10-26 (Claude)
+
+Status: delivered, uncommitted → Fred: review docs + run S7.4c drill from the runbook.
+
+- Created (31 pages under docs/, all with DC3 front matter, vérifié-sur d2fc5df): README.md (index + maintenance rules); guides/guide-coach.md, guide-administrateur.md (skeletons); runbooks/README.md, sauvegarde-restauration.md (FULL, S7.4c), demarrage-production.md (FULL), plancher-securite.md (FULL), incident.md, rotation-secrets.md, panne-dependances.md, echec-job.md (skeletons + known facts); maintenance/manuel-maintenance.md; architecture/README.md (EN, links exploration-cache/project/*); reference/jobs.md (hand-written) + codes-erreur.md, variables-environnement.md, scripts-npm.md (generated); conformite/ README + 5 drafts with the juriste banner; recette/README.md + RECETTE_V1_CORE.md; notes-de-version/README.md; archive/ (5 files).
+- Moves (copy + delete, no git mv): docs/RECETTE_V1_CORE.md → docs/recette/; docs/{preflight-backup-restore, preflight-private-files, sprint-1-auth-adaptation-contract, sprint-1-auth-staging-validation, docker-environments}.md → docs/archive/ with front matter + « Archivé — remplacé par … ». Content otherwise unchanged. Old paths still cited in exploration-cache history (sessions/2026-10-22.md, tasks/completed/tasks-archive-s5-s6.md, sprint-7.md) — left as history.
+- DC6: packages/server/scripts/docs/generate-references.mjs (no dependency, reads sources as text, runs before any build). Generated: 317 error codes (21 shared arrays + productionGuardCodes, opsErrorCodes, SECURITY_FLOOR_NOT_MET, REQUEST_ENCODING_UNSUPPORTED; client message found for 256, « — » for 61), 52 environment variables, 100 npm scripts. `docs:check` regenerates into a temp dir and compares, checks every relative link (docs/ + root README) and the DC3 front matter; exit 1 on any problem (verified: tampered code line → exit 1; broken link → exit 1). CI step « Documentation references and links (DOC-01) » after Typecheck. Server `npm test` also runs scripts/**/*.test.mjs (5 generator tests): unit 674 → 679 (678 pass + 1 skipped on Windows).
+- DC7/DC8: WORKFLOW.md § 16 Documentation (DOC-01); one line each in AGENTS.md § 13, .github/agents/implementer.agent.md (Finishing 5), reviewer.agent.md (Check › Docs); README.md « Documentation ».
+- À vérifier: (1) ops:restore with --confirm-overwrite (pg_restore --clean --if-exists) has no automated test; (2) no command replays privacy events alone against a restore target (privacy:replay is local-5433 only); (3) switching the API to the restored database and files, and production migrations — Sprint 9; (4) SMTP outage: how the outbox resumes; (5) effects of rotating each secret (sessions, links, audit hashes); (6) no automatic retention found for never-converted prospects, audit_events, notifications / e-mail outbox.
+- Deviations: codes-erreur scans every non-test .ts of packages/shared/src (not only contracts.ts) so devToolsErrorCodes (dev/test-data.ts) is included; variables-environnement has a « Groupe » column (section heading) beside « Description » (comment directly above the key) and lists PRIVATE_STORAGE_ROOT, required in production but absent from .env.example; docs:check also checks front matter and the root README links; README.md / AGENTS.md describe AGENTS.md and .github/agents/ as portable « do not edit per project » — edited per DC7.
+- Limits: .env.example comments are English, so the generated descriptions are English; guides and four runbooks are skeletons for DOC-01b; conformité drafts contain code facts only.

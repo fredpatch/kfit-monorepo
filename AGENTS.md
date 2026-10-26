@@ -209,6 +209,8 @@ Suggested commit      type(scope): message
 
 Interrupted work: report the WORKFLOW §14 handoff block; write it to `TASKS.md` only when the developer authorizes doc edits.
 
+Every report ends with a `Docs impact` line (files touched or `aucun`) — see WORKFLOW §16 Documentation (DOC-01).
+
 ---
 
 ## 14. Principles

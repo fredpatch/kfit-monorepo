@@ -178,3 +178,14 @@ Persist it in `TASKS.md` → `Handoff`. Never rely on hidden chat context.
 ## 15. Pattern feedback
 
 After a significant validated slice, note in the report whether a reusable mechanism, improvement or anti-pattern emerged. Updating the shared pattern library is a separate, reviewed task.
+
+## 16. Documentation (DOC-01)
+
+`docs/` is the single source of truth for human-facing documentation (index: `docs/README.md`).
+
+- **Definition of Done**: a change that alters behaviour described in `docs/` updates the affected docs in the same change set.
+- **Report**: every implementer report ends with a `Docs impact` line: files touched, or `aucun`.
+- **Front matter**: on every touched doc, set `vérifié-sur` to the short commit sha it was checked against and add the slice to `couvre`.
+- **Generated references** (`docs/reference/codes-erreur.md`, `variables-environnement.md`, `scripts-npm.md`): never edited by hand; run `npm run docs:generate`.
+- **Check**: `npm run docs:check` (also in CI) fails on stale references, broken relative links or missing front matter.
+- Reviewer checks the `Docs impact` line against the diff.

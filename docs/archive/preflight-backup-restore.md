@@ -1,3 +1,13 @@
+---
+titre: Préflight sauvegarde / restauration (Sprint 0)
+public: exploitation
+statut: à revoir
+vérifié-sur: d2fc5df
+couvre: [historique]
+---
+
+> Archivé — remplacé par [runbooks/sauvegarde-restauration.md](../runbooks/sauvegarde-restauration.md).
+
 # K'FIT — Backup + isolated restore pre-flight
 
 ## Goal

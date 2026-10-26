@@ -16,7 +16,7 @@
     "preflight:appointments": "node ./scripts/preflight/appointments.mjs",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "test": "npm run build && node --test \"dist/**/*.test.js\"",
+    "test": "npm run build && node --test \"dist/**/*.test.js\" \"scripts/**/*.test.mjs\"",
     "test:integration": "npm run build && node --env-file-if-exists=../../.env --env-file=../../.env.test --test --test-concurrency=1 \"dist/**/*.integration.js\"",
     "dev:api": "npm run build && node ./scripts/dev/api-server.mjs",
     "dev:api:watch": "node ./scripts/dev/api-watch.mjs",

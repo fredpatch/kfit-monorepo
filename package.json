@@ -7,6 +7,8 @@
   ],
   "scripts": {
     "security:check": "node packages/server/scripts/security/check-runtime-floor.mjs",
+    "docs:generate": "node packages/server/scripts/docs/generate-references.mjs",
+    "docs:check": "node packages/server/scripts/docs/generate-references.mjs --check",
     "seed:cadence-history": "npm run seed:cadence-history --workspace @kfit/server",
     "db:generate:cadence-history": "npm run db:generate:cadence-history --workspace @kfit/server",
     "preflight:cadence-history": "npm run preflight:cadence-history --workspace @kfit/server",

@@ -1,3 +1,13 @@
+---
+titre: Contrat d'adaptation de l'authentification (Sprint 1)
+public: développeur
+statut: à revoir
+vérifié-sur: d2fc5df
+couvre: [historique]
+---
+
+> Archivé — remplacé par [architecture/README.md](../architecture/README.md).
+
 # Sprint 1 — Authentication Foundation Adaptation Contract
 
 > Status: design baseline  

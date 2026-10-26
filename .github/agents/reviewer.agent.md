@@ -45,6 +45,7 @@ When the approved plan references a reusable pattern or blueprint:
    - **State & data** — valid transitions, idempotency, double submit and races, migration safety for existing and archived rows.
    - **Tests** — assert behavior, cover failure paths, no skips or bypasses, no real external calls.
    - **UI** — language per `PROJECT.md §Language`; loading/empty/error/disabled states; no client-only authorization.
+   - **Docs** — the `Docs impact` line matches the diff and `npm run docs:check` passes (WORKFLOW §16 Documentation (DOC-01)).
 
 ## Result
 

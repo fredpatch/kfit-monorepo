@@ -1,3 +1,11 @@
+---
+titre: Recette V1 cœur
+public: coach, développeur
+statut: à revoir
+vérifié-sur: d2fc5df
+couvre: [Sprint 8]
+---
+
 # K'FIT — Recette fonctionnelle V1 Core
 
 > Living end-to-end acceptance plan.

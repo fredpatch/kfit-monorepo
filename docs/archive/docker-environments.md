@@ -1,3 +1,13 @@
+---
+titre: Environnements Docker (Sprint 0–1)
+public: développeur
+statut: à revoir
+vérifié-sur: d2fc5df
+couvre: [historique]
+---
+
+> Archivé — remplacé par [maintenance/manuel-maintenance.md](../maintenance/manuel-maintenance.md).
+
 # K'FIT Docker Environments
 
 ## Local development

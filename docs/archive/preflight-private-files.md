@@ -1,3 +1,13 @@
+---
+titre: Préflight fichiers privés (Sprint 0)
+public: développeur
+statut: à revoir
+vérifié-sur: d2fc5df
+couvre: [historique]
+---
+
+> Archivé — remplacé par [architecture/README.md](../architecture/README.md).
+
 # K'FIT — Private File Storage Pre-flight
 
 Sprint 0 validates the file-security foundation before any functional upload endpoint is implemented.

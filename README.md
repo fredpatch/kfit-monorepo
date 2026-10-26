@@ -37,6 +37,10 @@ npm run test:integration
 
 Every integration file calls `assertLocalTestDatabase()` and refuses any other target. The dev API refuses to start when `DATABASE_URL` points at `kfit_test`. Fixtures are named `[TEST] …`. In dev builds, Réglages › « Données de test » lists and removes any that leaked into `kfit_dev`.
 
+## Documentation
+
+All documentation lives in [`docs/`](docs/README.md): coach and admin guides, runbooks (production start, backup and restore, security floor), maintenance manual, architecture, generated references (`npm run docs:generate`, checked in CI by `npm run docs:check`) and compliance drafts.
+
 ## AI-assisted workflow
 
 - [`PROJECT.md`](PROJECT.md) — K'FIT facts: stack, layout, commands, runtime rules, docs map

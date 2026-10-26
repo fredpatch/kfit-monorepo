@@ -1,3 +1,13 @@
+---
+titre: Validation de l'authentification en staging (Sprint 1)
+public: développeur
+statut: à revoir
+vérifié-sur: d2fc5df
+couvre: [historique]
+---
+
+> Archivé — remplacé par [architecture/README.md](../architecture/README.md).
+
 # Sprint 1 — Staging-style auth validation
 
 This validation proves the cookie-based auth transport behavior through a local Nginx edge path before Sprint 1 closes.

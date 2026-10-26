@@ -56,6 +56,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Documentation references and links (DOC-01)
+        run: npm run docs:check
+
       - name: Build
         run: npm run build
 

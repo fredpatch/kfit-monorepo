@@ -16,7 +16,7 @@ couvre: [DOC-01a]
 | [Guide de l'administrateur](guides/guide-administrateur.md)                             | administrateur            | brouillon | d2fc5df     |
 | [Runbooks (index)](runbooks/README.md)                                                  | exploitation              | à jour    | d2fc5df     |
 | [Démarrage en production](runbooks/demarrage-production.md)                             | exploitation              | à jour    | d2fc5df     |
-| [Sauvegarde et restauration](runbooks/sauvegarde-restauration.md)                       | exploitation              | à jour    | d2fc5df     |
+| [Sauvegarde et restauration](runbooks/sauvegarde-restauration.md)                       | exploitation              | à jour    | 953cb22     |
 | [Plancher de sécurité](runbooks/plancher-securite.md)                                   | exploitation, développeur | à jour    | d2fc5df     |
 | [Incident](runbooks/incident.md)                                                        | exploitation              | brouillon | d2fc5df     |
 | [Rotation des secrets](runbooks/rotation-secrets.md)                                    | exploitation              | brouillon | d2fc5df     |

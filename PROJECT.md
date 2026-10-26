@@ -90,7 +90,7 @@ ask     npm run db:migrate · npm run db:generate · npm run test:integration ·
         npm run db:generate:cadence-history
         npm run seed:* · npm run preflight:* · npm run db:up / db:down · docker compose …
         npm install / ci / any lockfile change · git add · git commit
-        npm run dev:api · npm run dev:client (QA runtime checks; stop afterwards)
+        npm run dev:api (one build, no reload) · npm run dev:api:watch (tsc --watch + node --watch-path=dist) · npm run dev:client (QA runtime checks; stop afterwards)
 never   npm run db:reset · docker compose down -v  (+ AGENTS §4 list)
 ```
 

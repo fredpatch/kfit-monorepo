@@ -21,6 +21,7 @@
     "test:integration": "npm run test:integration --workspace @kfit/server",
     "build": "npm run build --workspaces --if-present",
     "dev:api": "npm run dev:api --workspace @kfit/server",
+    "dev:api:watch": "npm run dev:api:watch --workspace @kfit/server",
     "dev:client": "npm run dev --workspace @kfit/client",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",

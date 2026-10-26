@@ -19,7 +19,7 @@ cp .env.example .env        # fill secrets locally, never commit
 npm install
 npm run db:up               # Docker PostgreSQL on host port 5433
 npm run db:migrate
-npm run dev:api
+npm run dev:api:watch       # rebuilds and restarts the API on every server change (dev:api = one build, no reload)
 npm run dev:client
 ```
 

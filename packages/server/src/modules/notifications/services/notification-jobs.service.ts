@@ -2,7 +2,7 @@ import type { DashboardAlert } from "@kfit/shared";
 import type { DrizzleNotificationsRepository, ReconcileResult } from "../repositories/notifications.repository.js";
 import type { NotificationMailDelivery } from "./notification-mail.delivery.js";
 import { smtpErrorCode } from "./notification-mail.delivery.js";
-import { candidatesFromAlerts, nextAttemptAfterFailure } from "./notification.policy.js";
+import { candidatesFromAlerts, nextAttemptAfterFailure, type NotificationCandidate } from "./notification.policy.js";
 
 /** The two S7.2 jobs. Sources are read through the S7.1 alert derivation, so each owner module keeps business truth. */
 export class NotificationJobsService {
@@ -11,12 +11,14 @@ export class NotificationJobsService {
     private readonly alerts: () => Promise<DashboardAlert[]>,
     private readonly mail: NotificationMailDelivery | null,
     private readonly clock: () => Date = () => new Date(),
+    /** OPS-01 O9: supervision alerts, reconciled in the same pass so they open and resolve like every other kind. */
+    private readonly extraCandidates: () => Promise<NotificationCandidate[]> = async () => [],
   ) {}
 
   /** notifications.reconcile — a failure throws (the job run is recorded failed); nothing is e-mailed without durable history. */
   async reconcile(): Promise<ReconcileResult> {
     const alerts = await this.alerts();
-    return this.repository.reconcile(candidatesFromAlerts(alerts), this.clock());
+    return this.repository.reconcile([...candidatesFromAlerts(alerts), ...(await this.extraCandidates())], this.clock());
   }
 
   /** notifications.email-delivery — SMTP happens outside any transaction; an SMTP failure never touches notifications or business data. */

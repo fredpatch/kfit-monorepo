@@ -1,7 +1,7 @@
 import { useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Check, CheckCheck, ClipboardList, FileCheck, FilePen, Flag, Inbox, MessageCircle, Settings, Wallet, X, type LucideIcon } from "lucide-react";
+import { Bell, Check, CheckCheck, ClipboardList, FileCheck, FilePen, Flag, Inbox, MessageCircle, Settings, ShieldAlert, Wallet, X, type LucideIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { NotificationItem, NotificationKind, NotificationListView } from "@kfit/shared";
@@ -20,6 +20,7 @@ const kindIcons: Record<NotificationKind, LucideIcon> = {
   quote_action_required: FilePen,
   preparation_blocked: ClipboardList,
   completion_due: Flag,
+  supervision_alert: ShieldAlert,
 };
 
 /** Shared by the bell badge and the panel: unread and open counts of the session user (POL-01 D7). */

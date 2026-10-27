@@ -8,7 +8,7 @@ import { customers, subscriptions } from "./customers.js";
  * S7.2 (Gate 1 approved 2026-10-23). Additive: no business-domain table is altered.
  * A notification is durable operational history of an authoritative source condition; it never mutates the source.
  */
-const kinds = "'follow_up_overdue','request_to_contact','installment_overdue','payment_proof_pending','quote_action_required','preparation_blocked','completion_due'";
+const kinds = "'follow_up_overdue','request_to_contact','installment_overdue','payment_proof_pending','quote_action_required','preparation_blocked','completion_due','supervision_alert'";
 
 export const notifications = pgTable("notifications", {
   id: idColumn(),

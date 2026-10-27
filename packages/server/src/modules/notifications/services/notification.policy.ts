@@ -9,7 +9,7 @@ import { businessDateKey, businessOffsetMs, businessTimeZone, notificationKindLa
 export type NotificationCandidate = {
   kind: NotificationKind;
   severity: NotificationSeverity;
-  resourceType: "subscription" | "request" | "installment" | "payment_proof" | "quote";
+  resourceType: "subscription" | "request" | "installment" | "payment_proof" | "quote" | "supervision";
   resourceId: string;
   subscriptionId: string | null;
   customerId: string | null;
@@ -120,6 +120,7 @@ const digestLines: Record<NotificationKind, (n: number) => string> = {
   quote_action_required: (n) => `${n} modification${n > 1 ? "s" : ""} de devis demandée${n > 1 ? "s" : ""}`,
   preparation_blocked: (n) => `${n} préparation${n > 1 ? "s" : ""} bloquée${n > 1 ? "s" : ""}`,
   completion_due: (n) => `${n} revue${n > 1 ? "s" : ""} de fin à effectuer`,
+  supervision_alert: (n) => `${n} alerte${n > 1 ? "s" : ""} de supervision`,
 };
 
 /** Counts and one link only (Gate 1 § Digest). */
@@ -134,3 +135,5 @@ export function digestMail(counts: Partial<Record<NotificationKind, number>>, bu
 
 export const digestDedupeKey = (userId: string, now: Date) => `digest:${userId}:${businessDateKey(now)}`;
 export const reminderDedupeKey = (notificationId: string, window: number) => `reminder:${notificationId}:${window}`;
+/** OPS-01 O9: keyed on the alert and the Libreville day, not the row — an alert that resolves and reopens the same day is not e-mailed twice. */
+export const supervisionMailDedupeKey = (recipientId: string, alertDedupeKey: string, now: Date) => `supervision:${recipientId}:${alertDedupeKey}:${businessDateKey(now)}`;

@@ -2,11 +2,15 @@
 titre: Échec de job
 public: exploitation
 statut: brouillon
-vérifié-sur: d2fc5df
-couvre: [S7.2, S7.3, S7.4b]
+vérifié-sur: bb2e993
+couvre: [S7.2, S7.3, S7.4b, OPS-01a]
 ---
 
 # Échec de job
+
+## Commencer par la Supervision
+
+Ouvrir d'abord la Supervision (page de l'interface : OPS-01b ; en attendant, `GET /admin/supervision/overview` avec une session administrateur). Elle donne, pour chaque job, la dernière exécution, son code d'erreur, la dernière réussite, le taux d'échec sur 30 jours et l'état (`late`, `failing`, `never_run`), ainsi que les alertes en cours. Détails : [jobs § Supervision](../reference/jobs.md#supervision-ops-01).
 
 ## Faits disponibles aujourd'hui
 
@@ -29,4 +33,6 @@ from scheduled_job_runs where status = 'failed' order by started_at desc limit 2
 
 ## Relancer
 
-À rédiger — DOC-01b.
+- `notifications.reconcile` et `notifications.email-delivery` : `POST /admin/supervision/jobs/<job_key>/run` (administrateur, une fois par minute et par job). `409 SUPERVISION_JOB_BUSY` : une exécution est déjà en cours, attendre la fin. Sinon, le job repart seul au réveil suivant.
+- `privacy.purge` : pas de lancement manuel. `POST /admin/supervision/jobs/privacy.purge/simulate` montre ce que la prochaine exécution supprimerait, sans rien supprimer. L'exécution réelle repart à 03:00 (Libreville) ou au redémarrage de l'API.
+- Scripts ops : [sauvegarde et restauration](sauvegarde-restauration.md).

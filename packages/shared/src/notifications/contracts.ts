@@ -13,6 +13,8 @@ export const notificationKinds = [
   "quote_action_required",
   "preparation_blocked",
   "completion_due",
+  // OPS-01 O9: operational health of K'FIT itself (admins only); never about a customer.
+  "supervision_alert",
 ] as const;
 export type NotificationKind = (typeof notificationKinds)[number];
 
@@ -24,6 +26,7 @@ export const notificationKindLabels: Record<NotificationKind, string> = {
   quote_action_required: "Modification de devis demandée",
   preparation_blocked: "Préparation bloquée",
   completion_due: "Revue de fin à effectuer",
+  supervision_alert: "Alerte de supervision",
 };
 
 export type NotificationSeverity = "warning" | "info";
@@ -96,6 +99,8 @@ export const notificationSettingRegistry = {
   "notifications.quote_action_required.email_enabled": bool(false, "Modifications de devis"),
   "notifications.preparation_blocked.email_enabled": bool(false, "Préparations bloquées"),
   "notifications.completion_due.email_enabled": bool(false, "Revues de fin"),
+  // OPS-01 O9: on by default — a stale backup or a failing job must reach the admin's inbox.
+  "notifications.supervision_alert.email_enabled": bool(true, "Alertes de supervision"),
   // S7.3 (D6): the registry is the closed union of operational settings; privacy adds only the purge delay.
   [privacyPurgeDelayDaysKey]: int(30, 1, 365, "Délai avant suppression des fichiers (jours)", "privacy"),
 } as const satisfies Record<string, NotificationSettingDefinition>;

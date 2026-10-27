@@ -26,3 +26,4 @@ export * from "./receipts/contracts.js";
 export * from "./notifications/contracts.js";
 export * from "./privacy/contracts.js";
 export * from "./privacy/subject-view.js";
+export * from "./supervision/contracts.js";

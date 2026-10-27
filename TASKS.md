@@ -10,8 +10,8 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 ```text
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
-Active slice      SEC-02b client + BOOT-01
-Workflow state    SEC-02 CLOSED 2026-10-27 — SEC-02b + BOOT-01 validated by Fred, committed; next OPS-01
+Active slice      OPS-01a supervision API
+Workflow state    OPS-01a committed 2026-10-27 on Fred's instruction (sprint-7.md § OPS-01a execution); next OPS-01b
 S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) — validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
 Last validated    S7.2 — validated by Fred 2026-10-25
 Implementation    2dc7c43 (S7.2a server) + 0eac6d4 (S7.2b client, UX-16)
@@ -41,8 +41,9 @@ S7.4              CLOSED 2026-10-27 (S7.4a 302902d, S7.4b d2fc5df, DOC-01a 953cb
 DOC-01a           documentation foundation + S7.4c runbook — committed 953cb22
 FIX-03 + DOC-01b  paths from the repo root, ops runner, coach + admin guides — committed 4db73be
 SEC-02a           trusted devices + login OTP (server), no migration — validated, committed e0d6158
-SEC-02b + BOOT-01 « Nouvel appareil » screen, Réglages › Appareils de confiance, production bootstrap token — validated by Fred 2026-10-27, committed; SEC-02 CLOSED
-Next action       OPS-01, RET-01, Sprint 8 UAT
+SEC-02            closed (e0d6158, bb2e993), BOOT-01 closed (bb2e993)
+OPS-01a           supervision API + supervision_alert notifications (migration 0018) — committed 2026-10-27; kfit_dev needs npm run db:migrate
+Next action       OPS-01b client, RET-01, Sprint 8 UAT
 Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »
 Backlog           « Flaky express unit tests (fetch failed, random test) — diagnose with the pgErrorInfo fix »
 Backlog           « OPS-01 Supervision (jobs, sauvegardes, contrôle de restauration, confidentialité, sécurité) — après SEC-02, avant UAT »

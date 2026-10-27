@@ -20,6 +20,7 @@ import {
   reminderDedupeKey,
   reminderMail,
   reminderWindow,
+  supervisionMailDedupeKey,
   type NotificationCandidate,
 } from "../services/notification.policy.js";
 
@@ -111,7 +112,8 @@ export class DrizzleNotificationsRepository {
           const daysKey = reminderDaysKey(kind);
           const window = reminderWindow(now, row.firstDetectedAt, daysKey ? (settings[daysKey] as number) : null);
           const mail = reminderMail({ kind, title: row.title, summary: row.summary, customerDisplayName: row.customerDisplayName, deepLink: row.deepLink }, window, this.options.appBaseUrl);
-          await queue({ notificationId: row.id, messageKind: "reminder", dedupeKey: reminderDedupeKey(row.id, window), subject: mail.subject, bodyText: mail.bodyText });
+          const dedupeKey = kind === "supervision_alert" ? supervisionMailDedupeKey(recipient.id, row.dedupeKey, now) : reminderDedupeKey(row.id, window);
+          await queue({ notificationId: row.id, messageKind: "reminder", dedupeKey, subject: mail.subject, bodyText: mail.bodyText });
         }
         if (settings["notifications.daily_digest.enabled"] && active.length > 0 && digestDue(now, settings["notifications.daily_digest.hour"] as number)) {
           const counts: Partial<Record<NotificationKind, number>> = {};

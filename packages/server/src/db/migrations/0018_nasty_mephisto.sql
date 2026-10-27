@@ -1,0 +1,2 @@
+ALTER TABLE "notifications" DROP CONSTRAINT "notifications_kind_known";--> statement-breakpoint
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_kind_known" CHECK (kind in ('follow_up_overdue','request_to_contact','installment_overdue','payment_proof_pending','quote_action_required','preparation_blocked','completion_due','supervision_alert'));

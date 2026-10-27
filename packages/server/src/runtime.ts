@@ -45,6 +45,11 @@ import {
 } from "./modules/auth/repositories/auth.repositories.js";
 import { loadSmtpAuthMailConfig, NodemailerAuthMailDelivery } from "./modules/auth/services/auth-mail.delivery.js";
 import { DeviceLoginService } from "./modules/auth/services/device-login.service.js";
+import { resolveConfiguredPath } from "./config/paths.js";
+import { SupervisionController } from "./modules/supervision/controllers/supervision.controller.js";
+import { DrizzleSupervisionRepository } from "./modules/supervision/repositories/supervision.repository.js";
+import { SupervisionService } from "./modules/supervision/services/supervision.service.js";
+import { supervisionCandidates } from "./modules/supervision/services/supervision.policy.js";
 import { BOOTSTRAP_RATE_LIMIT_SCOPE, bootstrapTokenPolicy, createBootstrapRateLimiter } from "./modules/auth/services/bootstrap-access.js";
 import { createLoginRateLimits } from "./modules/auth/services/login-rate-limits.js";
 import { InMemoryRecoveryRateLimiter, PasswordRecoveryService } from "./modules/auth/services/password-recovery.service.js";
@@ -255,7 +260,7 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
     auditHashPepper: authConfig.auditHashPepper,
     appBaseUrl: env.KFIT_APP_BASE_URL || "http://localhost:5173",
   });
-  const notificationJobs = new NotificationJobsService(
+  const notificationJobs: NotificationJobsService = new NotificationJobsService(
     notificationsRepository,
     async () => {
       const [reader] = await notificationsRepository.recipients(db);
@@ -263,6 +268,9 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
       return (await dashboardAlerts.alerts({ userId: reader.id, requestId: `job:notifications.reconcile:${randomUUID()}`, ipAddress: null, userAgent: null })).alerts;
     },
     env.SMTP_HOST ? new NodemailerNotificationMailDelivery(loadSmtpAuthMailConfig(env)) : null,
+    () => new Date(),
+    // OPS-01 O9: supervision alerts open and resolve with the same reconcile (supervisionService is built below, used at run time).
+    async () => supervisionCandidates(await supervisionService.alerts()),
   );
   const startNotificationJobs = (log: (line: string) => void) => startScheduledJobs(pool, db, [
     { jobKey: "notifications.reconcile", cron: "*/15 * * * *", windowMs: 15 * 60_000, work: () => notificationJobs.reconcile() },
@@ -281,6 +289,16 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
   );
   const privacyStorage = new PrivateDocumentStorage();
   const startPrivacyJobs = (log: (line: string) => void) => startScheduledJobs(pool, db, [privacyPurgeJob(privacyRepository, (key) => privacyStorage.remove(key))], log);
+
+  /* OPS-01 (Gate 1 approved 2026-10-27): admin « Supervision » — job health, backups, restore checks, privacy, runtime, security series. */
+  const supervisionService: SupervisionService = new SupervisionService({
+    repository: new DrizzleSupervisionRepository(db, { auditHashPepper: authConfig.auditHashPepper }),
+    privacy: privacyRepository,
+    pool, db, mode, env,
+    journalDir: resolveConfiguredPath(env[PRIVACY_JOURNAL_DIR_ENV]),
+    manualRunners: { "notifications.reconcile": () => notificationJobs.reconcile(), "notifications.email-delivery": () => notificationJobs.deliver() },
+    onManualRunRateLimited: () => recordSecurityEvent(rateLimitedCode("supervision_run")),
+  });
 
   const documentsController = new DocumentsController(new DocumentsService(
     new DrizzleDocumentsRepository(db, {
@@ -333,6 +351,7 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
     dashboardAnalyticsController,
     notificationsController: new NotificationsController(notificationsRepository),
     privacyController,
+    supervisionController: new SupervisionController(supervisionService),
     // TEST-01 D4 / S7.4 D1: « Données de test » cleanup, never mounted in production.
     ...(mode === "development" && devToolsController
       ? { devToolsController: devToolsController({ auditHashPepper: authConfig.auditHashPepper, removePrivateFile: (key) => privacyStorage.remove(key), warn: (line) => logger.warn(line) }) }

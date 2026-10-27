@@ -410,6 +410,34 @@ export class DrizzlePrivacyRepository {
     return result;
   }
 
+  /**
+   * OPS-01 O4: what purgeDue would do now — same eligibility (pending_purge, purge_after reached) and the same hold check —
+   * in a READ ONLY transaction. Counts only; deletes nothing, writes no run row.
+   */
+  async simulatePurge(now: Date): Promise<{ subjectsDue: number; filesDue: number; bytesDue: number; heldBack: number }> {
+    return this.db.transaction(async (tx) => {
+      const due = await tx.select({ id: documents.id, ownerType: documents.ownerType, ownerId: documents.ownerId }).from(documents)
+        .where(and(eq(documents.status, "pending_purge"), lte(documents.purgeAfter, now))).orderBy(asc(documents.purgeAfter), asc(documents.id));
+      const subjects = new Set<string>();
+      const result = { subjectsDue: 0, filesDue: 0, bytesDue: 0, heldBack: 0 };
+      for (const doc of due) {
+        const customerId = await this.documentCustomerId(tx, doc.ownerType, doc.ownerId);
+        const [customer] = customerId ? await tx.select({ prospectId: customers.prospectId }).from(customers).where(eq(customers.id, customerId)) : [];
+        if (await this.activeHoldCount(tx, { customerId, prospectId: customer?.prospectId ?? null, subscriptionIds: [], requestIds: [] }, [doc.id]) > 0) {
+          result.heldBack += 1;
+          continue;
+        }
+        subjects.add(customerId ?? `document:${doc.id}`);
+        const [files] = await tx.select({ n: sql<number>`count(*)::int`, bytes: sql<number>`coalesce(sum(${documentVersions.sizeBytes}), 0)::bigint` })
+          .from(documentVersions).where(eq(documentVersions.documentId, doc.id));
+        result.filesDue += files?.n ?? 0;
+        result.bytesDue += Number(files?.bytes ?? 0);
+      }
+      result.subjectsDue = subjects.size;
+      return result;
+    }, { accessMode: "read only" });
+  }
+
   async recordPurgeRun(counts: PurgeBatchResult) {
     await this.db.transaction((tx) => this.audit(tx, null, "privacy.purge_run", "document", null, counts));
   }

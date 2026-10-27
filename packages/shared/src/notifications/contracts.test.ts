@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { emailEnabledKey, notificationKinds, notificationSettingDefaults, notificationSettingRegistry, parseNotificationSettingsUpdate, reminderDaysKey } from "./contracts.js";
 
-test("notification settings defaults: e-mail on, digest 08:00, per-kind e-mails off", () => {
+test("notification settings defaults: e-mail on, digest 08:00, per-kind e-mails off except supervision alerts (OPS-01 O9)", () => {
   const d = notificationSettingDefaults();
   assert.equal(d["notifications.email.enabled"], true);
   assert.equal(d["notifications.daily_digest.enabled"], true);
   assert.equal(d["notifications.daily_digest.hour"], 8);
-  for (const kind of notificationKinds) assert.equal(d[emailEnabledKey(kind)], false);
+  for (const kind of notificationKinds) assert.equal(d[emailEnabledKey(kind)], kind === "supervision_alert", kind);
 });
 
 test("every kind has an email_enabled key; reminder_days only for overdue follow-ups and installments", () => {

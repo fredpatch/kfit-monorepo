@@ -12,7 +12,7 @@ couvre: [DOC-01a]
 
 Sources : tableaux `…ErrorCodes` de `packages/shared/src`, codes serveur listés dans `scripts/docs/generate-references.mjs`. Message affiché : texte des tables de messages du client (`packages/client/src`), « — » quand le client n'en a pas (code non affiché tel quel ou message générique).
 
-322 codes, 24 modules.
+328 codes, 25 modules.
 
 ## appointments
 
@@ -450,6 +450,19 @@ Source : `packages/shared/src/subscriptions/contracts.ts · subscriptionErrorCod
 | `SUBSCRIPTION_DURATION_INVALID` | La durée enregistrée est incohérente. Fais vérifier cet abonnement avant de poursuivre. |
 | `SUBSCRIPTION_ADMIN_FORBIDDEN` | Cet espace est réservé à l’administrateur. |
 | `SUBSCRIPTION_ROUTE_UNEXPECTED_FAILURE` | L’action n’a pas pu être confirmée. Actualise la fiche avant de réessayer. |
+
+## supervision
+
+Source : `packages/shared/src/supervision/contracts.ts · supervisionErrorCodes`
+
+| Code | Message affiché |
+| --- | --- |
+| `SUPERVISION_ADMIN_FORBIDDEN` | — |
+| `SUPERVISION_INVALID_INPUT` | — |
+| `SUPERVISION_JOB_NOT_RUNNABLE` | — |
+| `SUPERVISION_JOB_BUSY` | — |
+| `SUPERVISION_RATE_LIMITED` | — |
+| `SUPERVISION_ROUTE_UNEXPECTED_FAILURE` | — |
 
 ## démarrage production (S7.4a)
 

@@ -12,7 +12,7 @@ couvre: [DOC-01a]
 
 Sources : tableaux `…ErrorCodes` de `packages/shared/src`, codes serveur listés dans `scripts/docs/generate-references.mjs`. Message affiché : texte des tables de messages du client (`packages/client/src`), « — » quand le client n'en a pas (code non affiché tel quel ou message générique).
 
-320 codes, 24 modules.
+322 codes, 24 modules.
 
 ## appointments
 
@@ -65,6 +65,8 @@ Source : `packages/shared/src/auth/contracts.ts · authErrorCodes`
 | `AUTH_ORIGIN_INVALID` | La vérification de sécurité a échoué. Recharge la page. |
 | `AUTH_OTP_DELIVERY_FAILED` | — |
 | `AUTH_DEVICE_NOT_FOUND` | — |
+| `BOOTSTRAP_DISABLED` | — |
+| `BOOTSTRAP_TOKEN_INVALID` | — |
 
 ## catalogue
 

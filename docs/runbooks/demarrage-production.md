@@ -23,7 +23,7 @@ L'API de production refuse de démarrer tant qu'un contrôle échoue. Tous les �
 - [ ] Aucun texte de consentement publié portant « DÉMONSTRATION » dans son titre (Configuration › Consentements).
 - [ ] `AUTH_DEVICE_PEPPER` renseigné (SEC-02) : c'est la clé de l'empreinte (HMAC) des appareils de confiance. Le changer plus tard invalide tous les appareils de confiance : chaque navigateur redemandera un code par e-mail.
 - [ ] SMTP opérationnel : une connexion depuis un appareil inconnu exige un code envoyé par e-mail. Sans SMTP, elle répond `503 AUTH_OTP_DELIVERY_FAILED`.
-- [ ] Premier démarrage d'une base vide : créer le compte administrateur aussitôt ([premier compte administrateur](premier-compte-administrateur.md)).
+- [ ] Premier démarrage d'une base vide : définir `KFIT_BOOTSTRAP_TOKEN` (sinon l'initialisation est fermée), créer le compte administrateur, puis retirer la variable ([premier compte administrateur](premier-compte-administrateur.md)).
 
 ## 2. Démarrer et arrêter
 

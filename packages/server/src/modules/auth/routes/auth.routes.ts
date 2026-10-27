@@ -14,6 +14,7 @@ export const authRoutes: AuthRouteDefinition[] = [
     handler: "bootstrap",
     requiresAuth: false,
     requiresCsrf: false,
+    requiresOriginCheck: true,
   },
   {
     method: "POST",

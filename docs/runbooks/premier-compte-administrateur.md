@@ -2,35 +2,42 @@
 titre: Premier compte administrateur
 public: exploitation
 statut: brouillon
-vérifié-sur: 4db73be
-couvre: [SEC-02a]
+vérifié-sur: e0d6158
+couvre: [SEC-02a, SEC-02b, BOOT-01]
 ---
 
 # Premier compte administrateur
 
-Sources : `packages/server/src/modules/auth/services/bootstrap.service.ts`, `packages/server/src/modules/auth/repositories/auth.repositories.ts` (`DrizzleBootstrapRepository`), `packages/server/src/modules/auth/routes/auth.routes.ts`, `packages/client/src/auth/components/BootstrapForm.tsx`, `packages/server/src/modules/auth/services/device-login.service.ts`.
+Sources : `packages/server/src/modules/auth/services/bootstrap.service.ts`, `packages/server/src/modules/auth/services/bootstrap-access.ts`, `packages/server/src/runtime/production-guards.ts`, `packages/server/src/modules/auth/repositories/auth.repositories.ts` (`DrizzleBootstrapRepository`), `packages/server/src/modules/auth/routes/auth.routes.ts`, `packages/client/src/auth/components/BootstrapForm.tsx`, `packages/server/src/modules/auth/services/device-login.service.ts`.
 
 ## 1. Comment l'initialisation est atteinte et fermée
 
-- Tant que la table `users` est vide, `GET /auth/bootstrap/status` répond `{ "required": true }` et l'application affiche l'écran « Initialisation » (« Crée le premier compte coach. Aucun identifiant par défaut n'est fourni. »).
-- `POST /auth/bootstrap` crée ce premier compte avec le rôle administrateur. La route ne demande ni session, ni jeton CSRF, ni contrôle d'origine : **n'importe qui peut l'appeler tant qu'aucun compte n'existe**.
+- Tant que la table `users` est vide, `GET /auth/bootstrap/status` répond `required: true` et l'application affiche l'écran « Initialisation » (« Crée le premier compte coach. Aucun identifiant par défaut n'est fourni. »).
+- `POST /auth/bootstrap` crée ce premier compte avec le rôle administrateur. La route ne demande ni session ni jeton CSRF. Elle refuse une origine étrangère (`403 AUTH_ORIGIN_INVALID`) et accepte 5 essais par adresse réseau sur 15 minutes (ensuite `429 AUTH_RATE_LIMITED`, compté `RATE_LIMITED:auth_bootstrap`).
+- **En production (BOOT-01)**, la route exige l'en-tête `x-kfit-bootstrap-token`, égal à la variable `KFIT_BOOTSTRAP_TOKEN` (32 caractères minimum, pas de valeur d'exemple). L'écran affiche alors le champ « Jeton d'initialisation ».
+  - Variable absente, trop courte ou d'exemple : `403 BOOTSTRAP_DISABLED`, et l'écran affiche « Initialisation désactivée : définis KFIT_BOOTSTRAP_TOKEN côté serveur (voir runbook). ».
+  - Mauvais jeton : `403 BOOTSTRAP_TOKEN_INVALID`, audité `auth.bootstrap.rejected` (raison `token_invalid`, jamais la valeur).
+- En développement, aucun jeton n'est demandé.
 - Fermeture : dès qu'un compte existe, la route répond `409 BOOTSTRAP_ALREADY_COMPLETED` (événement d'audit `auth.bootstrap.rejected`). La création se fait dans une transaction protégée par un verrou PostgreSQL (`pg_advisory_xact_lock`), qui revérifie la table : deux appels simultanés ne créent jamais deux comptes.
 - L'adresse e-mail saisie n'est pas vérifiée à la création : aucun e-mail de confirmation n'est envoyé.
 
 ## 2. Procédure en production
 
-1. Démarrer l'API ([démarrage en production](demarrage-production.md)). SMTP doit fonctionner : sans lui, la première connexion est impossible (étape 4).
-2. **Immédiatement**, ouvrir l'application et remplir « Initialisation » avec l'e-mail de l'administrateur (une boîte à laquelle il a accès tout de suite) et un mot de passe conforme (12 caractères minimum, au moins une lettre et un chiffre).
-3. « Créer le compte ». Résultat attendu : le message de confirmation, puis l'écran « Connexion ».
-4. Se connecter. Le navigateur est inconnu : K'FIT envoie un code à 6 chiffres à l'e-mail du compte (sujet « K'FIT — Code de connexion »). Le saisir, et choisir de faire confiance à l'appareil pour ne pas redemander de code pendant 30 jours.
+1. Générer un jeton, sans l'afficher dans un historique partagé :
+   ```bash
+   openssl rand -base64 48
+   ```
+2. Ajouter `KFIT_BOOTSTRAP_TOKEN=<jeton>` à l'environnement de l'API, puis la démarrer ([démarrage en production](demarrage-production.md)). Résultat attendu dans le journal : `⚠ KFIT_BOOTSTRAP_TOKEN is set and no account exists: the first account can be created; remove the variable afterwards`. SMTP doit fonctionner : sans lui, la première connexion est impossible (étape 5).
+3. Ouvrir l'application. Sur « Initialisation », saisir le « Jeton d'initialisation », l'e-mail de l'administrateur (une boîte à laquelle il a accès tout de suite) et un mot de passe conforme (12 caractères minimum, au moins une lettre et un chiffre).
+4. « Créer le compte ». Résultat attendu : le message de confirmation, puis l'écran « Connexion ».
+5. Se connecter. Le navigateur est inconnu : l'écran « Nouvel appareil » demande le code à 6 chiffres envoyé à l'e-mail du compte (sujet « K'FIT — Code de connexion »). Cocher « Faire confiance à cet appareil pendant 30 jours » sur un poste personnel, puis « Valider ».
+6. **Retirer `KFIT_BOOTSTRAP_TOKEN`** de l'environnement et redémarrer l'API. Tant qu'elle reste définie, chaque démarrage affiche `⚠ KFIT_BOOTSTRAP_TOKEN is set but an account already exists: « retire KFIT_BOOTSTRAP_TOKEN » and restart`.
 
-**À vérifier** : l'écran de saisie du code arrive avec SEC-02b. D'ici là, l'application affiche « Une erreur est survenue. Réessaie dans un instant. » à l'étape 4, et le code se valide depuis la console du navigateur (voir le rapport SEC-02a).
-
-**Risque.** Entre le premier démarrage et l'étape 3, la route est ouverte. Faire l'initialisation dans la foulée du démarrage, avant d'annoncer l'adresse du site. **À vérifier** au Sprint 9 : restreindre l'accès (nginx) pendant cette fenêtre.
+La variable n'est pas obligatoire au démarrage : sans elle, l'API démarre et l'initialisation reste fermée.
 
 ## 3. Si l'e-mail saisi est faux
 
-Symptôme : aucun code n'arrive à l'étape 4, et « Mot de passe oublié » n'aide pas, car le code de récupération part aussi vers cette adresse.
+Symptôme : aucun code n'arrive à l'étape 5, et « Mot de passe oublié » n'aide pas, car le code de récupération part aussi vers cette adresse.
 
 Aucun écran ne permet de corriger l'e-mail d'un compte. La correction se fait dans la base, par l'exploitation :
 

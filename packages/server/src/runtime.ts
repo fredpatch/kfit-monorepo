@@ -45,6 +45,7 @@ import {
 } from "./modules/auth/repositories/auth.repositories.js";
 import { loadSmtpAuthMailConfig, NodemailerAuthMailDelivery } from "./modules/auth/services/auth-mail.delivery.js";
 import { DeviceLoginService } from "./modules/auth/services/device-login.service.js";
+import { BOOTSTRAP_RATE_LIMIT_SCOPE, bootstrapTokenPolicy, createBootstrapRateLimiter } from "./modules/auth/services/bootstrap-access.js";
 import { createLoginRateLimits } from "./modules/auth/services/login-rate-limits.js";
 import { InMemoryRecoveryRateLimiter, PasswordRecoveryService } from "./modules/auth/services/password-recovery.service.js";
 import { SensitiveActionOtpService } from "./modules/auth/services/sensitive-action-otp.service.js";
@@ -119,7 +120,12 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
     new DrizzleBootstrapRepository(db),
     passwords,
     audit,
-    { defaultRole: "admin" },
+    {
+      defaultRole: "admin",
+      // BOOT-01 B1/B2: production needs KFIT_BOOTSTRAP_TOKEN; every mode checks the origin and limits attempts per address.
+      tokenPolicy: bootstrapTokenPolicy(mode, env),
+      allowAttempt: createBootstrapRateLimiter(() => recordSecurityEvent(rateLimitedCode(BOOTSTRAP_RATE_LIMIT_SCOPE))),
+    },
   );
 
   const otpChallengeService = new OtpChallengeService(

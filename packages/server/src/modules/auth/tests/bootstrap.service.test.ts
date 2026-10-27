@@ -53,8 +53,8 @@ function makeService(existingUsers = 0) {
 }
 
 test("BootstrapService reports whether first account creation is required", async () => {
-  assert.deepEqual(await makeService(0).service.status(), { required: true });
-  assert.deepEqual(await makeService(1).service.status(), { required: false });
+  assert.deepEqual(await makeService(0).service.status(), { required: true, tokenRequired: false, enabled: true });
+  assert.deepEqual(await makeService(1).service.status(), { required: false, tokenRequired: false, enabled: true });
 });
 
 test("BootstrapService creates the first user once with canonical email and hashed password", async () => {

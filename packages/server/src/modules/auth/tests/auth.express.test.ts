@@ -40,7 +40,7 @@ async function withTestServer<T>(resolveSession: () => AuthenticatedSessionConte
   const controller = new AuthController({
     bootstrapService: {
       async status() {
-        return { required: true };
+        return { required: true, tokenRequired: false, enabled: true };
       },
       async create() {
         return {
@@ -249,7 +249,7 @@ test("Express auth router exposes bootstrap status and creation routes", async (
   await withTestServer(() => null, async (baseUrl) => {
     const status = await fetch(`${baseUrl}/auth/bootstrap/status`);
     assert.equal(status.status, 200);
-    assert.deepEqual(await status.json(), { required: true });
+    assert.deepEqual(await status.json(), { required: true, tokenRequired: false, enabled: true });
 
     const created = await fetch(`${baseUrl}/auth/bootstrap`, {
       method: "POST",

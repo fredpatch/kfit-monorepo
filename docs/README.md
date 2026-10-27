@@ -12,11 +12,11 @@ couvre: [DOC-01a]
 
 | Document                                                                                | Public                    | Statut    | Vérifié sur |
 | --------------------------------------------------------------------------------------- | ------------------------- | --------- | ----------- |
-| [Guide du coach](guides/guide-coach.md)                                                 | coach                     | brouillon | 4db73be     |
-| [Guide de l'administrateur](guides/guide-administrateur.md)                             | administrateur            | brouillon | 4db73be     |
+| [Guide du coach](guides/guide-coach.md)                                                 | coach                     | brouillon | e0d6158     |
+| [Guide de l'administrateur](guides/guide-administrateur.md)                             | administrateur            | brouillon | e0d6158     |
 | [Runbooks (index)](runbooks/README.md)                                                  | exploitation              | à jour    | d2fc5df     |
 | [Démarrage en production](runbooks/demarrage-production.md)                             | exploitation              | à jour    | 4db73be     |
-| [Premier compte administrateur](runbooks/premier-compte-administrateur.md)              | exploitation              | brouillon | 4db73be     |
+| [Premier compte administrateur](runbooks/premier-compte-administrateur.md)              | exploitation              | brouillon | e0d6158     |
 | [Sauvegarde et restauration](runbooks/sauvegarde-restauration.md)                       | exploitation              | à jour    | 7b1d467     |
 | [Plancher de sécurité](runbooks/plancher-securite.md)                                   | exploitation, développeur | à jour    | d2fc5df     |
 | [Incident](runbooks/incident.md)                                                        | exploitation              | brouillon | d2fc5df     |

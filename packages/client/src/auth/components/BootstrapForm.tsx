@@ -11,20 +11,25 @@ import { AuthAlert, AuthHeading } from "./AuthShell.js";
 import { PasswordInput } from "./PasswordInput.js";
 import { PasswordMeter } from "./PasswordMeter.js";
 
-type Values = { email: string; password: string; confirm: string };
+const bootstrapDisabledMessage = "Initialisation désactivée : définis KFIT_BOOTSTRAP_TOKEN côté serveur (voir runbook).";
 
-/** First coach/admin account. No default credentials exist; bootstrap closes once an account is created. */
+type Values = { email: string; password: string; confirm: string; token: string };
+
+/**
+ * First coach/admin account. No default credentials exist; bootstrap closes once an account is created.
+ * BOOT-01 B4: production asks for « Jeton d'initialisation », sent as a header and never stored.
+ */
 export function BootstrapForm() {
   const auth = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
-  const { register, handleSubmit, watch, formState } = useForm<Values>({ defaultValues: { email: "", password: "", confirm: "" } });
+  const { register, handleSubmit, watch, formState } = useForm<Values>({ defaultValues: { email: "", password: "", confirm: "", token: "" } });
   const { errors, isSubmitting } = formState;
   const password = watch("password");
 
   const submit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await auth.bootstrap({ email: values.email.trim(), password: values.password });
+      await auth.bootstrap({ email: values.email.trim(), password: values.password }, auth.bootstrapTokenRequired ? values.token.trim() : undefined);
       toast.success(authMessages.bootstrapDone);
     } catch (error) {
       const failure = authFailureOf(error);
@@ -34,15 +39,33 @@ export function BootstrapForm() {
             ? "L'initialisation est déjà faite. Recharge la page pour te connecter."
             : failure.code === "AUTH_BOOTSTRAP_INVALID_FORMAT"
               ? "Vérifie l'e-mail saisi."
-              : commonAuthMessage(failure)),
+              : failure.code === "BOOTSTRAP_TOKEN_INVALID"
+                ? "Jeton d'initialisation incorrect."
+                : failure.code === "BOOTSTRAP_DISABLED"
+                  ? bootstrapDisabledMessage
+                  : commonAuthMessage(failure)),
       );
     }
   });
+
+  if (!auth.bootstrapEnabled) {
+    return (
+      <>
+        <AuthHeading title="Initialisation" />
+        <AuthAlert message={bootstrapDisabledMessage} />
+      </>
+    );
+  }
 
   return (
     <>
       <AuthHeading title="Initialisation" description="Crée le premier compte coach. Aucun identifiant par défaut n'est fourni." />
       <form noValidate onSubmit={submit} className="flex flex-col gap-4">
+        {auth.bootstrapTokenRequired ? (
+          <Field label="Jeton d'initialisation" error={errors.token?.message}>
+            {(control) => <PasswordInput {...control} autoComplete="off" {...register("token", { required: "Saisis le jeton d'initialisation." })} />}
+          </Field>
+        ) : null}
         <Field label="E-mail" error={errors.email?.message}>
           {(control) => <Input {...control} type="email" autoComplete="username" className="h-11" {...register("email", { required: "Saisis l'e-mail du compte." })} />}
         </Field>

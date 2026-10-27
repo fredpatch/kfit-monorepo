@@ -2,8 +2,8 @@
 titre: Guide de l'administrateur
 public: administrateur
 statut: brouillon
-vérifié-sur: 4db73be
-couvre: [DOC-01a, DOC-01b, SEC-02a]
+vérifié-sur: e0d6158
+couvre: [DOC-01a, DOC-01b, SEC-02a, SEC-02b]
 ---
 
 # Guide de l'administrateur
@@ -13,7 +13,7 @@ Ce guide couvre la configuration de K'FIT : réglages, catalogue, textes de cons
 ## 1. Rôles et accès
 
 - K'FIT a aujourd'hui un seul rôle : administrateur, affiché « Coach · administratrice » dans « Mon compte ». Ce rôle donne accès à tout l'espace coach et à la configuration.
-- Le premier compte se crée sur l'écran « Initialisation », affiché tant qu'aucun compte n'existe. Aucun identifiant par défaut n'est fourni. Procédure en production : [premier compte administrateur](../runbooks/premier-compte-administrateur.md).
+- Le premier compte se crée sur l'écran « Initialisation », affiché tant qu'aucun compte n'existe. Aucun identifiant par défaut n'est fourni. En production, l'écran demande aussi un « Jeton d'initialisation » fourni par l'exploitation. Procédure : [premier compte administrateur](../runbooks/premier-compte-administrateur.md).
 - Aucun écran ne permet aujourd'hui d'ajouter ou de retirer un compte. **À vérifier** : procédure pour un second compte.
 - Les clientes n'ont pas de compte. Elles utilisent uniquement les liens personnels que tu leur envoies.
 
@@ -129,7 +129,9 @@ Actions qui demandent une vérification récente par code : anonymiser une perso
 - Un appareil de confiance ne vaut que pour ton compte : un autre compte connecté depuis le même navigateur reçoit un code.
 - Un nouvel envoi du code invalide le précédent, 3 fois au plus par connexion.
 - Limites (sur 15 minutes) : 10 tentatives de connexion par adresse réseau, 5 codes de connexion par compte, 10 vérifications de code par adresse, 3 renvois par compte. Au-delà : « Trop de tentatives. Réessaie dans quelques minutes. »
-- Révocation : retirer un appareil, ou tous, ne ferme pas la session en cours. L'appareil retiré redemandera un code à sa prochaine connexion. **À venir (SEC-02b)** : l'écran de la liste des appareils et de saisie du code.
+- Écran de connexion : « Nouvel appareil », avec la case « Faire confiance à cet appareil pendant 30 jours » (décochée par défaut) et « Renvoyer le code » (30 secondes entre deux envois). Détail dans le [guide du coach](guide-coach.md#1-se-connecter).
+- « Réglages › Appareils de confiance » : chaque compte (administrateur ou coach) gère ses propres appareils. Pour chacun : le nom (« Navigateur · Système »), « Utilisé le … », « Confiance jusqu'au … », et le badge « Cet appareil » pour le navigateur en cours.
+- Révocation : « Retirer » (un appareil) ou « Tout retirer », après confirmation. La session en cours reste ouverte ; l'appareil retiré redemandera un code à sa prochaine connexion. Retirer ne demande pas de code : seul l'ajout de confiance en demande un.
 - Une réinitialisation du mot de passe (« Mot de passe oublié ») ferme toutes les sessions et retire tous les appareils de confiance du compte.
 - Il n'existe pas de bouton « déconnecter partout ».
 

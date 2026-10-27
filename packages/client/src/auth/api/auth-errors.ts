@@ -4,11 +4,7 @@ import { authPasswordRuleLabels, type AuthPasswordRule } from "@kfit/shared";
 /** What the auth screens need from a failed call: HTTP status (0 = unreachable), API code, policy reason. */
 export type AuthFailure = { status: number; code: string | null; reason: string | null };
 
-/** SEC-02a: the login code screen ships in SEC-02b; until then a 202 « otp_required » shows the generic error. */
-export class LoginOtpNotSupportedError extends Error {}
-
 export function authFailureOf(error: unknown): AuthFailure {
-  if (error instanceof LoginOtpNotSupportedError) return { status: 202, code: null, reason: null };
   if (axios.isAxiosError(error)) {
     const body = error.response?.data as { error?: unknown; reason?: unknown } | undefined;
     return {
@@ -58,7 +54,33 @@ export function loginErrorMessage(failure: AuthFailure): string {
   if (failure.code === "AUTH_INVALID_CREDENTIALS" || failure.code === "AUTH_ACCOUNT_UNAVAILABLE" || failure.code === "AUTH_LOGIN_INVALID_FORMAT") {
     return authMessages.loginRejected;
   }
+  if (failure.code === "AUTH_OTP_DELIVERY_FAILED") return loginOtpMessages.deliveryFailed;
   return commonAuthMessage(failure);
+}
+
+/** SEC-02b A3: wording validated by Fred 2026-10-27. */
+export const loginOtpMessages = {
+  invalid: "Code incorrect. Vérifie et réessaie.",
+  expired: "Ce code a expiré. Demande un nouveau code.",
+  locked: "Trop d'essais. Recommence la connexion.",
+  stale: "Ce code n'est plus valable. Recommence la connexion.",
+  deliveryFailed: "Le code n'a pas pu être envoyé. Réessaie dans un instant ou contacte l'administrateur.",
+  format: "Le code contient 6 chiffres.",
+  maxResends: "Nombre maximum de renvois atteint. Recommence la connexion.",
+} as const;
+
+/** What the « Nouvel appareil » step shows, and whether the challenge is dead (back to « Connexion »). */
+export function loginOtpFailure(failure: AuthFailure): { message: string; restart: boolean } {
+  if (failure.code === "AUTH_OTP_REJECTED") {
+    if (failure.reason === "invalid") return { message: loginOtpMessages.invalid, restart: false };
+    if (failure.reason === "expired") return { message: loginOtpMessages.expired, restart: false };
+    if (failure.reason === "locked") return { message: loginOtpMessages.locked, restart: true };
+    return { message: loginOtpMessages.stale, restart: true };
+  }
+  if (failure.code === "AUTH_OTP_CODE_INVALID_FORMAT") return { message: loginOtpMessages.format, restart: false };
+  if (failure.code === "AUTH_OTP_DELIVERY_FAILED" || failure.status === 503) return { message: loginOtpMessages.deliveryFailed, restart: false };
+  if (failure.code === "AUTH_ACCOUNT_UNAVAILABLE") return { message: authMessages.loginRejected, restart: true };
+  return { message: commonAuthMessage(failure), restart: false };
 }
 
 /** Server password policy reasons → the same labels as the meter. */

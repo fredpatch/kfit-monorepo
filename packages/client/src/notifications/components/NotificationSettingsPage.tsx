@@ -13,6 +13,7 @@ import {
   type NotificationSettings,
 } from "@kfit/shared";
 import { AdminPage } from "../../app/layout/AdminPage.js";
+import { TrustedDevicesCard } from "../../auth/components/TrustedDevicesCard.js";
 import { Button } from "../../components/ui/button.js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card.js";
 import { Field } from "../../components/ui/field.js";
@@ -205,6 +206,9 @@ export function NotificationSettingsPage() {
           {query.data?.updatedAt ? <p className="text-xs text-muted-foreground">Dernière modification : {dateTimeFr(query.data.updatedAt)}</p> : null}
         </div>
       ) : null}
+      <div className="mt-5 grid max-w-3xl gap-5">
+        <TrustedDevicesCard />
+      </div>
       {TestDataCard ? (
         <div className="mt-5 grid max-w-3xl gap-5">
           <Suspense fallback={null}><TestDataCard /></Suspense>

@@ -62,8 +62,9 @@ test("auth routes expose the server-side auth foundation endpoints", () => {
     "/auth/devices/:id",
   ]);
   assert.equal(authRoutes.filter((route) => route.requiresCsrf).length, 6);
-  // SEC-02 E4/E6: the pre-session OTP routes and the device mutations check the origin.
+  // SEC-02 E4/E6 and BOOT-01 B2: bootstrap, the pre-session OTP routes and the device mutations check the origin.
   assert.deepEqual(authRoutes.filter((route) => route.requiresOriginCheck).map((route) => route.handler), [
+    "bootstrap",
     "verifyLogin",
     "resendLoginOtp",
     "requestPasswordRecovery",
@@ -231,7 +232,7 @@ test("AuthController exposes bootstrap status and one-time creation boundary", a
   const controller = new AuthController({
     bootstrapService: {
       async status() {
-        return { required: true };
+        return { required: true, tokenRequired: false, enabled: true };
       },
       async create(input) {
         assert.equal(input.email, "coach@kfit.local");
@@ -256,7 +257,7 @@ test("AuthController exposes bootstrap status and one-time creation boundary", a
     },
   });
 
-  assert.deepEqual((await controller.bootstrapStatus()).body, { required: true });
+  assert.deepEqual((await controller.bootstrapStatus()).body, { required: true, tokenRequired: false, enabled: true });
   const response = await controller.bootstrap(context, { email: "coach@kfit.local", password: "CorrectHorse9" });
   assert.equal(response.status, 201);
   assert.deepEqual(response.body, {

@@ -2,17 +2,19 @@ import { useState, type ReactNode } from "react";
 import { Button } from "../components/ui/button.js";
 import { AuthHeading, AuthShell } from "../auth/components/AuthShell.js";
 import { BootstrapForm } from "../auth/components/BootstrapForm.js";
+import { DeviceCodeStep, type LoginChallenge } from "../auth/components/DeviceCodeStep.js";
 import { LoginForm } from "../auth/components/LoginForm.js";
 import { RecoveryFlow } from "../auth/components/RecoveryFlow.js";
 import { useAuth } from "../auth/state/auth-context.js";
 
 /**
  * Shows the right auth step (board 09); renders the admin app only with an active session.
- * New-device OTP + « Faire confiance à cet appareil » are deferred to a server slice (pre-prod blocker, TASKS.md).
+ * SEC-02b: an untrusted device goes through « Nouvel appareil » (e-mailed code) before the session exists.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const auth = useAuth();
-  const [view, setView] = useState<{ name: "login" } | { name: "recovery"; email: string }>({ name: "login" });
+  const [view, setView] = useState<{ name: "login"; notice: string | null } | { name: "recovery"; email: string } | { name: "device"; challenge: LoginChallenge }>({ name: "login", notice: null });
+  const toLogin = (notice: string | null = null) => setView({ name: "login", notice });
 
   if (auth.isCheckingSession) {
     return (
@@ -45,9 +47,16 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return (
       <AuthShell>
         {view.name === "recovery" ? (
-          <RecoveryFlow initialEmail={view.email} onDone={() => setView({ name: "login" })} onCancel={() => setView({ name: "login" })} />
+          <RecoveryFlow initialEmail={view.email} onDone={() => toLogin()} onCancel={() => toLogin()} />
+        ) : view.name === "device" ? (
+          <DeviceCodeStep challenge={view.challenge} onRestart={toLogin} />
         ) : (
-          <LoginForm onForgotPassword={(email) => setView({ name: "recovery", email })} />
+          <LoginForm
+            key={view.notice ?? ""}
+            notice={view.notice}
+            onForgotPassword={(email) => setView({ name: "recovery", email })}
+            onOtpRequired={(challenge) => setView({ name: "device", challenge })}
+          />
         )}
       </AuthShell>
     );

@@ -7,21 +7,27 @@ import { Input } from "../../components/ui/input.js";
 import { authFailureOf, loginErrorMessage } from "../api/auth-errors.js";
 import { useAuth } from "../state/auth-context.js";
 import { AuthAlert, AuthHeading } from "./AuthShell.js";
+import type { LoginChallenge } from "./DeviceCodeStep.js";
 import { PasswordInput } from "./PasswordInput.js";
 
 type Values = { email: string; password: string };
 
-/** Connexion (board 09). One primary action; demo account button in development builds only. */
-export function LoginForm({ onForgotPassword }: { onForgotPassword(email: string): void }) {
+/**
+ * Connexion (board 09). One primary action; demo account button in development builds only.
+ * SEC-02b: an untrusted device continues to « Nouvel appareil »; the password stays in this form and is dropped with it.
+ */
+export function LoginForm({ notice = null, onForgotPassword, onOtpRequired }: { notice?: string | null; onForgotPassword(email: string): void; onOtpRequired(challenge: LoginChallenge): void }) {
   const auth = useAuth();
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(notice);
   const { register, handleSubmit, setValue, getValues, formState } = useForm<Values>({ defaultValues: { email: "", password: "" } });
   const { errors, isSubmitting } = formState;
 
   const submit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await auth.login({ email: values.email.trim(), password: values.password });
+      const email = values.email.trim();
+      const step = await auth.login({ email, password: values.password });
+      if (step.status === "otp_required") onOtpRequired({ email, challengeId: step.challengeId, expiresAt: step.expiresAt });
     } catch (error) {
       setFormError(loginErrorMessage(authFailureOf(error)));
     }

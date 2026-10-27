@@ -64,6 +64,8 @@ test("auth shared contracts expose stable API routes, cookies, CSRF header, erro
     "AUTH_ORIGIN_INVALID",
     "AUTH_OTP_DELIVERY_FAILED",
     "AUTH_DEVICE_NOT_FOUND",
+    "BOOTSTRAP_DISABLED",
+    "BOOTSTRAP_TOKEN_INVALID",
   ]);
 
   assert.deepEqual(authOtpRejectReasons, [

@@ -18,6 +18,8 @@ export const authErrorCodes = [
   "AUTH_ORIGIN_INVALID",
   "AUTH_OTP_DELIVERY_FAILED",
   "AUTH_DEVICE_NOT_FOUND",
+  "BOOTSTRAP_DISABLED",
+  "BOOTSTRAP_TOKEN_INVALID",
 ] as const;
 
 export type AuthErrorCode = (typeof authErrorCodes)[number];
@@ -41,6 +43,12 @@ export const authCookieNames = {
 } as const;
 
 export const authCsrfHeaderName = "x-csrf-token";
+
+/** BOOT-01 B1: production bootstrap proof, compared with KFIT_BOOTSTRAP_TOKEN; never stored by the client. */
+export const bootstrapTokenHeaderName = "x-kfit-bootstrap-token";
+
+/** SEC-02 E3: resends allowed for one login challenge (the 4th answers 429). */
+export const loginOtpMaxResends = 3;
 
 export const authApiRoutes = {
   bootstrapStatus: "/auth/bootstrap/status",
@@ -76,6 +84,10 @@ export type AuthOtpRejectedResponse = {
 
 export type BootstrapStatusResponse = {
   required: boolean;
+  /** BOOT-01 B1: production asks for the bootstrap token header. */
+  tokenRequired: boolean;
+  /** BOOT-01 B1: false in production while KFIT_BOOTSTRAP_TOKEN is not set (POST answers 403 BOOTSTRAP_DISABLED). */
+  enabled: boolean;
 };
 
 export type BootstrapRequest = {

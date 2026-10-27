@@ -8,7 +8,7 @@ import type { REQUEST_ENCODING_UNSUPPORTED } from "./reject-encoded-request-bodi
  * S7.4 D12 / S7.4b B9: 415 and 429 refusals counted per Africa/Libreville day and code, for OPS-01. No IP, no path, no
  * request id. Fire-and-forget: a failed write is logged at most once per interval and never changes the response.
  */
-export const RATE_LIMIT_SCOPES = ["requests", "appointments", "consents", "documents", "payment-proofs", "questionnaires", "quotes", "receipts", "auth_login", "auth_verify", "auth_resend"] as const;
+export const RATE_LIMIT_SCOPES = ["requests", "appointments", "consents", "documents", "payment-proofs", "questionnaires", "quotes", "receipts", "auth_login", "auth_verify", "auth_resend", "auth_bootstrap"] as const;
 export type RateLimitScope = (typeof RATE_LIMIT_SCOPES)[number];
 export type SecurityEventCode = typeof REQUEST_ENCODING_UNSUPPORTED | `RATE_LIMITED:${RateLimitScope}`;
 export type SecurityEventRecorder = (code: SecurityEventCode) => void;

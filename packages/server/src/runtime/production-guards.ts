@@ -4,6 +4,7 @@ import path from "node:path";
 import { and, eq, isNull } from "drizzle-orm";
 import type { db as appDb } from "../db/client.js";
 import { DEV_DATABASE_NAME, INTEGRATION_TEST_DATABASE_NAME, LOCAL_DATABASE_HOSTS, LOCAL_DATABASE_PORT } from "../db/database-target.js";
+import { users } from "../db/schema/auth.js";
 import { consentDefinitions } from "../db/schema/onboarding.js";
 import { PRIVACY_JOURNAL_DIR_ENV } from "../modules/privacy/services/privacy-journal.js";
 import { evaluateRuntimeFloor } from "../security/security-floor.js";
@@ -58,6 +59,23 @@ export const PUBLISHED_CONSENT_STATUS = "published";
 const isPlaceholder = (value: string) => PLACEHOLDER_PATTERNS.some((pattern) => value.toLowerCase().includes(pattern));
 const foldAccents = (value: string) => value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 export const isDemoConsentTitle = (title: string) => foldAccents(title).includes(DEMO_CONSENT_TITLE_MARKER);
+
+/** BOOT-01 B1/B3: set once for the first production account, then removed; deliberately not in PRODUCTION_REQUIRED_ENV. */
+export const BOOTSTRAP_TOKEN_ENV = "KFIT_BOOTSTRAP_TOKEN";
+
+/** BOOT-01 B1: the configured token, or null when absent, shorter than PRODUCTION_SECRET_MIN_LENGTH or an example value. */
+export function readBootstrapToken(env: NodeJS.ProcessEnv): string | null {
+  const token = env[BOOTSTRAP_TOKEN_ENV]?.trim();
+  return token && token.length >= PRODUCTION_SECRET_MIN_LENGTH && !isPlaceholder(token) ? token : null;
+}
+
+/** BOOT-01 B3: one line while the token can still create the first account, one asking to remove it once an account exists. */
+export function bootstrapTokenWarnings(env: NodeJS.ProcessEnv, hasUsers: boolean): string[] {
+  if (!env[BOOTSTRAP_TOKEN_ENV]?.trim()) return [];
+  if (hasUsers) return [`${BOOTSTRAP_TOKEN_ENV} is set but an account already exists: « retire ${BOOTSTRAP_TOKEN_ENV} » and restart`];
+  if (!readBootstrapToken(env)) return [`${BOOTSTRAP_TOKEN_ENV} ignored (shorter than ${PRODUCTION_SECRET_MIN_LENGTH} characters or an example value): bootstrap disabled`];
+  return [`${BOOTSTRAP_TOKEN_ENV} is set and no account exists: the first account can be created; remove the variable afterwards`];
+}
 
 /** Pure checks over the process environment and the Node version. */
 export function evaluateProductionEnv(env: NodeJS.ProcessEnv, version: string): { failures: ProductionGuardFailure[]; warnings: string[] } {
@@ -142,8 +160,10 @@ export async function runProductionGuards({ env, database, version = process.ver
   // Read-only, so it also runs on a forbidden target (the report then lists both). Unreachable = not verified = refused.
   if (!missing.has("DATABASE_URL")) {
     try {
-      const demo = await findPublishedDemoConsents(await database());
+      const connection = await database();
+      const demo = await findPublishedDemoConsents(connection);
       if (demo) failures.push(demo);
+      warnings.push(...bootstrapTokenWarnings(env, (await connection.select({ id: users.id }).from(users).limit(1)).length > 0));
     } catch {
       failures.push({ code: "DEMO_CONSENT_PUBLISHED", detail: "not verified: database unreachable" });
     }

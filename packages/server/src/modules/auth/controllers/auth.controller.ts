@@ -1,4 +1,5 @@
 import type { OtpChallengeService, OtpRejectReason } from "../services/otp-challenge.service.js";
+import { bootstrapTokenHeaderName } from "@kfit/shared";
 import { authCookieNames } from "../middleware/auth.cookies.js";
 import { parseDeviceToken } from "../services/crypto/device-token.crypto.js";
 import type { DeviceLoginService } from "../services/device-login.service.js";
@@ -57,6 +58,7 @@ export class AuthController {
     const result = await this.deps.bootstrapService.create({
       email: body.email,
       password: body.password,
+      token: context.headers[bootstrapTokenHeaderName],
       requestId: context.requestId,
       ipAddress: context.ipAddress ?? null,
       userAgent: context.userAgent ?? null,
@@ -65,6 +67,9 @@ export class AuthController {
     if (result.status === "already_completed") {
       return { status: 409, body: { error: "BOOTSTRAP_ALREADY_COMPLETED" } };
     }
+    if (result.status === "rate_limited") return { status: 429, body: { error: "AUTH_RATE_LIMITED" } };
+    if (result.status === "disabled") return { status: 403, body: { error: "BOOTSTRAP_DISABLED" } };
+    if (result.status === "token_invalid") return { status: 403, body: { error: "BOOTSTRAP_TOKEN_INVALID" } };
 
     if (result.status === "invalid_password") {
       return { status: 400, body: { error: "AUTH_PASSWORD_POLICY_FAILED", reason: result.reason } };

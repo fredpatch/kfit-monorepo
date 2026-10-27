@@ -1,3 +1,4 @@
+import { loginOtpMaxResends } from "@kfit/shared";
 import { IpRateLimiter } from "../../requests/services/ip-rate-limiter.js";
 import type { RateLimitScope } from "../../../security/security-event-counters.js";
 
@@ -11,8 +12,8 @@ export const LOGIN_OTP_ISSUES_PER_ACCOUNT = 5;
 export const LOGIN_VERIFY_ATTEMPTS_PER_IP = 10;
 /** SEC-02 E3: POST /auth/login/resend per account. */
 export const LOGIN_RESENDS_PER_ACCOUNT = 3;
-/** SEC-02 E3: resends allowed for one login challenge. */
-export const LOGIN_OTP_MAX_RESENDS = 3;
+/** SEC-02 E3: resends allowed for one login challenge (shared so the client hides « Renvoyer le code » at the same count). */
+export const LOGIN_OTP_MAX_RESENDS = loginOtpMaxResends;
 
 export type LoginRateLimitScope = Extract<RateLimitScope, `auth_${string}`>;
 

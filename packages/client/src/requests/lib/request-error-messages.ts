@@ -3,32 +3,53 @@ import type { RequestErrorCode, RequestErrorResponse } from "@kfit/shared";
 import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
 
 const requestErrorMessages: Record<RequestErrorCode, string> = {
-  REQUEST_ROUTE_UNEXPECTED_FAILURE: "Une erreur est survenue. Réessaie dans un instant.",
-  REQUEST_INVALID_INPUT: "Vérifie les informations saisies (nom, WhatsApp) puis réessaie.",
-  REQUEST_SERVICE_NOT_FOUND: "Ce service n'est plus disponible pour une nouvelle demande. Actualise la page.",
-  REQUEST_SERVICE_NOT_PUBLIC: "Ce service n'est plus disponible pour une nouvelle demande. Actualise la page.",
-  REQUEST_SERVICE_UNAVAILABLE: "Ce service est temporairement fermé aux nouvelles demandes.",
-  REQUEST_SERVICE_ARCHIVED: "Ce service n'est plus disponible pour une nouvelle demande. Actualise la page.",
-  REQUEST_WAITLIST_REQUIRED: "Ce service accepte uniquement les inscriptions sur liste d'attente.",
-  REQUEST_VARIANT_INVALID: "L'option sélectionnée n'est plus disponible. Choisis une autre option.",
+  REQUEST_ROUTE_UNEXPECTED_FAILURE:
+    "Une erreur est survenue. Réessaie dans un instant.",
+  REQUEST_INVALID_INPUT:
+    "Vérifie les informations saisies (nom, WhatsApp) puis réessaie.",
+  REQUEST_SERVICE_NOT_FOUND:
+    "Ce service n'est plus disponible pour une nouvelle demande. Actualise la page.",
+  REQUEST_SERVICE_NOT_PUBLIC:
+    "Ce service n'est plus disponible pour une nouvelle demande. Actualise la page.",
+  REQUEST_SERVICE_UNAVAILABLE:
+    "Ce service est temporairement fermé aux nouvelles demandes.",
+  REQUEST_SERVICE_ARCHIVED:
+    "Ce service n'est plus disponible pour une nouvelle demande. Actualise la page.",
+  REQUEST_WAITLIST_REQUIRED:
+    "Ce service accepte uniquement les inscriptions sur liste d'attente.",
+  REQUEST_VARIANT_INVALID:
+    "L'option sélectionnée n'est plus disponible. Choisis une autre option.",
   REQUEST_RATE_LIMITED: "Trop de tentatives. Réessaie dans quelques minutes.",
   REQUEST_ADMIN_FORBIDDEN: "Accès réservé à l'administrateur.",
   REQUEST_NOT_FOUND: "Cette demande est introuvable. Actualise la liste.",
-  REQUEST_INVALID_TRANSITION: "Ce changement de statut n'est pas autorisé depuis l'état actuel.",
-  REQUEST_CONTACT_ATTEMPT_INVALID_INPUT: "Vérifie les informations du contact (canal, sens, résultat) puis réessaie.",
+  REQUEST_INVALID_TRANSITION:
+    "Ce changement de statut n'est pas autorisé depuis l'état actuel.",
+  REQUEST_CONTACT_ATTEMPT_INVALID_INPUT:
+    "Vérifie les informations du contact (canal, sens, résultat) puis réessaie.",
   REQUEST_STATUS_INVALID_INPUT: "Le statut demandé n'est pas valide.",
-  REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT: "Vérifie la décision de qualification puis réessaie.",
+  REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT:
+    "Vérifie la décision de qualification puis réessaie.",
   REQUEST_FINAL_VARIANT_REQUIRED: "Choisis l'option retenue pour cette offre.",
-  REQUEST_FINAL_VARIANT_NOT_APPLICABLE: "Cette offre n'a pas d'option : laisse le champ vide.",
-  REQUEST_WAITLIST_INVALID_INPUT: "Vérifie les informations de liste d'attente puis réessaie.",
-  REQUEST_WAITLIST_NOT_ELIGIBLE: "Cette demande ne peut pas être ajoutée à la liste d'attente.",
-  REQUEST_WAITLIST_ALREADY_ACTIVE: "Cette demande est déjà active en liste d'attente.",
-  REQUEST_WAITLIST_ENTRY_NOT_FOUND: "Aucune entrée active en liste d'attente n'a été trouvée.",
-  REQUEST_ALREADY_CONVERTED: "Cette demande a déjà été convertie. Actualise sa fiche.",
-  REQUEST_CONVERSION_NOT_ELIGIBLE: "Cette demande doit être qualifiée avant de pouvoir être convertie.",
-  REQUEST_CONVERSION_QUALIFICATION_INVALID: "La qualification actuelle est incomplète ou incohérente. Vérifie la décision avant de convertir.",
-  REQUEST_CONVERSION_START_DATE_REQUIRED: "Renseigne une date de début prévue pour convertir cette demande.",
-  REQUEST_CONVERSION_DURATION_INVALID: "La durée du service est invalide. Vérifie le catalogue avant de convertir cette demande.",
+  REQUEST_FINAL_VARIANT_NOT_APPLICABLE:
+    "Cette offre n'a pas d'option : laisse le champ vide.",
+  REQUEST_WAITLIST_INVALID_INPUT:
+    "Vérifie les informations de liste d'attente puis réessaie.",
+  REQUEST_WAITLIST_NOT_ELIGIBLE:
+    "Cette demande ne peut pas être ajoutée à la liste d'attente.",
+  REQUEST_WAITLIST_ALREADY_ACTIVE:
+    "Cette demande est déjà active en liste d'attente.",
+  REQUEST_WAITLIST_ENTRY_NOT_FOUND:
+    "Aucune entrée active en liste d'attente n'a été trouvée.",
+  REQUEST_ALREADY_CONVERTED:
+    "Cette demande a déjà été convertie. Actualise sa fiche.",
+  REQUEST_CONVERSION_NOT_ELIGIBLE:
+    "Cette demande doit être qualifiée avant de pouvoir être convertie.",
+  REQUEST_CONVERSION_QUALIFICATION_INVALID:
+    "La qualification actuelle est incomplète ou incohérente. Vérifie la décision avant de convertir.",
+  REQUEST_CONVERSION_START_DATE_REQUIRED:
+    "Renseigne une date de début prévue pour convertir cette demande.",
+  REQUEST_CONVERSION_DURATION_INVALID:
+    "La durée du service est invalide. Vérifie le catalogue avant de convertir cette demande.",
 };
 
 const fallbackMessage = "Une erreur est survenue. Réessaie dans un instant.";
@@ -40,7 +61,7 @@ const transientErrorCodes: ReadonlySet<RequestErrorCode> = new Set([
 ]);
 
 /**
- * Codes where the service/variant itself is unusable — resubmitting the same
+ * Codes where the service/variant itself is unusable - resubmitting the same
  * data will fail identically. The UI should not encourage an identical retry.
  */
 const terminalErrorCodes: ReadonlySet<RequestErrorCode> = new Set([
@@ -59,24 +80,36 @@ function isKnownRequestErrorCode(code: string): code is RequestErrorCode {
 /**
  * Extracts the server's typed error code from a failed submission, or `undefined`
  * for a network/transport failure with no server response. Never surfaces the
- * raw `reason` string — that field exists for internal/audit use only.
+ * raw `reason` string - that field exists for internal/audit use only.
  */
-export function extractRequestErrorCode(error: unknown): RequestErrorCode | undefined {
+export function extractRequestErrorCode(
+  error: unknown,
+): RequestErrorCode | undefined {
   if (!axios.isAxiosError(error)) return undefined;
   const data = error.response?.data as RequestErrorResponse | undefined;
   const code = data?.error;
-  return typeof code === "string" && isKnownRequestErrorCode(code) ? code : undefined;
+  return typeof code === "string" && isKnownRequestErrorCode(code)
+    ? code
+    : undefined;
 }
 
 /** Maps a typed error code (or `undefined` for network/unknown failures) to French UI copy. */
-export function translateRequestError(code: RequestErrorCode | undefined): string {
+export function translateRequestError(
+  code: RequestErrorCode | undefined,
+): string {
   if (code && isKnownRequestErrorCode(code)) return requestErrorMessages[code];
   return fallbackMessage;
 }
 
 /** FIX-02 D6: admin screens; AUTH and archive codes first, then the request codes. */
 export function requestErrorMessage(error: unknown): string {
-  return commonApiErrorMessage(axios.isAxiosError<{ error?: unknown }>(error) ? error.response?.data?.error : undefined) ?? translateRequestError(extractRequestErrorCode(error));
+  return (
+    commonApiErrorMessage(
+      axios.isAxiosError<{ error?: unknown }>(error)
+        ? error.response?.data?.error
+        : undefined,
+    ) ?? translateRequestError(extractRequestErrorCode(error))
+  );
 }
 
 export type RequestErrorKind = "transient" | "terminal" | "correctable";
@@ -87,7 +120,9 @@ export type RequestErrorKind = "transient" | "terminal" | "correctable";
  * - "terminal": the service/variant state itself is the problem; do not encourage an identical retry.
  * - "correctable": the submitted data is the problem; the user can edit and resubmit.
  */
-export function classifyRequestError(code: RequestErrorCode | undefined): RequestErrorKind {
+export function classifyRequestError(
+  code: RequestErrorCode | undefined,
+): RequestErrorKind {
   if (code === undefined) return "transient";
   if (transientErrorCodes.has(code)) return "transient";
   if (terminalErrorCodes.has(code)) return "terminal";

@@ -3,7 +3,8 @@ import nodemailer from "nodemailer";
 
 const host = process.env.SMTP_HOST ?? "localhost";
 const port = Number(process.env.SMTP_PORT ?? "1025");
-const secure = String(process.env.SMTP_SECURE ?? "false").toLowerCase() === "true";
+const secure =
+  String(process.env.SMTP_SECURE ?? "false").toLowerCase() === "true";
 const user = process.env.SMTP_USER?.trim();
 const pass = process.env.SMTP_PASS?.trim();
 const from = process.env.SMTP_FROM ?? "K'FIT Dev <noreply@kfit.local>";
@@ -25,7 +26,7 @@ try {
   const result = await transport.sendMail({
     from,
     to,
-    subject: "K'FIT — Test SMTP Sprint 0",
+    subject: "K'FIT - Test SMTP Sprint 0",
     text: "Test SMTP K'FIT réussi. Ce message provient du pre-flight Sprint 0.",
     html: "<p><strong>Test SMTP K'FIT réussi.</strong></p><p>Ce message provient du pre-flight Sprint 0.</p>",
   });

@@ -1,8 +1,15 @@
-import type { RequestSubmissionInput, RequestSubmissionResponse } from "@kfit/shared";
+import type {
+  RequestSubmissionInput,
+  RequestSubmissionResponse,
+} from "@kfit/shared";
 import { normalizeWhatsapp } from "@kfit/shared";
 import type { AuditService } from "../../auth/services/audit.service.js";
 
-export type ServiceAvailabilityStatus = "open" | "temporarily_closed" | "waitlist_only" | "archived";
+export type ServiceAvailabilityStatus =
+  | "open"
+  | "temporarily_closed"
+  | "waitlist_only"
+  | "archived";
 
 export type ServiceAvailabilityRecord = {
   id: string;
@@ -35,10 +42,14 @@ export type CreateServiceRequestResult =
   | { outcome: "replayed"; request: CreatedServiceRequestRecord };
 
 export type RequestsRepository = {
-  findServiceAvailability(serviceId: string): Promise<ServiceAvailabilityRecord | null>;
+  findServiceAvailability(
+    serviceId: string,
+  ): Promise<ServiceAvailabilityRecord | null>;
   /** Returns the owning serviceId for a variant, or null if the variant does not exist. */
   findVariantOwnerServiceId(variantId: string): Promise<string | null>;
-  createServiceRequest(input: CreateServiceRequestInput): Promise<CreateServiceRequestResult>;
+  createServiceRequest(
+    input: CreateServiceRequestInput,
+  ): Promise<CreateServiceRequestResult>;
 };
 
 export type SubmitRequestContext = {
@@ -72,7 +83,8 @@ type NormalizedSubmission = {
   formRenderedAt: Date | null;
 };
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function requiredString(value: unknown, maxLength: number): string | null {
   if (typeof value !== "string") return null;
@@ -81,7 +93,10 @@ function requiredString(value: unknown, maxLength: number): string | null {
   return trimmed;
 }
 
-function optionalString(value: unknown, maxLength: number): string | null | undefined {
+function optionalString(
+  value: unknown,
+  maxLength: number,
+): string | null | undefined {
   if (value === undefined || value === null) return null;
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
@@ -98,7 +113,9 @@ function parseOptionalDate(value: unknown): Date | null | undefined {
   return parsed;
 }
 
-function normalizeSubmission(input: RequestSubmissionInput): NormalizedSubmission | { invalid: string } {
+function normalizeSubmission(
+  input: RequestSubmissionInput,
+): NormalizedSubmission | { invalid: string } {
   const fullName = requiredString(input.fullName, 200);
   if (!fullName) return { invalid: "full_name_invalid" };
 
@@ -109,14 +126,18 @@ function normalizeSubmission(input: RequestSubmissionInput): NormalizedSubmissio
 
   const email = optionalString(input.email, 200);
   if (email === undefined) return { invalid: "email_invalid" };
-  if (email !== null && !email.includes("@")) return { invalid: "email_invalid" };
+  if (email !== null && !email.includes("@"))
+    return { invalid: "email_invalid" };
 
   const serviceId = requiredString(input.serviceId, 64);
-  if (!serviceId || !uuidPattern.test(serviceId)) return { invalid: "service_id_invalid" };
+  if (!serviceId || !uuidPattern.test(serviceId))
+    return { invalid: "service_id_invalid" };
 
   const requestedVariantId = optionalString(input.requestedVariantId, 64);
-  if (requestedVariantId === undefined) return { invalid: "requested_variant_id_invalid" };
-  if (requestedVariantId !== null && !uuidPattern.test(requestedVariantId)) return { invalid: "requested_variant_id_invalid" };
+  if (requestedVariantId === undefined)
+    return { invalid: "requested_variant_id_invalid" };
+  if (requestedVariantId !== null && !uuidPattern.test(requestedVariantId))
+    return { invalid: "requested_variant_id_invalid" };
 
   const objective = optionalString(input.objective, 500);
   if (objective === undefined) return { invalid: "objective_invalid" };
@@ -125,12 +146,14 @@ function normalizeSubmission(input: RequestSubmissionInput): NormalizedSubmissio
   if (message === undefined) return { invalid: "message_invalid" };
 
   const preferredStartDate = parseOptionalDate(input.preferredStartDate);
-  if (preferredStartDate === undefined) return { invalid: "preferred_start_date_invalid" };
+  if (preferredStartDate === undefined)
+    return { invalid: "preferred_start_date_invalid" };
 
   const submissionToken = requiredString(input.submissionToken, 128);
   if (!submissionToken) return { invalid: "submission_token_invalid" };
 
-  const isBotSignal = typeof input.website === "string" && input.website.trim() !== "";
+  const isBotSignal =
+    typeof input.website === "string" && input.website.trim() !== "";
 
   let formRenderedAt: Date | null = null;
   if (typeof input.formRenderedAt === "string") {
@@ -157,15 +180,26 @@ export class RequestsService {
   constructor(
     private readonly repository: RequestsRepository,
     private readonly audit: Pick<AuditService, "record">,
-    private readonly options: { minFormFillMs: number } = { minFormFillMs: 1500 },
+    private readonly options: { minFormFillMs: number } = {
+      minFormFillMs: 1500,
+    },
   ) {}
 
-  async submit(input: RequestSubmissionInput, context: SubmitRequestContext): Promise<SubmitRequestResult> {
+  async submit(
+    input: RequestSubmissionInput,
+    context: SubmitRequestContext,
+  ): Promise<SubmitRequestResult> {
     const normalized = normalizeSubmission(input);
-    if ("invalid" in normalized) return { status: "invalid", reason: normalized.invalid };
+    if ("invalid" in normalized)
+      return { status: "invalid", reason: normalized.invalid };
 
-    const elapsedSinceRender = normalized.formRenderedAt ? context.now.getTime() - normalized.formRenderedAt.getTime() : null;
-    const isTooFast = elapsedSinceRender !== null && elapsedSinceRender >= 0 && elapsedSinceRender < this.options.minFormFillMs;
+    const elapsedSinceRender = normalized.formRenderedAt
+      ? context.now.getTime() - normalized.formRenderedAt.getTime()
+      : null;
+    const isTooFast =
+      elapsedSinceRender !== null &&
+      elapsedSinceRender >= 0 &&
+      elapsedSinceRender < this.options.minFormFillMs;
 
     if (normalized.isBotSignal || isTooFast) {
       await this.audit.record({
@@ -176,12 +210,16 @@ export class RequestsService {
         requestId: context.requestId,
         ipAddress: context.ipAddress,
         userAgent: context.userAgent,
-        metadata: { signal: normalized.isBotSignal ? "honeypot" : "form_fill_too_fast" },
+        metadata: {
+          signal: normalized.isBotSignal ? "honeypot" : "form_fill_too_fast",
+        },
       });
       return { status: "invalid", reason: "submission_invalid" };
     }
 
-    const service = await this.repository.findServiceAvailability(normalized.serviceId);
+    const service = await this.repository.findServiceAvailability(
+      normalized.serviceId,
+    );
     if (!service) return { status: "service_not_found" };
 
     if (service.archivedAt || service.availabilityStatus === "archived") {
@@ -245,10 +283,12 @@ export class RequestsService {
     }
 
     if (normalized.requestedVariantId) {
-      const ownerServiceId = await this.repository.findVariantOwnerServiceId(normalized.requestedVariantId);
+      const ownerServiceId = await this.repository.findVariantOwnerServiceId(
+        normalized.requestedVariantId,
+      );
       if (ownerServiceId !== normalized.serviceId) {
         // Do not distinguish "variant does not exist" from "variant belongs to another
-        // service" in the public response — both collapse to the same generic code.
+        // service" in the public response - both collapse to the same generic code.
         await this.audit.record({
           actorType: "anonymous",
           eventType: "request.submission_rejected",

@@ -6,7 +6,7 @@ vérifié-sur: d2fc5df
 couvre: [DOC-01a]
 ---
 
-> **Brouillon technique — à faire valider par un juriste avant toute mise en production. Ne constitue pas un avis juridique.**
+> **Brouillon technique - à faire valider par un juriste avant toute mise en production. Ne constitue pas un avis juridique.**
 
 # Notice de confidentialité (brouillon)
 

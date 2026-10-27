@@ -19,16 +19,16 @@ couvre: [S7.4a, S7.4b]
 
 ## Qualifier
 
-À rédiger — DOC-01b.
+À rédiger - DOC-01b.
 
 ## Contenir et corriger
 
-À rédiger — DOC-01b.
+À rédiger - DOC-01b.
 
 ## Atteinte aux données personnelles
 
-À rédiger — DOC-01b. Obligations de notification : à compléter par le juriste ([conformité](../conformite/README.md)).
+À rédiger - DOC-01b. Obligations de notification : à compléter par le juriste ([conformité](../conformite/README.md)).
 
 ## Après l'incident
 
-À rédiger — DOC-01b.
+À rédiger - DOC-01b.

@@ -38,14 +38,14 @@ When the approved plan references a reusable pattern or blueprint:
 2. `git status`, `git diff` (and `git diff <base>...HEAD -- <paths>` when useful). Review the real diff, not the report.
 3. Load `security-review` for auth, permission, public-endpoint or data-exposure changes; `database-safety` for schema/transactions; `api-contract-design` for contract changes; `frontend-design` for UI.
 4. Check:
-   - **Scope** — only approved work; budget respected; no lockfile, dependency or formatting noise.
-   - **Business rules** — implemented exactly as sourced; nothing invented; server-authoritative.
-   - **Architecture** — layering in `PROJECT.md §Architecture`; shared contracts aligned with all consumers.
-   - **Security** — authn/authz server-side, CSRF where cookies authenticate, input validation, no sensitive data in logs/errors, audit preserved, abuse controls intact.
-   - **State & data** — valid transitions, idempotency, double submit and races, migration safety for existing and archived rows.
-   - **Tests** — assert behavior, cover failure paths, no skips or bypasses, no real external calls.
-   - **UI** — language per `PROJECT.md §Language`; loading/empty/error/disabled states; no client-only authorization.
-   - **Docs** — the `Docs impact` line matches the diff and `npm run docs:check` passes (WORKFLOW §16 Documentation (DOC-01)).
+   - **Scope** - only approved work; budget respected; no lockfile, dependency or formatting noise.
+   - **Business rules** - implemented exactly as sourced; nothing invented; server-authoritative.
+   - **Architecture** - layering in `PROJECT.md §Architecture`; shared contracts aligned with all consumers.
+   - **Security** - authn/authz server-side, CSRF where cookies authenticate, input validation, no sensitive data in logs/errors, audit preserved, abuse controls intact.
+   - **State & data** - valid transitions, idempotency, double submit and races, migration safety for existing and archived rows.
+   - **Tests** - assert behavior, cover failure paths, no skips or bypasses, no real external calls.
+   - **UI** - language per `PROJECT.md §Language`; loading/empty/error/disabled states; no client-only authorization.
+   - **Docs** - the `Docs impact` line matches the diff and `npm run docs:check` passes (WORKFLOW §16 Documentation (DOC-01)).
 
 ## Result
 
@@ -53,10 +53,10 @@ When the approved plan references a reusable pattern or blueprint:
 
 Findings by severity (do not inflate):
 
-- **BLOCKER** — security bypass, wrong business rule, data corruption risk, destructive migration, invalid transition
-- **MAJOR** — works but significant correctness or regression risk
-- **MINOR** — worth fixing; does not invalidate the slice
-- **NOTE** — future improvement outside the gate
+- **BLOCKER** - security bypass, wrong business rule, data corruption risk, destructive migration, invalid transition
+- **MAJOR** - works but significant correctness or regression risk
+- **MINOR** - worth fixing; does not invalidate the slice
+- **NOTE** - future improvement outside the gate
 
 Each finding: `file:line` · what · why · suggested direction.
 

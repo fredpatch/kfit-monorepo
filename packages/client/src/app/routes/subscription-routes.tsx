@@ -5,7 +5,8 @@ import { Button } from "../../components/ui/button.js";
 import { subscriptionsApi } from "../../subscriptions/api/subscriptions-api.js";
 import { AdminPage } from "../layout/AdminPage.js";
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function InvalidSubscription() {
   return (
@@ -24,14 +25,19 @@ function InvalidSubscription() {
 }
 
 /**
- * /admin/abonnements/:id[/preparation] — a subscription now lives on its client's profile (board 03, UX-4).
+ * /admin/abonnements/:id[/preparation] - a subscription now lives on its client's profile (board 03, UX-4).
  * Resolves the client and redirects, keeping existing links (follow-up queue, converted requests, renewals) working.
  */
 function SubscriptionRedirect({ tab }: { tab: "apercu" | "preparation" }) {
   const { id = "" } = useParams();
   const valid = uuidPattern.test(id);
   // Same key as the lifecycle panel, so the profile reuses this response.
-  const query = useQuery({ queryKey: ["subscription-lifecycle", id], queryFn: () => subscriptionsApi.get(id), enabled: valid, retry: false });
+  const query = useQuery({
+    queryKey: ["subscription-lifecycle", id],
+    queryFn: () => subscriptionsApi.get(id),
+    enabled: valid,
+    retry: false,
+  });
 
   if (!valid || query.isError) return <InvalidSubscription />;
   if (query.isPending) {
@@ -44,7 +50,12 @@ function SubscriptionRedirect({ tab }: { tab: "apercu" | "preparation" }) {
     );
   }
   const { customerId } = query.data.subscription;
-  return <Navigate replace to={`/admin/clients/${customerId}?abonnement=${id}&onglet=${tab}`} />;
+  return (
+    <Navigate
+      replace
+      to={`/admin/clients/${customerId}?abonnement=${id}&onglet=${tab}`}
+    />
+  );
 }
 
 export function SubscriptionRoute() {
@@ -56,7 +67,20 @@ export function SubscriptionPreparationRoute() {
 }
 
 /** Old links (/admin/subscription/:id, /admin/onboarding/:id) keep working. */
-export function LegacySubscriptionRedirect({ section }: { section: "lifecycle" | "preparation" }) {
+export function LegacySubscriptionRedirect({
+  section,
+}: {
+  section: "lifecycle" | "preparation";
+}) {
   const { id = "" } = useParams();
-  return <Navigate replace to={section === "preparation" ? `/admin/abonnements/${id}/preparation` : `/admin/abonnements/${id}`} />;
+  return (
+    <Navigate
+      replace
+      to={
+        section === "preparation"
+          ? `/admin/abonnements/${id}/preparation`
+          : `/admin/abonnements/${id}`
+      }
+    />
+  );
 }

@@ -34,7 +34,7 @@ No stage is skipped because a change looks simple. For trivial work (AGENTS §6)
 | Implementer | approved code + tests, focused validation, implementation report                      | expands scope, approves itself |
 | Reviewer    | independent diff/business-rule/security/regression review                             | fixes code silently            |
 | QA          | acceptance-criteria evidence, runtime/edge-case checks                                | edits production code          |
-| Developer   | business rules, plan approval, migrations, functional acceptance, commit/merge/deploy | —                              |
+| Developer   | business rules, plan approval, migrations, functional acceptance, commit/merge/deploy | -                              |
 
 ---
 
@@ -74,7 +74,7 @@ Source A says … / Source B says … / Repository shows … / Decision required
 
 ---
 
-## 5. Stage 1 — Planning
+## 5. Stage 1 - Planning
 
 Planner output:
 
@@ -89,11 +89,11 @@ Slice order: as defined in `PROJECT.md §Architecture`. Fallback: shared contrac
 
 Planner stops at `AWAITING_PLAN_APPROVAL`.
 
-## 6. Gate 1 — Plan approval
+## 6. Gate 1 - Plan approval
 
 Only explicit wording counts ("Approved", "Go ahead with <slice>", "Implement this plan"). Silence, praise or a question is not approval.
 
-## 7. Stage 2 — Implementation
+## 7. Stage 2 - Implementation
 
 Handoff payload from Planner: task id, approved scope, business rules, expected files, acceptance criteria, validation plan, change budget, risks, out of scope.
 
@@ -103,7 +103,7 @@ Scope/budget exceeded, unexpected schema change, new dependency, security-model 
 
 Implementer finishes with the AGENTS §13 report and moves to `AWAITING_REVIEW`.
 
-## 8. Stage 3 — Review
+## 8. Stage 3 - Review
 
 Reviewer inspects the real diff and repository, not only the report.
 
@@ -111,7 +111,7 @@ Results: `REVIEW PASSED` · `REVIEW PASSED WITH NOTES` · `CHANGES REQUIRED` · 
 
 Findings are classified BLOCKER / MAJOR / MINOR / NOTE. Only confirmed findings go back to Implementer, who fixes only those and returns to Reviewer. Loop breaker (AGENTS §8) applies.
 
-## 9. Stage 4 — QA
+## 9. Stage 4 - QA
 
 QA reports per criterion:
 
@@ -125,11 +125,11 @@ UI criteria without browser tooling are `NOT VALIDATED` and go to the developer 
 
 QA passed → `AWAITING_HUMAN_VALIDATION`, with a short checklist the developer can execute locally.
 
-## 10. Gate 2 — Developer functional validation
+## 10. Gate 2 - Developer functional validation
 
 The developer runs the checklist (commands, browser flow, DB inspection). Outcomes: accepted → `VALIDATED`; rejected → `CHANGES_REQUIRED`.
 
-## 11. Gate 3 — Commit
+## 11. Gate 3 - Commit
 
 After `VALIDATED`, on the developer's explicit "commit":
 

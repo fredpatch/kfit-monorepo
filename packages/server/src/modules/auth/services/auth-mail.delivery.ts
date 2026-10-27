@@ -25,9 +25,12 @@ export type SmtpAuthMailConfig = {
   from: string;
 };
 
-export function loadSmtpAuthMailConfig(env: NodeJS.ProcessEnv): SmtpAuthMailConfig {
+export function loadSmtpAuthMailConfig(
+  env: NodeJS.ProcessEnv,
+): SmtpAuthMailConfig {
   const port = Number(env.SMTP_PORT ?? "1025");
-  if (!Number.isSafeInteger(port) || port <= 0) throw new Error("SMTP_PORT must be a positive integer");
+  if (!Number.isSafeInteger(port) || port <= 0)
+    throw new Error("SMTP_PORT must be a positive integer");
   if (!env.SMTP_HOST) throw new Error("SMTP_HOST is required");
   if (!env.SMTP_FROM) throw new Error("SMTP_FROM is required");
 
@@ -36,7 +39,9 @@ export function loadSmtpAuthMailConfig(env: NodeJS.ProcessEnv): SmtpAuthMailConf
     port,
     secure: env.SMTP_SECURE === "true",
     from: env.SMTP_FROM,
-    ...(env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASS ?? "" } : {}),
+    ...(env.SMTP_USER
+      ? { user: env.SMTP_USER, pass: env.SMTP_PASS ?? "" }
+      : {}),
   };
 }
 
@@ -48,7 +53,9 @@ export class NodemailerAuthMailDelivery implements AuthMailDelivery {
       host: config.host,
       port: config.port,
       secure: config.secure,
-      auth: config.user ? { user: config.user, pass: config.pass ?? "" } : undefined,
+      auth: config.user
+        ? { user: config.user, pass: config.pass ?? "" }
+        : undefined,
     });
   }
 
@@ -56,7 +63,7 @@ export class NodemailerAuthMailDelivery implements AuthMailDelivery {
     await this.transport.sendMail({
       from: this.config.from,
       to: input.to,
-      subject: "K'FIT — Code de réinitialisation",
+      subject: "K'FIT - Code de réinitialisation",
       text: [
         "Vous avez demandé la réinitialisation de votre mot de passe K'FIT.",
         `Code : ${input.code}`,
@@ -70,7 +77,7 @@ export class NodemailerAuthMailDelivery implements AuthMailDelivery {
     await this.transport.sendMail({
       from: this.config.from,
       to: input.to,
-      subject: "K'FIT — Code de confirmation",
+      subject: "K'FIT - Code de confirmation",
       text: [
         "Une action sensible a été demandée sur votre compte K'FIT.",
         `Code : ${input.code}`,
@@ -85,7 +92,7 @@ export class NodemailerAuthMailDelivery implements AuthMailDelivery {
     await this.transport.sendMail({
       from: this.config.from,
       to: input.to,
-      subject: "K'FIT — Code de connexion",
+      subject: "K'FIT - Code de connexion",
       text: [
         "Une connexion à ton compte K'FIT a été demandée depuis un nouvel appareil.",
         `Code : ${input.code}`,

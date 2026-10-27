@@ -1,4 +1,4 @@
-# Sprint 3 — Completed
+# Sprint 3 - Completed
 
 > Closed: 2026-09-17
 
@@ -22,6 +22,6 @@ Sprint 3 preserves server-authoritative explicit transitions and transaction-sco
 
 ## Next sprint
 
-Sprint 4 — clients, conversion, onboarding, questionnaires et consentements.
+Sprint 4 - clients, conversion, onboarding, questionnaires et consentements.
 
 First dependency-safe backlog task: **Client table + phone-based search/create-inline**. It is a CRITIQUE M4 server task with no declared dependency and provides the customer foundation required before the atomic request-conversion transaction.

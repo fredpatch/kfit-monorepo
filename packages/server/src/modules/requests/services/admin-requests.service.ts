@@ -24,7 +24,7 @@ export type AdminRequestActor = {
   userId: string;
 };
 
-/** Per-call request context for audit hashing — never baked into a shared repository instance. */
+/** Per-call request context for audit hashing - never baked into a shared repository instance. */
 export type AdminRequestAuditContext = {
   ipAddress: string | null;
   userAgent: string | null;
@@ -55,7 +55,9 @@ export type NormalizedCreateWaitlistEntryInput = {
 };
 
 export type AdminRequestsRepository = {
-  listQueue(filter: { status?: ServiceRequestStatus }): Promise<AdminServiceRequestSummary[]>;
+  listQueue(filter: {
+    status?: ServiceRequestStatus;
+  }): Promise<AdminServiceRequestSummary[]>;
   getDetail(requestId: string): Promise<AdminServiceRequestDetail | null>;
   createContactAttempt(
     requestId: string,
@@ -63,11 +65,17 @@ export type AdminRequestsRepository = {
     actor: AdminRequestActor,
     auditContext: AdminRequestAuditContext,
     now: Date,
-  ): Promise<{ contactAttempt: AdminContactAttempt; request: AdminServiceRequestSummary } | "not_found">;
+  ): Promise<
+    | {
+        contactAttempt: AdminContactAttempt;
+        request: AdminServiceRequestSummary;
+      }
+    | "not_found"
+  >;
   /**
    * Must load the current status with a row lock and re-check it against
    * adminRequestAllowedTransitions inside the same transaction as the audit
-   * insert — the service-level check below is advisory only and does not
+   * insert - the service-level check below is advisory only and does not
    * protect against concurrent transitions.
    */
   transitionStatus(
@@ -76,7 +84,9 @@ export type AdminRequestsRepository = {
     actor: AdminRequestActor,
     auditContext: AdminRequestAuditContext,
     now: Date,
-  ): Promise<{ request: AdminServiceRequestSummary } | "not_found" | "invalid_transition">;
+  ): Promise<
+    { request: AdminServiceRequestSummary } | "not_found" | "invalid_transition"
+  >;
   recordQualificationReview(
     requestId: string,
     input: NormalizedQualificationReviewInput,
@@ -84,7 +94,10 @@ export type AdminRequestsRepository = {
     auditContext: AdminRequestAuditContext,
     now: Date,
   ): Promise<
-    | { qualificationReview: AdminQualificationReview; request: AdminServiceRequestSummary }
+    | {
+        qualificationReview: AdminQualificationReview;
+        request: AdminServiceRequestSummary;
+      }
     | "not_found"
     | "invalid_transition"
     | "variant_invalid"
@@ -118,7 +131,11 @@ export type AdminRequestsRepository = {
 };
 
 export type CreateContactAttemptResult =
-  | { status: "ok"; contactAttempt: AdminContactAttempt; request: AdminServiceRequestSummary }
+  | {
+      status: "ok";
+      contactAttempt: AdminContactAttempt;
+      request: AdminServiceRequestSummary;
+    }
   | { status: "not_found" }
   | { status: "invalid"; reason: string };
 
@@ -129,13 +146,21 @@ export type TransitionStatusResult =
   | { status: "invalid"; reason: string };
 
 export type RecordQualificationReviewResult =
-  | { status: "ok"; qualificationReview: AdminQualificationReview; request: AdminServiceRequestSummary }
+  | {
+      status: "ok";
+      qualificationReview: AdminQualificationReview;
+      request: AdminServiceRequestSummary;
+    }
   | { status: "not_found" }
   | { status: "invalid_transition" }
   | { status: "invalid"; reason: string };
 
 export type CreateWaitlistEntryResult =
-  | { status: "ok"; waitlistEntry: AdminWaitlistEntry; request: AdminServiceRequestSummary }
+  | {
+      status: "ok";
+      waitlistEntry: AdminWaitlistEntry;
+      request: AdminServiceRequestSummary;
+    }
   | { status: "not_found" }
   | { status: "invalid_transition" }
   | { status: "not_eligible" }
@@ -143,17 +168,27 @@ export type CreateWaitlistEntryResult =
   | { status: "invalid"; reason: string };
 
 export type WithdrawWaitlistEntryResult =
-  | { status: "ok"; waitlistEntry: AdminWaitlistEntry; request: AdminServiceRequestSummary }
+  | {
+      status: "ok";
+      waitlistEntry: AdminWaitlistEntry;
+      request: AdminServiceRequestSummary;
+    }
   | { status: "not_found" }
   | { status: "invalid_transition" }
   | { status: "entry_not_found" };
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Every status reachable through the S3.3-approved transition subset. */
-const reachableStatuses: ReadonlySet<string> = new Set(Object.values(adminRequestAllowedTransitions).flat());
+const reachableStatuses: ReadonlySet<string> = new Set(
+  Object.values(adminRequestAllowedTransitions).flat(),
+);
 
-function optionalTrimmedString(value: unknown, maxLength: number): string | null | undefined {
+function optionalTrimmedString(
+  value: unknown,
+  maxLength: number,
+): string | null | undefined {
   if (value === undefined || value === null) return null;
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
@@ -170,7 +205,11 @@ function parseOptionalDate(value: unknown): Date | null | undefined {
   return parsed;
 }
 
-function normalizeStringList(value: unknown, maxItems: number, maxItemLength: number): string[] | null | undefined {
+function normalizeStringList(
+  value: unknown,
+  maxItems: number,
+  maxItemLength: number,
+): string[] | null | undefined {
   if (value === undefined || value === null) return null;
   if (!Array.isArray(value) || value.length > maxItems) return undefined;
 
@@ -184,14 +223,28 @@ function normalizeStringList(value: unknown, maxItems: number, maxItemLength: nu
   return items;
 }
 
-function normalizeContactAttempt(input: CreateContactAttemptInput, now: Date): NormalizedContactAttemptInput | { invalid: string } {
-  if (typeof input.channel !== "string" || !contactAttemptChannels.includes(input.channel as ContactAttemptChannel)) {
+function normalizeContactAttempt(
+  input: CreateContactAttemptInput,
+  now: Date,
+): NormalizedContactAttemptInput | { invalid: string } {
+  if (
+    typeof input.channel !== "string" ||
+    !contactAttemptChannels.includes(input.channel as ContactAttemptChannel)
+  ) {
     return { invalid: "channel_invalid" };
   }
-  if (typeof input.direction !== "string" || !contactAttemptDirections.includes(input.direction as ContactAttemptDirection)) {
+  if (
+    typeof input.direction !== "string" ||
+    !contactAttemptDirections.includes(
+      input.direction as ContactAttemptDirection,
+    )
+  ) {
     return { invalid: "direction_invalid" };
   }
-  if (typeof input.outcome !== "string" || !contactAttemptOutcomes.includes(input.outcome as ContactAttemptOutcome)) {
+  if (
+    typeof input.outcome !== "string" ||
+    !contactAttemptOutcomes.includes(input.outcome as ContactAttemptOutcome)
+  ) {
     return { invalid: "outcome_invalid" };
   }
 
@@ -201,7 +254,8 @@ function normalizeContactAttempt(input: CreateContactAttemptInput, now: Date): N
   let occurredAt = now;
   if (input.occurredAt !== undefined && input.occurredAt !== null) {
     const parsedOccurredAt = parseOptionalDate(input.occurredAt);
-    if (parsedOccurredAt === undefined) return { invalid: "occurred_at_invalid" };
+    if (parsedOccurredAt === undefined)
+      return { invalid: "occurred_at_invalid" };
     if (parsedOccurredAt) occurredAt = parsedOccurredAt;
   }
 
@@ -223,24 +277,41 @@ function normalizeContactAttempt(input: CreateContactAttemptInput, now: Date): N
  * sold as is and takes no option. Rejected decisions never carry an option (R2, checked in normalization).
  */
 export type FinalVariantRule = "required" | "not_applicable";
-export type FinalVariantRefusal = "final_variant_required" | "final_variant_not_applicable";
-export const finalVariantRuleFor = (activeVariantCount: number): FinalVariantRule => (activeVariantCount > 0 ? "required" : "not_applicable");
-export function finalVariantRefusal(rule: FinalVariantRule, finalVariantId: string | null): FinalVariantRefusal | null {
-  if (rule === "required") return finalVariantId === null ? "final_variant_required" : null;
+export type FinalVariantRefusal =
+  | "final_variant_required"
+  | "final_variant_not_applicable";
+export const finalVariantRuleFor = (
+  activeVariantCount: number,
+): FinalVariantRule => (activeVariantCount > 0 ? "required" : "not_applicable");
+export function finalVariantRefusal(
+  rule: FinalVariantRule,
+  finalVariantId: string | null,
+): FinalVariantRefusal | null {
+  if (rule === "required")
+    return finalVariantId === null ? "final_variant_required" : null;
   return finalVariantId === null ? null : "final_variant_not_applicable";
 }
 
-export function normalizeQualificationReview(input: CreateQualificationReviewInput): NormalizedQualificationReviewInput | { invalid: string } {
-  if (typeof input.outcome !== "string" || !qualificationReviewOutcomes.includes(input.outcome as QualificationReviewOutcome)) {
+export function normalizeQualificationReview(
+  input: CreateQualificationReviewInput,
+): NormalizedQualificationReviewInput | { invalid: string } {
+  if (
+    typeof input.outcome !== "string" ||
+    !qualificationReviewOutcomes.includes(
+      input.outcome as QualificationReviewOutcome,
+    )
+  ) {
     return { invalid: "outcome_invalid" };
   }
 
   const outcome = input.outcome as QualificationReviewOutcome;
   const suitabilityNote = optionalTrimmedString(input.suitabilityNote, 2000);
-  if (suitabilityNote === undefined) return { invalid: "suitability_note_invalid" };
+  if (suitabilityNote === undefined)
+    return { invalid: "suitability_note_invalid" };
 
   const targetStartDate = parseOptionalDate(input.targetStartDate);
-  if (targetStartDate === undefined) return { invalid: "target_start_date_invalid" };
+  if (targetStartDate === undefined)
+    return { invalid: "target_start_date_invalid" };
 
   const conditions = normalizeStringList(input.conditions, 20, 240);
   if (conditions === undefined) return { invalid: "conditions_invalid" };
@@ -249,20 +320,60 @@ export function normalizeQualificationReview(input: CreateQualificationReviewInp
   if (blockers === undefined) return { invalid: "blockers_invalid" };
 
   if (outcome === "rejected") {
-    if (input.finalVariantId !== undefined && input.finalVariantId !== null && input.finalVariantId !== "") return { invalid: "final_variant_forbidden" };
-    if (input.agreedPriceXaf !== undefined && input.agreedPriceXaf !== null && input.agreedPriceXaf !== "") return { invalid: "agreed_price_forbidden" };
-    if (input.targetStartDate !== undefined && input.targetStartDate !== null && input.targetStartDate !== "") return { invalid: "target_start_date_forbidden" };
-    return { outcome, finalVariantId: null, agreedPriceXaf: null, targetStartDate: null, suitabilityNote, conditions: null, blockers };
+    if (
+      input.finalVariantId !== undefined &&
+      input.finalVariantId !== null &&
+      input.finalVariantId !== ""
+    )
+      return { invalid: "final_variant_forbidden" };
+    if (
+      input.agreedPriceXaf !== undefined &&
+      input.agreedPriceXaf !== null &&
+      input.agreedPriceXaf !== ""
+    )
+      return { invalid: "agreed_price_forbidden" };
+    if (
+      input.targetStartDate !== undefined &&
+      input.targetStartDate !== null &&
+      input.targetStartDate !== ""
+    )
+      return { invalid: "target_start_date_forbidden" };
+    return {
+      outcome,
+      finalVariantId: null,
+      agreedPriceXaf: null,
+      targetStartDate: null,
+      suitabilityNote,
+      conditions: null,
+      blockers,
+    };
   }
 
   // R1: whether an option is required or not applicable depends on the catalogue, decided in the repository transaction.
-  const finalVariantId = input.finalVariantId === undefined || input.finalVariantId === null || input.finalVariantId === "" ? null : input.finalVariantId;
-  if (finalVariantId !== null && (typeof finalVariantId !== "string" || !uuidPattern.test(finalVariantId))) return { invalid: "final_variant_id_invalid" };
-  if (typeof input.agreedPriceXaf !== "number" || !Number.isInteger(input.agreedPriceXaf) || input.agreedPriceXaf < 0) {
+  const finalVariantId =
+    input.finalVariantId === undefined ||
+    input.finalVariantId === null ||
+    input.finalVariantId === ""
+      ? null
+      : input.finalVariantId;
+  if (
+    finalVariantId !== null &&
+    (typeof finalVariantId !== "string" || !uuidPattern.test(finalVariantId))
+  )
+    return { invalid: "final_variant_id_invalid" };
+  if (
+    typeof input.agreedPriceXaf !== "number" ||
+    !Number.isInteger(input.agreedPriceXaf) ||
+    input.agreedPriceXaf < 0
+  ) {
     return { invalid: "agreed_price_invalid" };
   }
   const agreedPriceXaf = input.agreedPriceXaf;
-  if (outcome === "qualified_with_conditions" && (!conditions || conditions.length === 0)) return { invalid: "conditions_required" };
+  if (
+    outcome === "qualified_with_conditions" &&
+    (!conditions || conditions.length === 0)
+  )
+    return { invalid: "conditions_required" };
 
   return {
     outcome,
@@ -275,10 +386,20 @@ export function normalizeQualificationReview(input: CreateQualificationReviewInp
   };
 }
 
-function normalizeCreateWaitlistEntry(input: CreateWaitlistEntryInput): NormalizedCreateWaitlistEntryInput | { invalid: string } {
+function normalizeCreateWaitlistEntry(
+  input: CreateWaitlistEntryInput,
+): NormalizedCreateWaitlistEntryInput | { invalid: string } {
   let variantId: string | null = null;
-  if (input.variantId !== undefined && input.variantId !== null && input.variantId !== "") {
-    if (typeof input.variantId !== "string" || !uuidPattern.test(input.variantId)) return { invalid: "variant_id_invalid" };
+  if (
+    input.variantId !== undefined &&
+    input.variantId !== null &&
+    input.variantId !== ""
+  ) {
+    if (
+      typeof input.variantId !== "string" ||
+      !uuidPattern.test(input.variantId)
+    )
+      return { invalid: "variant_id_invalid" };
     variantId = input.variantId;
   }
 
@@ -291,11 +412,21 @@ function normalizeCreateWaitlistEntry(input: CreateWaitlistEntryInput): Normaliz
 export class AdminRequestsService {
   constructor(private readonly repository: AdminRequestsRepository) {}
 
-  async listQueue(query: AdminRequestsQueueQuery): Promise<AdminServiceRequestSummary[]> {
-    return this.repository.listQueue(query.status ? { status: query.status } : {});
+  async listQueue(
+    query: AdminRequestsQueueQuery,
+  ): Promise<AdminServiceRequestSummary[]> {
+    return this.repository.listQueue(
+      query.status ? { status: query.status } : {},
+    );
   }
 
-  async getDetail(requestId: string): Promise<{ status: "ok"; detail: AdminServiceRequestDetail } | { status: "not_found" } | { status: "invalid" }> {
+  async getDetail(
+    requestId: string,
+  ): Promise<
+    | { status: "ok"; detail: AdminServiceRequestDetail }
+    | { status: "not_found" }
+    | { status: "invalid" }
+  > {
     if (!uuidPattern.test(requestId)) return { status: "invalid" };
     const detail = await this.repository.getDetail(requestId);
     if (!detail) return { status: "not_found" };
@@ -309,14 +440,26 @@ export class AdminRequestsService {
     auditContext: AdminRequestAuditContext,
     now: Date,
   ): Promise<CreateContactAttemptResult> {
-    if (!uuidPattern.test(requestId)) return { status: "invalid", reason: "request_id_invalid" };
+    if (!uuidPattern.test(requestId))
+      return { status: "invalid", reason: "request_id_invalid" };
 
     const normalized = normalizeContactAttempt(input, now);
-    if ("invalid" in normalized) return { status: "invalid", reason: normalized.invalid };
+    if ("invalid" in normalized)
+      return { status: "invalid", reason: normalized.invalid };
 
-    const result = await this.repository.createContactAttempt(requestId, normalized, actor, auditContext, now);
+    const result = await this.repository.createContactAttempt(
+      requestId,
+      normalized,
+      actor,
+      auditContext,
+      now,
+    );
     if (result === "not_found") return { status: "not_found" };
-    return { status: "ok", contactAttempt: result.contactAttempt, request: result.request };
+    return {
+      status: "ok",
+      contactAttempt: result.contactAttempt,
+      request: result.request,
+    };
   }
 
   async transitionStatus(
@@ -326,14 +469,25 @@ export class AdminRequestsService {
     auditContext: AdminRequestAuditContext,
     now: Date,
   ): Promise<TransitionStatusResult> {
-    if (!uuidPattern.test(requestId)) return { status: "invalid", reason: "request_id_invalid" };
-    if (typeof toStatusInput !== "string" || !reachableStatuses.has(toStatusInput)) {
+    if (!uuidPattern.test(requestId))
+      return { status: "invalid", reason: "request_id_invalid" };
+    if (
+      typeof toStatusInput !== "string" ||
+      !reachableStatuses.has(toStatusInput)
+    ) {
       return { status: "invalid", reason: "to_status_invalid" };
     }
 
-    const result = await this.repository.transitionStatus(requestId, toStatusInput as ServiceRequestStatus, actor, auditContext, now);
+    const result = await this.repository.transitionStatus(
+      requestId,
+      toStatusInput as ServiceRequestStatus,
+      actor,
+      auditContext,
+      now,
+    );
     if (result === "not_found") return { status: "not_found" };
-    if (result === "invalid_transition") return { status: "invalid_transition" };
+    if (result === "invalid_transition")
+      return { status: "invalid_transition" };
     return { status: "ok", request: result.request };
   }
 
@@ -344,17 +498,35 @@ export class AdminRequestsService {
     auditContext: AdminRequestAuditContext,
     now: Date,
   ): Promise<RecordQualificationReviewResult> {
-    if (!uuidPattern.test(requestId)) return { status: "invalid", reason: "request_id_invalid" };
+    if (!uuidPattern.test(requestId))
+      return { status: "invalid", reason: "request_id_invalid" };
 
     const normalized = normalizeQualificationReview(input);
-    if ("invalid" in normalized) return { status: "invalid", reason: normalized.invalid };
+    if ("invalid" in normalized)
+      return { status: "invalid", reason: normalized.invalid };
 
-    const result = await this.repository.recordQualificationReview(requestId, normalized, actor, auditContext, now);
+    const result = await this.repository.recordQualificationReview(
+      requestId,
+      normalized,
+      actor,
+      auditContext,
+      now,
+    );
     if (result === "not_found") return { status: "not_found" };
-    if (result === "invalid_transition") return { status: "invalid_transition" };
-    if (result === "variant_invalid") return { status: "invalid", reason: "final_variant_id_invalid" };
-    if (result === "final_variant_required" || result === "final_variant_not_applicable") return { status: "invalid", reason: result };
-    return { status: "ok", qualificationReview: result.qualificationReview, request: result.request };
+    if (result === "invalid_transition")
+      return { status: "invalid_transition" };
+    if (result === "variant_invalid")
+      return { status: "invalid", reason: "final_variant_id_invalid" };
+    if (
+      result === "final_variant_required" ||
+      result === "final_variant_not_applicable"
+    )
+      return { status: "invalid", reason: result };
+    return {
+      status: "ok",
+      qualificationReview: result.qualificationReview,
+      request: result.request,
+    };
   }
 
   async createWaitlistEntry(
@@ -364,18 +536,32 @@ export class AdminRequestsService {
     auditContext: AdminRequestAuditContext,
     now: Date,
   ): Promise<CreateWaitlistEntryResult> {
-    if (!uuidPattern.test(requestId)) return { status: "invalid", reason: "request_id_invalid" };
+    if (!uuidPattern.test(requestId))
+      return { status: "invalid", reason: "request_id_invalid" };
 
     const normalized = normalizeCreateWaitlistEntry(input);
-    if ("invalid" in normalized) return { status: "invalid", reason: normalized.invalid };
+    if ("invalid" in normalized)
+      return { status: "invalid", reason: normalized.invalid };
 
-    const result = await this.repository.createWaitlistEntry(requestId, normalized, actor, auditContext, now);
+    const result = await this.repository.createWaitlistEntry(
+      requestId,
+      normalized,
+      actor,
+      auditContext,
+      now,
+    );
     if (result === "not_found") return { status: "not_found" };
-    if (result === "invalid_transition") return { status: "invalid_transition" };
+    if (result === "invalid_transition")
+      return { status: "invalid_transition" };
     if (result === "not_eligible") return { status: "not_eligible" };
     if (result === "already_active") return { status: "already_active" };
-    if (result === "variant_invalid") return { status: "invalid", reason: "variant_id_invalid" };
-    return { status: "ok", waitlistEntry: result.waitlistEntry, request: result.request };
+    if (result === "variant_invalid")
+      return { status: "invalid", reason: "variant_id_invalid" };
+    return {
+      status: "ok",
+      waitlistEntry: result.waitlistEntry,
+      request: result.request,
+    };
   }
 
   async withdrawWaitlistEntry(
@@ -386,10 +572,20 @@ export class AdminRequestsService {
   ): Promise<WithdrawWaitlistEntryResult> {
     if (!uuidPattern.test(requestId)) return { status: "not_found" };
 
-    const result = await this.repository.withdrawWaitlistEntry(requestId, actor, auditContext, now);
+    const result = await this.repository.withdrawWaitlistEntry(
+      requestId,
+      actor,
+      auditContext,
+      now,
+    );
     if (result === "not_found") return { status: "not_found" };
-    if (result === "invalid_transition") return { status: "invalid_transition" };
+    if (result === "invalid_transition")
+      return { status: "invalid_transition" };
     if (result === "entry_not_found") return { status: "entry_not_found" };
-    return { status: "ok", waitlistEntry: result.waitlistEntry, request: result.request };
+    return {
+      status: "ok",
+      waitlistEntry: result.waitlistEntry,
+      request: result.request,
+    };
   }
 }

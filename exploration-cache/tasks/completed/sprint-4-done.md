@@ -1,4 +1,4 @@
-# Sprint 4 — Completed
+# Sprint 4 - Completed
 
 Validated locally by Fred on 2026-10-21.
 
@@ -8,11 +8,11 @@ Deliver the customer/conversion/onboarding foundation with consent and health-qu
 
 ## Completed slices
 
-1. S4.1 — Customer identity/search/manual-create foundation.
-2. S4.2 — Atomic qualified-request conversion to customer + onboarding subscription.
-3. S4.3 — Onboarding checklist, readiness, capacity reservation and stalled-state safeguards.
-4. S4.4 — Versioned consent records, secure terms/privacy acceptance links and coach-assisted capture.
-5. S4.5 — Versioned assessment/health questionnaires, health-data consent gate, risk flags and medical-clearance blocker integration.
+1. S4.1 - Customer identity/search/manual-create foundation.
+2. S4.2 - Atomic qualified-request conversion to customer + onboarding subscription.
+3. S4.3 - Onboarding checklist, readiness, capacity reservation and stalled-state safeguards.
+4. S4.4 - Versioned consent records, secure terms/privacy acceptance links and coach-assisted capture.
+5. S4.5 - Versioned assessment/health questionnaires, health-data consent gate, risk flags and medical-clearance blocker integration.
 
 ## Validation highlights
 
@@ -31,6 +31,6 @@ Deliver the customer/conversion/onboarding foundation with consent and health-qu
 
 ## Exact next task
 
-Sprint 5 / S5.1 — **Subscription lifecycle with pause, completion_due, renewal and cancellation resolution**.
+Sprint 5 / S5.1 - **Subscription lifecycle with pause, completion_due, renewal and cancellation resolution**.
 
 This task comes first because it depends only on the validated onboarding ready-to-start gate. Appointments and follow-ups require an active subscription; goals depend on the follow-up/subscription model.

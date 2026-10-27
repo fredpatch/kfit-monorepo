@@ -8,21 +8,24 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outputDir = path.resolve(__dirname, "../../../tmp/preflight-pdf");
 const pdfPath = path.join(outputDir, "kfit-preflight.pdf");
 
-const sections = Array.from({ length: 18 }, (_, index) => `
+const sections = Array.from(
+  { length: 18 },
+  (_, index) => `
   <section class="card">
-    <h2>Étape ${index + 1} — Suivi personnalisé</h2>
+    <h2>Étape ${index + 1} - Suivi personnalisé</h2>
     <p>Ce contenu valide les accents français, les retours à la ligne, les blocs métier et la pagination du rendu PDF K'FIT.</p>
     <div class="row"><span>Objectif</span><strong>Progression durable</strong></div>
     <div class="row"><span>Fréquence</span><strong>Hebdomadaire</strong></div>
     <div class="row"><span>Statut</span><strong>À suivre</strong></div>
   </section>
-`).join("");
+`,
+).join("");
 
 const html = `<!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
-<title>K'FIT — Pré-flight PDF</title>
+<title>K'FIT - Pré-flight PDF</title>
 <style>
   @page { size: A4; margin: 16mm 14mm 18mm; }
   * { box-sizing: border-box; }
@@ -44,7 +47,7 @@ const html = `<!doctype html>
   <div class="brand">K'FIT</div>
   <div class="subtitle">Coaching personnel · Document technique de validation</div>
 </header>
-<h1>Bilan de suivi — Pré-flight Sprint 0</h1>
+<h1>Bilan de suivi - Pré-flight Sprint 0</h1>
 <div class="summary">
   <strong>Client :</strong> Client Démonstration<br />
   <strong>Programme :</strong> Coaching personnalisé 3 mois<br />
@@ -82,11 +85,16 @@ try {
 
   assert.equal(header, "%PDF-", "Output must have a valid PDF signature");
   assert.ok(info.size > 10_000, `PDF unexpectedly small: ${info.size} bytes`);
-  assert.ok(pageObjects.length >= 2, `Expected multi-page PDF, detected ${pageObjects.length} page objects`);
+  assert.ok(
+    pageObjects.length >= 2,
+    `Expected multi-page PDF, detected ${pageObjects.length} page objects`,
+  );
 
   console.log(`PDF signature verified: ${header}`);
   console.log(`PDF size verified: ${info.size} bytes`);
-  console.log(`Pagination verified: ${pageObjects.length} page objects detected`);
+  console.log(
+    `Pagination verified: ${pageObjects.length} page objects detected`,
+  );
   console.log(`French/branding HTML rendered with local-only assets`);
   console.log(`Generated file: ${pdfPath}`);
   console.log("PDF pre-flight PASSED");

@@ -1,4 +1,4 @@
-# security-review — detailed guide
+# security-review - detailed guide
 
 Loaded on demand from `../SKILL.md`.
 
@@ -26,7 +26,6 @@ external integrations
 
 Avoid turning every feature review into a full penetration test.
 
-
 ## Threat Boundary
 
 Before reviewing, identify:
@@ -41,7 +40,6 @@ Before reviewing, identify:
 - trust transitions
 
 A security finding should be grounded in an actual reachable path.
-
 
 ## Input Sources
 
@@ -63,7 +61,6 @@ Treat these as potentially untrusted:
 
 Do not assume internal-looking data is trusted if it originated externally.
 
-
 ## Input Validation
 
 Check:
@@ -83,7 +80,6 @@ unexpected extra fields
 Validation must happen at a trusted server boundary.
 
 Client-side validation is supplementary only.
-
 
 ## Injection
 
@@ -107,7 +103,6 @@ Prefer safe framework/library primitives.
 
 Do not construct commands or queries through string concatenation when parameterized alternatives exist.
 
-
 ## SQL and ORM Safety
 
 ORM usage does not automatically eliminate injection risk.
@@ -122,7 +117,6 @@ Inspect:
 - raw execute/query APIs
 
 Use `database-safety` when the issue also involves DB integrity or transaction semantics.
-
 
 ## Authentication
 
@@ -140,7 +134,6 @@ rate limiting where relevant
 ```
 
 Do not weaken authentication controls to simplify implementation.
-
 
 ## Authorization
 
@@ -165,7 +158,6 @@ Never rely only on:
 - disabled controls
 - frontend role checks
 
-
 ## Ownership
 
 For user-owned resources verify:
@@ -179,7 +171,6 @@ actor has explicit permission
 Avoid IDOR-style vulnerabilities where changing an ID grants access to another user's data.
 
 Check both read and write operations.
-
 
 ## Role / Permission Matrix
 
@@ -198,7 +189,6 @@ One missing layer can create privilege escalation.
 Do not infer permissions from role names alone.
 
 Use explicit project permission rules.
-
 
 ## Privileged Operations
 
@@ -222,7 +212,6 @@ audit
 concurrency protection
 ```
 
-
 ## Session Security
 
 Where sessions/cookies are used, inspect:
@@ -241,7 +230,6 @@ Follow existing project architecture.
 
 Do not invent a new token/session scheme inside a feature task.
 
-
 ## CSRF
 
 For cookie-authenticated state-changing operations:
@@ -257,7 +245,6 @@ Examples:
 Do not assume SameSite alone satisfies every project requirement.
 
 For unauthenticated/public endpoints, use the project's approved alternative such as origin checks when appropriate.
-
 
 ## CORS / Origin
 
@@ -281,7 +268,6 @@ or overly broad production origins.
 
 Do not confuse CORS with authentication.
 
-
 ## Public Write Endpoints
 
 For anonymous mutation endpoints, explicitly consider:
@@ -300,7 +286,6 @@ audit
 ```
 
 No authentication means abuse controls often matter more.
-
 
 ## Rate Limiting
 
@@ -321,7 +306,6 @@ Do not treat process-local rate limits as distributed protection.
 
 Document limitations.
 
-
 ## Proxy Trust
 
 If security depends on client IP:
@@ -340,7 +324,6 @@ reverse proxy behavior
 
 Do not assume `request.ip` represents the real client in every deployment.
 
-
 ## Abuse Protection
 
 When using:
@@ -355,7 +338,6 @@ treat them as supplementary.
 Do not expose unnecessary details that help attackers tune around the control.
 
 Avoid relying on a single heuristic as the only protection.
-
 
 ## Sensitive Data
 
@@ -385,7 +367,6 @@ retention
 
 Apply data minimization.
 
-
 ## Logging
 
 Never log:
@@ -400,7 +381,6 @@ Never log:
 Prefer structured redacted logging.
 
 Internal diagnostic logging must still respect privacy rules.
-
 
 ## Audit Logging
 
@@ -422,7 +402,6 @@ Do not treat debug logs as audit logs.
 
 Audit entries should avoid unnecessary PII.
 
-
 ## Secrets
 
 Never expose:
@@ -443,7 +422,6 @@ Review for:
 
 If real values are needed for debugging, stop and ask the developer to verify manually.
 
-
 ## Passwords
 
 Passwords must:
@@ -454,7 +432,6 @@ Passwords must:
 - respect current password/reset policies
 
 Do not invent password rules unless required by project policy.
-
 
 ## OTP / Recovery
 
@@ -469,7 +446,6 @@ Review:
 - reset-token/session invalidation
 
 Do not expose whether an account exists when the approved security design avoids enumeration.
-
 
 ## Error Disclosure
 
@@ -486,7 +462,6 @@ Public errors should not reveal:
 Use typed public errors.
 
 Keep detailed diagnostics internal.
-
 
 ## File Uploads
 
@@ -508,7 +483,6 @@ Do not trust the client-provided MIME type alone.
 
 Avoid path traversal through filenames.
 
-
 ## Downloads / File Access
 
 For protected files verify:
@@ -520,7 +494,6 @@ For protected files verify:
 - path safety
 
 Do not expose filesystem paths.
-
 
 ## External Integrations
 
@@ -546,7 +519,6 @@ secret handling
 
 Do not allow external failure to corrupt internal transaction state.
 
-
 ## Webhooks
 
 Webhook handling should consider:
@@ -559,7 +531,6 @@ Webhook handling should consider:
 - payload validation
 
 Do not trust source IP alone unless architecture explicitly requires it.
-
 
 ## SSRF
 
@@ -575,7 +546,6 @@ Review:
 - arbitrary schemes
 
 Do not allow unrestricted backend fetches from user-controlled URLs.
-
 
 ## XSS
 
@@ -594,7 +564,6 @@ template escaping bypasses
 
 Sanitize when raw HTML is genuinely required.
 
-
 ## Frontend Secrets
 
 Anything shipped to browser code must be considered public.
@@ -611,7 +580,6 @@ HTML
 
 A build-time environment variable is not automatically secret.
 
-
 ## Dependency Security
 
 When dependencies change:
@@ -624,7 +592,6 @@ When dependencies change:
 - inspect install scripts when risk warrants
 
 Do not upgrade broad dependency sets during unrelated feature work.
-
 
 ## Supply-chain Awareness
 
@@ -640,7 +607,6 @@ Be cautious with:
 Skills themselves are an execution surface.
 
 Review third-party skills before giving them broad agent permissions when provenance is unclear. Community security guidance increasingly treats skill instructions and bundled scripts as distinct attack surfaces.
-
 
 ## Prompt Injection
 
@@ -663,7 +629,6 @@ WORKFLOW.md
 developer instructions
 ```
 
-
 ## Business Logic Security
 
 Security vulnerabilities may exist even without injection.
@@ -682,7 +647,6 @@ Inspect:
 
 Use business invariants, not only OWASP-style technical checks.
 
-
 ## Concurrency Security
 
 Concurrency bugs can become security issues.
@@ -699,7 +663,6 @@ replay
 
 Use `database-safety` when DB-backed safeguards are required.
 
-
 ## Idempotency
 
 For sensitive mutation APIs, identify whether repeated requests can cause harm.
@@ -713,7 +676,6 @@ Examples:
 - document issuance
 
 Use `api-contract-design` and `database-safety` where appropriate.
-
 
 ## Denial of Service
 
@@ -729,7 +691,6 @@ Consider obvious resource-exhaustion risks:
 
 Keep review proportional to the feature.
 
-
 ## Pagination / Query Abuse
 
 For large datasets inspect:
@@ -740,7 +701,6 @@ For large datasets inspect:
 - N+1 behavior where it creates operational risk
 
 Do not expose unbounded collection endpoints unnecessarily.
-
 
 ## Admin Interfaces
 
@@ -758,7 +718,6 @@ sensitive output
 
 Assume admin endpoints may still be directly invoked.
 
-
 ## Multi-tenant Systems
 
 Where applicable verify tenant isolation.
@@ -767,7 +726,6 @@ Check every resource query includes the appropriate tenant/organization boundary
 
 Avoid global lookup by ID without ownership scope.
 
-
 ## Fail Securely
 
 When security-relevant checks fail unexpectedly:
@@ -775,7 +733,6 @@ When security-relevant checks fail unexpectedly:
 prefer denying the sensitive action over silently allowing it.
 
 Do not turn dependency or validation failure into authorization success.
-
 
 ## Avoid Security Theater
 
@@ -790,7 +747,6 @@ Examples:
 - meaningless security headers without threat relevance
 
 Controls should map to an actual risk.
-
 
 ## Severity
 
@@ -834,7 +790,6 @@ Typical mapping:
 
 Severity must reflect reachability and impact.
 
-
 ## Evidence Standard
 
 A finding should identify:
@@ -850,7 +805,6 @@ source
 Do not report speculative vulnerabilities without a plausible execution path.
 
 When uncertain, classify as needing verification rather than asserting exploitation.
-
 
 ## Security Test Safety
 

@@ -1,7 +1,7 @@
-# Sprint 3 — Demandes, prospects, qualification et liste d'attente
+# Sprint 3 - Demandes, prospects, qualification et liste d'attente
 
 > Branch: `sprint-3`
-> Status: CLOSED — Fred validated 2026-09-17
+> Status: CLOSED - Fred validated 2026-09-17
 
 ## Objective
 
@@ -9,13 +9,13 @@ Build the M2 acquisition workflow after the validated catalogue foundation: publ
 
 ## Execution order
 
-1. [x] S3.1 — Public request/prospect intake contract (server-first).
-2. [x] S3.2 — Public request form (client).
-3. [x] S3.3 — Admin request queue + contact attempt logging.
-4. [x] S3.4 — Qualification review recording.
-5. [x] S3.5 — Manual waitlist entry management.
+1. [x] S3.1 - Public request/prospect intake contract (server-first).
+2. [x] S3.2 - Public request form (client).
+3. [x] S3.3 - Admin request queue + contact attempt logging.
+4. [x] S3.4 - Qualification review recording.
+5. [x] S3.5 - Manual waitlist entry management.
 
-## S3.1 — validated
+## S3.1 - validated
 
 Validated by Fred locally on 2026-09-17.
 
@@ -33,7 +33,7 @@ Scope:
 - anonymous audit events without PII;
 - no automatic waitlist creation.
 
-## S3.2 — validated
+## S3.2 - validated
 
 Validated by Fred locally on 2026-09-17.
 
@@ -60,7 +60,7 @@ Validation evidence:
 - temporarily-closed/waitlist-only/race rejection UX green;
 - required-field, honeypot accessibility, mobile and catalogue-regression checks green.
 
-## S3.3 — validated
+## S3.3 - validated
 
 Validated by Fred locally on 2026-09-17. Feature commit: `29c435f`.
 
@@ -84,7 +84,7 @@ Validation evidence:
 - Fred browser/DBeaver smoke green;
 - S3.2 regression green.
 
-## S3.4 — validated
+## S3.4 - validated
 
 Validated by Fred locally on 2026-09-17. Feature commit: `be67a9c`.
 
@@ -107,7 +107,7 @@ Validation evidence:
 - real-PostgreSQL integration suite green;
 - Fred browser/DBeaver smoke and S3.2/S3.3 regressions green.
 
-## S3.5 — validated
+## S3.5 - validated
 
 Validated by Fred locally on 2026-09-17. Feature commit: `0775695`.
 
@@ -144,7 +144,7 @@ No automatic waitlist promotion, subscription conversion or onboarding behavior 
 
 ## Next sprint
 
-Sprint 4 — Clients, conversion, onboarding, questionnaires et consentements.
+Sprint 4 - Clients, conversion, onboarding, questionnaires et consentements.
 
 First dependency-safe backlog task: **Client table + phone-based search/create-inline** (M4, CRITIQUE, no declared dependency). This customer foundation precedes the later atomic request-conversion transaction, whose backlog dependency explicitly requires the customer model.
 

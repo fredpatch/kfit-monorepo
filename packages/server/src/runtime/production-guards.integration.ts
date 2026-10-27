@@ -12,21 +12,41 @@ const syntheticType = `synthetic_demo_${randomUUID().slice(0, 8)}`;
 const created: string[] = [];
 let safe = false;
 
-before(() => { assertLocalTestDatabase(); safe = true; });
+before(() => {
+  assertLocalTestDatabase();
+  safe = true;
+});
 after(async () => {
   try {
-    if (safe && created.length) await db.delete(consentDefinitions).where(inArray(consentDefinitions.id, created));
+    if (safe && created.length)
+      await db
+        .delete(consentDefinitions)
+        .where(inArray(consentDefinitions.id, created));
   } finally {
     await pool.end();
   }
 });
 
-async function insert(title: string, status: "draft" | "published" | "retired") {
+async function insert(
+  title: string,
+  status: "draft" | "published" | "retired",
+) {
   const id = randomUUID();
   created.push(id);
   const now = new Date();
-  await db.insert(consentDefinitions).values({ id, consentType: syntheticType, version: `v-${id.slice(0, 8)}`, title, content: "Synthetic", contentHash: "0".repeat(64), status,
-    publishedAt: status === "draft" ? null : now, retiredAt: status === "retired" ? now : null });
+  await db
+    .insert(consentDefinitions)
+    .values({
+      id,
+      consentType: syntheticType,
+      version: `v-${id.slice(0, 8)}`,
+      title,
+      content: "Synthetic",
+      contentHash: "0".repeat(64),
+      status,
+      publishedAt: status === "draft" ? null : now,
+      retiredAt: status === "retired" ? now : null,
+    });
   return id;
 }
 const syntheticCount = async () => {
@@ -35,15 +55,18 @@ const syntheticCount = async () => {
 };
 
 test("S7.3 D9 / S7.4 D2: a draft or retired « DÉMONSTRATION » text is fine; a published one refuses production start", async () => {
-  await insert("DÉMONSTRATION — conditions de service", "draft");
-  await insert("DÉMONSTRATION — notice", "retired");
+  await insert("DÉMONSTRATION - conditions de service", "draft");
+  await insert("DÉMONSTRATION - notice", "retired");
   await insert("Conditions générales", "published");
   assert.equal(await syntheticCount(), null);
 
   await insert("Texte de DÉMONSTRATION", "published");
   const failure = await syntheticCount();
   assert.equal(failure?.code, "DEMO_CONSENT_PUBLISHED");
-  assert.ok(!failure?.detail.includes("Texte"), "detail gives counts and consent types only");
+  assert.ok(
+    !failure?.detail.includes("Texte"),
+    "detail gives counts and consent types only",
+  );
 });
 
 test("S7.3 D9: « Demonstration » without accent or capitals also refuses", async () => {

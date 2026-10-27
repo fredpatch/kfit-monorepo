@@ -13,7 +13,13 @@ const levels = [
  * Password meter (UX-10). The three required rules come from @kfit/shared (same as the server);
  * the strength level is advisory only. Shown before typing so the rules are known upfront.
  */
-export function PasswordMeter({ password, id }: { password: string; id?: string }) {
+export function PasswordMeter({
+  password,
+  id,
+}: {
+  password: string;
+  id?: string;
+}) {
   const checks = checkAuthPasswordRules(password);
   const strength = authPasswordStrength(password);
   const level = levels[strength];
@@ -25,19 +31,43 @@ export function PasswordMeter({ password, id }: { password: string; id?: string 
       <div className="flex items-center gap-3">
         <div className="grid flex-1 grid-cols-3 gap-1.5" aria-hidden="true">
           {[1, 2, 3].map((step) => (
-            <span key={step} className={cn("h-1.5 rounded-full transition-colors motion-reduce:transition-none", step <= filled ? level.bar : "bg-border")} />
+            <span
+              key={step}
+              className={cn(
+                "h-1.5 rounded-full transition-colors motion-reduce:transition-none",
+                step <= filled ? level.bar : "bg-border",
+              )}
+            />
           ))}
         </div>
-        <span aria-live="polite" className={cn("w-20 text-right text-xs font-bold", password ? level.text : "text-muted-foreground")}>
+        <span
+          aria-live="polite"
+          className={cn(
+            "w-20 text-right text-xs font-bold",
+            password ? level.text : "text-muted-foreground",
+          )}
+        >
           {password ? level.label : "Robustesse"}
         </span>
       </div>
       <ul className="flex flex-col gap-1" aria-label="Règles du mot de passe">
         {checks.map((check) => (
-          <li key={check.rule} className={cn("flex items-center gap-2 text-xs", check.met ? "text-success" : "text-muted-foreground")}>
-            {check.met ? <Check aria-hidden="true" className="size-3.5" /> : <Circle aria-hidden="true" className="size-3.5" />}
+          <li
+            key={check.rule}
+            className={cn(
+              "flex items-center gap-2 text-xs",
+              check.met ? "text-success" : "text-muted-foreground",
+            )}
+          >
+            {check.met ? (
+              <Check aria-hidden="true" className="size-3.5" />
+            ) : (
+              <Circle aria-hidden="true" className="size-3.5" />
+            )}
             <span>{check.label}</span>
-            <span className="sr-only">{check.met ? "— respectée" : "— non respectée"}</span>
+            <span className="sr-only">
+              {check.met ? "- respectée" : "- non respectée"}
+            </span>
           </li>
         ))}
       </ul>

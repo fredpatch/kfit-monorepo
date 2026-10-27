@@ -1,5 +1,5 @@
 {
-  // K'FIT agent terminal policy — mirrors PROJECT.md §Commands tiers.
+  // K'FIT agent terminal policy - mirrors PROJECT.md §Commands tiers.
   // true  = auto tier (runs without prompting)
   // false = ask / never tiers (always prompts Fred)
   // Unlisted commands prompt by default.

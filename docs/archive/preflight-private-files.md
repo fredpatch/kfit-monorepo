@@ -6,9 +6,9 @@ vérifié-sur: d2fc5df
 couvre: [historique]
 ---
 
-> Archivé — remplacé par [architecture/README.md](../architecture/README.md).
+> Archivé - remplacé par [architecture/README.md](../architecture/README.md).
 
-# K'FIT — Private File Storage Pre-flight
+# K'FIT - Private File Storage Pre-flight
 
 Sprint 0 validates the file-security foundation before any functional upload endpoint is implemented.
 

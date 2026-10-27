@@ -1,4 +1,4 @@
-# PROJECT.md — K'FIT
+# PROJECT.md - K'FIT
 
 Project-specific facts for AI agents. `AGENTS.md`, `WORKFLOW.md`, `.github/agents` and `.github/skills` come unchanged from the portable Agent Kit (version in `.agent-kit-version`). Put project facts here, not there.
 
@@ -17,7 +17,7 @@ Users       public visitors; one privileged coach/admin in V1
 
 ```text
 Runtime           Node >= 22 (tests use `node --test` glob patterns)
-Package manager   npm workspaces — never yarn/pnpm/bun
+Package manager   npm workspaces - never yarn/pnpm/bun
 Backend           Express 5 + TypeScript (ESM)
 Frontend          React 18 + Vite 7 + TanStack Query + axios + Tailwind v4 + Radix/shadcn-style primitives + Plus Jakarta Sans + lucide-react + sonner
 Test framework    node:test (shared, server); no client test framework
@@ -26,9 +26,9 @@ Test framework    node:test (shared, server); no client test framework
 ## Layout
 
 ```text
-packages/shared   @kfit/shared — contracts, schemas, types, stable error codes
-packages/server   @kfit/server — HTTP API, domain services, Drizzle schema/migrations, scripts
-packages/client   @kfit/client — public catalogue, request form, admin UI
+packages/shared   @kfit/shared - contracts, schemas, types, stable error codes
+packages/server   @kfit/server - HTTP API, domain services, Drizzle schema/migrations, scripts
+packages/client   @kfit/client - public catalogue, request form, admin UI
 Shared contracts  packages/shared → consumers: packages/server, packages/client
 Server modules    packages/server/src/modules/<name>/ (auth, catalogue, requests, …)
 ```
@@ -47,7 +47,7 @@ Conventions        server-first; typed domain errors (e.g. REQUEST_*); server-au
 
 ```text
 Database          PostgreSQL 16 (Docker, postgres:16-alpine)
-Local target      localhost:5433 (Docker). Native PostgreSQL owns 5432 — never target it by accident.
+Local target      localhost:5433 (Docker). Native PostgreSQL owns 5432 - never target it by accident.
 Test database     localhost:5433/kfit_test (root .env.test) for integration tests only; kfit_dev stays the dev API database (TEST-01).
 ORM / migrations  Drizzle ORM + drizzle-kit; migrations in packages/server/src/db/migrations
 Generated files   packages/server/src/db/migrations/** (SQL + meta snapshots), packages/*/dist/**
@@ -62,7 +62,7 @@ Authentication    access + refresh JWT in HttpOnly cookies; refresh bound to DB 
 Authorization     single coach/admin role in V1 (schema future-role-ready); enforced server-side
 CSRF / origin     CSRF on cookie-authenticated mutations; origin check on public writes
 Public writes     origin check + in-memory per-IP limit + honeypot + minimum completion time
-Sensitive data    passwords, OTPs, token/session/device digests, prospect PII — never logged or in audit metadata
+Sensitive data    passwords, OTPs, token/session/device digests, prospect PII - never logged or in audit metadata
 ```
 
 ## Commands
@@ -78,7 +78,7 @@ test DB prepare     npm run db:test:prepare    (create kfit_test if missing + mi
 schema check        npm run db:check
 cadence generation  npm run db:generate:cadence-history (ask; Drizzle plus approved PostgreSQL exclusion guard)
 lint                not configured
-client tests        none — client acceptance = typecheck + build + developer browser check
+client tests        none - client acceptance = typecheck + build + developer browser check
 ```
 
 Tiers (mirrored in `.vscode/settings.json`):
@@ -98,7 +98,7 @@ never   npm run db:reset · docker compose down -v  (+ AGENTS §4 list)
 
 ```text
 Local VS Code agents     auto tier only; ask tier with explicit approval
-ChatGPT / Codex cloud    never run project commands — prepare changes and commands for Fred
+ChatGPT / Codex cloud    never run project commands - prepare changes and commands for Fred
 Who closes validation    Fred's local execution only
 ```
 
@@ -128,13 +128,13 @@ Environment docs      docs/
                       preflight, Docker environments, auth contracts
 
 Project tracker       Notion
-                      "K'FIT — Tableau de Bord Projet"
+                      "K'FIT - Tableau de Bord Projet"
                       authoritative for roadmap, backlog, sprint history,
                       project-management state and acceptance notes
 
 Pattern library       Notion
-                      "AI Project Kickoff — Reusable Implementation Patterns & Blueprints"
-                      engineering reference only — never authoritative
+                      "AI Project Kickoff - Reusable Implementation Patterns & Blueprints"
+                      engineering reference only - never authoritative
                       for K'FIT business rules
 
 Pattern access        Preferred:
@@ -165,7 +165,7 @@ Session history       exploration-cache/sessions/
 ```text
 UI              French (public and admin)
 Code / ids      English
-Commits         English — type(scope): description
+Commits         English - type(scope): description
 Technical docs  English
 ```
 
@@ -179,7 +179,6 @@ Historical Sprint 5 branch   sprint-5 (merged into main on 2026-10-22; no new wo
 
 Sprint 5 business work and the UI/UX refonte now continue together on `main`. Do not reopen parallel implementation branches without an explicit plan.
 
-
 ## Developer
 
 ```text
@@ -191,7 +190,7 @@ Validates   functional acceptance locally (commands, browser, DBeaver inspection
 ## Gotchas
 
 - Docker PostgreSQL is on host 5433; native PostgreSQL on 5432. Check `DATABASE_URL` before any DB command.
-- `requests.repository.integration.ts` cleanup deletes prospects by fixed WhatsApp `+24100000000` — run only against a disposable local DB.
+- `requests.repository.integration.ts` cleanup deletes prospects by fixed WhatsApp `+24100000000` - run only against a disposable local DB.
 - Vite dev proxy must include every public API prefix (`/auth`, `/catalogue`, `/requests`, `/health`) and preserve the forwarded host for origin-protected mutations.
 - Per-IP rate limiting is process-local; `trust proxy` is not yet configured for staging/production.
 - Development is on Windows: watch CRLF/LF churn and path separators.

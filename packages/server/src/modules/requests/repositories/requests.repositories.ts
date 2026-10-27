@@ -13,7 +13,6 @@ import { isPgUniqueViolation } from "../../../db/pg-error.js";
 
 type RequestsDb = typeof appDb;
 
-
 function generateReference(): string {
   return `REQ-${Date.now().toString(36).toUpperCase()}-${randomBytes(3).toString("hex").toUpperCase()}`;
 }
@@ -21,7 +20,9 @@ function generateReference(): string {
 export class DrizzleRequestsRepository implements RequestsRepository {
   constructor(private readonly database: RequestsDb) {}
 
-  async findServiceAvailability(serviceId: string): Promise<ServiceAvailabilityRecord | null> {
+  async findServiceAvailability(
+    serviceId: string,
+  ): Promise<ServiceAvailabilityRecord | null> {
     const [row] = await this.database
       .select({
         id: services.id,
@@ -36,7 +37,8 @@ export class DrizzleRequestsRepository implements RequestsRepository {
     if (!row) return null;
     return {
       id: row.id,
-      availabilityStatus: row.availabilityStatus as ServiceAvailabilityRecord["availabilityStatus"],
+      availabilityStatus:
+        row.availabilityStatus as ServiceAvailabilityRecord["availabilityStatus"],
       archivedAt: row.archivedAt,
       isPublic: row.isPublic,
       publishedAt: row.publishedAt,
@@ -52,9 +54,15 @@ export class DrizzleRequestsRepository implements RequestsRepository {
     return row?.serviceId ?? null;
   }
 
-  async createServiceRequest(input: CreateServiceRequestInput): Promise<CreateServiceRequestResult> {
+  async createServiceRequest(
+    input: CreateServiceRequestInput,
+  ): Promise<CreateServiceRequestResult> {
     const [existing] = await this.database
-      .select({ id: serviceRequests.id, reference: serviceRequests.reference, submittedAt: serviceRequests.submittedAt })
+      .select({
+        id: serviceRequests.id,
+        reference: serviceRequests.reference,
+        submittedAt: serviceRequests.submittedAt,
+      })
       .from(serviceRequests)
       .where(eq(serviceRequests.submissionToken, input.submissionToken))
       .limit(1);
@@ -68,22 +76,28 @@ export class DrizzleRequestsRepository implements RequestsRepository {
       const [existingProspect] = await tx
         .select({ id: prospects.id })
         .from(prospects)
-        .where(and(eq(prospects.whatsapp, input.whatsapp), isNull(prospects.archivedAt), isNull(prospects.anonymizedAt)))
+        .where(
+          and(
+            eq(prospects.whatsapp, input.whatsapp),
+            isNull(prospects.archivedAt),
+            isNull(prospects.anonymizedAt),
+          ),
+        )
         .limit(1);
 
       const prospectId = existingProspect
         ? existingProspect.id
         : (
-          await tx
-            .insert(prospects)
-            .values({
-              fullName: input.fullName,
-              whatsapp: input.whatsapp,
-              email: input.email,
-              source: "public_request_form",
-            })
-            .returning({ id: prospects.id })
-        )[0]?.id;
+            await tx
+              .insert(prospects)
+              .values({
+                fullName: input.fullName,
+                whatsapp: input.whatsapp,
+                email: input.email,
+                source: "public_request_form",
+              })
+              .returning({ id: prospects.id })
+          )[0]?.id;
 
       if (!prospectId) {
         throw new Error("Prospect creation did not return an id");
@@ -92,7 +106,7 @@ export class DrizzleRequestsRepository implements RequestsRepository {
       for (let attempt = 0; attempt < 3; attempt += 1) {
         try {
           // Run the insert in a nested transaction (SAVEPOINT). If it fails on a unique
-          // violation, only this savepoint is rolled back — the outer transaction `tx`
+          // violation, only this savepoint is rolled back - the outer transaction `tx`
           // stays valid so the recovery/retry queries below can still execute. Without
           // this, Postgres marks the whole transaction aborted after any error and every
           // subsequent statement on `tx` (including the "replayed" lookup) would itself
@@ -111,22 +125,35 @@ export class DrizzleRequestsRepository implements RequestsRepository {
                 message: input.message,
                 status: "submitted",
               })
-              .returning({ id: serviceRequests.id, reference: serviceRequests.reference, submittedAt: serviceRequests.submittedAt });
+              .returning({
+                id: serviceRequests.id,
+                reference: serviceRequests.reference,
+                submittedAt: serviceRequests.submittedAt,
+              });
             if (!row) throw new Error("Service request insert returned no row");
             return row;
           });
 
           return { outcome: "created", request: created };
         } catch (error) {
-          if (isPgUniqueViolation(error, "service_requests_submission_token_uq")) {
+          if (
+            isPgUniqueViolation(error, "service_requests_submission_token_uq")
+          ) {
             const [replayed] = await tx
-              .select({ id: serviceRequests.id, reference: serviceRequests.reference, submittedAt: serviceRequests.submittedAt })
+              .select({
+                id: serviceRequests.id,
+                reference: serviceRequests.reference,
+                submittedAt: serviceRequests.submittedAt,
+              })
               .from(serviceRequests)
               .where(eq(serviceRequests.submissionToken, input.submissionToken))
               .limit(1);
             if (replayed) return { outcome: "replayed", request: replayed };
           }
-          if (isPgUniqueViolation(error, "service_requests_reference_uq") && attempt < 2) {
+          if (
+            isPgUniqueViolation(error, "service_requests_reference_uq") &&
+            attempt < 2
+          ) {
             continue;
           }
           throw error;

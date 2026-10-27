@@ -6,9 +6,9 @@ vérifié-sur: d2fc5df
 couvre: [historique]
 ---
 
-> Archivé — remplacé par [runbooks/sauvegarde-restauration.md](../runbooks/sauvegarde-restauration.md).
+> Archivé - remplacé par [runbooks/sauvegarde-restauration.md](../runbooks/sauvegarde-restauration.md).
 
-# K'FIT — Backup + isolated restore pre-flight
+# K'FIT - Backup + isolated restore pre-flight
 
 ## Goal
 

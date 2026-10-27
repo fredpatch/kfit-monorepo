@@ -12,13 +12,14 @@ Ce qui existe aujourd'hui. Les sections marquées « À rédiger » ou « Sprint
 
 ## 1. Environnements
 
-| Environnement | Fichier compose | Fichier d'environnement | PostgreSQL |
-| --- | --- | --- | --- |
-| Développement | `docker-compose.yml` (PostgreSQL, Mailpit, ClamAV) | `.env` (copie de `.env.example`) | port `5433` de l'hôte ; bases `kfit_dev` (API de développement) et `kfit_test` (tests d'intégration) |
-| Staging | `docker-compose.staging.yml` | `.env.staging` (copie de `.env.staging.example`) | non publié sur l'hôte |
-| Production | `docker-compose.prod.yml` | `.env.prod` (copie de `.env.prod.example`) | non publié sur l'hôte (réseau interne) |
+| Environnement | Fichier compose                                    | Fichier d'environnement                          | PostgreSQL                                                                                           |
+| ------------- | -------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| Développement | `docker-compose.yml` (PostgreSQL, Mailpit, ClamAV) | `.env` (copie de `.env.example`)                 | port `5433` de l'hôte ; bases `kfit_dev` (API de développement) et `kfit_test` (tests d'intégration) |
+| Staging       | `docker-compose.staging.yml`                       | `.env.staging` (copie de `.env.staging.example`) | non publié sur l'hôte                                                                                |
+| Production    | `docker-compose.prod.yml`                          | `.env.prod` (copie de `.env.prod.example`)       | non publié sur l'hôte (réseau interne)                                                               |
 
 Règles :
+
 - Staging et production n'exposent jamais PostgreSQL à l'hôte ni à Internet.
 - Chaque environnement a ses volumes nommés et son fichier `.env`.
 - Aucun secret réel n'est versionné.
@@ -81,4 +82,4 @@ Catalogue complet, généré : [scripts npm](../reference/scripts-npm.md).
 
 ## 8. Mise à jour des dépendances
 
-À rédiger — DOC-01b.
+À rédiger - DOC-01b.

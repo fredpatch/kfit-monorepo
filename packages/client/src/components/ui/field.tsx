@@ -12,7 +12,7 @@ type FieldProps = {
   /** Shown after the label in muted text, e.g. "(facultatif)". */
   optionalHint?: string;
   hint?: React.ReactNode;
-  /** French, user-facing message — never a raw error code. */
+  /** French, user-facing message - never a raw error code. */
   error?: string | undefined;
   className?: string;
   /** Render prop receives the ids to wire label, hint and error for screen readers. */
@@ -23,7 +23,14 @@ type FieldProps = {
  * Label + control + hint/error, accessibility wired.
  * Works with react-hook-form: <Field label="Nom" error={errors.fullName?.message}>{(p) => <Input {...p} {...register("fullName")} />}</Field>
  */
-export function Field({ label, optionalHint, hint, error, className, children }: FieldProps) {
+export function Field({
+  label,
+  optionalHint,
+  hint,
+  error,
+  className,
+  children,
+}: FieldProps) {
   const id = React.useId();
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
@@ -37,7 +44,14 @@ export function Field({ label, optionalHint, hint, error, className, children }:
     <div data-slot="field" className={cn("flex flex-col gap-1.5", className)}>
       <label htmlFor={id} className="text-[13px] font-semibold">
         {label}
-        {optionalHint ? <>{" "}<span className="font-medium text-muted-foreground">{optionalHint}</span></> : null}
+        {optionalHint ? (
+          <>
+            {" "}
+            <span className="font-medium text-muted-foreground">
+              {optionalHint}
+            </span>
+          </>
+        ) : null}
       </label>
       {children(control)}
       {hint && !error ? (
@@ -46,7 +60,11 @@ export function Field({ label, optionalHint, hint, error, className, children }:
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} role="alert" className="text-xs font-medium text-danger">
+        <p
+          id={errorId}
+          role="alert"
+          className="text-xs font-medium text-danger"
+        >
           {error}
         </p>
       ) : null}

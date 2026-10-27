@@ -57,7 +57,7 @@ criterion → check performed → expected → actual → PASS | FAIL | NOT VALI
 ```
 
 5. Relevant edge cases only: invalid input · empty state · permission denial · duplicate submit · parallel action · stale/archived records · dependency failure · encoding/accents · mobile width · time zones · currency rounding.
-6. Flaky: re-run once, record both outcomes, classify — never edit to go green.
+6. Flaky: re-run once, record both outcomes, classify - never edit to go green.
 
 ## Result
 

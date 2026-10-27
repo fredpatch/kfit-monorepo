@@ -1,4 +1,4 @@
-# database-safety — detailed guide
+# database-safety - detailed guide
 
 Loaded on demand from `../SKILL.md`.
 
@@ -19,7 +19,6 @@ Before proposing or modifying database behavior, inspect:
 Do not infer schema solely from application types.
 
 The database schema is authoritative for database constraints.
-
 
 ## Environment Safety
 
@@ -46,7 +45,6 @@ migration reset
 ```
 
 Never assume `localhost` configuration without checking repository/runtime configuration.
-
 
 ## Migration Classification
 
@@ -101,7 +99,6 @@ Examples:
 
 Requires explicit developer approval and rollback planning.
 
-
 ## Existing-Row Compatibility
 
 Before applying a stricter constraint, answer:
@@ -136,7 +133,6 @@ Do not rely on "the table should be empty."
 
 Verify when practical.
 
-
 ## Backfill Strategy
 
 For changes requiring backfills:
@@ -160,7 +156,6 @@ add permissive structure
 
 rather than applying a strict constraint before legacy rows are compatible.
 
-
 ## Index and Uniqueness Safety
 
 When adding uniqueness, determine:
@@ -182,7 +177,6 @@ database constraint
 ```
 
 The service may perform a pre-check for UX or clearer errors, but correctness must not depend on it.
-
 
 ## Transactions
 
@@ -206,7 +200,6 @@ Avoid transactions that are unnecessarily broad.
 
 Be aware that locks are generally held until transaction completion.
 
-
 ## PostgreSQL Transaction Failure Semantics
 
 In PostgreSQL, after a statement fails inside a transaction, the transaction may remain aborted until rollback.
@@ -228,7 +221,6 @@ or restructure execution so recovery occurs in a fresh transaction/connection.
 This must be verified with real PostgreSQL behavior when correctness depends on it.
 
 Do not rely only on fake repositories or mocks for database transaction semantics.
-
 
 ## Concurrency Analysis
 
@@ -265,7 +257,6 @@ Possible safeguards:
 
 Do not rely on frontend disabling or process-local state for correctness.
 
-
 ## Idempotency
 
 Separate:
@@ -294,7 +285,6 @@ For idempotent commands:
 - define replay behavior
 - define concurrent collision behavior
 - integration-test the real DB path
-
 
 ## State Transitions
 
@@ -326,7 +316,6 @@ Each command should:
 5. update state
 6. write audit/history when required
 
-
 ## Soft Deletes and Archived Records
 
 Whenever uniqueness, counts, lookups, or foreign references are involved, determine how these affect:
@@ -341,7 +330,6 @@ status
 Do not automatically assume archived records disappear from uniqueness requirements.
 
 Explicitly define expected behavior.
-
 
 ## Generated Migrations
 
@@ -364,7 +352,6 @@ Review generated SQL for:
 
 Generated does not mean safe.
 
-
 ## Lock and Availability Risk
 
 For production-oriented changes, consider:
@@ -384,7 +371,6 @@ Do not invent zero-downtime complexity when the project does not need it.
 
 Report the tradeoff.
 
-
 ## Deployment Ordering
 
 For schema/application changes, determine whether deployment order matters.
@@ -399,7 +385,6 @@ backward-compatible schema
 ```
 
 Avoid migrations that require new application code to exist before the migration completes unless deployment guarantees that ordering.
-
 
 ## Rollback and Recovery
 
@@ -421,7 +406,6 @@ A down migration that recreates an empty column does not restore lost data.
 
 Report irreversible changes explicitly.
 
-
 ## Integration Testing
 
 Use real database integration tests when behavior depends on database semantics.
@@ -440,7 +424,6 @@ Especially for:
 - concurrency
 
 Mocks/fake repositories may test domain logic, but they cannot prove PostgreSQL transaction semantics.
-
 
 ## Integration Test Safety
 

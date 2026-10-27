@@ -1,4 +1,4 @@
-# K'FIT — Sprint 5 execution spec
+# K'FIT - Sprint 5 execution spec
 
 ## Objective
 
@@ -6,13 +6,13 @@ Deliver the authoritative post-onboarding subscription/coaching lifecycle: activ
 
 ## Ordered tasks
 
-1. S5.1 — Subscription lifecycle with pause, completion_due, renewal and cancellation resolution — VALIDATED.
-2. S5.2 — Appointment scheduling, confirmation links, cancellation policy and history — VALIDATED.
-3. S5.3 — Structured follow-ups, overdue detection and configurable follow-up cadence — VALIDATED.
-4. S5.4 — Progress measurements, structured goals and coach-confirmed status suggestions — VALIDATED.
-5. S5.5 — Personalized document versioning and secure temporary delivery links — VALIDATED.
+1. S5.1 - Subscription lifecycle with pause, completion_due, renewal and cancellation resolution - VALIDATED.
+2. S5.2 - Appointment scheduling, confirmation links, cancellation policy and history - VALIDATED.
+3. S5.3 - Structured follow-ups, overdue detection and configurable follow-up cadence - VALIDATED.
+4. S5.4 - Progress measurements, structured goals and coach-confirmed status suggestions - VALIDATED.
+5. S5.5 - Personalized document versioning and secure temporary delivery links - VALIDATED.
 
-## S5.1 — planning
+## S5.1 - planning
 
 Backlog task: **Subscription lifecycle with pause, completion_due, renewal and cancellation resolution**.
 
@@ -21,6 +21,7 @@ Backlog task: **Subscription lifecycle with pause, completion_due, renewal and c
 Sources: `exploration-cache/project/state-machines.md §4`, `exploration-cache/project/database-schema.md`, `exploration-cache/project/relational-contract.md §3/§5`, Notion business decisions, and reusable Explicit State Transitions + Atomic Business Operation patterns.
 
 Allowed S5.1 commands:
+
 - `ready_to_start -> active`
 - `active -> paused`
 - `paused -> active`
@@ -46,15 +47,18 @@ S5.1 does not open payment-driven transitions. Payment remains an independent ax
 Current subscriptions preserve service/variant/price but do not snapshot duration. Catalogue edits must not rewrite an existing subscription's commercial meaning.
 
 Proposed migration:
+
 - `subscriptions.duration_value_snapshot` nullable integer;
 - `subscriptions.duration_unit_snapshot` nullable text;
 - check: both null or both present; value > 0 when present.
 
 Writers:
+
 - S4.2 conversion updated to snapshot selected variant duration when present, otherwise service duration;
 - S5.1 renewal clones the prior subscription duration snapshot.
 
 Existing rows:
+
 - preflight lists rows missing a duration snapshot;
 - dev/staging backfill may use current selected variant/service duration only after developer approval;
 - no production destructive/backfill assumption.
@@ -66,6 +70,7 @@ For truly punctual/no-duration services, `plannedEndDate` may remain null and co
 ### Pause / resume
 
 Pause:
+
 - current status must be `active`;
 - reason is mandatory non-empty coach text stored in `subscription_pauses.reason`;
 - creates exactly one open pause row;
@@ -74,6 +79,7 @@ Pause:
 - history + audit atomic.
 
 Resume:
+
 - current status must be `paused`;
 - exactly one open pause must exist;
 - coach explicitly supplies `revisedEndDate` when the subscription has a planned end;
@@ -91,6 +97,7 @@ For punctual subscriptions with no planned end, resume does not require a revise
 Reaching `plannedEndDate` never marks `completed` automatically.
 
 S5.1 provides an explicit admin command:
+
 - `active -> completion_due`
 - allowed when planned end has been reached OR coach explicitly opens closure review early with mandatory reason;
 - no scheduled job in S5.1.
@@ -102,6 +109,7 @@ This leaves Sprint 7 scheduled operational jobs free to surface overdue/completi
 `completion_due -> completed` only.
 
 Before completion:
+
 - inspect `subscription_components`;
 - if any mandatory/owed-by-coach quantity remains unresolved, completion is rejected by default;
 - explicit override requires non-empty reason;
@@ -114,6 +122,7 @@ No automatic goal completion or finance mutation.
 ### Cancellation
 
 Cancellation is a named command from allowed non-terminal states.
+
 - mandatory reason;
 - set `cancelledAt`;
 - do not delete appointments/components/history;
@@ -127,11 +136,13 @@ Cancellation is a named command from allowed non-terminal states.
 Business rule: renewal creates a new linked subscription; never reopens/commercially mutates the old one.
 
 Proposed schema:
+
 - `subscriptions.renewed_from_subscription_id` nullable self-FK RESTRICT;
 - unique when non-null, yielding a linear renewal chain;
 - source request remains null on renewed subscriptions.
 
 Renewal command:
+
 - allowed from `completion_due` or `completed`;
 - locks source subscription and renewal-link key;
 - rejects if a renewal child already exists;
@@ -162,6 +173,7 @@ All mutations: authenticated admin + existing same-origin/CSRF protections.
 ### Concurrency / hard commit
 
 Every command locks the subscription row `FOR UPDATE`, reloads required related state, validates current status and writes:
+
 - subscription mutation;
 - pause/renewal/component side effects where applicable;
 - append-only `subscription_status_history`;
@@ -172,6 +184,7 @@ Double submits after state change return a stable typed conflict and create no d
 ### Audit
 
 Suggested events:
+
 - `subscription.activated`
 - `subscription.paused`
 - `subscription.resumed`
@@ -185,6 +198,7 @@ Safe metadata only: from/to status, structural IDs, timestamps/dates, override b
 ### Client
 
 French admin subscription detail/lifecycle panel:
+
 - current status/timeline;
 - start/end dates;
 - open/closed pause history;
@@ -210,6 +224,7 @@ UI does not determine transition validity; server remains authoritative.
 ### Validation target
 
 Unit/shared/Express:
+
 - closed transition map and invalid-state coverage;
 - date/reason/override validation;
 - auth/CSRF;
@@ -217,6 +232,7 @@ Unit/shared/Express:
 - renewal input/response contracts.
 
 PostgreSQL integration:
+
 1. activate ready subscription; actual start/history/audit written once;
 2. activation rejected if blocker reappeared;
 3. duration snapshot drives planned end, not mutable catalogue;
@@ -238,6 +254,7 @@ PostgreSQL integration:
 19. history is append-only and chronological.
 
 Fred Gate 2:
+
 - activate a ready subscription;
 - pause then resume with manually chosen new end date;
 - open completion review;
@@ -248,12 +265,12 @@ Fred Gate 2:
 
 Gate 1 approved by Fred.
 
-
-### S5.1 Gate 1 — approved rules
+### S5.1 Gate 1 - approved rules
 
 Fred approved the S5.1 lifecycle plan.
 
 Locked:
+
 - named lifecycle commands only; no generic status patch;
 - ready_to_start -> active rechecks blockers and writes actualStartDate/history/audit atomically;
 - subscription duration is snapshotted so catalogue edits cannot alter existing commercial duration;
@@ -268,12 +285,12 @@ Locked:
 - appointments, follow-ups, goals/progress, documents, jobs and finance remain out of S5.1.
 
 Proposed schema additions are approved:
+
 - subscriptions.duration_value_snapshot
 - subscriptions.duration_unit_snapshot
 - subscriptions.renewed_from_subscription_id
 
 Do not start S5.2 until Fred validates S5.1 locally.
-
 
 ### S5.1 validation evidence
 
@@ -281,8 +298,7 @@ Validated locally by Fred on 2026-10-21. Agent baseline before the final correct
 
 Do not start S5.2 implementation before Fred approves its Gate 1 plan.
 
-
-## S5.2 — planning
+## S5.2 - planning
 
 Backlog task: **Appointment scheduling, confirmation links, cancellation policy and history**.
 
@@ -291,6 +307,7 @@ Backlog task: **Appointment scheduling, confirmation links, cancellation policy 
 Appointment records are historical business facts.
 
 Allowed transitions:
+
 - scheduled -> confirmed
 - scheduled|confirmed -> reschedule_requested
 - scheduled|confirmed|reschedule_requested -> rescheduled
@@ -299,6 +316,7 @@ Allowed transitions:
 - scheduled|confirmed -> missed
 
 Terminal in S5.2:
+
 - rescheduled
 - completed
 - cancelled
@@ -309,6 +327,7 @@ A reschedule never overwrites original schedule facts. It creates a new linked a
 ### Schema additions
 
 Proposed migration:
+
 - appointments.rescheduled_from_appointment_id nullable self-FK RESTRICT + unique;
 - appointments.late_cancel_notice_hours_snapshot nullable integer;
 - appointments.late_cancel_consumes_component_snapshot boolean NOT NULL default false;
@@ -321,6 +340,7 @@ Existing rows preflight before migration. No destructive backfill assumptions.
 ### Policy snapshot
 
 At appointment creation:
+
 1. load subscription/service/variant;
 2. resolve variant policy field-by-field with service fallback;
 3. snapshot late-cancel notice/consumption and missed-consumption settings onto appointment.
@@ -332,6 +352,7 @@ Historical appointment decisions always use appointment snapshots, never current
 Only active subscriptions may receive new appointments.
 
 If component is linked:
+
 - must belong to same subscription;
 - quantityConsumed < quantityEntitled;
 - S5.2 consumes max one unit per appointment.
@@ -343,6 +364,7 @@ Create appointment, appointment event and audit atomically.
 Reuse secure_access_tokens/external_access_events.
 
 Token:
+
 - resource = appointment;
 - action = appointment_response;
 - random/hash-only;
@@ -354,6 +376,7 @@ Token:
 - no OTP.
 
 Customer actions:
+
 - confirm
 - decline
 - request_reschedule
@@ -361,10 +384,12 @@ Customer actions:
 ### Cancellation policy
 
 Coach cancellation:
+
 - never consumes entitlement;
 - mandatory reason.
 
 Customer cancellation:
+
 - authoritative server time determines lateness relative to scheduledStart;
 - on-time never consumes;
 - late consumes one linked component only if snapshot says so.
@@ -390,6 +415,7 @@ Early completion before scheduledEnd requires explicit override + reason.
 component_events are append-only.
 
 S5.2 event types:
+
 - appointment_completed
 - late_customer_cancel
 - missed
@@ -400,6 +426,7 @@ Update quantityConsumed in same transaction.
 Double-submit/replay cannot create a second consumption event.
 
 Explicit restoration:
+
 - reason required;
 - only when appointment previously consumed a component;
 - max one restoration per consumptive event;
@@ -409,11 +436,13 @@ Explicit restoration:
 ### Rescheduling
 
 Customer request:
+
 - appointment -> reschedule_requested;
 - optional rescheduleNote;
 - no component consumption.
 
 Coach reschedule:
+
 - source status scheduled|confirmed|reschedule_requested;
 - new start/end required;
 - subscription must currently be active;
@@ -433,6 +462,7 @@ Existing appointment may still be finalized as completed/missed/cancelled after 
 ### API proposal
 
 Admin:
+
 - GET /admin/subscriptions/:subscriptionId/appointments
 - POST /admin/subscriptions/:subscriptionId/appointments
 - GET /admin/appointments/:appointmentId
@@ -445,12 +475,14 @@ Admin:
 - POST /admin/appointments/:appointmentId/response-link
 
 Public:
+
 - GET /public/appointments/:token
 - POST /public/appointments/:token
 
 ### Validation target
 
 Shared/unit/Express:
+
 - closed transition map;
 - scheduling/date validation;
 - component ownership/remaining entitlement validation;
@@ -460,6 +492,7 @@ Shared/unit/Express:
 - public token input/replay/error taxonomy.
 
 PostgreSQL integration:
+
 1. schedule active subscription appointment;
 2. reject scheduling non-active subscription;
 3. reject component from another subscription;
@@ -487,6 +520,7 @@ PostgreSQL integration:
 25. free-text reason/note absent from generic audit metadata.
 
 Fred Gate 2:
+
 - schedule appointment on active subscription/component;
 - issue customer response link;
 - confirm one appointment;
@@ -500,12 +534,12 @@ Fred Gate 2:
 
 Do not start S5.3 until Fred validates S5.2 locally.
 
-
-### S5.2 Gate 1 — approved rules
+### S5.2 Gate 1 - approved rules
 
 Fred approved the S5.2 appointment plan.
 
 Locked:
+
 - appointment lifecycle uses named commands only;
 - rescheduling never overwrites original schedule facts; it creates a linked replacement appointment;
 - late-cancel/missed policy is snapshotted at appointment creation and historical decisions never consult current catalogue policy;
@@ -522,6 +556,7 @@ Locked:
 - reminders/jobs, calendar integrations, follow-ups, payments, customer accounts and multi-coach scheduling remain out of scope.
 
 Proposed appointment schema additions are approved:
+
 - rescheduled_from_appointment_id
 - late_cancel_notice_hours_snapshot
 - late_cancel_consumes_component_snapshot
@@ -530,7 +565,6 @@ Proposed appointment schema additions are approved:
 - cancelled_by_type
 
 Do not start S5.3 until Fred validates S5.2 locally.
-
 
 ### S5.2 validation evidence
 
@@ -546,12 +580,12 @@ Validated locally by Fred on 2026-10-21.
 
 Do not start S5.3 implementation before its plan is inspected and Fred approves Gate 1.
 
-
-## S5.3 — planning brief
+## S5.3 - planning brief
 
 Goal: structured coach follow-ups plus operational cadence/overdue detection for active subscriptions, with pause-aware time and no background-job dependency.
 
 Cadence source:
+
 - subscriptions.followUpFrequencyDaysOverride when set;
 - otherwise variant service_policies.followUpFrequencyDays when non-null;
 - otherwise service-level service_policies.followUpFrequencyDays;
@@ -560,11 +594,12 @@ Cadence source:
 - Unlike commercial/cancellation snapshots, cadence is operational configuration and applies prospectively/currently; changing it intentionally changes the current follow-up rhythm.
 
 Meaningful activity:
+
 - subscription activation actualStartDate is initial baseline;
 - completed appointment completedAt;
 - recorded structured follow-up occurredAt;
 - completing an open follow-up action completedAt.
-Not meaningful:
+  Not meaningful:
 - appointment scheduled/confirmed/cancelled/missed/reschedule traffic;
 - secure-link views/responses;
 - payment activity;
@@ -572,14 +607,16 @@ Not meaningful:
 - goals/progress (S5.4 not yet implemented).
 
 Subscription cadence health is derived, not persisted:
+
 - active only: healthy/due/overdue;
 - paused: excluded and clock frozen;
 - non-active lifecycle states: excluded from overdue queue;
 - no scheduled job writes overdue state in S5.3.
-Due time = latest meaningful activity + effective cadence measured in active subscription time, subtracting pause intervals after the activity baseline.
-A meaningful activity immediately establishes a new baseline and clears derived overdue.
+  Due time = latest meaningful activity + effective cadence measured in active subscription time, subtracting pause intervals after the activity baseline.
+  A meaningful activity immediately establishes a new baseline and clears derived overdue.
 
 Follow-up records:
+
 - existing follow_ups rows represent structured coach activity plus optional next action;
 - occurredAt must not be in the future;
 - followUpType closed V1 vocabulary: check_in | progress_review | coaching_contact | other;
@@ -588,26 +625,30 @@ Follow-up records:
 - nextActionAt must be after occurredAt.
 
 Stored follow-up state:
+
 - open: next action pending;
 - done: next action resolved or recorded activity has no pending action;
 - cancelled: pending next action explicitly cancelled.
-Derived effective state:
+  Derived effective state:
 - open with nextActionAt < now => overdue.
-Do not persist overdue in S5.3; expose it as derived effectiveStatus. This satisfies state-machine operational overdue semantics without cron/job writes.
+  Do not persist overdue in S5.3; expose it as derived effectiveStatus. This satisfies state-machine operational overdue semantics without cron/job writes.
 
 State commands:
+
 - create structured follow-up;
 - complete open follow-up;
 - cancel open follow-up.
-No generic status patch.
+  No generic status patch.
 
 Proposed schema:
+
 - follow_ups.completed_at nullable timestamp;
 - follow_ups.cancelled_at nullable timestamp;
 - new follow_up_events append-only table: id, follow_up_id, event_type, from_status, to_status, actor_user_id, created_at.
-Free-text note/nextAction/cancel reason stays on business record/event reason where required, never generic audit metadata.
+  Free-text note/nextAction/cancel reason stays on business record/event reason where required, never generic audit metadata.
 
 Creating follow-up:
+
 - subscription must be active;
 - occurredAt <= authoritative now;
 - create open when next action exists, otherwise done;
@@ -616,6 +657,7 @@ Creating follow-up:
 - occurredAt is meaningful activity and resets cadence baseline.
 
 Completing:
+
 - open only;
 - completedAt=authoritative now;
 - status done;
@@ -623,6 +665,7 @@ Completing:
 - completion timestamp is meaningful activity.
 
 Cancelling:
+
 - open only;
 - mandatory reason;
 - status cancelled + cancelledAt;
@@ -630,11 +673,13 @@ Cancelling:
 - does not create a new meaningful-activity timestamp.
 
 Follow-up task overdue:
+
 - open && nextActionAt < now => effectiveStatus overdue;
 - exactly at nextActionAt is due, not overdue until strictly later;
 - paused subscription does not hide the row's own missed next-action history, but global subscription cadence queue excludes paused subscriptions. UI may label pending task separately from cadence health.
 
 Cadence override:
+
 - explicit admin command to set positive integer days or clear override;
 - only active/paused subscription may be configured;
 - audit structural old/new values;
@@ -642,6 +687,7 @@ Cadence override:
 - no retroactive data rewrite, only derived due time recalculation.
 
 API proposal:
+
 - GET /admin/follow-ups/queue
 - GET /admin/subscriptions/:subscriptionId/follow-ups
 - POST /admin/subscriptions/:subscriptionId/follow-ups
@@ -650,47 +696,54 @@ API proposal:
 - PUT /admin/subscriptions/:subscriptionId/follow-up-cadence
 
 Queue returns active subscriptions with enabled cadence and derived:
+
 - effectiveCadenceDays
 - cadenceSource override|variant|service
 - latestMeaningfulActivityAt
 - nextFollowUpDueAt
 - cadenceState healthy|due|overdue
 - overdueByDays when overdue
-Paused/non-active subscriptions excluded.
+  Paused/non-active subscriptions excluded.
 
 Pause arithmetic:
+
 - time in subscription_pauses after the latest meaningful activity does not consume cadence days;
 - an open pause freezes at current elapsed active time;
 - on resume the remaining cadence continues;
 - meaningful activity after resume resets baseline normally.
 
 No scheduled job in S5.3:
+
 - overdue is query/read-time derived;
 - Scheduled Business Jobs remains for Sprint 7 reminders/notifications/materialized operational jobs if later required.
 
 Concurrency:
+
 - lock follow-up row for complete/cancel;
 - cadence override locks subscription;
 - audit + status mutation atomic;
 - duplicate complete/cancel returns typed conflict and no duplicate event.
 
 Audit:
+
 - follow_up.recorded
 - follow_up.completed
 - follow_up.cancelled
 - follow_up.cadence_override_updated
-Metadata only structural IDs/type/status/cadence values; no note/nextAction/cancellation reason.
+  Metadata only structural IDs/type/status/cadence values; no note/nextAction/cancellation reason.
 
 Client:
+
 - French Suivis area on active subscription;
 - global À suivre / Retards queue;
 - show effective cadence and source, latest meaningful activity, due date, pause-excluded state;
 - record follow-up with type/note/optional next action;
 - complete/cancel pending next action;
 - configure/clear cadence override.
-UI never mutates overdue directly.
+  UI never mutates overdue directly.
 
 Out of scope:
+
 - email/WhatsApp reminders;
 - background overdue jobs;
 - automatic follow-up creation;
@@ -701,6 +754,7 @@ Out of scope:
 - changing subscription lifecycle.
 
 Validation target:
+
 1. fallback service cadence;
 2. variant cadence overrides service per field;
 3. subscription override wins and clear restores fallback;
@@ -727,6 +781,7 @@ Validation target:
 24. notes/reasons absent from generic audit metadata.
 
 Fred Gate 2:
+
 - configure service cadence and inspect active subscription derived due;
 - apply subscription override then clear it;
 - create structured follow-up and verify cadence resets;
@@ -739,12 +794,12 @@ Fred Gate 2:
 
 Do not start S5.4 until Fred validates S5.3 locally.
 
-
-### S5.3 Gate 1 — approved rules
+### S5.3 Gate 1 - approved rules
 
 Fred approved the S5.3 follow-up plan.
 
 Locked:
+
 - effective cadence = subscription override -> variant policy -> service policy; null disables monitoring;
 - cadence is operational/current configuration, not an immutable commercial snapshot;
 - meaningful activity = activation, completed appointment, structured follow-up recorded, or open follow-up completed;
@@ -760,12 +815,12 @@ Locked:
 - S5.3 never mutates subscription lifecycle.
 
 Proposed schema additions are approved:
+
 - follow_ups.completed_at
 - follow_ups.cancelled_at
 - follow_up_events append-only history table
 
 Do not start S5.4 until Fred validates S5.3 locally.
-
 
 ### S5.3 validation evidence
 
@@ -782,12 +837,12 @@ Validated locally by Fred on 2026-10-21.
 
 Do not start S5.4 implementation before its plan is inspected and Fred approves Gate 1.
 
-
-## S5.4 — planning brief
+## S5.4 - planning brief
 
 Goal: preserve chronological progress measurements, manage structured goals through explicit coach-confirmed transitions, and expose deterministic non-medical goal-status suggestions without automatic completion.
 
 Progress measurements:
+
 - append-only; no edit/delete in S5.4;
 - subscription must be active or paused to record;
 - measuredAt <= authoritative now;
@@ -799,6 +854,7 @@ Progress measurements:
 - no BMI, diagnosis, risk classification or medical interpretation in S5.4.
 
 Progress-photo boundary:
+
 - progress photos remain private by default;
 - attaching/linking a private progress photo requires current granted progress_photo_storage consent;
 - publication/marketing authorization is separate and never inferred;
@@ -806,6 +862,7 @@ Progress-photo boundary:
 - no public photo access in S5.4.
 
 Goal model:
+
 - status vocabulary remains active | achieved | partially_achieved | not_achieved | paused | cancelled;
 - create goal in active state;
 - active -> paused;
@@ -816,13 +873,15 @@ Goal model:
 - no generic status PATCH.
 
 Proposed goal schema additions:
+
 - goals.metric_key nullable text;
 - goals.confirmed_status nullable text only if needed for migration clarity is NOT required because status is authoritative;
 - new goal_events append-only table: id, goal_id, event_type, from_status, to_status, suggested_status_snapshot nullable, actor_user_id nullable, reason nullable, created_at.
-Existing suggested_status remains advisory current suggestion.
-Existing coach_confirmed_at stores latest explicit coach outcome confirmation timestamp.
+  Existing suggested_status remains advisory current suggestion.
+  Existing coach_confirmed_at stores latest explicit coach outcome confirmation timestamp.
 
 Goal metric keys:
+
 - weight_kg
 - waist_cm
 - hips_cm
@@ -831,6 +890,7 @@ Goal metric keys:
 - null for qualitative/custom goal with no automatic numeric suggestion.
 
 Goal creation:
+
 - subscription must be active or paused;
 - category and label required;
 - baselineValue/targetValue/unit either all present or all absent;
@@ -841,12 +901,14 @@ Goal creation:
 - qualitative goals may have no metricKey and no numeric suggestion.
 
 Measurement chronology:
+
 - never overwrite a prior measurement;
 - list ordered by measuredAt then createdAt;
 - duplicate exact timestamp is allowed only if business input differs; reject exact duplicate measurement payload to protect double-submit;
 - latest metric value for goal suggestion = latest measurement at or before authoritative now containing that metric.
 
 Suggestion engine:
+
 - server-calculated, deterministic, non-medical;
 - suggestion never changes goal.status;
 - suggestion written/read as suggestedStatus only for numeric metric goals;
@@ -863,6 +925,7 @@ Suggestion engine:
 - no percentage threshold is invented for partial success in V1.
 
 Suggestion refresh:
+
 - recompute affected active goals after recording a new measurement;
 - store suggested_status as current advisory value for query efficiency;
 - recomputation + measurement insert + audit happen atomically where practical;
@@ -870,6 +933,7 @@ Suggestion refresh:
 - changing measurement history is impossible because measurements are append-only.
 
 Coach confirmation:
+
 - POST named command with chosen outcome achieved | partially_achieved | not_achieved;
 - active goal only;
 - coach may confirm the suggestion or choose a different allowed outcome;
@@ -880,6 +944,7 @@ Coach confirmation:
 - no automatic goal status transition.
 
 Pause/resume/cancel:
+
 - pause active goal with optional reason;
 - resume paused goal;
 - cancel active|paused with mandatory reason;
@@ -889,17 +954,20 @@ Pause/resume/cancel:
 
 Read model:
 GET /admin/subscriptions/:subscriptionId/progress
+
 - chronological measurements;
 - latest values and simple deltas from previous measurement;
 - no health interpretation.
 
 GET /admin/subscriptions/:subscriptionId/goals
+
 - goals + current suggestedStatus;
 - latest metric value used for suggestion;
 - goal event history;
 - available named commands advisory only.
 
 Commands/API proposal:
+
 - POST /admin/subscriptions/:subscriptionId/progress-measurements
 - GET /admin/subscriptions/:subscriptionId/progress
 - POST /admin/subscriptions/:subscriptionId/goals
@@ -911,12 +979,14 @@ Commands/API proposal:
 - POST /admin/progress-measurements/:measurementId/photos/link only if existing private-document integration is already reusable without opening S5.5; otherwise defer photo linking implementation and keep consent/read-model boundary documented.
 
 Consent:
+
 - health_data grant required before structured progress measurement persistence;
 - progress_photo_storage grant required before progress photo linkage/storage;
 - publication consent never required for private storage and never inferred;
 - refusal/revocation blocks new collection but does not destructively erase historical records in S5.4.
 
 Audit:
+
 - progress.measurement_recorded
 - progress.photo_linked if included
 - goal.created
@@ -924,10 +994,11 @@ Audit:
 - goal.resumed
 - goal.outcome_confirmed
 - goal.cancelled
-Metadata structural only: IDs, metric keys present, from/to status, suggested status, chosen outcome. No measurement values, body values, feelingNote or reasons in generic audit metadata.
+  Metadata structural only: IDs, metric keys present, from/to status, suggested status, chosen outcome. No measurement values, body values, feelingNote or reasons in generic audit metadata.
 
 Client:
 French subscription Progression area:
+
 - Mesures chronological table/cards;
 - latest vs previous simple numeric delta;
 - Objectifs list;
@@ -939,6 +1010,7 @@ French subscription Progression area:
 - photo controls only if private-document integration can be reused safely in S5.4.
 
 Out of scope:
+
 - medical advice/diagnosis;
 - BMI/risk scoring;
 - AI-generated coaching conclusions;
@@ -951,6 +1023,7 @@ Out of scope:
 - charts requiring a new visualization framework beyond simple existing client capabilities.
 
 Applicable patterns:
+
 - Explicit State Transitions
 - Atomic Business Operation
 - Idempotent Business Command
@@ -960,6 +1033,7 @@ Applicable patterns:
 - consent/versioned evidence safeguards already validated in S4.4.
 
 Validation target:
+
 1. health_data consent required for measurement;
 2. refusal/revocation blocks new measurement;
 3. historical measurements preserved;
@@ -994,6 +1068,7 @@ Validation target:
 32. progress-photo linkage, if implemented, requires progress_photo_storage and remains private.
 
 Fred Gate 2:
+
 - active subscription with health_data grant;
 - record multiple chronological measurements;
 - verify latest/previous values;
@@ -1008,12 +1083,12 @@ Fred Gate 2:
 
 Do not start S5.5 until Fred validates S5.4 locally.
 
-
-### S5.4 Gate 1 — approved rules
+### S5.4 Gate 1 - approved rules
 
 Fred approved the S5.4 progress/goals plan.
 
 Locked:
+
 - progress measurements are append-only historical facts; no edit/delete in S5.4;
 - recording structured progress measurements requires current health_data grant;
 - progress-photo storage/linkage requires separate progress_photo_storage grant; publication/marketing remains separate and is never inferred;
@@ -1028,11 +1103,11 @@ Locked:
 - health/body values, notes and override reasons never enter generic audit metadata.
 
 Proposed schema additions are approved:
+
 - goals.metric_key nullable text
 - goal_events append-only table
 
 Do not start S5.5 until Fred validates S5.4 locally.
-
 
 ### S5.4 validation evidence
 
@@ -1050,11 +1125,12 @@ Validated locally by Fred on 2026-10-21.
 
 Do not start S5.5 implementation before its plan is inspected and Fred approves Gate 1.
 
-## S5.5 — planning brief
+## S5.5 - planning brief
 
 Goal: turn the Sprint 0 private-file/document foundation into an authoritative V1 document workflow for personalized coaching artifacts, immutable versions and secure temporary customer delivery.
 
 V1 document types:
+
 - meal_plan
 - workout_plan
 - progress_summary
@@ -1062,16 +1138,19 @@ V1 document types:
 - other_personalized
 
 Creation modes:
+
 - meal_plan / workout_plan / other_personalized: coach uploads an already-produced supported private file; S5.5 does not invent structured meal/workout authoring models.
 - progress_summary: may be generated as PDF from authoritative subscription/progress/goal/follow-up data using a deterministic server-side print model and template version.
 - progress_photo: private image upload/linkage using the same storage pipeline; no publication workflow.
 
 Document ownership:
+
 - personalized coaching documents are owned by subscription: ownerType=subscription, ownerId=subscriptionId.
 - progress_photo document also belongs to the subscription and is linked through progress_photos after storage succeeds.
 - validate polymorphic ownership in service layer.
 
 Document lifecycle:
+
 - draft
 - available
 - revoked
@@ -1079,14 +1158,16 @@ Document lifecycle:
 - pending_purge / purged remain retention-layer states and are not actively implemented by S5.5 commands.
 
 Named commands only:
+
 - create/upload first version;
 - add version;
 - revoke;
 - archive;
 - issue delivery link.
-No generic status PATCH.
+  No generic status PATCH.
 
 Versioning:
+
 - document_versions are immutable;
 - version numbers are monotonically increasing per document;
 - current_version_id must belong to same document;
@@ -1095,6 +1176,7 @@ Versioning:
 - old links therefore keep referring to the exact version originally shared until expiry/revocation.
 
 Allowed upload policy from Sprint 0:
+
 - max 10 MB;
 - PDF, JPG/JPEG, PNG, WebP;
 - binary signature must match declared type/extension;
@@ -1105,6 +1187,7 @@ Allowed upload policy from Sprint 0:
 - infected/scan_failed file is never externally deliverable.
 
 Hard commit / file transaction boundary:
+
 1. receive file to controlled temporary/private staging;
 2. validate size + signature;
 3. compute SHA-256;
@@ -1114,19 +1197,22 @@ Hard commit / file transaction boundary:
 7. DB transaction locks logical document as applicable, assigns version number, inserts document/version, sets currentVersionId/status and audit;
 8. if DB transaction fails, delete the just-finalized orphan file;
 9. if file finalization fails, create no business row.
-Never leave a document row pointing to a missing/unscanned file.
+   Never leave a document row pointing to a missing/unscanned file.
 
 First version:
+
 - create logical document + clean version 1 atomically after successful scan;
 - status becomes available;
 - sensitivity set server-side from type, not client-controlled.
 
 Sensitivity:
+
 - meal_plan, workout_plan, other_personalized => private;
 - progress_summary, progress_photo => sensitive_health;
 - client cannot downgrade sensitivity.
 
 Consent:
+
 - generating a NEW progress_summary requires current health_data grant because it is a new derived health/progress artifact;
 - uploading/linking a NEW progress_photo requires current progress_photo_storage grant;
 - consent refusal/revocation blocks new generation/storage of those sensitive artifacts;
@@ -1135,6 +1221,7 @@ Consent:
 - S5.5 creates no public progress-photo publication path.
 
 Progress summary generation:
+
 - deterministic PDF via Puppeteer/local-only assets;
 - authoritative input only from selected subscription and its validated progress/goals/follow-ups;
 - no diagnosis, BMI, risk score, AI interpretation or invented coaching conclusion;
@@ -1144,6 +1231,7 @@ Progress summary generation:
 - generation does not mutate goals/progress/subscription state.
 
 Progress photos:
+
 - narrow S5.5 private upload/link path only;
 - progress_photo_storage grant required;
 - create private sensitive-health document/version through same validated storage/scan pipeline;
@@ -1153,6 +1241,7 @@ Progress photos:
 - no customer/public photo URL.
 
 Admin download:
+
 - authenticated admin can download a clean current or historical document version after ownership authorization;
 - stream from private storage using server route;
 - storage_key is never exposed to client;
@@ -1160,6 +1249,7 @@ Admin download:
 - admin download is audited structurally.
 
 Secure customer delivery:
+
 - issue link against one clean, available immutable document version;
 - resourceType=document_version;
 - action=document_download;
@@ -1172,6 +1262,7 @@ Secure customer delivery:
 - expired/revoked/exhausted token rejected with no file bytes.
 
 Use semantics:
+
 - document links are download links, so unlike one-shot form links they may allow limited repeated access until expiry;
 - default maxUses proposed: 3;
 - successful file stream increments useCount atomically before/at hard commit of access authorization;
@@ -1179,6 +1270,7 @@ Use semantics:
 - admin can explicitly revoke an issued link.
 
 Stricter sensitive-link verification:
+
 - existing requires_otp column is unused and customer OTP delivery does not exist;
 - do NOT reuse admin OTP or invent SMS/WhatsApp delivery.
 - For sensitive_health documents, S5.5 proposes a separate short verification code generated when link is issued and communicated manually by the coach through an independent channel.
@@ -1188,9 +1280,10 @@ Stricter sensitive-link verification:
 - after successful verification, download for that token may proceed under its maxUses/expiry policy.
 - Implementation may add document-specific verification fields/table rather than broadening admin OTP semantics.
 - Standard private meal/workout documents do not require the second code by default.
-This is the proposed interpretation of the backlog rule “sensitive links require stricter verification” and needs Gate 1 approval.
+  This is the proposed interpretation of the backlog rule “sensitive links require stricter verification” and needs Gate 1 approval.
 
 Revocation:
+
 - document revoke blocks new public/admin-as-current delivery but preserves versions/history;
 - revoking document also revokes all active secure_access_tokens for its versions atomically;
 - archived document is read-only historical/admin-visible and cannot issue new public links;
@@ -1198,6 +1291,7 @@ Revocation:
 - no physical deletion/purge in S5.5.
 
 New version:
+
 - allowed for available/draft logical document;
 - same documentType/owner/sensitivity;
 - clean scan required;
@@ -1206,7 +1300,8 @@ New version:
 - existing links to old versions remain valid unless explicitly revoked by coach; creating v2 does NOT silently revoke v1 links because they were intentionally version-bound.
 - UI clearly shows which version each active link targets.
 
-API proposal — admin:
+API proposal - admin:
+
 - GET /admin/subscriptions/:subscriptionId/documents
 - POST /admin/subscriptions/:subscriptionId/documents
 - GET /admin/documents/:documentId
@@ -1219,19 +1314,22 @@ API proposal — admin:
 - POST /admin/subscriptions/:subscriptionId/progress-summary/generate
 - POST /admin/progress-measurements/:measurementId/photos only if multipart route design remains within approved file pipeline.
 
-API proposal — public:
+API proposal - public:
+
 - GET /public/documents/:token
 - POST /public/documents/:token/verify for sensitive-health challenge
 - GET /public/documents/:token/download after authorization/verification
 
 Public response exposes only:
+
 - safe document label/type;
 - version number;
 - optional expiry;
 - whether verification is required.
-No customer phone/email, health values, storage key or unrelated subscription data.
+  No customer phone/email, health values, storage key or unrelated subscription data.
 
 Audit events:
+
 - document.created
 - document.version_added
 - document.progress_summary_generated
@@ -1241,17 +1339,19 @@ Audit events:
 - document.downloaded_admin
 - document.revoked
 - document.archived
-Generic audit metadata only: documentId, versionId, documentType, sensitivity, versionNumber, tokenId, actor/source. Never file bytes, raw token/code, storage key, body/health values, filenames if they contain customer-entered sensitive content, or consent details.
+  Generic audit metadata only: documentId, versionId, documentType, sensitivity, versionNumber, tokenId, actor/source. Never file bytes, raw token/code, storage key, body/health values, filenames if they contain customer-entered sensitive content, or consent details.
 
 External access events:
+
 - document.view
 - document.verify
 - document.download
-with result values such as success/invalid/expired/revoked/exhausted/verification_failed.
-IP/UA remain hashed through existing audit context mechanism.
+  with result values such as success/invalid/expired/revoked/exhausted/verification_failed.
+  IP/UA remain hashed through existing audit context mechanism.
 
-Schema impact — reuse first:
+Schema impact - reuse first:
 Existing tables already support most of S5.5:
+
 - documents
 - document_versions
 - secure_access_tokens
@@ -1262,6 +1362,7 @@ Likely additive schema only for sensitive document challenge / generated-templat
 Do not add a new generic file table.
 
 Concurrency/idempotency:
+
 - document version number allocated under document row lock;
 - concurrent version additions produce distinct ordered versions, never same version number;
 - duplicate/replayed upload request must not create duplicate version after hard commit;
@@ -1270,6 +1371,7 @@ Concurrency/idempotency:
 - progress-photo linkage exactly once per created document/version operation.
 
 Client/UI:
+
 - Implementation continues on `main`, using the validated refonte navigation/profile patterns already present there.
 - French admin document panel:
   - type, status, sensitivity, current version;
@@ -1283,6 +1385,7 @@ Client/UI:
 - Public page is mobile-friendly and minimal.
 
 Out of scope:
+
 - structured meal-plan editor;
 - structured workout-plan editor;
 - AI-generated plans or summaries;
@@ -1296,6 +1399,7 @@ Out of scope:
 - financial quotes/receipts (Sprint 6);
 
 Applicable patterns:
+
 - Secure External Document Sharing
 - Business Document PDF Generation
 - Historical Business Snapshot
@@ -1307,9 +1411,10 @@ Applicable patterns:
 - Domain Error Taxonomy
 
 Validation target:
+
 1. valid supported clean PDF upload creates document + v1;
 2. extension/signature mismatch rejected with zero DB business rows;
-3. >10 MB rejected;
+3. > 10 MB rejected;
 4. infected EICAR rejected with zero available document/version;
 5. opaque storage key never contains original/business identifiers;
 6. SHA-256 persisted;
@@ -1345,6 +1450,7 @@ Validation target:
 36. duplicate/replayed command does not create duplicate document/version.
 
 Fred Gate 2:
+
 - upload meal/workout PDF;
 - add version and verify history/current pointer;
 - generate progress summary;
@@ -1360,24 +1466,24 @@ Gate 1 approved by Fred.
 
 S5.5 is the final Sprint 5 slice. Sprint 5 closure occurs only after Fred Gate 2, tracker/docs/changelog reconciliation, recette update and explicit closure review.
 
-
-### S5.5 Gate 1 — approved 2026-10-22
+### S5.5 Gate 1 - approved 2026-10-22
 
 Fred approved the complete S5.5 plan, including the separate short verification-code mechanism for sensitive_health document links. Implementation is authorized on `main`.
 
 Branch policy after unification:
+
 - `main` is the single active continuation branch;
 - `sprint-5` is historical only;
 - do not start Sprint 6 until S5.5 passes Reviewer, QA and Fred Gate 2 and Sprint 5 is reconciled/closed.
 
-
-### S5.5 implementation checkpoint — 2026-10-22
+### S5.5 implementation checkpoint - 2026-10-22
 
 Implemented on `main` through commit `0f2bfae`.
 
 State: **AWAITING_HUMAN_VALIDATION**.
 
 Static review/QA found and corrected:
+
 - public delivery of progress photos (forbidden in S5.5);
 - forced .pdf admin filename for image documents;
 - filename-extension validation gap;
@@ -1388,12 +1494,12 @@ No migration is required: S5.5 reuses documents, document_versions, secure_acces
 
 Runtime is NOT yet validated. Fred must run the full automated suite/preflights and perform browser/DBeaver/private-storage Gate 2 before S5.5/Sprint 5 can close.
 
-
-## Sprint 5 closure — 2026-10-22
+## Sprint 5 closure - 2026-10-22
 
 Status: **CLOSED / LOCALLY VALIDATED**.
 
 S5.5 validation evidence:
+
 - typecheck and diff checks green;
 - server unit tests 332/332;
 - shared tests 47/47;
@@ -1407,10 +1513,11 @@ S5.5 validation evidence:
 Sprint 5 acceptance is complete across S5.1–S5.5.
 
 Production blockers remain:
+
 - legal validation for the applicable Gabon context;
 - true encrypted off-server backup destination;
 - device-OTP/trusted-device login contract before production.
 
-Next sprint: **Sprint 6 — Paiements, échéances, devis, reçus et justificatifs**.
+Next sprint: **Sprint 6 - Paiements, échéances, devis, reçus et justificatifs**.
 First dependency-ordered task: **Financial ledger: charges, installments, transactions and allocations**.
 Sprint 6 remains planning-only until Gate 1.

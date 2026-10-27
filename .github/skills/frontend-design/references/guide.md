@@ -1,4 +1,4 @@
-# frontend-design — detailed guide
+# frontend-design - detailed guide
 
 Loaded on demand from `../SKILL.md`.
 
@@ -14,7 +14,6 @@ Use this priority:
 6. this skill's design guidance
 
 Never use this skill to override an approved UI direction.
-
 
 ## Inspect Before Designing
 
@@ -35,7 +34,6 @@ Before changing UI, inspect:
 - related screens
 
 Do not begin by generating JSX/CSS blindly.
-
 
 ## Understand the User Task
 
@@ -58,7 +56,6 @@ What should happen next?
 Design hierarchy around the task.
 
 Do not design around decorative components.
-
 
 ## Preserve Existing Design Systems
 
@@ -85,7 +82,6 @@ existing component
 
 Do not create parallel component systems.
 
-
 ## Dependency Policy
 
 Do not install a new UI, animation, icon, chart, or styling dependency without explicit approval.
@@ -98,7 +94,6 @@ Before proposing one:
 4. identify bundle/maintenance impact
 
 Never install dependencies merely to achieve visual polish.
-
 
 ## Visual Direction
 
@@ -126,7 +121,6 @@ data-dense operational
 
 Do not choose a style because it is fashionable.
 
-
 ## Existing Business Applications
 
 For admin/business software, prioritize:
@@ -142,7 +136,6 @@ fast task completion
 over decorative experimentation.
 
 Avoid turning operational software into a marketing landing page.
-
 
 ## Visual Hierarchy
 
@@ -166,7 +159,6 @@ Use hierarchy through:
 - weight
 
 Do not rely on excessive borders, cards, badges, or colors.
-
 
 ## Avoid Generic AI UI
 
@@ -195,7 +187,6 @@ branding
 or comprehension
 ```
 
-
 ## Layout
 
 Prefer clear structural regions.
@@ -216,7 +207,6 @@ Avoid arbitrary offsets.
 
 Use whitespace intentionally.
 
-
 ## Spacing
 
 Follow existing spacing tokens where available.
@@ -232,7 +222,6 @@ card ↔ card
 ```
 
 Do not use random pixel values when tokens exist.
-
 
 ## Typography
 
@@ -250,7 +239,6 @@ Avoid using too many font sizes or weights.
 
 Do not introduce a new font without approval.
 
-
 ## Color
 
 Use existing project colors/tokens.
@@ -267,7 +255,6 @@ Avoid using color as the only indicator of meaning.
 
 Do not introduce decorative colors without purpose.
 
-
 ## Status Colors
 
 Status colors should remain consistent.
@@ -283,7 +270,6 @@ neutral
 ```
 
 Do not create slightly different shades for the same semantic state across pages.
-
 
 ## Forms
 
@@ -305,7 +291,6 @@ Check:
 
 Do not use placeholders as the only label.
 
-
 ## Form Layout
 
 Prefer one-column forms for complex input unless multiple columns genuinely improve comprehension.
@@ -318,7 +303,6 @@ On narrow viewports:
 multi-column
 → collapse to single column
 ```
-
 
 ## Validation UX
 
@@ -333,7 +317,6 @@ how to fix it
 Do not expose raw server/internal errors.
 
 Preserve typed business errors where they provide useful user guidance.
-
 
 ## Primary Actions
 
@@ -352,7 +335,6 @@ destructive
 
 consistently.
 
-
 ## Destructive Actions
 
 Destructive actions must:
@@ -364,7 +346,6 @@ Destructive actions must:
 - preserve project conventions
 
 Do not use aggressive confirmation dialogs for trivial reversible actions.
-
 
 ## Loading States
 
@@ -380,7 +361,6 @@ Prevent conflicting actions during critical mutations.
 
 Avoid full-page blocking loaders when only one region is loading.
 
-
 ## Empty States
 
 Empty state should explain:
@@ -394,7 +374,6 @@ what the user can do next
 when an action exists.
 
 Do not fill empty views with unnecessary illustrations unless the product style supports them.
-
 
 ## Error States
 
@@ -418,7 +397,6 @@ server failure
 
 where useful.
 
-
 ## Tables and Data-heavy Screens
 
 For tables:
@@ -432,7 +410,6 @@ For tables:
 - preserve readable density
 
 Use badges only for meaningful categorical/status information.
-
 
 ## Mobile Responsiveness
 
@@ -450,7 +427,6 @@ Consider:
 
 Avoid horizontal scrolling unless inherently required by data.
 
-
 ## Breakpoints
 
 Use project breakpoints.
@@ -465,7 +441,6 @@ tablet when relevant
 desktop
 ```
 
-
 ## Touch Targets
 
 Interactive targets should be comfortably usable on touch devices.
@@ -478,7 +453,6 @@ Avoid tiny:
 - menu triggers
 
 especially when actions are operationally important.
-
 
 ## Accessibility
 
@@ -499,7 +473,6 @@ Verify where applicable:
 
 ARIA should supplement semantics, not replace correct HTML.
 
-
 ## Keyboard Interaction
 
 Interactive UI should support expected keyboard behavior.
@@ -518,13 +491,11 @@ where relevant.
 
 Dialogs and menus need predictable focus behavior.
 
-
 ## Focus
 
 Never remove visible focus indicators without replacing them with an accessible alternative.
 
 After closing dialogs/modals, restore focus appropriately.
-
 
 ## Motion
 
@@ -539,7 +510,6 @@ Avoid decorative motion in operational apps.
 
 Respect reduced-motion preferences when substantial animation exists.
 
-
 ## Icons
 
 Use the project's existing icon system.
@@ -551,7 +521,6 @@ Icons should:
 - not replace labels where meaning is ambiguous
 
 Do not introduce emojis as UI icons unless the product deliberately uses them.
-
 
 ## UI Language and Localization
 
@@ -566,7 +535,6 @@ When the UI language is not English (for example French):
 - respect local date, number and currency formats
 
 Code, identifiers and technical internals follow the language rule in `PROJECT.md`.
-
 
 ## Copywriting
 
@@ -591,7 +559,6 @@ OK
 
 when the action can be named more precisely.
 
-
 ## Existing Components Before New Components
 
 Before creating a new component:
@@ -602,7 +569,6 @@ Before creating a new component:
 4. create a new one only when behavior is genuinely distinct
 
 Avoid near-duplicate component proliferation.
-
 
 ## Abstraction Threshold
 
@@ -617,7 +583,6 @@ Extract when there is shared:
 
 Avoid premature component architecture.
 
-
 ## Component Responsibility
 
 Prefer components with clear responsibilities.
@@ -630,7 +595,6 @@ Avoid:
 
 Follow existing project architecture.
 
-
 ## API Integration
 
 Use existing API/query/mutation layers.
@@ -638,7 +602,6 @@ Use existing API/query/mutation layers.
 Do not call endpoints ad hoc directly from components if the project uses an API abstraction.
 
 Use `api-contract-design` when API behavior changes.
-
 
 ## State Management
 
@@ -649,7 +612,6 @@ Prefer local state when state is local.
 Do not introduce global state management for convenience.
 
 Do not duplicate server state unnecessarily.
-
 
 ## Server State
 
@@ -665,7 +627,6 @@ follow existing patterns for:
 
 Do not create separate custom fetching conventions.
 
-
 ## Optimistic UI
 
 Use optimistic updates only when:
@@ -675,7 +636,6 @@ Use optimistic updates only when:
 - business invariants allow it
 
 Avoid optimistic state for sensitive/irreversible operations unless explicitly designed.
-
 
 ## Permission-sensitive UI
 
@@ -690,7 +650,6 @@ client visibility
 must both exist.
 
 The design skill may hide/disable actions appropriately but must never substitute UI behavior for authorization.
-
 
 ## Feedback
 
@@ -708,7 +667,6 @@ Avoid success toasts for every trivial interaction.
 
 Use persistent feedback when users need to reference the result.
 
-
 ## Dialogs
 
 Use dialogs when interruption is justified.
@@ -724,7 +682,6 @@ Dialogs should have:
 - keyboard behavior
 - responsive sizing
 
-
 ## Navigation
 
 Navigation should reflect user mental models, not code module structure.
@@ -732,7 +689,6 @@ Navigation should reflect user mental models, not code module structure.
 Maintain current project navigation conventions.
 
 Do not add a new navigation level for every new feature.
-
 
 ## Performance
 
@@ -745,7 +701,6 @@ Avoid visual implementation that causes unnecessary:
 - large dependencies
 
 Visual polish must not significantly degrade usability or load performance without justification.
-
 
 ## Stop Conditions
 

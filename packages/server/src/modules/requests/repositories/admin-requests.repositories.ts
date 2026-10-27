@@ -15,7 +15,13 @@ import { adminRequestAllowedTransitions } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
 import { auditEvents } from "../../../db/schema/auth.js";
 import { services, serviceVariants } from "../../../db/schema/catalogue.js";
-import { contactAttempts, prospects, qualificationReviews, serviceRequests, waitlistEntries } from "../../../db/schema/prospects.js";
+import {
+  contactAttempts,
+  prospects,
+  qualificationReviews,
+  serviceRequests,
+  waitlistEntries,
+} from "../../../db/schema/prospects.js";
 import { hashAuditContext } from "../../auth/services/audit.service.js";
 import type {
   AdminRequestActor,
@@ -25,7 +31,11 @@ import type {
   NormalizedCreateWaitlistEntryInput,
   NormalizedQualificationReviewInput,
 } from "../services/admin-requests.service.js";
-import { finalVariantRefusal, finalVariantRuleFor, type FinalVariantRefusal } from "../services/admin-requests.service.js";
+import {
+  finalVariantRefusal,
+  finalVariantRuleFor,
+  type FinalVariantRefusal,
+} from "../services/admin-requests.service.js";
 import { activeVariant } from "../../catalogue/repositories/catalogue-content.repository.js";
 import { prospectArchivable } from "../../privacy/services/privacy.policy.js";
 
@@ -75,7 +85,11 @@ const baseSelect = {
   requestedVariantName: serviceVariants.name,
 };
 
-function toSummary(row: BaseRow, lastContactAttemptAt: Date | null, nextActionAt: Date | null): AdminServiceRequestSummary {
+function toSummary(
+  row: BaseRow,
+  lastContactAttemptAt: Date | null,
+  nextActionAt: Date | null,
+): AdminServiceRequestSummary {
   return {
     id: row.id,
     reference: row.reference,
@@ -88,8 +102,12 @@ function toSummary(row: BaseRow, lastContactAttemptAt: Date | null, nextActionAt
       email: row.prospectEmail,
     },
     service: { id: row.serviceId, name: row.serviceName },
-    requestedVariant: row.requestedVariantId ? { id: row.requestedVariantId, name: row.requestedVariantName ?? "" } : null,
-    lastContactAttemptAt: lastContactAttemptAt ? lastContactAttemptAt.toISOString() : null,
+    requestedVariant: row.requestedVariantId
+      ? { id: row.requestedVariantId, name: row.requestedVariantName ?? "" }
+      : null,
+    lastContactAttemptAt: lastContactAttemptAt
+      ? lastContactAttemptAt.toISOString()
+      : null,
     nextActionAt: nextActionAt ? nextActionAt.toISOString() : null,
   };
 }
@@ -111,14 +129,18 @@ function toContactAttemptDto(attempt: {
     outcome: attempt.outcome as AdminContactAttempt["outcome"],
     note: attempt.note,
     occurredAt: attempt.occurredAt.toISOString(),
-    nextActionAt: attempt.nextActionAt ? attempt.nextActionAt.toISOString() : null,
+    nextActionAt: attempt.nextActionAt
+      ? attempt.nextActionAt.toISOString()
+      : null,
     createdByUserId: attempt.createdByUserId,
   };
 }
 
 function jsonStringList(value: unknown): string[] | null {
   if (!Array.isArray(value)) return null;
-  const strings = value.filter((item): item is string => typeof item === "string");
+  const strings = value.filter(
+    (item): item is string => typeof item === "string",
+  );
   return strings.length === value.length ? strings : null;
 }
 
@@ -142,13 +164,17 @@ function toQualificationReviewDto(review: {
     outcome: review.outcome as QualificationReviewOutcome,
     finalVariantId: review.finalVariantId,
     agreedPriceXaf: review.agreedPriceXaf,
-    targetStartDate: review.targetStartDate ? review.targetStartDate.toISOString() : null,
+    targetStartDate: review.targetStartDate
+      ? review.targetStartDate.toISOString()
+      : null,
     suitabilityNote: review.suitabilityNote,
     conditions: jsonStringList(review.conditionsJson),
     blockers: jsonStringList(review.blockersJson),
     createdByUserId: review.createdByUserId,
     createdAt: review.createdAt.toISOString(),
-    supersededAt: review.supersededAt ? review.supersededAt.toISOString() : null,
+    supersededAt: review.supersededAt
+      ? review.supersededAt.toISOString()
+      : null,
   };
 }
 
@@ -186,10 +212,15 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
       .from(serviceRequests)
       .innerJoin(prospects, eq(serviceRequests.prospectId, prospects.id))
       .innerJoin(services, eq(serviceRequests.serviceId, services.id))
-      .leftJoin(serviceVariants, eq(serviceRequests.requestedVariantId, serviceVariants.id));
+      .leftJoin(
+        serviceVariants,
+        eq(serviceRequests.requestedVariantId, serviceVariants.id),
+      );
   }
 
-  private async latestContactAttemptByRequest(requestIds: string[]): Promise<Map<string, { occurredAt: Date; nextActionAt: Date | null }>> {
+  private async latestContactAttemptByRequest(
+    requestIds: string[],
+  ): Promise<Map<string, { occurredAt: Date; nextActionAt: Date | null }>> {
     if (requestIds.length === 0) return new Map();
 
     const rows = await this.database
@@ -202,33 +233,53 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
       .where(inArray(contactAttempts.requestId, requestIds))
       .orderBy(desc(contactAttempts.occurredAt));
 
-    const latest = new Map<string, { occurredAt: Date; nextActionAt: Date | null }>();
+    const latest = new Map<
+      string,
+      { occurredAt: Date; nextActionAt: Date | null }
+    >();
     for (const row of rows) {
       if (!row.requestId || latest.has(row.requestId)) continue;
-      latest.set(row.requestId, { occurredAt: row.occurredAt, nextActionAt: row.nextActionAt });
+      latest.set(row.requestId, {
+        occurredAt: row.occurredAt,
+        nextActionAt: row.nextActionAt,
+      });
     }
     return latest;
   }
 
-  async listQueue(filter: { status?: ServiceRequestStatus }): Promise<AdminServiceRequestSummary[]> {
+  async listQueue(filter: {
+    status?: ServiceRequestStatus;
+  }): Promise<AdminServiceRequestSummary[]> {
     const query = this.baseQuery();
     // S7.3 (D5): anonymized prospects leave the named queue; their requests stay reachable by id.
     const visible = isNull(prospects.anonymizedAt);
     const rows = filter.status
-      ? await query.where(and(visible, eq(serviceRequests.status, filter.status))).orderBy(desc(serviceRequests.submittedAt))
+      ? await query
+          .where(and(visible, eq(serviceRequests.status, filter.status)))
+          .orderBy(desc(serviceRequests.submittedAt))
       : await query.where(visible).orderBy(desc(serviceRequests.submittedAt));
 
     if (rows.length === 0) return [];
 
-    const lastAttempts = await this.latestContactAttemptByRequest(rows.map((row) => row.id));
+    const lastAttempts = await this.latestContactAttemptByRequest(
+      rows.map((row) => row.id),
+    );
     return rows.map((row) => {
       const last = lastAttempts.get(row.id) ?? null;
-      return toSummary(row, last?.occurredAt ?? null, last?.nextActionAt ?? null);
+      return toSummary(
+        row,
+        last?.occurredAt ?? null,
+        last?.nextActionAt ?? null,
+      );
     });
   }
 
-  async getDetail(requestId: string): Promise<AdminServiceRequestDetail | null> {
-    const [row] = await this.baseQuery().where(eq(serviceRequests.id, requestId)).limit(1);
+  async getDetail(
+    requestId: string,
+  ): Promise<AdminServiceRequestDetail | null> {
+    const [row] = await this.baseQuery()
+      .where(eq(serviceRequests.id, requestId))
+      .limit(1);
     if (!row) return null;
 
     const attempts = await this.database
@@ -282,11 +333,24 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
       .where(eq(waitlistEntries.requestId, requestId))
       .orderBy(asc(waitlistEntries.enteredAt), asc(waitlistEntries.id));
 
-    const summary = toSummary(row, attempts[0]?.occurredAt ?? null, attempts[0]?.nextActionAt ?? null);
+    const summary = toSummary(
+      row,
+      attempts[0]?.occurredAt ?? null,
+      attempts[0]?.nextActionAt ?? null,
+    );
     // S7.3b D5: privacy flags of the prospect, computed over every request they made.
-    const [privacy] = await this.database.select({ archivedAt: prospects.archivedAt, anonymizedAt: prospects.anonymizedAt })
-      .from(prospects).where(eq(prospects.id, row.prospectId)).limit(1);
-    const requestStatuses = await this.database.select({ status: serviceRequests.status }).from(serviceRequests).where(eq(serviceRequests.prospectId, row.prospectId));
+    const [privacy] = await this.database
+      .select({
+        archivedAt: prospects.archivedAt,
+        anonymizedAt: prospects.anonymizedAt,
+      })
+      .from(prospects)
+      .where(eq(prospects.id, row.prospectId))
+      .limit(1);
+    const requestStatuses = await this.database
+      .select({ status: serviceRequests.status })
+      .from(serviceRequests)
+      .where(eq(serviceRequests.prospectId, row.prospectId));
     const archivedAt = privacy?.archivedAt ?? null;
 
     return {
@@ -294,12 +358,18 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
       prospect: {
         ...summary.prospect,
         privacy: {
-          archivedAt: archivedAt?.toISOString() ?? null, anonymizedAt: privacy?.anonymizedAt?.toISOString() ?? null,
-          archivable: prospectArchivable(archivedAt, requestStatuses.map((request) => request.status)),
+          archivedAt: archivedAt?.toISOString() ?? null,
+          anonymizedAt: privacy?.anonymizedAt?.toISOString() ?? null,
+          archivable: prospectArchivable(
+            archivedAt,
+            requestStatuses.map((request) => request.status),
+          ),
         },
       },
       objective: row.objective,
-      preferredStartDate: row.preferredStartDate ? row.preferredStartDate.toISOString() : null,
+      preferredStartDate: row.preferredStartDate
+        ? row.preferredStartDate.toISOString()
+        : null,
       message: row.message,
       duplicateOfRequestId: row.duplicateOfRequestId,
       contactAttempts: attempts.map(toContactAttemptDto),
@@ -316,11 +386,20 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
     actor: AdminRequestActor,
     auditContext: AdminRequestAuditContext,
     now: Date,
-  ): Promise<{ contactAttempt: AdminContactAttempt; request: AdminServiceRequestSummary } | "not_found"> {
+  ): Promise<
+    | {
+        contactAttempt: AdminContactAttempt;
+        request: AdminServiceRequestSummary;
+      }
+    | "not_found"
+  > {
     return this.database.transaction(async (tx) => {
       await assertProspectWritable(tx, { requestId });
       const [requestRow] = await tx
-        .select({ id: serviceRequests.id, prospectId: serviceRequests.prospectId })
+        .select({
+          id: serviceRequests.id,
+          prospectId: serviceRequests.prospectId,
+        })
         .from(serviceRequests)
         .where(eq(serviceRequests.id, requestId))
         .for("update")
@@ -355,7 +434,7 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
       if (!inserted) throw new Error("Contact attempt insert returned no row");
 
       // Audit insert MUST use `tx`, not the shared AuditService (which holds the
-      // top-level pooled db handle) — this is what makes the write and its audit
+      // top-level pooled db handle) - this is what makes the write and its audit
       // event atomic per S3.3's architecture condition.
       await tx.insert(auditEvents).values({
         actorUserId: actor.userId,
@@ -364,18 +443,36 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
         entityType: "service_request",
         entityId: requestRow.id,
         result: "success",
-        ipHash: hashAuditContext(auditContext.ipAddress, this.options.auditHashPepper),
-        userAgentHash: hashAuditContext(auditContext.userAgent, this.options.auditHashPepper),
-        metadataJson: { channel: input.channel, direction: input.direction, outcome: input.outcome },
+        ipHash: hashAuditContext(
+          auditContext.ipAddress,
+          this.options.auditHashPepper,
+        ),
+        userAgentHash: hashAuditContext(
+          auditContext.userAgent,
+          this.options.auditHashPepper,
+        ),
+        metadataJson: {
+          channel: input.channel,
+          direction: input.direction,
+          outcome: input.outcome,
+        },
       });
 
-      const [detailRow] = await this.baseQueryTx(tx).where(eq(serviceRequests.id, requestId)).limit(1);
-      if (!detailRow) throw new Error("Service request disappeared inside its own transaction");
+      const [detailRow] = await this.baseQueryTx(tx)
+        .where(eq(serviceRequests.id, requestId))
+        .limit(1);
+      if (!detailRow)
+        throw new Error(
+          "Service request disappeared inside its own transaction",
+        );
 
       // Re-query the true latest attempt rather than assuming the one just inserted
-      // is it — a backdated occurredAt on this insert must not shadow a later attempt.
+      // is it - a backdated occurredAt on this insert must not shadow a later attempt.
       const [latestAttempt] = await tx
-        .select({ occurredAt: contactAttempts.occurredAt, nextActionAt: contactAttempts.nextActionAt })
+        .select({
+          occurredAt: contactAttempts.occurredAt,
+          nextActionAt: contactAttempts.nextActionAt,
+        })
         .from(contactAttempts)
         .where(eq(contactAttempts.requestId, requestId))
         .orderBy(desc(contactAttempts.occurredAt))
@@ -383,7 +480,11 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
 
       return {
         contactAttempt: toContactAttemptDto(inserted),
-        request: toSummary(detailRow, latestAttempt?.occurredAt ?? null, latestAttempt?.nextActionAt ?? null),
+        request: toSummary(
+          detailRow,
+          latestAttempt?.occurredAt ?? null,
+          latestAttempt?.nextActionAt ?? null,
+        ),
       };
     });
   }
@@ -394,7 +495,9 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
     actor: AdminRequestActor,
     auditContext: AdminRequestAuditContext,
     now: Date,
-  ): Promise<{ request: AdminServiceRequestSummary } | "not_found" | "invalid_transition"> {
+  ): Promise<
+    { request: AdminServiceRequestSummary } | "not_found" | "invalid_transition"
+  > {
     return this.database.transaction(async (tx) => {
       await assertProspectWritable(tx, { requestId });
       const [requestRow] = await tx
@@ -406,8 +509,10 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
 
       if (!requestRow) return "not_found" as const;
 
-      const allowedTargets = adminRequestAllowedTransitions[requestRow.status] ?? [];
-      if (!allowedTargets.includes(toStatus)) return "invalid_transition" as const;
+      const allowedTargets =
+        adminRequestAllowedTransitions[requestRow.status] ?? [];
+      if (!allowedTargets.includes(toStatus))
+        return "invalid_transition" as const;
 
       const fromStatus = requestRow.status;
 
@@ -425,22 +530,42 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
         entityType: "service_request",
         entityId: requestRow.id,
         result: "success",
-        ipHash: hashAuditContext(auditContext.ipAddress, this.options.auditHashPepper),
-        userAgentHash: hashAuditContext(auditContext.userAgent, this.options.auditHashPepper),
+        ipHash: hashAuditContext(
+          auditContext.ipAddress,
+          this.options.auditHashPepper,
+        ),
+        userAgentHash: hashAuditContext(
+          auditContext.userAgent,
+          this.options.auditHashPepper,
+        ),
         metadataJson: { fromStatus, toStatus },
       });
 
-      const [detailRow] = await this.baseQueryTx(tx).where(eq(serviceRequests.id, requestId)).limit(1);
-      if (!detailRow) throw new Error("Service request disappeared inside its own transaction");
+      const [detailRow] = await this.baseQueryTx(tx)
+        .where(eq(serviceRequests.id, requestId))
+        .limit(1);
+      if (!detailRow)
+        throw new Error(
+          "Service request disappeared inside its own transaction",
+        );
 
       const lastAttempts = await tx
-        .select({ occurredAt: contactAttempts.occurredAt, nextActionAt: contactAttempts.nextActionAt })
+        .select({
+          occurredAt: contactAttempts.occurredAt,
+          nextActionAt: contactAttempts.nextActionAt,
+        })
         .from(contactAttempts)
         .where(eq(contactAttempts.requestId, requestId))
         .orderBy(desc(contactAttempts.occurredAt))
         .limit(1);
 
-      return { request: toSummary(detailRow, lastAttempts[0]?.occurredAt ?? null, lastAttempts[0]?.nextActionAt ?? null) };
+      return {
+        request: toSummary(
+          detailRow,
+          lastAttempts[0]?.occurredAt ?? null,
+          lastAttempts[0]?.nextActionAt ?? null,
+        ),
+      };
     });
   }
 
@@ -451,7 +576,10 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
     auditContext: AdminRequestAuditContext,
     now: Date,
   ): Promise<
-    | { qualificationReview: AdminQualificationReview; request: AdminServiceRequestSummary }
+    | {
+        qualificationReview: AdminQualificationReview;
+        request: AdminServiceRequestSummary;
+      }
     | "not_found"
     | "invalid_transition"
     | "variant_invalid"
@@ -460,36 +588,62 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
     return this.database.transaction(async (tx) => {
       await assertProspectWritable(tx, { requestId });
       const [requestRow] = await tx
-        .select({ id: serviceRequests.id, status: serviceRequests.status, serviceId: serviceRequests.serviceId })
+        .select({
+          id: serviceRequests.id,
+          status: serviceRequests.status,
+          serviceId: serviceRequests.serviceId,
+        })
         .from(serviceRequests)
         .where(eq(serviceRequests.id, requestId))
         .for("update")
         .limit(1);
 
       if (!requestRow) return "not_found" as const;
-      if (requestRow.status !== "qualification_in_progress") return "invalid_transition" as const;
+      if (requestRow.status !== "qualification_in_progress")
+        return "invalid_transition" as const;
 
       if (input.outcome !== "rejected") {
-        const [active] = await tx.select({ total: count() }).from(serviceVariants).where(and(eq(serviceVariants.serviceId, requestRow.serviceId), activeVariant));
-        const refusal = finalVariantRefusal(finalVariantRuleFor(active?.total ?? 0), input.finalVariantId);
+        const [active] = await tx
+          .select({ total: count() })
+          .from(serviceVariants)
+          .where(
+            and(
+              eq(serviceVariants.serviceId, requestRow.serviceId),
+              activeVariant,
+            ),
+          );
+        const refusal = finalVariantRefusal(
+          finalVariantRuleFor(active?.total ?? 0),
+          input.finalVariantId,
+        );
         if (refusal) return refusal;
       }
       if (input.finalVariantId) {
         const [ownedVariant] = await tx
           .select({ id: serviceVariants.id })
           .from(serviceVariants)
-          .where(and(eq(serviceVariants.id, input.finalVariantId), eq(serviceVariants.serviceId, requestRow.serviceId), activeVariant))
+          .where(
+            and(
+              eq(serviceVariants.id, input.finalVariantId),
+              eq(serviceVariants.serviceId, requestRow.serviceId),
+              activeVariant,
+            ),
+          )
           .limit(1);
         if (!ownedVariant) return "variant_invalid" as const;
       }
 
       const existingReviews = await tx
-        .select({ version: qualificationReviews.version, supersededAt: qualificationReviews.supersededAt })
+        .select({
+          version: qualificationReviews.version,
+          supersededAt: qualificationReviews.supersededAt,
+        })
         .from(qualificationReviews)
         .where(eq(qualificationReviews.requestId, requestId))
         .orderBy(desc(qualificationReviews.version));
 
-      if (existingReviews.some((review) => review.supersededAt === null)) return "invalid_transition" as const;
+      if (existingReviews.some((review) => review.supersededAt === null))
+        return "invalid_transition" as const;
 
       const version = (existingReviews[0]?.version ?? 0) + 1;
       const toStatus = input.outcome;
@@ -525,7 +679,8 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
           supersededAt: qualificationReviews.supersededAt,
         });
 
-      if (!inserted) throw new Error("Qualification review insert returned no row");
+      if (!inserted)
+        throw new Error("Qualification review insert returned no row");
 
       await tx
         .update(serviceRequests)
@@ -539,16 +694,35 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
         entityType: "service_request",
         entityId: requestId,
         result: "success",
-        ipHash: hashAuditContext(auditContext.ipAddress, this.options.auditHashPepper),
-        userAgentHash: hashAuditContext(auditContext.userAgent, this.options.auditHashPepper),
-        metadataJson: { version, outcome: input.outcome, fromStatus: "qualification_in_progress", toStatus },
+        ipHash: hashAuditContext(
+          auditContext.ipAddress,
+          this.options.auditHashPepper,
+        ),
+        userAgentHash: hashAuditContext(
+          auditContext.userAgent,
+          this.options.auditHashPepper,
+        ),
+        metadataJson: {
+          version,
+          outcome: input.outcome,
+          fromStatus: "qualification_in_progress",
+          toStatus,
+        },
       });
 
-      const [detailRow] = await this.baseQueryTx(tx).where(eq(serviceRequests.id, requestId)).limit(1);
-      if (!detailRow) throw new Error("Service request disappeared inside its own transaction");
+      const [detailRow] = await this.baseQueryTx(tx)
+        .where(eq(serviceRequests.id, requestId))
+        .limit(1);
+      if (!detailRow)
+        throw new Error(
+          "Service request disappeared inside its own transaction",
+        );
 
       const [latestAttempt] = await tx
-        .select({ occurredAt: contactAttempts.occurredAt, nextActionAt: contactAttempts.nextActionAt })
+        .select({
+          occurredAt: contactAttempts.occurredAt,
+          nextActionAt: contactAttempts.nextActionAt,
+        })
         .from(contactAttempts)
         .where(eq(contactAttempts.requestId, requestId))
         .orderBy(desc(contactAttempts.occurredAt))
@@ -556,7 +730,11 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
 
       return {
         qualificationReview: toQualificationReviewDto(inserted),
-        request: toSummary(detailRow, latestAttempt?.occurredAt ?? null, latestAttempt?.nextActionAt ?? null),
+        request: toSummary(
+          detailRow,
+          latestAttempt?.occurredAt ?? null,
+          latestAttempt?.nextActionAt ?? null,
+        ),
       };
     });
   }
@@ -590,7 +768,12 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
         .limit(1);
 
       if (!requestRow) return "not_found" as const;
-      if (!["submitted", "contacting", "qualification_in_progress"].includes(requestRow.status)) return "invalid_transition" as const;
+      if (
+        !["submitted", "contacting", "qualification_in_progress"].includes(
+          requestRow.status,
+        )
+      )
+        return "invalid_transition" as const;
 
       const [serviceRow] = await tx
         .select({
@@ -604,24 +787,47 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
         .limit(1);
 
       if (!serviceRow) return "not_eligible" as const;
-      const serviceCanWaitlist = serviceRow.availabilityStatus === "waitlist_only" || serviceRow.waitlistEnabled;
-      if (serviceRow.archivedAt !== null || serviceRow.availabilityStatus === "archived" || !serviceCanWaitlist) return "not_eligible" as const;
+      const serviceCanWaitlist =
+        serviceRow.availabilityStatus === "waitlist_only" ||
+        serviceRow.waitlistEnabled;
+      if (
+        serviceRow.archivedAt !== null ||
+        serviceRow.availabilityStatus === "archived" ||
+        !serviceCanWaitlist
+      )
+        return "not_eligible" as const;
 
       const activeRows = await tx
         .select({ id: waitlistEntries.id })
         .from(waitlistEntries)
-        .where(and(eq(waitlistEntries.requestId, requestId), eq(waitlistEntries.status, "active"), isNull(waitlistEntries.leftAt)))
+        .where(
+          and(
+            eq(waitlistEntries.requestId, requestId),
+            eq(waitlistEntries.status, "active"),
+            isNull(waitlistEntries.leftAt),
+          ),
+        )
         .limit(1);
       if (activeRows.length > 0) return "already_active" as const;
 
       const variantId = input.variantId ?? requestRow.requestedVariantId;
       if (variantId) {
         const [ownedVariant] = await tx
-          .select({ id: serviceVariants.id, availabilityStatus: serviceVariants.availabilityStatus })
+          .select({
+            id: serviceVariants.id,
+            availabilityStatus: serviceVariants.availabilityStatus,
+          })
           .from(serviceVariants)
-          .where(and(eq(serviceVariants.id, variantId), eq(serviceVariants.serviceId, requestRow.serviceId), isNull(serviceVariants.archivedAt)))
+          .where(
+            and(
+              eq(serviceVariants.id, variantId),
+              eq(serviceVariants.serviceId, requestRow.serviceId),
+              isNull(serviceVariants.archivedAt),
+            ),
+          )
           .limit(1);
-        if (!ownedVariant || ownedVariant.availabilityStatus === "archived") return "variant_invalid" as const;
+        if (!ownedVariant || ownedVariant.availabilityStatus === "archived")
+          return "variant_invalid" as const;
       }
 
       const fromStatus = requestRow.status;
@@ -661,16 +867,36 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
         entityType: "service_request",
         entityId: requestId,
         result: "success",
-        ipHash: hashAuditContext(auditContext.ipAddress, this.options.auditHashPepper),
-        userAgentHash: hashAuditContext(auditContext.userAgent, this.options.auditHashPepper),
-        metadataJson: { waitlistEntryId: inserted.id, fromStatus, toStatus: "waitlisted", serviceId: requestRow.serviceId, variantId },
+        ipHash: hashAuditContext(
+          auditContext.ipAddress,
+          this.options.auditHashPepper,
+        ),
+        userAgentHash: hashAuditContext(
+          auditContext.userAgent,
+          this.options.auditHashPepper,
+        ),
+        metadataJson: {
+          waitlistEntryId: inserted.id,
+          fromStatus,
+          toStatus: "waitlisted",
+          serviceId: requestRow.serviceId,
+          variantId,
+        },
       });
 
-      const [detailRow] = await this.baseQueryTx(tx).where(eq(serviceRequests.id, requestId)).limit(1);
-      if (!detailRow) throw new Error("Service request disappeared inside its own transaction");
+      const [detailRow] = await this.baseQueryTx(tx)
+        .where(eq(serviceRequests.id, requestId))
+        .limit(1);
+      if (!detailRow)
+        throw new Error(
+          "Service request disappeared inside its own transaction",
+        );
 
       const [latestAttempt] = await tx
-        .select({ occurredAt: contactAttempts.occurredAt, nextActionAt: contactAttempts.nextActionAt })
+        .select({
+          occurredAt: contactAttempts.occurredAt,
+          nextActionAt: contactAttempts.nextActionAt,
+        })
         .from(contactAttempts)
         .where(eq(contactAttempts.requestId, requestId))
         .orderBy(desc(contactAttempts.occurredAt))
@@ -678,7 +904,11 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
 
       return {
         waitlistEntry: toWaitlistEntryDto(inserted),
-        request: toSummary(detailRow, latestAttempt?.occurredAt ?? null, latestAttempt?.nextActionAt ?? null),
+        request: toSummary(
+          detailRow,
+          latestAttempt?.occurredAt ?? null,
+          latestAttempt?.nextActionAt ?? null,
+        ),
       };
     });
   }
@@ -704,7 +934,8 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
         .limit(1);
 
       if (!requestRow) return "not_found" as const;
-      if (requestRow.status !== "waitlisted") return "invalid_transition" as const;
+      if (requestRow.status !== "waitlisted")
+        return "invalid_transition" as const;
 
       const [activeEntry] = await tx
         .select({
@@ -718,7 +949,13 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
           leftAt: waitlistEntries.leftAt,
         })
         .from(waitlistEntries)
-        .where(and(eq(waitlistEntries.requestId, requestId), eq(waitlistEntries.status, "active"), isNull(waitlistEntries.leftAt)))
+        .where(
+          and(
+            eq(waitlistEntries.requestId, requestId),
+            eq(waitlistEntries.status, "active"),
+            isNull(waitlistEntries.leftAt),
+          ),
+        )
         .orderBy(asc(waitlistEntries.enteredAt), asc(waitlistEntries.id))
         .limit(1);
 
@@ -739,7 +976,8 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
           leftAt: waitlistEntries.leftAt,
         });
 
-      if (!updatedEntry) throw new Error("Waitlist entry update returned no row");
+      if (!updatedEntry)
+        throw new Error("Waitlist entry update returned no row");
 
       await tx
         .update(serviceRequests)
@@ -753,16 +991,34 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
         entityType: "service_request",
         entityId: requestId,
         result: "success",
-        ipHash: hashAuditContext(auditContext.ipAddress, this.options.auditHashPepper),
-        userAgentHash: hashAuditContext(auditContext.userAgent, this.options.auditHashPepper),
-        metadataJson: { waitlistEntryId: activeEntry.id, fromStatus: "waitlisted", toStatus: "abandoned" },
+        ipHash: hashAuditContext(
+          auditContext.ipAddress,
+          this.options.auditHashPepper,
+        ),
+        userAgentHash: hashAuditContext(
+          auditContext.userAgent,
+          this.options.auditHashPepper,
+        ),
+        metadataJson: {
+          waitlistEntryId: activeEntry.id,
+          fromStatus: "waitlisted",
+          toStatus: "abandoned",
+        },
       });
 
-      const [detailRow] = await this.baseQueryTx(tx).where(eq(serviceRequests.id, requestId)).limit(1);
-      if (!detailRow) throw new Error("Service request disappeared inside its own transaction");
+      const [detailRow] = await this.baseQueryTx(tx)
+        .where(eq(serviceRequests.id, requestId))
+        .limit(1);
+      if (!detailRow)
+        throw new Error(
+          "Service request disappeared inside its own transaction",
+        );
 
       const [latestAttempt] = await tx
-        .select({ occurredAt: contactAttempts.occurredAt, nextActionAt: contactAttempts.nextActionAt })
+        .select({
+          occurredAt: contactAttempts.occurredAt,
+          nextActionAt: contactAttempts.nextActionAt,
+        })
         .from(contactAttempts)
         .where(eq(contactAttempts.requestId, requestId))
         .orderBy(desc(contactAttempts.occurredAt))
@@ -770,12 +1026,18 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
 
       return {
         waitlistEntry: toWaitlistEntryDto(updatedEntry),
-        request: toSummary(detailRow, latestAttempt?.occurredAt ?? null, latestAttempt?.nextActionAt ?? null),
+        request: toSummary(
+          detailRow,
+          latestAttempt?.occurredAt ?? null,
+          latestAttempt?.nextActionAt ?? null,
+        ),
       };
     });
   }
 
-  private async variantsForService(serviceId: string): Promise<AdminServiceRequestVariant[]> {
+  private async variantsForService(
+    serviceId: string,
+  ): Promise<AdminServiceRequestVariant[]> {
     const rows = await this.database
       .select({ id: serviceVariants.id, name: serviceVariants.name })
       .from(serviceVariants)
@@ -785,12 +1047,21 @@ export class DrizzleAdminRequestsRepository implements AdminRequestsRepository {
     return rows.map((row) => ({ id: row.id, name: row.name }));
   }
 
-  private baseQueryTx(tx: Parameters<AdminRequestsDb["transaction"]>[0] extends (tx: infer T) => unknown ? T : never) {
+  private baseQueryTx(
+    tx: Parameters<AdminRequestsDb["transaction"]>[0] extends (
+      tx: infer T,
+    ) => unknown
+      ? T
+      : never,
+  ) {
     return tx
       .select(baseSelect)
       .from(serviceRequests)
       .innerJoin(prospects, eq(serviceRequests.prospectId, prospects.id))
       .innerJoin(services, eq(serviceRequests.serviceId, services.id))
-      .leftJoin(serviceVariants, eq(serviceRequests.requestedVariantId, serviceVariants.id));
+      .leftJoin(
+        serviceVariants,
+        eq(serviceRequests.requestedVariantId, serviceVariants.id),
+      );
   }
 }

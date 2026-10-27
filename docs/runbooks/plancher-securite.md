@@ -17,16 +17,17 @@ Le plancher de sécurité est la liste des failles connues de **Node.js lui-mêm
 Entrée actuelle : `CVE-2026-111497` (décodeur Brotli), versions minimales `22.23.4`, `24.22.1`, `26.12.1`.
 
 Règles :
+
 - Une ligne majeure absente de l'entrée (Node 20, Node 23…) est **non prise en charge** : refusée.
 - Une version illisible (préversion, suffixe de build) est refusée.
 
 Trois endroits lisent cette même table :
 
-| Où | Effet sous le plancher |
-| --- | --- |
-| `npm run security:check` (et la CI, juste après l'installation de Node) | `✖ security:check — Node <version> is below the runtime security floor:` puis une ligne par faille ; code de sortie `1`. |
-| Démarrage en production | Refus avec le code `SECURITY_FLOOR` ([démarrage production](demarrage-production.md)). |
-| Démarrage en développement | Un avertissement `SECURITY_FLOOR_NOT_MET {…}` ; l'API démarre quand même. |
+| Où                                                                      | Effet sous le plancher                                                                                                   |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `npm run security:check` (et la CI, juste après l'installation de Node) | `✖ security:check - Node <version> is below the runtime security floor:` puis une ligne par faille ; code de sortie `1`. |
+| Démarrage en production                                                 | Refus avec le code `SECURITY_FLOOR` ([démarrage production](demarrage-production.md)).                                   |
+| Démarrage en développement                                              | Un avertissement `SECURITY_FLOOR_NOT_MET {…}` ; l'API démarre quand même.                                                |
 
 ## 2. Vérifier
 
@@ -34,7 +35,7 @@ Trois endroits lisent cette même table :
 npm run security:check
 ```
 
-Attendu : `✔ security:check — Node v22.23.4 meets the runtime security floor` (avec la version installée), code `0`.
+Attendu : `✔ security:check - Node v22.23.4 meets the runtime security floor` (avec la version installée), code `0`.
 
 ## 3. Ajouter la prochaine faille
 
@@ -45,6 +46,7 @@ Attendu : `✔ security:check — Node v22.23.4 meets the runtime security floor
    ```
 
    Lister **chaque** ligne majeure encore prise en charge. Une ligne oubliée devient « non prise en charge » et sera refusée partout.
+
 2. Ajouter un test dans `packages/server/src/security/security-floor.test.ts` : une version juste sous le minimum échoue, et la version minimale passe, pour chaque ligne.
 3. Mettre à jour Node (§ 4) si la version actuelle passe sous le nouveau plancher.
 4. Lancer `npm run security:check`, `npm test`, puis `npm run docs:check`.
@@ -63,5 +65,6 @@ Aucun autre fichier à modifier : le script de CI et le contrôle de démarrage 
 ## 5. Revue mensuelle
 
 Chaque mois :
+
 - `npm audit` à la racine (failles des paquets) ;
 - relire les avis de sécurité de Node.js et ajouter une entrée au plancher si une faille touche une ligne prise en charge (§ 3).

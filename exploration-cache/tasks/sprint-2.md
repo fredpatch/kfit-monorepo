@@ -1,4 +1,4 @@
-# Sprint 2 — Catalogue, service offers and public availability
+# Sprint 2 - Catalogue, service offers and public availability
 
 > Branch: `sprint-2/catalogue-foundation`  
 > Status: Closed and locally validated on 2026-09-17
@@ -9,12 +9,12 @@ Build the K'FIT catalogue foundation before prospects/client workflows: public s
 
 ## Validated slices
 
-- [x] S2.1 — Catalogue public API foundation.
-- [x] S2.2 — Initial services/variants/components/policies seed.
-- [x] S2.3 — Admin catalogue editing foundation.
-- [x] S2.4 — Public landing page catalogue consumption.
-- [x] S2.5 — Capacity/waitlist controls.
-- [x] S2.6 — Admin UI capacity / waitlist controls.
+- [x] S2.1 - Catalogue public API foundation.
+- [x] S2.2 - Initial services/variants/components/policies seed.
+- [x] S2.3 - Admin catalogue editing foundation.
+- [x] S2.4 - Public landing page catalogue consumption.
+- [x] S2.5 - Capacity/waitlist controls.
+- [x] S2.6 - Admin UI capacity / waitlist controls.
 
 ## S2.6 validated boundary
 

@@ -24,7 +24,7 @@ Follow `AGENTS.md` (commands, safety, validation integrity), `WORKFLOW.md`, and 
 
 Before editing, confirm the conversation contains the developer's explicit approval of a specific plan ("Approved", "Go ahead with <slice>", "Implement this plan", or the Planner handoff after such approval).
 
-Missing → stop and report `⏳ Awaiting — developer's plan approval`. Do not edit.
+Missing → stop and report `⏳ Awaiting - developer's plan approval`. Do not edit.
 
 ## Before writing
 

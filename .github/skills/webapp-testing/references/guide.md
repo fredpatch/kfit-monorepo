@@ -1,4 +1,4 @@
-# webapp-testing — detailed guide
+# webapp-testing - detailed guide
 
 Loaded on demand from `../SKILL.md`.
 
@@ -17,7 +17,6 @@ Do not install a new browser-testing dependency without approval.
 
 If browser automation is unavailable, report the limitation explicitly.
 
-
 ## Explore Before Testing
 
 Before creating or running detailed browser scenarios:
@@ -34,7 +33,6 @@ Before creating or running detailed browser scenarios:
 When browser access exists, explore the application before inventing selectors or assertions.
 
 Do not assume the rendered DOM structure from source code alone.
-
 
 ## Acceptance-Criteria First
 
@@ -58,7 +56,6 @@ Observable checks:
 
 Every meaningful test must trace back to an acceptance criterion or known regression risk.
 
-
 ## Test Pyramid for Feature QA
 
 Prefer the smallest useful layer first:
@@ -74,7 +71,6 @@ unit
 Do not use browser tests to replace inexpensive unit/integration tests.
 
 Do not rely only on unit tests for user-facing behavior.
-
 
 ## User Flow Mapping
 
@@ -103,7 +99,6 @@ catalogue
 
 Use this map to decide what QA evidence is needed.
 
-
 ## Browser Smoke Testing
 
 At minimum verify relevant:
@@ -118,7 +113,6 @@ At minimum verify relevant:
 - no critical console errors occur
 
 Do not turn every smoke test into a full end-to-end suite.
-
 
 ## Forms
 
@@ -143,7 +137,6 @@ Client validation is supplementary.
 
 Where possible verify that the server still rejects invalid requests independently.
 
-
 ## Double Submission
 
 For mutations, explicitly test repeated interaction where relevant.
@@ -161,7 +154,6 @@ Confirm the UI does not create unintended duplicate actions.
 
 When server idempotency exists, validate it separately at API/integration level.
 
-
 ## Loading State
 
 Verify that asynchronous UI has an intentional loading state.
@@ -176,7 +168,6 @@ Check:
 Avoid asserting exact animation timing.
 
 Test user-observable state.
-
 
 ## Error State
 
@@ -197,7 +188,6 @@ Use project-specific mappings.
 
 The UI should not expose raw internal errors.
 
-
 ## Success State
 
 A successful mutation should have observable feedback.
@@ -211,7 +201,6 @@ Examples:
 - disabled completed action
 
 Confirm success reflects the persisted backend result where possible.
-
 
 ## API / Network Inspection
 
@@ -232,7 +221,6 @@ authorization/session headers where relevant
 
 Never expose secrets/tokens in reports.
 
-
 ## Browser Console
 
 Check for unexpected:
@@ -249,7 +237,6 @@ Do not fail a feature solely because of unrelated pre-existing console noise.
 
 Record baseline noise separately.
 
-
 ## Authentication Flows
 
 When testing authentication:
@@ -265,7 +252,6 @@ When testing authentication:
 Never store real passwords in test source.
 
 Use dedicated synthetic local/test accounts.
-
 
 ## Authorization / Roles
 
@@ -289,7 +275,6 @@ direct API request receives 403
 
 UI hiding alone is not a passing authorization test.
 
-
 ## Public Endpoints
 
 For unauthenticated public flows, consider:
@@ -303,7 +288,6 @@ For unauthenticated public flows, consider:
 - typed errors
 
 Do not trigger excessive requests against shared environments.
-
 
 ## Responsive Testing
 
@@ -328,7 +312,6 @@ Look for:
 - incorrect modal/dialog sizing
 
 Do not require pixel-identical rendering across viewport sizes.
-
 
 ## Accessibility Smoke Checks
 
@@ -359,7 +342,6 @@ application is WCAG compliant
 
 unless a dedicated audit was performed.
 
-
 ## Keyboard Testing
 
 For important interactions verify where relevant:
@@ -382,7 +364,6 @@ Especially:
 
 Do not assume mouse behavior proves keyboard accessibility.
 
-
 ## Browser Compatibility
 
 Only test multiple browser engines when required by the project's support policy.
@@ -399,7 +380,6 @@ Do not multiply test execution without a requirement.
 
 For most development smoke tests, the project's primary browser may be sufficient.
 
-
 ## Visual Verification
 
 Screenshots can be useful for:
@@ -413,7 +393,6 @@ Screenshots can be useful for:
 Do not use screenshots as proof of server-side correctness.
 
 Prefer semantic assertions over image comparison unless the project intentionally uses visual-regression tests.
-
 
 ## Selectors
 
@@ -440,7 +419,6 @@ visual position
 
 Do not change production markup solely to make a one-off QA session easier without approval.
 
-
 ## Test Data
 
 Use synthetic data.
@@ -455,7 +433,6 @@ Never use real:
 
 Test fixtures should be clearly recognizable as test data.
 
-
 ## Data Cleanup
 
 For tests that create records:
@@ -469,7 +446,6 @@ For tests that create records:
 If cleanup is unsafe, leave clearly marked test data and report it.
 
 Use `database-safety` when DB behavior matters.
-
 
 ## External Side Effects
 
@@ -493,7 +469,6 @@ Use:
 
 when available.
 
-
 ## Runtime Environment
 
 Before browser testing determine:
@@ -511,7 +486,6 @@ Do not assume the application is running on a standard port.
 
 Inspect repository configuration.
 
-
 ## Starting Local Servers
 
 If runtime validation requires servers:
@@ -523,7 +497,6 @@ If runtime validation requires servers:
 - shut them down after validation
 
 Do not leave background processes running indefinitely.
-
 
 ## Health Before UI
 
@@ -540,7 +513,6 @@ database
 
 Avoid interpreting backend downtime as a frontend bug.
 
-
 ## Database-dependent Flows
 
 If a user flow depends on:
@@ -554,7 +526,6 @@ If a user flow depends on:
 use the `database-safety` skill as well.
 
 Browser success alone does not prove DB concurrency correctness.
-
 
 ## API-contract Flows
 
@@ -571,7 +542,6 @@ browser payload
 
 This is especially important for typed business errors.
 
-
 ## Concurrency
 
 Do not use browser automation alone to prove serious concurrency guarantees.
@@ -586,7 +556,6 @@ For behaviors such as:
 prefer dedicated API/integration tests against the real database.
 
 Browser testing may supplement them.
-
 
 ## Flaky Behavior
 
@@ -614,7 +583,6 @@ Prefer waiting for:
 - enabled control
 - route transition
 
-
 ## Timing
 
 Tests should avoid dependence on machine speed.
@@ -633,7 +601,6 @@ sleep fixed duration
 
 If a product requirement itself is time-based, test the actual boundary intentionally.
 
-
 ## Runtime Failures
 
 When browser behavior fails, determine whether the cause is:
@@ -649,7 +616,6 @@ external dependency
 ```
 
 Do not automatically classify every UI failure as frontend.
-
 
 ## Regression Scope
 
@@ -670,7 +636,6 @@ changed catalogue API
 
 Keep regression scope proportional to the change.
 
-
 ## Existing Playwright Tests
 
 If the repository already has Playwright:
@@ -682,7 +647,6 @@ If the repository already has Playwright:
 - follow existing structure
 
 Do not create a parallel browser-testing architecture.
-
 
 ## New Playwright Tests
 
@@ -699,7 +663,6 @@ Test creation is implementation work and must follow workflow approval when prod
 
 QA itself should not silently create committed tests.
 
-
 ## Screenshots and Artifacts
 
 Capture evidence when it materially helps diagnosis or review.
@@ -715,7 +678,6 @@ Useful artifacts:
 Avoid generating large artifact sets for successful trivial tests.
 
 Do not commit artifacts unless repository convention requires it.
-
 
 ## QA Result Rules
 
@@ -735,7 +697,6 @@ Use `QA PASSED WITH LIMITATIONS` only when:
 - the unvalidated item is explicitly non-blocking
 - limitation is documented
 - acceptance rules permit it
-
 
 ## Required Evidence Format
 
@@ -760,7 +721,6 @@ Evidence:
 Result:
 PASS / FAIL / NOT VALIDATED
 ```
-
 
 ## Runtime Report
 
@@ -797,7 +757,6 @@ Environment limitations
 ```
 
 Only include relevant sections.
-
 
 ## Stop Conditions
 

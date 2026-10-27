@@ -1,16 +1,18 @@
-# K'FIT V1 Core — State Machines
+# K'FIT V1 Core - State Machines
 
 > Closed state vocabularies and allowed transition intent. Actual authorization/guard logic lives in domain services.
 
 ## 1. Service availability
 
 States:
+
 - `open`
 - `temporarily_closed`
 - `waitlist_only`
 - `archived`
 
 Rules:
+
 - `archived` cannot accept new requests.
 - `waitlist_only` accepts waitlist intake but no direct capacity conversion.
 - reopening an archived service requires explicit restore action and audit.
@@ -18,6 +20,7 @@ Rules:
 ## 2. Service request
 
 States:
+
 - `submitted`
 - `contacting`
 - `qualification_in_progress`
@@ -30,6 +33,7 @@ States:
 - `closed_duplicate`
 
 Allowed intent:
+
 - `submitted -> contacting | qualification_in_progress | waitlisted | closed_duplicate`
 - `contacting -> qualification_in_progress | abandoned | waitlisted`
 - `qualification_in_progress -> qualified | qualified_with_conditions | rejected | abandoned | waitlisted`
@@ -41,12 +45,14 @@ Allowed intent:
 - `converted` is terminal for the request conversion path
 
 Guards:
+
 - conversion requires final service/variant decision, agreed price, target start, capacity/onboarding decision and no prior conversion.
 - converted request cannot be reverted; correction uses subscription cancellation + corrected linked subscription if needed.
 
 ## 3. Waitlist entry
 
 States:
+
 - `active`
 - `contacted`
 - `promoted`
@@ -58,6 +64,7 @@ No automatic promotion in V1.
 ## 4. Subscription lifecycle
 
 States:
+
 - `onboarding`
 - `awaiting_payment`
 - `medical_clearance_required`
@@ -69,6 +76,7 @@ States:
 - `cancelled`
 
 Typical transitions:
+
 - creation -> `onboarding` or `awaiting_payment`
 - `onboarding -> medical_clearance_required | ready_to_start | awaiting_payment | cancelled`
 - `awaiting_payment -> onboarding | ready_to_start | active | cancelled`
@@ -79,6 +87,7 @@ Typical transitions:
 - `completion_due -> completed | active | cancelled`
 
 Rules:
+
 - payment state never directly determines subscription state.
 - reaching planned end does not auto-complete; it suggests/sets `completion_due` through job/domain logic.
 - completion with unresolved coach-owed mandatory components requires explicit override/reason.
@@ -86,6 +95,7 @@ Rules:
 ## 5. Onboarding item
 
 States:
+
 - `pending`
 - `completed`
 - `waived`
@@ -97,6 +107,7 @@ Blocking pending/blocked items prevent `ready_to_start` when their service rule 
 ## 6. Questionnaire template
 
 States:
+
 - `draft`
 - `published`
 - `retired`
@@ -106,6 +117,7 @@ Published versions are immutable; changes create a new version.
 ## 7. Questionnaire submission
 
 States:
+
 - `draft`
 - `submitted`
 - `superseded`
@@ -115,6 +127,7 @@ Submitted content is immutable. Correction creates a new revision and marks the 
 ## 8. Medical clearance
 
 States:
+
 - `required`
 - `awaiting_document`
 - `under_review`
@@ -127,11 +140,13 @@ The system may flag answers; it does not diagnose or automatically clear.
 ## 9. Consent decision
 
 Decision values:
+
 - `granted`
 - `refused`
 - `revoked`
 
 Types include at minimum:
+
 - contact/service processing
 - health data
 - progress-photo storage
@@ -142,6 +157,7 @@ Each decision is dated/versioned against the exact consent definition.
 ## 10. Appointment
 
 States:
+
 - `scheduled`
 - `confirmed`
 - `reschedule_requested`
@@ -151,12 +167,14 @@ States:
 - `missed`
 
 Customer response values may include:
+
 - `pending`
 - `confirmed`
 - `declined`
 - `reschedule_requested`
 
 Rules:
+
 - coach cancellation never consumes entitlement.
 - late customer cancellation/missed consumption follows snapshotted service policy.
 - reschedule creates history; original scheduling facts remain auditable.
@@ -164,6 +182,7 @@ Rules:
 ## 11. Follow-up
 
 States:
+
 - `open`
 - `done`
 - `overdue`
@@ -174,6 +193,7 @@ Overdue is operational; subscription remains active unless another explicit life
 ## 12. Goal
 
 States:
+
 - `active`
 - `achieved`
 - `partially_achieved`
@@ -186,6 +206,7 @@ System suggestions never finalize goal status without coach confirmation.
 ## 13. Document
 
 Logical states:
+
 - `draft`
 - `available`
 - `revoked`
@@ -194,6 +215,7 @@ Logical states:
 - `purged`
 
 File scan states:
+
 - `pending`
 - `clean`
 - `infected`
@@ -204,6 +226,7 @@ A file cannot become externally available before accepted validation/malware-sca
 ## 14. Secure access token
 
 Operational states are derived from timestamps/counters:
+
 - active
 - expired
 - revoked
@@ -215,6 +238,7 @@ Bearer secrets are never stored in plaintext.
 ## 15. Payment proof
 
 States:
+
 - `pending_review`
 - `confirmed`
 - `partially_confirmed`
@@ -228,6 +252,7 @@ Proof status is evidence workflow only; it is not itself an authoritative paymen
 ## 16. Payment plan/installment
 
 Payment plan states:
+
 - `draft`
 - `active`
 - `superseded`
@@ -235,6 +260,7 @@ Payment plan states:
 - `cancelled`
 
 Installment states:
+
 - `upcoming`
 - `due`
 - `partially_paid`
@@ -248,6 +274,7 @@ Derived financial statuses are updated from obligations and confirmed allocation
 ## 17. Quote
 
 States:
+
 - `draft`
 - `issued`
 - `accepted`
@@ -262,6 +289,7 @@ Issued versions are immutable. Requested changes produce a new version requiring
 ## 18. Receipt
 
 States:
+
 - `issued`
 - `voided`
 
@@ -270,6 +298,7 @@ Voiding never deletes the receipt or its sequence number.
 ## 19. Scheduled job run
 
 States:
+
 - `running`
 - `succeeded`
 - `failed`
@@ -280,6 +309,7 @@ A logical run key prevents duplicate side effects on retry.
 ## 20. Retention hold
 
 States:
+
 - `active`
 - `released`
 

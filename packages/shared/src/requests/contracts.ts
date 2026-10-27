@@ -2,7 +2,8 @@ export const requestsApiRoutes = {
   publicSubmit: "/requests",
 } as const;
 
-export type RequestsApiRoute = (typeof requestsApiRoutes)[keyof typeof requestsApiRoutes];
+export type RequestsApiRoute =
+  (typeof requestsApiRoutes)[keyof typeof requestsApiRoutes];
 
 export const adminRequestsApiRoutes = {
   queue: "/admin/requests",
@@ -15,7 +16,8 @@ export const adminRequestsApiRoutes = {
   convert: "/admin/requests/:requestId/convert",
 } as const;
 
-export type AdminRequestsApiRoute = (typeof adminRequestsApiRoutes)[keyof typeof adminRequestsApiRoutes];
+export type AdminRequestsApiRoute =
+  (typeof adminRequestsApiRoutes)[keyof typeof adminRequestsApiRoutes];
 
 export const requestErrorCodes = [
   "REQUEST_ROUTE_UNEXPECTED_FAILURE",
@@ -102,13 +104,15 @@ export type RequestErrorResponse = {
   reason?: string;
 };
 
-export type RequestsApiResponse = RequestSubmissionResponse | RequestErrorResponse;
+export type RequestsApiResponse =
+  | RequestSubmissionResponse
+  | RequestErrorResponse;
 
 // --- Admin request queue + contact attempts (S3.3) ---
 
 /**
  * Full request lifecycle vocabulary (state-machines.md §2). S3.3 only exposes a
- * safe subset of transitions between these statuses — see adminRequestAllowedTransitions.
+ * safe subset of transitions between these statuses - see adminRequestAllowedTransitions.
  */
 export type ServiceRequestStatus =
   | "submitted"
@@ -140,20 +144,42 @@ export const serviceRequestStatuses: readonly ServiceRequestStatus[] = [
  * qualification/waitlist/conversion/duplicate outcomes owned by S3.4/S3.5) must
  * be rejected as REQUEST_INVALID_TRANSITION.
  */
-export const adminRequestAllowedTransitions: Readonly<Record<string, readonly ServiceRequestStatus[]>> = {
+export const adminRequestAllowedTransitions: Readonly<
+  Record<string, readonly ServiceRequestStatus[]>
+> = {
   submitted: ["contacting"],
   contacting: ["qualification_in_progress", "abandoned"],
   qualification_in_progress: ["abandoned"],
   abandoned: ["qualification_in_progress"],
 } as const;
 
-export type ContactAttemptChannel = "whatsapp" | "phone_call" | "sms" | "email" | "other";
-export const contactAttemptChannels: readonly ContactAttemptChannel[] = ["whatsapp", "phone_call", "sms", "email", "other"];
+export type ContactAttemptChannel =
+  | "whatsapp"
+  | "phone_call"
+  | "sms"
+  | "email"
+  | "other";
+export const contactAttemptChannels: readonly ContactAttemptChannel[] = [
+  "whatsapp",
+  "phone_call",
+  "sms",
+  "email",
+  "other",
+];
 
 export type ContactAttemptDirection = "outbound" | "inbound";
-export const contactAttemptDirections: readonly ContactAttemptDirection[] = ["outbound", "inbound"];
+export const contactAttemptDirections: readonly ContactAttemptDirection[] = [
+  "outbound",
+  "inbound",
+];
 
-export type ContactAttemptOutcome = "reached" | "no_answer" | "invalid_contact" | "callback_requested" | "not_interested" | "other";
+export type ContactAttemptOutcome =
+  | "reached"
+  | "no_answer"
+  | "invalid_contact"
+  | "callback_requested"
+  | "not_interested"
+  | "other";
 export const contactAttemptOutcomes: readonly ContactAttemptOutcome[] = [
   "reached",
   "no_answer",
@@ -163,7 +189,7 @@ export const contactAttemptOutcomes: readonly ContactAttemptOutcome[] = [
   "other",
 ];
 
-/** contact_attempts has no created_at column — occurredAt is the only timestamp of record. */
+/** contact_attempts has no created_at column - occurredAt is the only timestamp of record. */
 export type AdminContactAttempt = {
   id: string;
   channel: ContactAttemptChannel;
@@ -205,10 +231,19 @@ export type AdminServiceRequestSummary = {
 };
 
 /** S7.3b D5: archivable = not archived and every request of the prospect in a terminal status. */
-export type AdminServiceRequestProspectPrivacy = { archivedAt: string | null; anonymizedAt: string | null; archivable: boolean };
-export type AdminServiceRequestDetailProspect = AdminServiceRequestProspect & { privacy: AdminServiceRequestProspectPrivacy };
+export type AdminServiceRequestProspectPrivacy = {
+  archivedAt: string | null;
+  anonymizedAt: string | null;
+  archivable: boolean;
+};
+export type AdminServiceRequestDetailProspect = AdminServiceRequestProspect & {
+  privacy: AdminServiceRequestProspectPrivacy;
+};
 
-export type AdminServiceRequestDetail = Omit<AdminServiceRequestSummary, "prospect"> & {
+export type AdminServiceRequestDetail = Omit<
+  AdminServiceRequestSummary,
+  "prospect"
+> & {
   prospect: AdminServiceRequestDetailProspect;
   convertedSubscriptionId: string | null;
   objective: string | null;
@@ -255,12 +290,12 @@ export type RequestStatusTransitionResponse = {
   request: AdminServiceRequestSummary;
 };
 
-export type QualificationReviewOutcome = "qualified" | "qualified_with_conditions" | "rejected";
-export const qualificationReviewOutcomes: readonly QualificationReviewOutcome[] = [
-  "qualified",
-  "qualified_with_conditions",
-  "rejected",
-];
+export type QualificationReviewOutcome =
+  | "qualified"
+  | "qualified_with_conditions"
+  | "rejected";
+export const qualificationReviewOutcomes: readonly QualificationReviewOutcome[] =
+  ["qualified", "qualified_with_conditions", "rejected"];
 
 export type AdminQualificationReview = {
   id: string;
@@ -292,8 +327,19 @@ export type CreateQualificationReviewResponse = {
   request: AdminServiceRequestSummary;
 };
 
-export type WaitlistEntryStatus = "active" | "contacted" | "promoted" | "withdrawn" | "expired";
-export const waitlistEntryStatuses: readonly WaitlistEntryStatus[] = ["active", "contacted", "promoted", "withdrawn", "expired"];
+export type WaitlistEntryStatus =
+  | "active"
+  | "contacted"
+  | "promoted"
+  | "withdrawn"
+  | "expired";
+export const waitlistEntryStatuses: readonly WaitlistEntryStatus[] = [
+  "active",
+  "contacted",
+  "promoted",
+  "withdrawn",
+  "expired",
+];
 
 export type AdminWaitlistEntry = {
   id: string;

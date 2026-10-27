@@ -14,14 +14,14 @@ Une note par version mise en service, dans un fichier `AAAA-MM-JJ-<version>.md`,
 
 ```markdown
 ---
-titre: Version <version> — <date>
+titre: Version <version> - <date>
 public: coach
 statut: à jour
 vérifié-sur: <commit court>
 couvre: [<slices>]
 ---
 
-# Version <version> — <date>
+# Version <version> - <date>
 
 ## Ce qui change pour toi
 

@@ -6,7 +6,7 @@ vérifié-sur: d2fc5df
 couvre: [historique]
 ---
 
-> Archivé — remplacé par [maintenance/manuel-maintenance.md](../maintenance/manuel-maintenance.md).
+> Archivé - remplacé par [maintenance/manuel-maintenance.md](../maintenance/manuel-maintenance.md).
 
 # K'FIT Docker Environments
 
@@ -111,7 +111,6 @@ npm run preflight:auth-staging
 ```
 
 Run the long-lived smoke server and Vite client in separate terminals when doing manual browser checks.
-
 
 ### Auth proxy troubleshooting
 

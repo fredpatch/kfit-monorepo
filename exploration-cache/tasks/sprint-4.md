@@ -1,4 +1,4 @@
-# Sprint 4 — Clients, conversion, onboarding, questionnaires et consentements
+# Sprint 4 - Clients, conversion, onboarding, questionnaires et consentements
 
 > Branch: `sprint-4`
 
@@ -8,26 +8,28 @@ Build the M4 customer/conversion/onboarding foundation after the validated Sprin
 
 ## Execution order
 
-1. [x] S4.1 — Client table + phone-based search/create-inline.
-2. [x] S4.2 — Request conversion transaction: customer + onboarding subscription + immutable link.
-3. [x] S4.3 — Onboarding checklist, blockers, capacity reservation and stalled-state review.
-4. [x] S4.4 — Separate consent records and versioned terms/privacy acceptance.
-5. [x] S4.5 — Versioned assessment and health-questionnaire templates.
+1. [x] S4.1 - Client table + phone-based search/create-inline.
+2. [x] S4.2 - Request conversion transaction: customer + onboarding subscription + immutable link.
+3. [x] S4.3 - Onboarding checklist, blockers, capacity reservation and stalled-state review.
+4. [x] S4.4 - Separate consent records and versioned terms/privacy acceptance.
+5. [x] S4.5 - Versioned assessment and health-questionnaire templates.
 
-## S4.1 — validated
+## S4.1 - validated
 
 Validated customer foundation:
+
 - active-customer list/search/create;
 - normalized WhatsApp collision rule;
 - advisory-lock concurrency protocol;
 - atomic `customer.created` audit;
 - Fred Gate 2 green.
 
-## S4.2 — validated
+## S4.2 - validated
 
 Backlog task: **Request conversion transaction: customer + onboarding subscription + immutable link**.
 
 Dependencies are satisfied:
+
 - qualified request workflow exists;
 - customer model/S4.1 customer writer exists;
 - subscription/component/status-history schema exists.
@@ -35,10 +37,12 @@ Dependencies are satisfied:
 ### Proposed conversion eligibility
 
 Allowed request states:
+
 - `qualified`
 - `qualified_with_conditions`
 
 Rejected:
+
 - all other request states, including already `converted`.
 
 The command loads the current non-superseded qualification review and requires its outcome to match the request state.
@@ -58,6 +62,7 @@ The conversion API must not permit client overrides for service, variant or pric
 ### Customer resolution
 
 Inside the conversion transaction:
+
 1. lock the request row;
 2. normalize the linked prospect WhatsApp;
 3. acquire the same `customer-whatsapp:<normalized>` transaction advisory lock as S4.1;
@@ -69,6 +74,7 @@ Existing customer profile fields are not silently overwritten from prospect data
 ### Subscription creation
 
 Create:
+
 - unique reference;
 - resolved customerId;
 - sourceRequestId = request id;
@@ -85,6 +91,7 @@ No payment state coupling.
 ### Component snapshot
 
 At conversion, freeze entitlements into `subscription_components`:
+
 - include service-level components where `variant_id IS NULL`;
 - include components belonging to the final selected variant;
 - copy source component id, type, label and quantity;
@@ -95,6 +102,7 @@ Do not read historical subscription entitlement from mutable catalogue later.
 ### Atomic hard commit
 
 One transaction must contain:
+
 - request lock + conversion recheck;
 - qualification recheck;
 - customer advisory lock + reuse/create;
@@ -139,6 +147,7 @@ S4.2 leaves `capacityReservedUntil = null` unless Fred separately approves a res
 ### Validation target
 
 Unit/Express/shared:
+
 - eligibility and stable errors;
 - no client-controlled service/variant/price;
 - planned-start validation;
@@ -146,6 +155,7 @@ Unit/Express/shared:
 - response contracts.
 
 Real PostgreSQL integration:
+
 - qualified → customer created + onboarding subscription + components + history + links + audit;
 - qualified_with_conditions conversion;
 - existing customer reuse under S4.1 lock;
@@ -158,12 +168,12 @@ Real PostgreSQL integration:
 - request↔subscription links resolve to the same pair.
 
 Fred Gate 2:
+
 - browser conversion from eligible request;
 - verify converted request/detail state;
 - verify customer reuse/create;
 - DBeaver inspect customer/subscription/components/status history/request links/audit;
 - verify no onboarding items/consents/questionnaires/payments were created.
-
 
 ### S4.2 validation evidence
 
@@ -177,8 +187,7 @@ Validated locally by Fred on 2026-10-20.
 - no onboarding/capacity-policy writes leaked into S4.2.
 - unchanged Sprint 3 concurrency test failed once then passed on the approved retry; classified as flaky and non-blocking for S4.2.
 
-
-## S4.3 — validated
+## S4.3 - validated
 
 Backlog task: **Onboarding checklist, blockers, capacity reservation and stalled-state review**.
 
@@ -189,6 +198,7 @@ S4.3 orchestrates readiness. It does not implement the questionnaire, consent, m
 ### Effective policy
 
 Resolve service policy in this order:
+
 1. selected-variant policy;
 2. service-level policy fallback.
 
@@ -217,11 +227,13 @@ Checklist initialization must be idempotent and must not duplicate items.
 ### Readiness
 
 Derived state:
+
 - `blocked`: blocking requirements remain;
 - `ready`: blocking requirements satisfied and required capacity hold valid;
 - `stalled`: capacity hold expired while pre-start.
 
 Lifecycle:
+
 - only `onboarding -> ready_to_start` is owned by S4.3;
 - no `active` transition here;
 - transition + status history + audit must be atomic.
@@ -246,6 +258,7 @@ Lifecycle:
 ### Validation target
 
 Unit/shared/Express:
+
 - policy resolution;
 - deterministic/idempotent checklist generation;
 - ownership restrictions;
@@ -255,6 +268,7 @@ Unit/shared/Express:
 - stable error taxonomy.
 
 PostgreSQL integration:
+
 - initialize checklist once, retry without duplicates;
 - service-policy fallback and variant override;
 - unlimited service readiness without reservation;
@@ -268,6 +282,7 @@ PostgreSQL integration:
 - concurrent reservation/ready attempts cannot overbook configured capacity.
 
 Fred Gate 2:
+
 - browser onboarding panel;
 - checklist ownership/status display;
 - set/extend reservation;
@@ -276,19 +291,18 @@ Fred Gate 2:
 - verify ready transition;
 - DBeaver inspect onboarding_items, subscription capacity/status/history and audit.
 
-
-### S4.3 Gate 1 — approved rules
+### S4.3 Gate 1 - approved rules
 
 Fred approved the S4.3 plan.
 
 Waiver policy is locked:
+
 - `service_terms`: non-waivable;
 - `medical_clearance`: non-waivable;
 - `questionnaire`: waivable only with mandatory non-empty reason and audit;
 - `payment_condition`: waivable only with mandatory non-empty reason and audit.
 
 Implementation must remain server-first and must not open questionnaire, consent, medical-document, finance, activation, scheduled stalled-job, automatic cancellation, or waitlist-promotion behavior.
-
 
 ### S4.3 validation evidence
 
@@ -305,7 +319,6 @@ Validated locally by Fred on 2026-10-20.
 - DBeaver checks confirmed one onboarding item per subscription/type, valid capacity hold, append-only `onboarding -> ready_to_start` history and structural/no-PII audit metadata.
 - Derived `stalled` state produced no lifecycle history mutation.
 
-
 ### S4.3 validation evidence
 
 Validated locally by Fred on 2026-10-20.
@@ -320,13 +333,11 @@ Validated locally by Fred on 2026-10-20.
 - Questionnaire waiver browser path was N/A because the tested effective policy has no questionnaire template.
 - `stalled` remained derived and did not create lifecycle history.
 
-
-## S4.4 — next task
+## S4.4 - next task
 
 Notion dependency review selects **Separate consent records and versioned terms/privacy acceptance** before questionnaires. S4.3 provides the onboarding dependency, while the questionnaire task requires the consent model. Planning only until Fred approves Gate 1.
 
-
-## S4.4 — validated
+## S4.4 - validated
 
 Backlog task: **Separate consent records and versioned terms/privacy acceptance**.
 
@@ -335,6 +346,7 @@ Backlog task: **Separate consent records and versioned terms/privacy acceptance*
 Implement `consent_definitions` and `consent_records` from the conceptual model.
 
 Consent definition:
+
 - `consentType`
 - `version`
 - `title`
@@ -347,6 +359,7 @@ Consent definition:
 - unique `(consentType, version)`
 
 Consent record:
+
 - `customerId`
 - `subscriptionId`
 - `consentDefinitionId`
@@ -363,6 +376,7 @@ Records are append-only. No UPDATE-based decision replacement.
 ### Consent types
 
 V1 Core model supports:
+
 - `service_terms`
 - `privacy_notice`
 - `health_data`
@@ -388,12 +402,14 @@ All decision writers lock the subscription before deriving the current decision 
 Repeated successful public submission must not create duplicate decision rows.
 
 Allowed decisions:
+
 - service_terms/privacy_notice: granted or refused; no revocation command in S4.4;
 - health_data/progress_photo_storage/marketing/publication: granted/refused/revoked, with revocation represented by a new append-only record.
 
 ### S4.3 integration
 
 After recording decisions, recompute required onboarding acceptance inside the same transaction:
+
 - latest published service_terms version is granted;
 - latest published privacy_notice version is granted.
 
@@ -409,6 +425,7 @@ Consent writes + checklist completion + audit are one hard commit.
 Reuse existing `secure_access_tokens` / `external_access_events`.
 
 Admin issuance:
+
 - token scoped to subscription;
 - action dedicated to onboarding consent capture;
 - random bearer token;
@@ -418,11 +435,13 @@ Admin issuance:
 - raw secret returned only once.
 
 Public read:
+
 - validates hash, scope, action, expiry, revocation/consumption;
 - returns customer-safe subscription reference plus exact published service_terms/privacy_notice texts;
 - never exposes unrelated customer data.
 
 Public submit:
+
 - accepts one decision for each required definition;
 - definition IDs/versions come from the server, not client overrides;
 - on success appends consent records, conditionally completes onboarding service_terms, audits, records external-access success, and consumes the token atomically;
@@ -433,6 +452,7 @@ No OTP is added for this terms/privacy-only flow in S4.4.
 ### Coach-assisted capture
 
 Authenticated admin may capture the same required decisions:
+
 - source `coach_assisted`;
 - actor user stored;
 - same exact published definition versions;
@@ -442,12 +462,14 @@ Authenticated admin may capture the same required decisions:
 ### Audit / privacy
 
 Suggested events:
+
 - `consent.link_created`
 - `consent.decision_recorded`
 - `consent.revoked`
 - existing/compatible onboarding completion event when `service_terms` becomes complete.
 
 Audit metadata may contain:
+
 - consentType
 - definitionId
 - definitionVersion
@@ -456,6 +478,7 @@ Audit metadata may contain:
 - subscriptionId/tokenId as structural IDs
 
 Never include:
+
 - legal text body
 - raw bearer token
 - phone/email/name
@@ -464,6 +487,7 @@ Never include:
 ### Validation target
 
 Shared/unit/Express:
+
 - type/decision validation;
 - definition publication/immutability rules;
 - token input/error taxonomy;
@@ -472,6 +496,7 @@ Shared/unit/Express:
 - no client override of definition versions.
 
 PostgreSQL integration:
+
 - schema uniqueness for definition type/version;
 - append-only grant/refuse/revoke chain;
 - concurrent writers serialize current decision;
@@ -485,6 +510,7 @@ PostgreSQL integration:
 - expired/invalid token causes zero business writes.
 
 Fred Gate 2:
+
 - generate secure consent link from onboarding/subscription;
 - open public page without authentication;
 - inspect exact versioned terms/privacy text;
@@ -494,12 +520,12 @@ Fred Gate 2:
 - coach-assisted capture on a second subscription;
 - DBeaver verify definitions, append-only records, provenance, token hash/consumption, onboarding item and safe audit metadata.
 
-
-### S4.4 Gate 1 — approved rules
+### S4.4 Gate 1 - approved rules
 
 Fred approved the S4.4 plan.
 
 Locked:
+
 - consent definitions are versioned and published versions are immutable;
 - consent decisions are append-only hard-commit records;
 - onboarding-required bundle is service_terms + privacy_notice only;
@@ -512,7 +538,6 @@ Locked:
 - no questionnaire, medical, finance, customer-account, customer-OTP or V1.1 legal-review workflow is opened in S4.4.
 
 Do not start S4.5 until Fred validates S4.4 locally.
-
 
 ### S4.4 validation evidence
 
@@ -529,8 +554,7 @@ Validated locally by Fred on 2026-10-21.
 - DBeaver confirmed append-only consent history, hashed token storage/consumption and safe audits.
 - preceding 87/88 run was the known unchanged Sprint 3 concurrency flake; all S4.4 cases passed in both runs.
 
-
-## S4.5 — validated
+## S4.5 - validated
 
 Backlog task: **Versioned assessment and health-questionnaire templates**.
 
@@ -541,6 +565,7 @@ Use existing questionnaire tables.
 Published template versions are immutable. Template identity uses `templateKey`; each version is a positive integer. Questions are immutable with their published template.
 
 V1 question types:
+
 - short_text
 - long_text
 - boolean
@@ -555,12 +580,14 @@ Server owns JSON schemas for options/validation/risk rules. No executable expres
 ### Categories and consent
 
 Template category:
+
 - `assessment`
 - `health`
 
 Health questionnaires require current grant of the latest published `health_data` consent definition.
 
 If no current grant:
+
 - public flow may record the health_data decision separately in the questionnaire submit transaction;
 - refusal is persisted as consent evidence but no questionnaire submission/answers are stored;
 - coach-assisted answer capture is forbidden until health_data is granted.
@@ -570,6 +597,7 @@ Revoked health consent prevents future health submissions but does not erase imm
 ### Assignment
 
 Resolve effective service policy:
+
 1. selected variant policy;
 2. service-level policy.
 
@@ -579,6 +607,7 @@ No configured template means no questionnaire requirement.
 ### Submission revisions
 
 A committed submission is immutable.
+
 - first submitted revision = 1;
 - later correction = N+1;
 - `supersedesSubmissionId` links revision chain;
@@ -592,18 +621,21 @@ Public V1 does not persist partial drafts.
 Risk rules are declarative allowlisted predicates against the answer to their own question only.
 
 Allowed V1:
+
 - equals / in
 - numeric gt/gte/lt/lte
 
 No eval, scripting, cross-question logic, diagnosis or medical recommendations.
 
 Result:
+
 - boolean riskDetected;
 - matched question keys for internal structural evidence.
 
 ### Onboarding
 
 Successful submission for the currently assigned template:
+
 - completes S4.3 `questionnaire` item atomically.
 
 Questionnaire waiver remains S4.3 behavior.
@@ -613,12 +645,14 @@ Ordinary reads never silently reopen a completed blocker because a newer templat
 ### Medical clearance
 
 If effective policy = `required_if_risk_flag` and riskDetected:
+
 - create/preserve one active pending `medical_clearance_record`;
 - create/upsert blocking onboarding item `medical_clearance` pending;
 - trigger source references questionnaire submission;
 - no diagnosis content.
 
 If no risk:
+
 - no blocker is created.
 
 A later safe revision does not auto-clear an existing medical requirement.
@@ -628,17 +662,20 @@ S4.5 does not clear/review medical records.
 ### API proposal
 
 Admin template/configuration:
+
 - `GET /admin/questionnaire-templates`
 - `POST /admin/questionnaire-templates`
 - `POST /admin/questionnaire-templates/:templateId/publish`
 - `POST /admin/questionnaire-templates/:templateId/new-version`
 
 Subscription:
+
 - `GET /admin/subscriptions/:subscriptionId/questionnaire`
 - `POST /admin/subscriptions/:subscriptionId/questionnaire-link`
 - `POST /admin/subscriptions/:subscriptionId/questionnaire/coach-submit`
 
 Public:
+
 - `GET /public/questionnaires/:token`
 - `POST /public/questionnaires/:token`
 
@@ -648,6 +685,7 @@ Revision/correction may reuse coach/public submission commands with explicit exp
 
 Questionnaire action is separate from S4.4 consent-token action.
 Token snapshots:
+
 - subscriptionId
 - templateId
 - templateVersion
@@ -661,6 +699,7 @@ Health-consent refusal may consume token after recording refusal because no answ
 ### Validation target
 
 Shared/unit/Express:
+
 - every question type;
 - options/validation schema;
 - published immutability;
@@ -671,6 +710,7 @@ Shared/unit/Express:
 - admin auth/CSRF and public token errors.
 
 PostgreSQL integration:
+
 - publish immutable version;
 - create N+1 without mutating old;
 - assessment submit without health consent;
@@ -691,6 +731,7 @@ PostgreSQL integration:
 - health answers/free text absent from audit metadata.
 
 Fred Gate 2:
+
 - create/publish synthetic assessment + health template;
 - assign through service policy fixture;
 - public assessment completion;
@@ -700,12 +741,12 @@ Fred Gate 2:
 - coach-assisted safe revision;
 - DBeaver verify immutable versions/submissions/answers, consent provenance, medical blocker and safe audits.
 
-
-### S4.5 Gate 1 — approved rules
+### S4.5 Gate 1 - approved rules
 
 Fred approved the S4.5 plan.
 
 Locked:
+
 - template categories are `assessment` and `health`;
 - published template versions/questions are immutable; edits create version N+1;
 - allowed V1 question types are short_text, long_text, boolean, single_choice, multi_choice, integer, decimal and date;
@@ -719,7 +760,6 @@ Locked:
 - no customer OTP, medical diagnosis/advice, medical clearance completion, AI review, active-coaching questionnaires or subscription activation in S4.5.
 
 Do not start any later Sprint 4/5 behavior until Fred validates S4.5 locally.
-
 
 ### S4.5 validation evidence
 

@@ -1,4 +1,4 @@
-# K'FIT — Sprint 6 execution spec
+# K'FIT - Sprint 6 execution spec
 
 ## Objective
 
@@ -6,10 +6,10 @@ Deliver the V1 Core finance workflow for subscription obligations, payments, quo
 
 ## Ordered tasks
 
-1. S6.1 — Financial ledger: payment plans, installments, confirmed payment events and allocations — CLOSED / validated 2026-10-22.
-2. S6.2 — Versioned quotes, secure customer acceptance and subscription synchronization — CLOSED / validated 2026-10-22.
-3. S6.3 — Customer payment-proof upload and structured coach review workflow — CLOSED / validated 2026-10-22.
-4. S6.4 — Sequential payment receipts and secure sharing preparation — CLOSED / validated 2026-10-23.
+1. S6.1 - Financial ledger: payment plans, installments, confirmed payment events and allocations - CLOSED / validated 2026-10-22.
+2. S6.2 - Versioned quotes, secure customer acceptance and subscription synchronization - CLOSED / validated 2026-10-22.
+3. S6.3 - Customer payment-proof upload and structured coach review workflow - CLOSED / validated 2026-10-22.
+4. S6.4 - Sequential payment receipts and secure sharing preparation - CLOSED / validated 2026-10-23.
 
 Backlog rows labelled coach sign-off / bug list / full UAT are not Sprint 6 finance implementation slices; final V1 Core UAT remains a later sprint gate.
 
@@ -34,6 +34,7 @@ Backlog rows labelled coach sign-off / bug list / full UAT are not Sprint 6 fina
 ### Adaptation to K'FIT
 
 Reusable mechanisms:
+
 - separate money received from allocation of that money;
 - immutable payment/allocation history;
 - server-authoritative outstanding balances and status;
@@ -44,6 +45,7 @@ Reusable mechanisms:
 - corrections reference/compensate prior authoritative events.
 
 K'FIT-specific invariants:
+
 - XAF integer arithmetic only;
 - subscription agreedPriceXaf is the S6.1 payable total;
 - subscription lifecycle remains independent;
@@ -94,6 +96,7 @@ Before migration generation, inspect existing rows for conflicts with new FK/uni
 One subscription may have historical payment-plan revisions, but at most one active plan.
 
 Initial plan:
+
 - explicitly created by the coach; never silently inferred/activated on read;
 - totalExpectedXaf must equal the authoritative subscription agreedPriceXaf in S6.1;
 - zero-price subscriptions do not need installments; if a zero-total plan is retained, it is immediately settled and cannot receive positive allocations;
@@ -103,6 +106,7 @@ Initial plan:
 - due dates are explicit coach input; S6.1 does not invent payment dates from subscription dates.
 
 Plan states used:
+
 - draft
 - active
 - superseded
@@ -116,6 +120,7 @@ Only named commands may change plan state.
 Installments are immutable obligations within a committed active/superseded plan except through explicit plan revision.
 
 Stored fields remain:
+
 - sequenceNumber
 - amountXaf
 - dueDate
@@ -124,6 +129,7 @@ Stored fields remain:
 Authoritative paid amount is always derived from payment_allocations.
 
 Effective installment state:
+
 - upcoming: not yet due and no allocation;
 - due: due instant reached, outstanding remains, but not yet overdue;
 - partially_paid: positive allocations below amount;
@@ -138,6 +144,7 @@ Because wall-clock passage alone changes due/overdue, the API read model derives
 A schedule revision creates a new payment_plan linked by revisedFromPlanId; it never mutates the old committed plan/installments.
 
 Proposed constraints:
+
 - one new active plan supersedes the prior active plan atomically;
 - paid/allocation history on old installments remains untouched;
 - total expected remains equal to subscription agreedPriceXaf in S6.1;
@@ -146,17 +153,19 @@ Proposed constraints:
 - revision reason required and audited structurally; free text stays out of generic audit metadata.
 
 Exact allocation treatment across a revised schedule must preserve provenance. Preferred S6.1 approach:
+
 - historical allocations stay attached to their original installments;
 - subscription-level paid total derives across all confirmed allocations for the subscription;
 - new active plan read model computes remaining payable as agreed total minus confirmed net allocations;
 - new schedule represents only the remaining obligation OR, if the schedule represents full total, service logic must prevent double-counting historical allocations.
-During implementation choose one representation and lock it with integration tests before client work. Preferred: schedule only the remaining obligation on revision, because it keeps old paid installments historical and avoids synthetic allocation migration.
+  During implementation choose one representation and lock it with integration tests before client work. Preferred: schedule only the remaining obligation on revision, because it keeps old paid installments historical and avoids synthetic allocation migration.
 
 ### Confirmed payment event
 
 S6.1 admin payment entry is an authoritative confirmed payment, not a payment-proof submission.
 
 Payment event:
+
 - customerId comes from the subscription/customer relationship;
 - eventType uses a closed S6.1 vocabulary;
 - amountXaf positive integer;
@@ -172,6 +181,7 @@ Payment event:
 Confirmed events are never edited/deleted.
 
 S6.1 supports an explicit reversal/correction command for operator mistakes:
+
 - references one prior confirmed event;
 - creates a compensating financial event with explicit semantic direction;
 - does not use negative ambiguous amounts;
@@ -182,6 +192,7 @@ S6.1 supports an explicit reversal/correction command for operator mistakes:
 ### Allocation
 
 Default allocation policy:
+
 - same subscription only;
 - oldest effective due date first, then sequence number;
 - partial allocation allowed;
@@ -193,10 +204,12 @@ Default allocation policy:
 S6.1 proposes no arbitrary manual target override in the first slice. If needed later, add an explicit audited command rather than a browser-controlled allocation array.
 
 Excess payment:
+
 - S6.1 should reject a payment amount greater than the remaining subscription obligation.
 - Do not create customer credit/change behavior because credits/refunds are V1.1 and there is no authoritative credit account model in V1 Core.
 
 Reconciliation invariants:
+
 - sum(payment allocations) = payment event applied amount;
 - S6.1 applied amount = event amount for ordinary payments because overpayment is rejected;
 - allocation sum per installment <= installment amount;
@@ -206,6 +219,7 @@ Reconciliation invariants:
 ## Financial read model
 
 For a subscription expose:
+
 - agreed amount;
 - confirmed net paid amount;
 - remaining amount;
@@ -214,6 +228,7 @@ For a subscription expose:
 - immutable payment-event/allocation history.
 
 Proposed financial status:
+
 - unpaid: paid = 0 and remaining > 0;
 - partially_paid: 0 < paid < agreed amount;
 - paid: remaining = 0;
@@ -223,18 +238,21 @@ Do not introduce refunded/waived in S6.1 commands.
 
 Subscription status is returned separately and never derived from financial status.
 
-## API proposal — admin
+## API proposal - admin
 
 Read:
+
 - GET /admin/subscriptions/:subscriptionId/finance
 
 Payment plans:
+
 - POST /admin/subscriptions/:subscriptionId/payment-plans
 - POST /admin/payment-plans/:paymentPlanId/activate
 - POST /admin/payment-plans/:paymentPlanId/revise
 - POST /admin/payment-plans/:paymentPlanId/cancel
 
 Payments:
+
 - POST /admin/subscriptions/:subscriptionId/payments
 - POST /admin/payment-events/:paymentEventId/correct
 
@@ -247,9 +265,10 @@ All mutations require authenticated admin + same-origin/CSRF protection.
 - amounts are integer XAF;
 - server computes customerId, currency, paid totals, allocation targets and statuses;
 - no caller can submit confirmedAt, confirmedByUserId, allocation rows, paid totals or derived status;
-- stable FINANCE_* error taxonomy.
+- stable FINANCE\_\* error taxonomy.
 
 Candidate errors:
+
 - FINANCE_NOT_FOUND
 - FINANCE_INVALID_INPUT
 - FINANCE_PLAN_ALREADY_ACTIVE
@@ -265,6 +284,7 @@ Candidate errors:
 ## Concurrency / hard commit
 
 Plan creation/activation/revision:
+
 - lock subscription;
 - lock current active payment plan when applicable;
 - validate authoritative agreed price;
@@ -273,6 +293,7 @@ Plan creation/activation/revision:
 - commit together.
 
 Payment:
+
 - lock subscription + active financial obligation rows in deterministic order;
 - recompute outstanding balance inside transaction;
 - resolve idempotency;
@@ -289,6 +310,7 @@ Audit failure must roll back payment + allocations + cached state.
 ## Audit
 
 Suggested events:
+
 - finance.payment_plan_created
 - finance.payment_plan_activated
 - finance.payment_plan_revised
@@ -297,6 +319,7 @@ Suggested events:
 - finance.payment_corrected
 
 Safe metadata only:
+
 - structural IDs;
 - amountXaf;
 - currency;
@@ -312,6 +335,7 @@ Do not place customer identity, external reference, free-text reasons or provide
 Server first. Client only after server Gate is green.
 
 French subscription Finance panel:
+
 - Montant convenu
 - Payé
 - Reste à payer
@@ -343,6 +367,7 @@ UI never computes authoritative balances or decides allocation targets.
 ## Validation target
 
 Unit/shared/HTTP:
+
 1. XAF integer validation and unknown-field rejection.
 2. payment plan total must equal subscription agreed price.
 3. installment amounts positive and exact sum.
@@ -355,6 +380,7 @@ Unit/shared/HTTP:
 10. correction semantics never mutate original payment.
 
 PostgreSQL integration:
+
 1. create valid active plan and installments atomically;
 2. reject total mismatch with zero rows;
 3. one active plan maximum under concurrency;
@@ -375,6 +401,7 @@ PostgreSQL integration:
 18. generic audit excludes external references/free text/customer PII.
 
 Fred Gate 2:
+
 - create an installment schedule for an existing subscription;
 - record a partial payment and inspect FIFO allocation;
 - record a payment spanning installments;
@@ -398,20 +425,21 @@ Fred Gate 2:
 10. No Sprint 6 implementation before Fred approves Gate 1.
 
 Gate 1 payment-method vocabulary approved:
+
 - `cash`
 - `bank_transfer`
 - `mobile_money`
 
-## S6.1 Gate 1 — approved 2026-10-22
+## S6.1 Gate 1 - approved 2026-10-22
 
 Fred approved the complete S6.1 plan and the closed V1 payment-method vocabulary above. Implementation is authorized on `main` for S6.1 only, server-first. S6.2 remains closed until S6.1 is locally validated by Fred.
 
-
-## S6.1 implementation and validation status — 2026-10-22
+## S6.1 implementation and validation status - 2026-10-22
 
 Implementation commit: `1050fcb` (`feat(finance): implement authoritative subscription ledger`).
 
 Implemented:
+
 - shared finance contracts and closed payment methods `cash | bank_transfer | mobile_money`;
 - additive migration `0009_puzzling_purifiers.sql`;
 - one-active-plan DB protection, revision/correction self references and DB-backed payment command identity;
@@ -422,6 +450,7 @@ Implemented:
 - S6.2+ scope remains untouched.
 
 Agent validation reported green:
+
 - typecheck;
 - server tests 371/371;
 - shared tests 49/49;
@@ -432,18 +461,20 @@ Agent validation reported green:
 - six audit-failure rollback finance scenarios.
 
 Fred validation:
+
 - browser flow approved on 2026-10-22.
 
 Gate 2 completed:
+
 - Fred confirmed DBeaver finance/audit inspection green on 2026-10-22.
 - S6.1 is locally validated and closed.
 
 Repository merge note:
+
 - merge commit `ee793c2` accidentally persisted literal conflict markers in `TASKS.md` and this file;
 - documentation state was repaired afterward without changing S6.1 business implementation.
 
-
-## S6.2 — Fred-approved implementation request, 2026-10-22
+## S6.2 - Fred-approved implementation request, 2026-10-22
 
 Implement K'FIT Sprint 6 slice S6.2 only.
 
@@ -451,6 +482,7 @@ Branch: main
 Workflow state: APPROVED_FOR_IMPLEMENTATION
 
 Before coding inspect:
+
 - TASKS.md
 - exploration-cache/tasks/sprint-6.md
 - exploration-cache/project/database-schema.md
@@ -488,9 +520,10 @@ LOCKED BUSINESS RULES
 ==================================================
 
 1. Quote lifecycle location
-Quotes are created only for an existing subscription/customer after request conversion.
+   Quotes are created only for an existing subscription/customer after request conversion.
 
 Server derives:
+
 - customerId from subscription
 - requestId from subscription.sourceRequestId when present
 - subscriptionId from route/context
@@ -498,7 +531,7 @@ Server derives:
 Do not create customers or subscriptions from the quote flow.
 
 2. Official quote numbering
-Draft quote has no official final number.
+   Draft quote has no official final number.
 
 First issue allocates:
 
@@ -508,6 +541,7 @@ Example:
 DEV-2026-0001
 
 Use Concurrent Sequential Numbering:
+
 - PostgreSQL-backed counter
 - annual partition
 - row lock
@@ -519,9 +553,10 @@ Use Concurrent Sequential Numbering:
 Reissuing a later version of the same quote keeps the same quote number.
 
 3. Version immutability
-Draft version may be edited.
+   Draft version may be edited.
 
 Once version is issued:
+
 - amount frozen
 - service snapshot frozen
 - terms snapshot frozen
@@ -534,12 +569,14 @@ Changes require creation of version N+1.
 Previous versions remain reconstructable.
 
 4. Public response
-Closed response vocabulary:
+   Closed response vocabulary:
+
 - accepted
 - declined
 - changes_requested
 
 Secure access:
+
 - random bearer
 - hash only stored
 - scoped to exact quote version and quote-response action
@@ -554,9 +591,10 @@ Viewing metadata/PDF does NOT accept the quote.
 Successful response is single-use/idempotent.
 
 5. PDF
-Generate deterministic French PDF from quote-version snapshots.
+   Generate deterministic French PDF from quote-version snapshots.
 
 Do NOT render from:
+
 - live React DOM
 - mutable service catalogue
 - live subscription fields after issue
@@ -581,7 +619,8 @@ XAF
 Do not invent production legal language.
 
 6. Acceptance vs synchronization
-Public acceptance:
+   Public acceptance:
+
 - records immutable acceptance evidence
 - updates quote/version lifecycle only
 - DOES NOT mutate subscription.agreed_price_xaf
@@ -595,20 +634,22 @@ Public acceptance:
 Coach must invoke explicit synchronization command.
 
 Synchronization:
+
 - requires accepted current/selected quote version
 - stores exact accepted quote-version reference on subscription or equivalent authoritative linkage
 - may update subscription.agreed_price_xaf if safe
 - does not alter service/variant/components/duration in S6.2
 
 If accepted quote amount differs from current agreedPriceXaf:
+
 - allow synchronization only if there is no authoritative finance activity that would become inconsistent
 - finance activity includes committed/active/settled payment plan, confirmed payment event, or payment allocation for subscription
 - if incompatible finance activity exists, reject with typed conflict
 - never rewrite ledger/history
 
 7. Validity and terms
-Quote expiry/validity is explicit coach input.
-Commercial terms are explicit input/configured business data.
+   Quote expiry/validity is explicit coach input.
+   Commercial terms are explicit input/configured business data.
 
 Do not auto-generate legal clauses.
 
@@ -617,6 +658,7 @@ STATE MODEL
 ==================================================
 
 Quote parent suggested states:
+
 - draft
 - issued
 - accepted
@@ -660,11 +702,13 @@ Inspect existing rows before migration.
 Likely required changes:
 
 quotes:
+
 - quoteNumber nullable until first issue
 - currentVersionId proper FK if absent
 - status constraints/indexes as appropriate
 
 quote_versions:
+
 - pdfDocumentId FK if appropriate
 - validity/expiry field
 - issuedAt
@@ -676,9 +720,11 @@ quote_versions:
 - possibly response evidence/reference
 
 subscriptions:
+
 - acceptedQuoteVersionId nullable FK or equivalent exact-version authoritative linkage
 
 numbering:
+
 - introduce/reuse a generic business-document counters table if project design supports future receipts
 - annual quote partition
 - row locking
@@ -702,6 +748,7 @@ SNAPSHOT CONTENT
 At issuance snapshot all facts needed for historical rendering.
 
 At minimum:
+
 - quote number
 - quote version number
 - customer display identity needed for document
@@ -717,6 +764,7 @@ At minimum:
 Avoid unnecessary customer PII duplication.
 
 Historical PDFs must not change if:
+
 - customer later edits profile
 - service renamed
 - variant renamed
@@ -777,7 +825,7 @@ POST
 
 respond body:
 {
-  decision: "accepted" | "declined" | "changes_requested"
+decision: "accepted" | "declined" | "changes_requested"
 }
 
 If changes_requested needs a customer message:
@@ -854,6 +902,7 @@ quote.synchronized
 quote.cancelled
 
 Generic audit metadata may contain:
+
 - quoteId
 - quoteVersionId
 - subscriptionId
@@ -865,11 +914,12 @@ Generic audit metadata may contain:
 - tokenId
 
 Do not put:
+
 - bearer token
 - customer email/phone/name
 - arbitrary terms text
 - external/private notes
-into generic audit metadata.
+  into generic audit metadata.
 
 Public access attempts use external_access_events.
 
@@ -877,7 +927,7 @@ Public access attempts use external_access_events.
 ERROR TAXONOMY
 ==================================================
 
-Create stable QUOTE_* errors aligned with project conventions.
+Create stable QUOTE\_\* errors aligned with project conventions.
 
 At minimum cover:
 
@@ -905,6 +955,7 @@ CLIENT
 After server tests are ready, add French UI integrated into the existing customer/subscription profile pattern.
 
 Admin UI:
+
 - Devis
 - Nouveau devis
 - Brouillon
@@ -916,6 +967,7 @@ Admin UI:
 - Synchroniser avec l'abonnement
 
 Show:
+
 - numéro
 - version
 - montant
@@ -926,6 +978,7 @@ Show:
 - synchronization state
 
 Public UI:
+
 - K'FIT branding
 - quote number/version
 - service
@@ -946,6 +999,7 @@ TESTS
 ==================================================
 
 Shared/unit/HTTP:
+
 1. contract validation
 2. XAF integer amounts
 3. invalid states
@@ -960,6 +1014,7 @@ Shared/unit/HTTP:
 12. sync policy detects finance conflict
 
 PostgreSQL integration:
+
 1. draft creation derives customer/request/subscription
 2. concurrent first issue yields exactly one unique DEV-YYYY-NNNN number
 3. counter + issue rollback atomically on forced failure
@@ -982,6 +1037,7 @@ PostgreSQL integration:
 20. PDF document/version linkage remains immutable
 
 Browser Gate 2:
+
 - create draft
 - edit draft
 - issue V1
@@ -1037,12 +1093,12 @@ At completion return:
 
 Stop after S6.2 handoff.
 
-
-## S6.2 Gate 1 — approved 2026-10-22
+## S6.2 Gate 1 - approved 2026-10-22
 
 Fred approved the complete S6.2 plan.
 
 Locked decisions:
+
 - Quotes are created for an existing subscription/customer after conversion; requestId is derived from subscription.sourceRequestId when present.
 - Drafts have no official quote number. First issue allocates `DEV-YYYY-NNNN` under a concurrency-safe annual counter in the same transaction.
 - Issued versions are immutable. Changes create a new version.
@@ -1059,6 +1115,7 @@ Locked decisions:
 - S6.3 remains closed until S6.2 local validation.
 
 Applicable reusable patterns:
+
 - Concurrent Sequential Numbering
 - Historical Business Snapshot
 - Business Document PDF Generation
@@ -1070,15 +1127,16 @@ Applicable reusable patterns:
 - Shared API Contracts
 - Domain Error Taxonomy
 
-
-## S6.2 closure — 2026-10-22
+## S6.2 closure - 2026-10-22
 
 Status: **CLOSED / LOCALLY VALIDATED**.
 
 Implementation:
-- `9fe7e1b` — `feat(quotes): add versioned quotes and secure acceptance`.
+
+- `9fe7e1b` - `feat(quotes): add versioned quotes and secure acceptance`.
 
 Validation evidence:
+
 - typecheck green;
 - server 400/400;
 - shared 51/51;
@@ -1090,16 +1148,17 @@ Validation evidence:
 - Fred confirmed browser/mobile/keyboard, ClamAV/private-storage issuance and DBeaver acceptance green.
 
 Known non-blocking gap:
+
 - direct synchronization-versus-finance race has no dedicated automated regression; lock ordering was reviewed and no defect was confirmed.
 
 S6.2 is Terminé. S6.3 is now the active planning slice; no S6.3 implementation before Gate 1.
 
-
-## S6.3 Gate 1 — approved 2026-10-22
+## S6.3 Gate 1 - approved 2026-10-22
 
 Goal: customer payment-proof upload and structured coach review, integrated with the authoritative S6.1 ledger without treating evidence as money.
 
 ### Reused foundation
+
 - payment_proofs
 - documents / document_versions
 - secure_access_tokens / external_access_events
@@ -1108,6 +1167,7 @@ Goal: customer payment-proof upload and structured coach review, integrated with
 - typed domain errors, transaction-scoped audit and Service → Controller → Route
 
 ### Locked evidence rules
+
 1. V1 has no customer account, so upload is via secure temporary public token scoped to one subscription/proof-upload action.
 2. Payment-proof files remain private/admin-only. No public proof delivery link.
 3. Upload creates payment evidence only and never creates authoritative money.
@@ -1116,7 +1176,7 @@ Goal: customer payment-proof upload and structured coach review, integrated with
    - claimedAmountXaf;
    - claimedPaymentMethod;
    - claimedOccurredAt/payment date.
-   These are untrusted claims.
+     These are untrusted claims.
 5. Optional claimedExternalReference may be accepted as evidence but is not globally unique by assumption.
 6. payment methods remain the S6.1 closed vocabulary:
    - cash
@@ -1132,6 +1192,7 @@ Goal: customer payment-proof upload and structured coach review, integrated with
    - superseded
 
 ### Coach review
+
 - confirmed: coach confirms the full authoritative payment facts and amount.
 - partially_confirmed: coach confirms a positive amount lower than the claimed amount.
 - correction_requested: no payment; optional customer-facing message may explain what to resubmit.
@@ -1140,7 +1201,9 @@ Goal: customer payment-proof upload and structured coach review, integrated with
 - superseded: historical proof replaced by a later proof; history preserved.
 
 ### Authoritative payment integration
+
 For confirmed / partially_confirmed:
+
 - lock proof;
 - lock subscription / eligible finance obligations using S6.1 ordering;
 - recompute outstanding balance;
@@ -1155,12 +1218,14 @@ For confirmed / partially_confirmed:
 The original evidence does not become the payment event. The review command produces the payment event.
 
 ### Concurrency invariants
+
 - two concurrent review confirmations of one proof create exactly one payment event;
 - proof confirmation racing a manual S6.1 payment must serialize against the true outstanding amount;
 - overpayment from review is rejected atomically;
 - duplicate/replayed review cannot create duplicate allocations.
 
 ### Proof replacement
+
 - correction request issues/permits a fresh upload path;
 - replacement creates a new payment_proofs row;
 - new row supersedes old proof by supersedesProofId;
@@ -1168,6 +1233,7 @@ The original evidence does not become the payment event. The review command prod
 - no in-place replacement of evidence.
 
 ### Schema hardening proposed
+
 - payment_proofs.document_id -> documents.id FK if missing;
 - payment_proofs.supersedes_proof_id self-FK RESTRICT if missing;
 - payment_proofs.payment_event_id nullable FK -> payment_events.id;
@@ -1184,7 +1250,9 @@ The original evidence does not become the payment event. The review command prod
 Exact minimal migration should be chosen after current-row inspection. No destructive changes.
 
 ### API proposal
+
 Admin:
+
 - GET /admin/subscriptions/:subscriptionId/payment-proofs
 - GET /admin/payment-proofs/:proofId
 - GET /admin/payment-proofs/:proofId/document
@@ -1197,13 +1265,16 @@ Admin:
 - POST /admin/payment-proofs/:proofId/mark-duplicate
 
 Public:
+
 - GET /public/payment-proofs/:token
 - POST /public/payment-proofs/:token/upload
 
 No generic status PATCH.
 
 ### Audit privacy
+
 Safe metadata only:
+
 - proofId
 - subscriptionId
 - documentId / documentVersionId
@@ -1214,6 +1285,7 @@ Safe metadata only:
 - tokenId if needed
 
 Do not place in generic audit:
+
 - raw bearer
 - customer PII
 - claimedExternalReference
@@ -1222,7 +1294,9 @@ Do not place in generic audit:
 - uploaded document content
 
 ### Validation target
+
 Must cover:
+
 - clean upload;
 - infected/malformed file rejection;
 - token expiry/revocation/replay;
@@ -1241,6 +1315,7 @@ Must cover:
 - private storage SHA/DBeaver evidence.
 
 ### Out of scope
+
 - receipts/S6.4;
 - OCR or automatic proof interpretation;
 - automatic financial confirmation;
@@ -1253,8 +1328,7 @@ Must cover:
 
 Fred approved the complete plan above. S6.3 implementation is authorized on main, server-first. S6.4 remains closed until local validation.
 
-
-## S6.3 — Fred-approved detailed implementation request
+## S6.3 - Fred-approved detailed implementation request
 
 Implement K'FIT Sprint 6 slice S6.3 only.
 
@@ -1262,6 +1336,7 @@ Branch: main
 Workflow state: APPROVED_FOR_IMPLEMENTATION
 
 Before coding inspect:
+
 - TASKS.md
 - exploration-cache/tasks/sprint-6.md
 - exploration-cache/project/database-schema.md
@@ -1307,6 +1382,7 @@ resourceType = subscription
 action = payment_proof_upload
 
 Requirements:
+
 - random bearer
 - bearer stored hash-only
 - expiry
@@ -1337,6 +1413,7 @@ bank_transfer
 mobile_money
 
 Customer claims must never directly create:
+
 - payment_events
 - payment_allocations
 - finance status
@@ -1355,6 +1432,7 @@ upload
 → hard commit
 
 Accepted proof formats should follow existing safe document/image support unless current product rules require a smaller set:
+
 - PDF
 - JPEG
 - PNG
@@ -1367,7 +1445,7 @@ Do NOT issue public download links for payment proofs.
 Suggested document ownership:
 
 ownerType = payment_proof
-ownerId   = paymentProofId
+ownerId = paymentProofId
 
 documentType = payment_proof
 
@@ -1385,6 +1463,7 @@ and its private document.
 It does NOT create money.
 
 Server derives:
+
 - customerId from subscription
 - subscriptionId from token scope
 - submittedVia = public_link or equivalent closed vocabulary
@@ -1489,6 +1568,7 @@ Do not mutate/remove old file history.
 Use SHA-256 as evidence.
 
 At minimum:
+
 - identical file inside the same correction/replacement lineage should be guarded against accidental resubmission
 - coach may explicitly mark a proof duplicate
 
@@ -1513,9 +1593,11 @@ Keep private coach review notes separate from customer-facing messages.
 Suggested:
 
 reviewNote
+
 - private admin note
 
 customerMessage
+
 - optional message visible to customer when correction is requested
 
 Do NOT expose reviewNote publicly.
@@ -1535,24 +1617,29 @@ Likely minimal additive changes to payment_proofs:
 - payment_event_id nullable FK -> payment_events.id
 
 Claim fields:
+
 - claimed_amount_xaf integer
 - claimed_payment_method text
 - claimed_occurred_at timestamptz
 - claimed_external_reference text nullable
 
 Confirmed fields:
+
 - confirmed_amount_xaf integer nullable
 - confirmed_payment_method text nullable
 - confirmed_occurred_at timestamptz nullable
 
 Review communication:
+
 - customer_message text nullable
 
 Optional additional structural fields only if clearly needed:
+
 - active replacement / lineage helpers
 - explicit upload token linkage
 
 Use CHECK constraints where safe:
+
 - claimed amount > 0
 - confirmed amount > 0 when set
 - currency remains XAF by S6.1 rules
@@ -1560,6 +1647,7 @@ Use CHECK constraints where safe:
 Do not create destructive migrations.
 
 Before migration:
+
 - inspect existing payment_proofs
 - verify no conflicting rows
 - document backfill requirement
@@ -1600,7 +1688,6 @@ POST
 
 POST
 /admin/payment-proofs/:proofId/mark-duplicate
-
 
 Public:
 
@@ -1645,6 +1732,7 @@ optional externalReference
 optional reviewNote
 
 Coach must NOT provide:
+
 - paymentEventId
 - allocation rows
 - paid balance
@@ -1687,6 +1775,7 @@ Transaction:
 Payment + allocations + proof review + audit must commit together.
 
 If any part fails:
+
 - no payment event
 - no allocation
 - proof remains reviewable
@@ -1703,6 +1792,7 @@ A. Double review:
 Two concurrent confirm commands for same proof.
 
 Expected:
+
 - exactly one creates the payment
 - second returns stable invalid-state/conflict result
 - one payment_event only
@@ -1718,6 +1808,7 @@ manual payment amount = 20,000
 concurrent execution
 
 Expected:
+
 - only one financial command may consume the remaining obligation
 - the other sees true recomputed balance and fails safely
 - total applied amount never exceeds 20,000
@@ -1735,6 +1826,7 @@ Named command:
 request-correction
 
 Requirements:
+
 - only from pending_review
 - no payment event
 - status -> correction_requested
@@ -1751,6 +1843,7 @@ Replacement upload flow:
 - replacement starts pending_review
 
 If transition to superseded is used:
+
 - perform it explicitly
 - preserve original correction_requested evidence in audit/history
 - do not erase review timestamps/message
@@ -1760,12 +1853,14 @@ REJECT / DUPLICATE
 ==================================================
 
 Reject:
+
 - pending_review -> rejected
 - no payment
 - reason in private reviewNote if needed
 - no arbitrary reason in generic audit
 
 Duplicate:
+
 - pending_review -> duplicate
 - no payment
 - may reference duplicate-of proof if schema needs explicit linkage, but do not add it unless clearly useful
@@ -1776,6 +1871,7 @@ SECURE TOKEN BEHAVIOR
 ==================================================
 
 Upload token:
+
 - one exact subscription/lineage
 - expiry
 - revocation
@@ -1786,6 +1882,7 @@ Upload token:
 - replay cannot create another proof
 
 external_access_events:
+
 - successful metadata access
 - failed/expired/revoked attempts
 - upload success/failure
@@ -1809,6 +1906,7 @@ payment_proof.duplicate
 payment_proof.superseded
 
 Safe metadata:
+
 - proofId
 - subscriptionId
 - documentId
@@ -1821,6 +1919,7 @@ Safe metadata:
 - tokenId if useful
 
 Do NOT include:
+
 - customer identity
 - raw bearer
 - external reference
@@ -1833,7 +1932,7 @@ Do NOT include:
 ERROR TAXONOMY
 ==================================================
 
-Use stable PAYMENT_PROOF_* errors.
+Use stable PAYMENT*PROOF*\* errors.
 
 At minimum:
 
@@ -1867,6 +1966,7 @@ Add section:
 Justificatifs de paiement
 
 Show:
+
 - date de dépôt
 - montant déclaré
 - moyen déclaré
@@ -1877,6 +1977,7 @@ Show:
 - resulting payment reference/event when confirmed
 
 Actions depending on state:
+
 - Confirmer
 - Confirmer partiellement
 - Demander une correction
@@ -1891,6 +1992,7 @@ Customer public page:
 Justificatif de paiement
 
 Show only:
+
 - safe subscription reference
 - safe remaining amount/context if approved by current read model
 - accepted formats
@@ -2035,18 +2137,20 @@ Return:
 
 Stop after S6.3 implementation and handoff.
 
-### Fred clarification — 2026-10-22
+### Fred clarification - 2026-10-22
+
 Full confirmation requires confirmedAmountXaf = claimedAmountXaf exactly. Partial confirmation requires 0 < confirmedAmountXaf < claimedAmountXaf.
 
-
-## S6.3 implementation checkpoint — 2026-10-22
+## S6.3 implementation checkpoint - 2026-10-22
 
 Status: **IMPLEMENTED / AWAITING_HUMAN_VALIDATION**.
 
 Implementation commit:
-- `8edebc7` — `feat(payment-proofs): add secure upload and coach review`.
+
+- `8edebc7` - `feat(payment-proofs): add secure upload and coach review`.
 
 Implemented:
+
 - shared payment-proof contracts and closed review states;
 - additive migration `0011_motionless_molly_hayes.sql`;
 - secure hash-only proof-upload links;
@@ -2059,6 +2163,7 @@ Implemented:
 - French admin Finance proof panel and public `/justificatif/:token` page.
 
 Agent/reviewer/QA evidence reported:
+
 - typecheck green;
 - server 437/437;
 - shared 53/53;
@@ -2071,23 +2176,26 @@ Agent/reviewer/QA evidence reported:
 - QA PASSED WITH LIMITATIONS.
 
 Known non-blocking coverage note:
+
 - no dedicated proof expiry-during-lock-wait runtime regression; expiry is rechecked after locks.
 
 Important validation boundary:
+
 - Fred has not yet confirmed S6.3 Gate 2 in this chat.
 - Browser/mobile/keyboard, end-to-end proof upload/review flow and DBeaver/private-storage acceptance remain human validation gates.
 - No validated S6.3 changelog entry is allowed before Fred confirms those checks.
 - S6.4 remains closed.
 
-
-## S6.3 closure — 2026-10-22
+## S6.3 closure - 2026-10-22
 
 Status: **CLOSED / LOCALLY VALIDATED**.
 
 Implementation:
-- `8edebc7` — `feat(payment-proofs): add secure upload and coach review`.
+
+- `8edebc7` - `feat(payment-proofs): add secure upload and coach review`.
 
 Validation evidence:
+
 - typecheck green;
 - server 437/437;
 - shared 53/53;
@@ -2099,6 +2207,7 @@ Validation evidence:
 - Fred explicitly confirmed browser/mobile/keyboard, end-to-end proof upload/review, private storage and DBeaver acceptance green.
 
 Key validated invariants:
+
 - proof evidence never creates money on upload;
 - full/partial coach review creates the authoritative S6.1 payment and FIFO allocations atomically;
 - negative outcomes create no money;
@@ -2110,16 +2219,17 @@ Key validated invariants:
 - generic audit excludes external reference, private review note, customer message and customer PII.
 
 Known non-blocking coverage note:
+
 - no dedicated expiry-during-lock-wait regression; expiry is rechecked after locks.
 
 S6.3 is Terminé. S6.4 is now the active planning slice; no S6.4 implementation before Gate 1.
 
-
-## S6.4 Gate 1 — approved 2026-10-22
+## S6.4 Gate 1 - approved 2026-10-22
 
 Goal: issue one immutable, sequential receipt for one authoritative confirmed payment event, with deterministic PDF generation and secure temporary customer sharing.
 
 ### Reused foundation
+
 - receipts
 - payment_events / payment_allocations
 - business_document_counters from S6.2
@@ -2135,6 +2245,7 @@ Goal: issue one immutable, sequential receipt for one authoritative confirmed pa
 - Atomic Business Operation
 
 ### Locked business rules
+
 1. Receipt source:
    - only `payment_received`;
    - payment must be confirmed;
@@ -2168,7 +2279,7 @@ Goal: issue one immutable, sequential receipt for one authoritative confirmed pa
    - subscription agreed amount;
    - paid/balance-after-this-payment as of issuance;
    - template version.
-   Customer-facing display may use FCFA while persistence/API remain XAF.
+     Customer-facing display may use FCFA while persistence/API remain XAF.
 
 5. PDF:
    - render only from the frozen snapshot;
@@ -2201,25 +2312,29 @@ Goal: issue one immutable, sequential receipt for one authoritative confirmed pa
    - no re-issuance under another number for the same payment.
 
 10. Public void behavior:
-   - historical public page/PDF access remains possible while token is otherwise valid;
-   - page clearly marks `Annulé` and current source-payment correction state;
-   - do not rewrite original PDF unless a separate future legal requirement explicitly demands a void-stamped derivative; not S6.4.
+
+- historical public page/PDF access remains possible while token is otherwise valid;
+- page clearly marks `Annulé` and current source-payment correction state;
+- do not rewrite original PDF unless a separate future legal requirement explicitly demands a void-stamped derivative; not S6.4.
 
 11. Explicit issuance:
-   - coach clicks `Émettre le reçu`;
-   - S6.1 manual payment and S6.3 proof-confirmation transactions remain independent of Chromium/ClamAV receipt work.
+
+- coach clicks `Émettre le reçu`;
+- S6.1 manual payment and S6.3 proof-confirmation transactions remain independent of Chromium/ClamAV receipt work.
 
 12. Out of scope:
-   - invoices;
-   - refunds/reimbursements;
-   - credit notes/avoirs;
-   - VAT/tax/fiscal engine;
-   - provider APIs;
-   - automatic email/WhatsApp delivery;
-   - accounting export;
-   - automatic bulk receipt generation.
+
+- invoices;
+- refunds/reimbursements;
+- credit notes/avoirs;
+- VAT/tax/fiscal engine;
+- provider APIs;
+- automatic email/WhatsApp delivery;
+- accounting export;
+- automatic bulk receipt generation.
 
 ### Suggested schema hardening
+
 - `receipts.payment_event_id` unique;
 - `receipts.pdf_document_id` FK -> documents.id;
 - add immutable snapshot JSON or explicit snapshot columns sufficient for historical PDF/read reconstruction;
@@ -2230,7 +2345,9 @@ Goal: issue one immutable, sequential receipt for one authoritative confirmed pa
 Inspect existing receipt rows before migration. No destructive migration.
 
 ### API proposal
+
 Admin:
+
 - GET /admin/subscriptions/:subscriptionId/receipts
 - GET /admin/receipts/:receiptId
 - POST /admin/payment-events/:paymentEventId/receipt
@@ -2240,12 +2357,14 @@ Admin:
 - POST /admin/receipts/:receiptId/void
 
 Public:
+
 - GET /public/receipts/:token
 - GET /public/receipts/:token/pdf
 
 No generic receipt-status PATCH.
 
 ### Issuance hard commit
+
 1. resolve/lock payment event and its subscription/customer scope;
 2. require confirmed `payment_received`;
 3. lock/check existing receipt for payment event;
@@ -2262,7 +2381,9 @@ No generic receipt-status PATCH.
 A receipt must never exist as a usable issued record without its required PDF.
 
 ### Concurrency
+
 Mandatory integration cases:
+
 - concurrent duplicate issue -> exactly one receipt/number/PDF;
 - receipt issue vs source payment correction -> deterministic lock ordering and no inconsistent snapshot;
 - counter rollback/failure -> no duplicate number or orphan receipt;
@@ -2270,13 +2391,16 @@ Mandatory integration cases:
 - partial-correction vs void race -> void cannot win unless payment is fully corrected.
 
 ### Audit
+
 Suggested events:
+
 - receipt.issued
 - receipt.link_issued
 - receipt.link_revoked
 - receipt.voided
 
 Safe metadata:
+
 - receiptId
 - receiptNumber
 - paymentEventId
@@ -2288,6 +2412,7 @@ Safe metadata:
 - structural state
 
 Exclude:
+
 - raw token
 - customer PII
 - external payment reference
@@ -2296,6 +2421,7 @@ Exclude:
 - PDF content
 
 ### Validation target
+
 - only confirmed payment_received is issuable;
 - correction events rejected;
 - one receipt per payment;
@@ -2316,7 +2442,7 @@ Exclude:
 
 Fred approved the complete S6.4 plan above. Implementation is authorized on main, server-first. Sprint 6 is not closed until Fred locally validates S6.4.
 
-## S6.4 detailed approved implementation request — 2026-10-22
+## S6.4 detailed approved implementation request - 2026-10-22
 
 Implement K'FIT Sprint 6 slice S6.4 only.
 
@@ -2326,6 +2452,7 @@ Workflow state: APPROVED_FOR_IMPLEMENTATION
 Do not implement Sprint 7 or unrelated finance features.
 
 Before coding inspect:
+
 - TASKS.md
 - exploration-cache/tasks/sprint-6.md
 - exploration-cache/project/database-schema.md
@@ -2364,12 +2491,14 @@ Receipt may be issued only for:
 payment_event.eventType = payment_received
 
 and:
+
 - confirmedAt != null
 - authoritative allocations exist
 - event belongs to exactly one subscription scope
 - customer matches subscription
 
 Never issue receipt for:
+
 - payment proof itself
 - payment_correction
 - unconfirmed event
@@ -2384,6 +2513,7 @@ Enforce DB uniqueness:
 receipts.payment_event_id UNIQUE
 
 Concurrent/repeated issue attempts:
+
 - one receipt only
 - one number only
 - one PDF only
@@ -2408,6 +2538,7 @@ documentType = receipt
 year = business/local issue year
 
 Rules:
+
 - lock counter row
 - increment inside issue transaction/hard commit
 - DB uniqueness on receiptNumber
@@ -2433,10 +2564,10 @@ payment occurredAt
 payment confirmedAt
 issuedAt
 allocation breakdown:
-  installmentId
-  paymentPlanId
-  amountXaf
-  installment sequence/due reference if displayed
+installmentId
+paymentPlanId
+amountXaf
+installment sequence/due reference if displayed
 subscription agreed amount at issuance
 confirmed paid total after this payment
 remaining balance after this payment
@@ -2452,6 +2583,7 @@ Avoid unnecessary duplicated PII.
 5. Immutable PDF
 
 Receipt PDF:
+
 - French
 - deterministic
 - generated from receipt snapshot only
@@ -2482,6 +2614,7 @@ resourceId = receipt.id
 action = receipt_download
 
 Requirements:
+
 - random bearer
 - hash-only storage
 - exact resource/action scope
@@ -2499,6 +2632,7 @@ PDF download consumes usage according to chosen existing convention.
 7. Payment corrections
 
 A later payment correction must never modify:
+
 - receiptNumber
 - historical snapshot
 - original receipt PDF
@@ -2507,6 +2641,7 @@ A later payment correction must never modify:
 Receipt read model may derive current payment correction state separately from the immutable snapshot.
 
 Expose:
+
 - originalAmountXaf
 - correctedAmountXaf / remaining effective payment amount
 - correctionState:
@@ -2530,10 +2665,12 @@ Explicit admin command only.
 Void is allowed only when the source payment has been fully corrected according to authoritative S6.1 payment history.
 
 Partial correction:
+
 - receipt remains issued
 - void command rejected
 
 Full correction:
+
 - coach may void explicitly
 
 Void stores:
@@ -2541,6 +2678,7 @@ voidedAt
 voidReason
 
 voidReason:
+
 - private admin reason
 - required
 - must not enter generic audit metadata
@@ -2548,6 +2686,7 @@ voidReason:
 9. Preservation
 
 Voided receipt:
+
 - remains stored
 - keeps receipt number
 - keeps original PDF
@@ -2589,6 +2728,7 @@ payment authority must not depend on Chromium/ClamAV/PDF infrastructure.
 12. Out of scope
 
 Do not implement:
+
 - invoices
 - invoice numbering
 - refunds/reimbursements
@@ -2628,12 +2768,14 @@ Inspect existing rows before migration.
 Expected minimal additive hardening:
 
 receipts:
+
 - UNIQUE(payment_event_id)
 - pdf_document_id proper FK -> documents.id
 - snapshot_json JSONB or equivalent immutable snapshot representation
 - template_version if not embedded in snapshot
 
 Keep:
+
 - receipt_number
 - customer_id
 - payment_event_id
@@ -2642,6 +2784,7 @@ Keep:
 - void_reason
 
 Recommended checks:
+
 - voided_at null means issued
 - if voided_at non-null, void_reason required/nonblank where DB-practical
 
@@ -2653,6 +2796,7 @@ voidedAt ? voided : issued
 Do not destructively alter old receipt rows.
 
 Run/prepare a read-only receipt preflight before migration:
+
 - receipt count
 - duplicate paymentEventIds
 - invalid customer/payment relationships
@@ -2672,6 +2816,7 @@ Possibly:
 nothing else
 
 Server derives:
+
 - customer
 - subscription
 - currency
@@ -2687,6 +2832,7 @@ Server derives:
 - template version
 
 Never allow browser to submit:
+
 - receiptNumber
 - customerId
 - amount
@@ -2724,6 +2870,7 @@ POST
 No generic PATCH status.
 
 Admin mutations:
+
 - authenticated admin
 - CSRF/origin protections
 - resource authorization
@@ -2739,6 +2886,7 @@ GET
 /public/receipts/:token/pdf
 
 Public metadata:
+
 - receipt number
 - issue date
 - safe customer display
@@ -2751,6 +2899,7 @@ Public metadata:
 - download availability
 
 Do not expose:
+
 - customer internal IDs unless needed
 - payment external reference
 - review notes
@@ -2764,6 +2913,7 @@ ISSUANCE HARD COMMIT
 Preferred flow:
 
 Prepare:
+
 1. resolve payment event
 2. resolve exact subscription scope through allocations
 3. validate event = confirmed payment_received
@@ -2773,19 +2923,10 @@ Prepare:
 7. freeze snapshot
 8. prepare deterministic PDF bytes/temp file
 
-Finalize transaction/hard commit:
-9. lock annual receipt counter partition
-10. allocate REC-YYYY-NNNN
-11. finalize snapshot number/date if needed
-12. render final deterministic PDF if number participates in render
-13. scan
-14. finalize private file
-15. create documents/document_version
-16. create receipt with snapshot + pdfDocumentId
-17. audit receipt.issued
-18. commit
+Finalize transaction/hard commit: 9. lock annual receipt counter partition 10. allocate REC-YYYY-NNNN 11. finalize snapshot number/date if needed 12. render final deterministic PDF if number participates in render 13. scan 14. finalize private file 15. create documents/document_version 16. create receipt with snapshot + pdfDocumentId 17. audit receipt.issued 18. commit
 
 Compensation:
+
 - failed DB finalize removes any newly finalized file
 - failed render/scan creates no receipt/counter-visible business artifact per existing numbering rollback semantics
 
@@ -2820,13 +2961,13 @@ correctableXaf already exists in S6.1 semantics.
 Derived:
 
 if correctableXaf == P.amountXaf:
-  none
+none
 
 if 0 < correctableXaf < P.amountXaf:
-  partially_corrected
+partially_corrected
 
 if correctableXaf == 0:
-  fully_corrected
+fully_corrected
 
 Use authoritative correction events.
 
@@ -2847,6 +2988,7 @@ VOID TRANSACTION
 9. commit
 
 Do not change:
+
 - payment
 - allocations
 - subscription
@@ -2857,7 +2999,7 @@ Concurrent void commands:
 exactly one transition.
 
 ==================================================
-CONCURRENCY TESTS — MANDATORY
+CONCURRENCY TESTS - MANDATORY
 ==================================================
 
 1. concurrent issue same payment
@@ -2865,6 +3007,7 @@ CONCURRENCY TESTS — MANDATORY
 Two commands issue same payment simultaneously.
 
 Expected:
+
 - one receipt
 - one receiptNumber
 - one PDF/document
@@ -2885,6 +3028,7 @@ Receipt issuance racing a payment correction.
 Expected deterministic locking.
 
 Receipt must:
+
 - either snapshot a state consistent before correction
 - or reject/retry safely
 
@@ -2918,6 +3062,7 @@ Optional:
 receipt.document_downloaded for authenticated admin if consistent with document policy.
 
 Generic audit safe metadata:
+
 - receiptId
 - receiptNumber
 - paymentEventId
@@ -2931,6 +3076,7 @@ Generic audit safe metadata:
 - tokenId
 
 Never include:
+
 - bearer
 - customer name/email/phone
 - payment externalReference
@@ -2944,7 +3090,7 @@ Public access goes to external_access_events.
 ERROR TAXONOMY
 ==================================================
 
-Use stable RECEIPT_* errors.
+Use stable RECEIPT\_\* errors.
 
 At minimum:
 
@@ -2978,6 +3124,7 @@ Admin section:
 Reçus
 
 Show:
+
 - receipt number
 - payment amount
 - payment method
@@ -2987,6 +3134,7 @@ Show:
 - correction state
 
 Actions:
+
 - Émettre le reçu
 - Télécharger
 - Partager
@@ -3001,11 +3149,13 @@ Payment history with receipt:
 show receipt number/action instead.
 
 Void confirmation must clearly explain:
+
 - receipt number is preserved
 - PDF remains historical
 - action does not refund/correct payment
 
 Public page:
+
 - K'FIT branding
 - Reçu de paiement
 - receipt number
@@ -3028,6 +3178,7 @@ TESTS
 ==================================================
 
 Shared/unit/HTTP:
+
 1. contracts reject unknown server-owned fields
 2. receipt states/types
 3. admin auth/CSRF
@@ -3044,6 +3195,7 @@ Shared/unit/HTTP:
 14. token error mapping
 
 PostgreSQL integration:
+
 1. receipt preflight-safe baseline
 2. valid issue creates one receipt/document
 3. receipt links exact customer/payment
@@ -3154,18 +3306,19 @@ Return:
 
 Stop after S6.4 implementation.
 
-
-## Sprint 6 closure — 2026-10-23
+## Sprint 6 closure - 2026-10-23
 
 Status: **CLOSED / LOCALLY VALIDATED**.
 
 Acceptance summary:
+
 - S6.1 authoritative ledger validated;
 - S6.2 quotes/versioning/PDF/secure acceptance validated;
 - S6.3 proof evidence/review/payment integration validated;
 - S6.4 receipts/numbering/PDF/secure sharing/void validated.
 
 S6.4 evidence:
+
 - implementation `a38901a`;
 - server 470/470;
 - shared 55/55;
@@ -3176,6 +3329,7 @@ S6.4 evidence:
 Sprint 6 V1 Core objective is satisfied. No further Sprint 6 implementation is open.
 
 Next dependency-ordered sprint:
-- Sprint 7 — Dashboard, notifications, rétention, sauvegardes et durcissement.
-- First slice: S7.1 — Core dashboard KPIs and operational alert workspaces.
+
+- Sprint 7 - Dashboard, notifications, rétention, sauvegardes et durcissement.
+- First slice: S7.1 - Core dashboard KPIs and operational alert workspaces.
 - State: planning / Gate 1 pending.

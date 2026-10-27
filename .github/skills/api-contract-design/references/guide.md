@@ -1,4 +1,4 @@
-# api-contract-design — detailed guide
+# api-contract-design - detailed guide
 
 Loaded on demand from `../SKILL.md`.
 
@@ -19,7 +19,6 @@ Before proposing or modifying an API contract, inspect:
 11. every known consumer
 
 Prefer the repository's established style over introducing a new API pattern.
-
 
 ## Contract Layers
 
@@ -46,7 +45,6 @@ DB entity
 ```
 
 Do not expose ORM/database entities directly unless the project explicitly uses that architecture.
-
 
 ## Request DTOs
 
@@ -76,7 +74,6 @@ is preferable to:
 Partial<RequestEntity>
 ```
 
-
 ## Response DTOs
 
 Responses should expose only information required by consumers.
@@ -92,7 +89,6 @@ Check for:
 - unnecessary PII
 
 Prefer stable API-facing field names even if underlying database column names differ.
-
 
 ## Shared Contracts
 
@@ -114,7 +110,6 @@ After editing:
 - inspect compilation and runtime assumptions
 
 A shared package compiling alone is insufficient.
-
 
 ## Contract Change Classification
 
@@ -158,7 +153,6 @@ Examples:
 
 Requires explicit developer approval and migration/compatibility strategy.
 
-
 ## Server Authority
 
 Business rules must be enforced server-side.
@@ -185,7 +179,6 @@ Server must independently validate:
 - input invariants
 - resource relationships
 
-
 ## Resource Relationships
 
 When one request references multiple entities, verify ownership/cardinality explicitly.
@@ -204,7 +197,6 @@ Validate relationship ownership server-side.
 Avoid leaking whether a referenced resource exists when disclosure is unnecessary.
 
 Prefer a single typed invalid-reference error when appropriate.
-
 
 ## Commands vs Generic Updates
 
@@ -240,7 +232,6 @@ caller expresses intent
 server owns transition
 ```
 
-
 ## HTTP Method Semantics
 
 Use repository conventions first.
@@ -267,7 +258,6 @@ DELETE
 Do not choose HTTP methods based only on aesthetics.
 
 Preserve existing project consistency.
-
 
 ## Error Taxonomy
 
@@ -300,7 +290,6 @@ Public API responses should not expose:
 - sensitive existence details
 - raw third-party errors
 
-
 ## Error Families
 
 Common categories:
@@ -321,7 +310,6 @@ Map them consistently to HTTP status codes according to project conventions.
 
 Do not invent a new mapping style inside one module.
 
-
 ## Error Stability
 
 Consumers may depend on error codes.
@@ -334,7 +322,6 @@ Therefore:
 - new cases should receive new codes when behavior differs materially
 
 Human-readable messages may evolve more freely than machine-readable codes.
-
 
 ## Validation
 
@@ -358,7 +345,6 @@ Validate business invariants inside the appropriate service/domain layer:
 
 Do not put domain logic only in controller-level validation.
 
-
 ## Normalization
 
 Define normalization explicitly for inputs such as:
@@ -381,7 +367,6 @@ normalize
 ```
 
 Do not compare normalized and non-normalized versions inconsistently across modules.
-
 
 ## Idempotent Commands
 
@@ -410,7 +395,6 @@ Do not confuse idempotency with business duplicate detection.
 
 Use the `database-safety` skill when persistence/concurrency guarantees are involved.
 
-
 ## Concurrency-sensitive APIs
 
 For commands that modify state, ask:
@@ -431,7 +415,6 @@ Review:
 API correctness must not rely on frontend disabling.
 
 Use database-backed safeguards where needed.
-
 
 ## Authorization
 
@@ -455,7 +438,6 @@ client visibility
 server enforcement
 ```
 
-
 ## Public Endpoints
 
 For unauthenticated write endpoints, consider:
@@ -472,7 +454,6 @@ For unauthenticated write endpoints, consider:
 Do not automatically apply authenticated-route CSRF rules when no authenticated session exists.
 
 Follow project security architecture.
-
 
 ## Audit
 
@@ -492,7 +473,6 @@ Do not include unnecessary PII or secrets.
 
 If the caller is anonymous, use the project's approved anonymous/public actor model rather than inventing a fake user.
 
-
 ## Pagination
 
 For list APIs, define:
@@ -507,7 +487,6 @@ For list APIs, define:
 Do not allow unbounded list responses by default for potentially large datasets.
 
 Ensure sort order is deterministic.
-
 
 ## Filtering and Search
 
@@ -525,7 +504,6 @@ Do not leave search semantics implicit if consumers depend on them.
 
 Keep filtering behavior server-authoritative.
 
-
 ## Dates
 
 API date/time contracts must define:
@@ -540,7 +518,6 @@ Prefer an unambiguous standard representation such as ISO 8601.
 Do not mix local timestamps and UTC semantics implicitly.
 
 Use project-specific timezone rules.
-
 
 ## Currency and Numeric Values
 
@@ -557,7 +534,6 @@ Do not use floating-point values for monetary amounts when project architecture 
 
 For zero-decimal currencies (for example XAF or JPY), store integer amounts and follow the currency rules in `PROJECT.md`.
 
-
 ## Enums
 
 When exposing enums:
@@ -570,7 +546,6 @@ When exposing enums:
 When adding enum values, inspect consumers for exhaustive switches.
 
 A compile-safe shared enum change may still break runtime assumptions.
-
 
 ## Null vs Missing
 
@@ -585,7 +560,6 @@ field = ""
 Particularly important for PATCH/update semantics.
 
 Do not silently treat them as equivalent unless business rules define that behavior.
-
 
 ## Backward Compatibility
 
@@ -608,7 +582,6 @@ For breaking changes, define:
 
 Do not break internal clients merely because they live in the same monorepo.
 
-
 ## Versioning
 
 Do not introduce versioning prematurely.
@@ -628,7 +601,6 @@ internal coordinated rollout
 
 Do not mix strategies within the same project without explicit architecture approval.
 
-
 ## Client Integration
 
 When a server contract changes, inspect client impact:
@@ -645,7 +617,6 @@ permission handling
 ```
 
 Do not let frontend components call raw endpoints differently from existing API-client conventions.
-
 
 ## Query vs Mutation
 
@@ -672,7 +643,6 @@ cache invalidation
 
 Follow the project's existing TanStack Query or equivalent patterns when present.
 
-
 ## Contract Tests
 
 Contract tests should verify:
@@ -685,7 +655,6 @@ Contract tests should verify:
 Do not make tests merely duplicate TypeScript compilation.
 
 Tests should protect behavior or stable contract expectations.
-
 
 ## Server Tests
 
@@ -704,7 +673,6 @@ concurrency
 ```
 
 Only add relevant cases.
-
 
 ## Client Tests / Smoke Checks
 

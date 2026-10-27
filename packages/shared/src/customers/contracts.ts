@@ -44,7 +44,10 @@ export type CreateCustomerInput = {
 };
 export type AdminCustomersResponse = { customers: AdminCustomer[] };
 export type CreateCustomerResponse = { customer: AdminCustomer };
-export type CustomerErrorResponse = { error: CustomerErrorCode; reason?: string };
+export type CustomerErrorResponse = {
+  error: CustomerErrorCode;
+  reason?: string;
+};
 
 /** Subscription line on the client profile (UX-4). Read-only summary; details come from the per-subscription endpoints. */
 export type AdminCustomerSubscriptionSummary = {
@@ -65,20 +68,40 @@ export type AdminCustomerSubscriptionSummary = {
   createdAt: string;
 };
 /** S7.3b D1: the fiche also opens archived and anonymized customers; an anonymized one has no contact (whatsapp/email null). */
-export type AdminCustomerDetail = Omit<AdminCustomer, "whatsapp"> & { whatsapp: string | null };
+export type AdminCustomerDetail = Omit<AdminCustomer, "whatsapp"> & {
+  whatsapp: string | null;
+};
 /**
  * S7.3b D1: archivable = not archived and every subscription completed or cancelled; activeHolds = active customer-scope holds.
  * ARCH-01 D9: unarchivable = archived and not anonymized.
  */
-export type AdminCustomerPrivacy = { archivedAt: string | null; anonymizedAt: string | null; archivable: boolean; unarchivable: boolean; activeHolds: number };
-export type AdminCustomerDetailResponse = { customer: AdminCustomerDetail; subscriptions: AdminCustomerSubscriptionSummary[]; privacy: AdminCustomerPrivacy };
+export type AdminCustomerPrivacy = {
+  archivedAt: string | null;
+  anonymizedAt: string | null;
+  archivable: boolean;
+  unarchivable: boolean;
+  activeHolds: number;
+};
+export type AdminCustomerDetailResponse = {
+  customer: AdminCustomerDetail;
+  subscriptions: AdminCustomerSubscriptionSummary[];
+  privacy: AdminCustomerPrivacy;
+};
 /** S7.3b D2: archived list line. An anonymized customer shows only the stored pseudonym. */
-export type AdminArchivedCustomer = { id: string; displayName: string; archivedAt: string; anonymizedAt: string | null; activeHolds: number };
-export type AdminArchivedCustomersResponse = { customers: AdminArchivedCustomer[] };
+export type AdminArchivedCustomer = {
+  id: string;
+  displayName: string;
+  archivedAt: string;
+  anonymizedAt: string | null;
+  activeHolds: number;
+};
+export type AdminArchivedCustomersResponse = {
+  customers: AdminArchivedCustomer[];
+};
 
 /* ------------------------------------------------------------------ */
 /* Client analytics (UX-4c, board 03b). Read-only, computed on demand. */
-/* Calculation rules validated by Fred on 2026-10-22 — see the        */
+/* Calculation rules validated by Fred on 2026-10-22 - see the        */
 /* customer-analytics policy on the server for the exact formulas.    */
 /* ------------------------------------------------------------------ */
 
@@ -91,13 +114,18 @@ export type CustomerAnalyticsAttendance = {
   honored: number;
   /** Missed appointments (customer absent). */
   missed: number;
-  /** Rescheduled appointments — shown, excluded from the rate. */
+  /** Rescheduled appointments - shown, excluded from the rate. */
   rescheduled: number;
   /** honored / (honored + missed); null when both are 0. */
   rate: number | null;
 };
 
-export type CustomerAnalyticsWeek = { weekStart: string; honored: number; rescheduled: number; missed: number };
+export type CustomerAnalyticsWeek = {
+  weekStart: string;
+  honored: number;
+  rescheduled: number;
+  missed: number;
+};
 
 export type CustomerAnalyticsCadence = {
   subscriptionId: string;
@@ -173,23 +201,50 @@ export type CustomerAnalyticsResponse = { analytics: CustomerAnalytics };
 /* cadence, next appointment, last contact, views).                    */
 /* ------------------------------------------------------------------ */
 
-export const customerOverviewViews = ["all", "active", "overdue", "preparation", "paused", "former"] as const;
+export const customerOverviewViews = [
+  "all",
+  "active",
+  "overdue",
+  "preparation",
+  "paused",
+  "former",
+] as const;
 export type CustomerOverviewView = (typeof customerOverviewViews)[number];
 
 export type AdminCustomerOverviewRow = {
   customer: AdminCustomer;
   clientStatus: ClientStatusKey;
   /** Same subscription the profile opens by default; null without subscription. */
-  currentSubscription: { id: string; reference: string; status: string; serviceName: string; serviceSlug: string; variantName: string | null } | null;
+  currentSubscription: {
+    id: string;
+    reference: string;
+    status: string;
+    serviceName: string;
+    serviceSlug: string;
+    variantName: string | null;
+  } | null;
   /** Other open (not completed/cancelled) subscriptions besides the current one. */
   otherOpenSubscriptions: number;
   /** Worst S5.3 cadence state across subscriptions (overdue > due > healthy); null when none applies. */
-  cadence: { subscriptionId: string; state: CadenceState; overdueByDays: number | null } | null;
+  cadence: {
+    subscriptionId: string;
+    state: CadenceState;
+    overdueByDays: number | null;
+  } | null;
   /** Earliest scheduled / confirmed / reschedule-requested appointment that has not ended. */
-  nextAppointment: { id: string; subscriptionId: string; scheduledStart: string; status: string } | null;
+  nextAppointment: {
+    id: string;
+    subscriptionId: string;
+    scheduledStart: string;
+    status: string;
+  } | null;
   /** Latest S5.3 meaningful activity across subscriptions. */
   lastContactAt: string | null;
   /** Views that include this client (always contains "all"). */
   views: CustomerOverviewView[];
 };
-export type AdminCustomerOverviewResponse = { asOf: string; customers: AdminCustomerOverviewRow[]; counts: Record<CustomerOverviewView, number> };
+export type AdminCustomerOverviewResponse = {
+  asOf: string;
+  customers: AdminCustomerOverviewRow[];
+  counts: Record<CustomerOverviewView, number>;
+};

@@ -81,6 +81,6 @@ End with:
 
 ```text
 ✅ Plan ready
-⏳ Awaiting — developer's explicit approval (Workflow state: AWAITING_PLAN_APPROVAL)
-🔜 After approval — "Start Implementation"
+⏳ Awaiting - developer's explicit approval (Workflow state: AWAITING_PLAN_APPROVAL)
+🔜 After approval - "Start Implementation"
 ```

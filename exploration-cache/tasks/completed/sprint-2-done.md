@@ -1,4 +1,4 @@
-# Sprint 2 — Completed
+# Sprint 2 - Completed
 
 > Closed: 2026-09-17
 
@@ -21,6 +21,6 @@ Fred confirmed the S2.6 client typecheck/build and full manual smoke green, incl
 
 ## Next sprint
 
-Sprint 3 — demandes, prospects, qualification et liste d'attente.
+Sprint 3 - demandes, prospects, qualification et liste d'attente.
 
 First selected backlog task: **Public request form (name + phone, per service)**.

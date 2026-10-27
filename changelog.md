@@ -2,25 +2,25 @@
 
 > Only locally validated changes are recorded here.
 
-## 2026-10-25 — TEST-01 integration test database + test-data cleanup
+## 2026-10-25 - TEST-01 integration test database + test-data cleanup
 
 - Integration tests run only on local `kfit_test` (root `.env.test`, `npm run db:test:prepare`: create + migrate + catalogue seed); one guard `assertLocalTestDatabase` in all 30 integration files; the dev API refuses to start on kfit_test.
 - Réglages › « Données de test » (dev builds only, absent from the production bundle): analyse then purge `[TEST] ` and legacy fixtures with their dependents in one transaction; rows tied to real customers kept; audit with counts only. Server routes mounted from dev-app.ts and refused outside local kfit_dev.
 - Flaky « unique-token collision » diagnosed: product bug in `isUniqueViolation` (drizzle wraps the pg error in `.cause`), not test isolation; left for its own brief.
 - Validation (agent): shared 71/71, server 623/623, PostgreSQL 597/597 on kfit_test, kfit_dev counts unchanged by the run, client bundle grep 0.
 
-## 2026-10-25 — Recette fixes (REG-F1 → REG-F11)
+## 2026-10-25 - Recette fixes (REG-F1 → REG-F11)
 
 - REG-F1 variant-less offers qualify and convert: `001f55d` (validated by Fred).
 - REG-F6/F7 optional consents and consent texts: CONS-02a `2aae7f9` (server), CONS-02b `b0af0a1` (client), both validated by Fred.
 - REG-F2 catalogue variants, prestations and rules editable with a pre-publication checklist: CAT-03a `5c5325b` (server, migration 0016), CAT-03b `949d710` (client), validated by Fred.
-- REG-F3/F4/F5/F8/F9/F10/F11 polish: POL-01 `fix(recette): polish findings …` — test fixtures guarded and isolated, « À traiter » gains overdue installments and pending proofs (alerts byte-identical), notification tab counts open items, receipt links show remaining downloads, past appointments « À clôturer », clearer profile header and document dialogs. Committed on Fred's instruction; manual checks listed in sprint-7.md § POL-01 execution.
+- REG-F3/F4/F5/F8/F9/F10/F11 polish: POL-01 `fix(recette): polish findings …` - test fixtures guarded and isolated, « À traiter » gains overdue installments and pending proofs (alerts byte-identical), notification tab counts open items, receipt links show remaining downloads, past appointments « À clôturer », clearer profile header and document dialogs. Committed on Fred's instruction; manual checks listed in sprint-7.md § POL-01 execution.
 - Validation (agent): shared 69/69, server 607/607, PostgreSQL 594/594 (last full run), typecheck/build green.
-- Known: integration runs share kfit_dev with the dev API jobs (notifications reconcile can write on test fixtures) — stop dev:api while running integration; one flaky requests concurrency test.
+- Known: integration runs share kfit_dev with the dev API jobs (notifications reconcile can write on test fixtures) - stop dev:api while running integration; one flaky requests concurrency test.
 
-## 2026-10-24 — Refonte UI (Track B) closed
+## 2026-10-24 - Refonte UI (Track B) closed
 
-- Every admin and public screen now follows the validated boards (canvas « K'FIT — Refonte UI »); business rules unchanged except where Fred decided below.
+- Every admin and public screen now follows the validated boards (canvas « K'FIT - Refonte UI »); business rules unchanged except where Fred decided below.
 - Steps since UX-9c, each applied and pushed by Fred: UX-9d `1d3a476`, UX-9e `6ca2a2f`, UX-10 `e0ae7f1`, UX-12a `4288d46`, UX-12b `57e5613`, UX-11 `bf87713`, UX-15 `27042a1` + `f86cdcb`, UX-14 `56f8454` + `b751757` + `63279f3` (OTP e-mail fix `f989bec`), UX-13 `14106e7`.
 - Fred's local checks of UX-9d, UX-10 and UX-13 passed on 2026-10-24.
 - Highlights: login/recovery screens; landing + request page; the 7 customer link pages on one public shell; « Paiements » (finance, quotes, receipts, proof review) and « Documents » tabs; Rendez-vous, Suivis, Préparation, Santé et consentements tabs and the Suivis page; `legacy.css` removed.
@@ -28,11 +28,11 @@
 - Only server change of the track: UX-14c read-only answers route (`GET /admin/subscriptions/:id/questionnaire/revisions/:submissionId`); questionnaire PostgreSQL integration 47/47.
 - Limits: public pages still say « ta coach » until the coach onboarding (name, logo, photo); production also needs legal pages, SMTP settings and the public contact links at build time.
 
-## 2026-10-23 — Sprint 7.1 dashboard analytics and operational alerts
+## 2026-10-23 - Sprint 7.1 dashboard analytics and operational alerts
 
 - S7.1 is locally validated and closed.
-- Implementation: `ed1c7d0` — `feat(dashboard): add historical analytics and operational alerts`.
-- Corrective fix: `bb3ba76` — deterministic finance allocation read ordering by authoritative installment order.
+- Implementation: `ed1c7d0` - `feat(dashboard): add historical analytics and operational alerts`.
+- Corrective fix: `bb3ba76` - deterministic finance allocation read ordering by authoritative installment order.
 - Added 4w/8w/12m request analytics, cumulative submitted-cohort funnel, eight-week KPI trends/deltas, five distinct authoritative finance values and derived operational-alert workspaces.
 - Added prospective effective follow-up cadence history. Legacy cadence before the authority boundary is never fabricated; unavailable historical points remain null/unavailable and suppress misleading deltas.
 - Current `GET /admin/today` semantics remain unchanged.
@@ -41,7 +41,7 @@
 - Known non-blocking coverage note: actual catalogue-seed concurrency against simultaneous override/activation was inspected but not directly runtime-tested; transaction helpers and database overlap constraints are covered.
 - S7.2 may now enter planning; no notification/email implementation before its Gate 1.
 
-## 2026-10-23 — Sprint 6 closed
+## 2026-10-23 - Sprint 6 closed
 
 - Sprint 6 is locally validated and closed across S6.1–S6.4.
 - Delivered the V1 Core finance chain: payment plans/installments, confirmed payment events and FIFO allocations, versioned quotes and secure acceptance, customer payment-proof evidence/review, and sequential payment receipts with secure sharing.
@@ -49,12 +49,12 @@
 - Historical financial/documents evidence is append-only or immutable at the appropriate business point; corrections never rewrite source payment or receipt history.
 - Final S6.4 implementation: `a38901a`; server 470/470, shared 55/55, PostgreSQL 507/507, typecheck/build/db:check and real PDF/files/ClamAV preflights green.
 - Fred confirmed S6.4 browser/mobile/keyboard and DBeaver Gate 2 all green.
-- Next sprint: Sprint 7 — Dashboard, notifications, retention, backups and hardening.
-- First task: S7.1 — Core dashboard KPIs and operational alert workspaces; Gate 1 required before implementation.
+- Next sprint: Sprint 7 - Dashboard, notifications, retention, backups and hardening.
+- First task: S7.1 - Core dashboard KPIs and operational alert workspaces; Gate 1 required before implementation.
 
-## 2026-10-23 — Sprint 6.4 sequential receipts and secure sharing
+## 2026-10-23 - Sprint 6.4 sequential receipts and secure sharing
 
-- Implementation commit: `a38901a` — `feat(receipts): add sequential receipts and secure sharing`.
+- Implementation commit: `a38901a` - `feat(receipts): add sequential receipts and secure sharing`.
 - Fred confirmed browser and database checks all green and explicitly authorized commit/push.
 - Added explicit receipt issuance for authoritative confirmed payment_received events, with one receipt per payment enforced by PostgreSQL uniqueness and locked annual REC-YYYY-NNNN numbering.
 - Frozen historical snapshots and deterministic French PDFs preserve source payment/allocation facts and balance after that payment. Ambiguous source confirmation timestamps reject safely rather than invent historical ordering.
@@ -65,9 +65,9 @@
 - Approved migration 0012_spooky_spiral.sql was generated/applied after a zero-evidence preflight; no backfill required. Preserve snapshot/number/PDF/void evidence before rollback after use.
 - Agent evidence: typecheck/build/schema/diff passed; 470/470 server, 55/55 shared, 507/507 PostgreSQL including 40 receipt cases; real PDF and ClamAV clean/EICAR preflights passed. Independent Reviewer passed with notes; QA passed with limitations before Fred acceptance. No dependency/lockfile changes. Sprint 6 closure remains a separate decision.
 
-## 2026-10-22 — Sprint 6.3 secure payment proofs and coach review
+## 2026-10-22 - Sprint 6.3 secure payment proofs and coach review
 
-- Implementation commit: `8edebc7` — `feat(payment-proofs): add secure upload and coach review`.
+- Implementation commit: `8edebc7` - `feat(payment-proofs): add secure upload and coach review`.
 - Fred locally validated S6.3 end-to-end, including browser/mobile/keyboard, private scanned storage/ClamAV behavior and DBeaver evidence.
 - Added scoped, expiring, revocable, hash-only, single-use customer upload links and French public/admin interfaces in the subscription Finance area.
 - Upload stores private scanned evidence and untrusted customer claims only; it never creates authoritative money.
@@ -79,9 +79,9 @@
 - Known non-blocking gap: no dedicated expiry-during-lock-wait runtime regression; expiry is rechecked after locks.
 - S6.3 is closed. S6.4 remains planning-only until its Gate 1.
 
-## 2026-10-22 — Sprint 6.2 versioned quotes and secure acceptance
+## 2026-10-22 - Sprint 6.2 versioned quotes and secure acceptance
 
-- Implementation commit: `9fe7e1b` — `feat(quotes): add versioned quotes and secure acceptance`.
+- Implementation commit: `9fe7e1b` - `feat(quotes): add versioned quotes and secure acceptance`.
 - Fred confirmed the S6.2 Gate 2 validation checklist "all green": local commands, browser/mobile/keyboard, real scan/storage issuance and DBeaver acceptance.
 - Added versioned subscription/customer-owned quotes with official DEV-YYYY-NNNN numbering allocated under an annual PostgreSQL counter lock at first issuance.
 - Issued commercial snapshots and private PDF artifacts remain immutable; later versions preserve the quote number and historical responses/documents.
@@ -92,14 +92,14 @@
 - Agent evidence: typecheck/build/schema/diff passed; server 400/400, shared 51/51, PostgreSQL 428/428 including 34 quote cases; real Chromium snapshot PDF determinism passed. Reviewer passed with notes; QA passed with limitations before Fred's acceptance. The known unchanged Sprint 3 concurrency flake passed its approved retry.
 - Direct synchronization-versus-finance race coverage remains a documented test gap. Fred explicitly authorized commit/push; S6.3 is not started.
 
-## 2026-10-22 — Sprint 5 closed
+## 2026-10-22 - Sprint 5 closed
 
 - Sprint 5 is locally validated and closed across S5.1–S5.5.
 - The sprint now delivers the authoritative post-onboarding coaching lifecycle: subscription state, appointments/component consumption, follow-up cadence, progress/goals and personalized documents.
 - Production blockers remain unchanged: applicable Gabon legal review, a true encrypted off-server backup destination, and the device-OTP/trusted-device login contract before production.
-- Next dependency-ordered sprint is Sprint 6 — finance. First task: financial ledger for charges, installments, transactions and allocations; implementation remains gated by Sprint 6 planning/Gate 1.
+- Next dependency-ordered sprint is Sprint 6 - finance. First task: financial ledger for charges, installments, transactions and allocations; implementation remains gated by Sprint 6 planning/Gate 1.
 
-## 2026-10-22 — Sprint 5.5 personalized documents and secure delivery
+## 2026-10-22 - Sprint 5.5 personalized documents and secure delivery
 
 - Fred locally validated S5.5 end-to-end.
 - Added private personalized documents owned by subscription with immutable document versions and an explicit current-version pointer.
@@ -113,7 +113,7 @@
 - Browser/mobile/keyboard flow and DBeaver/private-storage inspection are green. Stored files matched DB size/SHA evidence and generic audits contained structural data only.
 - No S5.5 migration or new package dependency was required.
 
-## 2026-10-22 — Refonte UI UX-10 Connexion
+## 2026-10-22 - Refonte UI UX-10 Connexion
 
 - Board 09 rebuilt: two-panel auth shell (text-only brand panel, hidden below lg), Connexion with show/hide password and DEV-only demo button, « Mot de passe oublié » in three steps (e-mail → 6-digit code → new password), Initialisation restyled.
 - Rules validated by Fred: one message for invalid credentials / unavailable account; neutral code request; « Code invalide ou expiré. » with 5-minute hint; 60 s resend cooldown; reset returns to Connexion without auto-login.
@@ -124,12 +124,12 @@
 - Deferred: new-device OTP + trusted device (pre-prod blocker, Notion « Session security »).
 - Agent validation: client tsc/build, server 326 tests, shared 45 tests, browser pass desktop + 390 px. Fred local validation pending.
 
-## 2026-10-22 — Refonte UI UX-1 → UX-9b (admin screens)
+## 2026-10-22 - Refonte UI UX-1 → UX-9b (admin screens)
 
-- Track B on `main`, parallel to Sprint 5. Business logic unchanged; only read-only API endpoints were added. Each step was delivered as a diff and applied/pushed by Fred. Live tracking: `TASKS.md` § Refonte UI — suivi.
+- Track B on `main`, parallel to Sprint 5. Business logic unchanged; only read-only API endpoints were added. Each step was delivered as a diff and applied/pushed by Fred. Live tracking: `TASKS.md` § Refonte UI - suivi.
 - UX-1 (88235de): Tailwind v4 + shadcn primitives, design tokens, shared status map; legacy screens isolated under `legacy.css`.
 - UX-2 (141175f): admin shell with React Router, sidebar and mobile navigation.
-- UX-3 (c2d4497): data kit — DataTable, read-only tables, KPI tile, sparkline, bar and stacked charts.
+- UX-3 (c2d4497): data kit - DataTable, read-only tables, KPI tile, sparkline, bar and stacked charts.
 - UX-4a/b/c (477650a, f92e7cb, 972dc22): client profile shell, Aperçu, Progression and Analyse tabs; added `GET /admin/customers/:id` and `GET /admin/customers/:id/analytics` (attendance, cadence, pace and responsiveness rules validated by Fred).
 - UX-5 (b8a1135): clients list and creation; added `GET /admin/customers/overview`; client status derived once in `@kfit/shared`.
 - UX-6 (f21120f): requests queue views and detail.
@@ -140,7 +140,7 @@
 - Agent validation per step: client typecheck/build, server tsc + unit tests, shared tests; PostgreSQL integration test added for the UX-9 dashboard repository. Full UI recette (desktop + 390 px) pending in UX-13.
 - Open: UX-10 scope decision; auth contract gap (no device OTP at login) recorded as a pre-prod blocker; prod reverse proxy must list `/admin/today` and `/admin/appointments`.
 
-## 2026-10-21 — Sprint 5.4 progress measurements and structured goals
+## 2026-10-21 - Sprint 5.4 progress measurements and structured goals
 
 - Fred locally validated S5.4 end-to-end.
 - Added append-only chronological progress measurements with duplicate protection and health_data consent enforcement.
@@ -157,7 +157,7 @@
 - First integration run reproduced the unchanged Sprint 3 concurrency flake; the approved retry passed.
 - UI currently uses kg/cm/%; stricter API metric/unit compatibility is deferred as hardening.
 
-## 2026-10-21 — Sprint 5.3 structured follow-ups and cadence
+## 2026-10-21 - Sprint 5.3 structured follow-ups and cadence
 
 - Fred locally validated S5.3 end-to-end.
 - Added structured coach follow-ups with append-only history and optional next actions.
@@ -172,7 +172,7 @@
 - Reviewer passed with notes; QA passed with limitations; Fred Gate 2 browser/DBeaver validation is green.
 - Queue history loading may need batching as volume grows; deferred as future optimization.
 
-## 2026-10-21 — Sprint 5.2 appointment scheduling and secure responses
+## 2026-10-21 - Sprint 5.2 appointment scheduling and secure responses
 
 - Fred locally validated S5.2 end-to-end.
 - Added appointment scheduling for active subscriptions, optional linkage to subscription components and immutable appointment event history.
@@ -187,7 +187,7 @@
 - Migration 0006_free_tusk.sql applied locally with no backfill needed.
 - Reviewer passed with notes; QA passed with limitations; Fred Gate 2 browser/DBeaver validation is green.
 
-## 2026-10-21 — Sprint 5.1 subscription lifecycle
+## 2026-10-21 - Sprint 5.1 subscription lifecycle
 
 - Fred locally validated S5.1 end-to-end.
 - Added authoritative lifecycle commands for activation, pause/resume, completion review, completion, cancellation and renewal.
@@ -202,7 +202,7 @@
 - Reviewer passed with notes; QA passed with limitations; Fred Gate 2 browser/DBeaver validation is green.
 - Exact post-correction automated test counts were not separately reported.
 
-## 2026-10-21 — Sprint 4.5 versioned assessment and health questionnaires
+## 2026-10-21 - Sprint 4.5 versioned assessment and health questionnaires
 
 - Fred locally validated S4.5 end-to-end.
 - Added versioned assessment/health questionnaire templates with eight V1 question types and immutable published versions.
@@ -216,13 +216,13 @@
 - Fred reran the final validation suite after the corrective fix and reported all checks green; exact post-correction counts were not separately reported.
 - Browser/DBeaver Gate 2 validated assignment, public/coach-assisted flows, immutable history, health-consent behavior, risk-triggered medical blocker, revision N+1, replay rejection, hashed tokens and safe audits.
 
-## 2026-10-21 — Sprint 4 closed
+## 2026-10-21 - Sprint 4 closed
 
 - Sprint 4 acceptance criteria are satisfied across S4.1–S4.5.
 - Customer identity/search/manual creation, atomic request conversion, onboarding readiness/capacity, versioned consent/terms acceptance and versioned assessment/health questionnaires are locally validated.
 - Production blockers remain unchanged: applicable Gabon legal review and a true encrypted off-server backup destination.
 
-## 2026-10-21 — Sprint 4.4 versioned consent and terms/privacy acceptance
+## 2026-10-21 - Sprint 4.4 versioned consent and terms/privacy acceptance
 
 - Fred locally validated S4.4 end-to-end.
 - Added versioned consent definitions and append-only consent decisions.
@@ -237,7 +237,7 @@
 - Browser/DBeaver Gate 2 validated refusal, fresh-link grant, consumed-link replay rejection, coach-assisted provenance, append-only decision history, hashed tokens and safe audits.
 - The preceding 87/88 run was the documented unchanged Sprint 3 concurrency flake; no S4.4 case failed.
 
-## 2026-10-20 — Sprint 4.2 atomic qualified-request conversion
+## 2026-10-20 - Sprint 4.2 atomic qualified-request conversion
 
 - Fred locally validated S4.2 end-to-end.
 - Added the named admin conversion command for `qualified` and `qualified_with_conditions` requests.
@@ -255,7 +255,7 @@
 - Reviewer passed with notes; QA passed with limitations; Fred validated browser and DBeaver Gate 2 behavior.
 - Known non-blocking test note: an unchanged Sprint 3 concurrency test failed once and passed on the approved retry; no S4.2 test failed.
 
-## 2026-10-20 — Sprint 4.1 customer identity/search/manual-create foundation
+## 2026-10-20 - Sprint 4.1 customer identity/search/manual-create foundation
 
 - Fred locally validated S4.1 end-to-end.
 - Added shared customer contracts and a shared WhatsApp normalizer reused by customer/request flows.
@@ -272,7 +272,7 @@
 - Reviewer passed with notes; QA passed with browser limitation; Fred validated live browser and DBeaver behavior.
 - Added a development-only demo-admin helper restricted to `NODE_ENV=development` and the disposable `localhost:5433/kfit_dev` target for local acceptance support.
 
-## 2026-09-17 — Sprint 3 closed after validated S3.5 manual waitlist management
+## 2026-09-17 - Sprint 3 closed after validated S3.5 manual waitlist management
 
 - Closed Sprint 3 after Fred locally validated S3.1 through S3.5.
 - Added named admin commands for manual waitlist creation and withdrawal; no generic `waitlisted` status patch was introduced.
@@ -288,4 +288,3 @@
 - Confirmed typecheck, build and `db:check` green; `npm test` executed server 110/110 and shared 12/12; real PostgreSQL integration suite executed 15/15 green.
 - Reviewer and QA passes completed; Fred validated the browser/DBeaver Gate 2 flow for waitlist creation, duplicate prevention, withdrawal, request-state synchronization and safe audit metadata.
 - Sprint 3 now delivers the validated acquisition path from public request intake through contact management, qualification decision and manual waitlist handling.
-

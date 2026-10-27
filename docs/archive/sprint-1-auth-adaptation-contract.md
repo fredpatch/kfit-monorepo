@@ -6,9 +6,9 @@ vérifié-sur: d2fc5df
 couvre: [historique]
 ---
 
-> Archivé — remplacé par [architecture/README.md](../architecture/README.md).
+> Archivé - remplacé par [architecture/README.md](../architecture/README.md).
 
-# Sprint 1 — Authentication Foundation Adaptation Contract
+# Sprint 1 - Authentication Foundation Adaptation Contract
 
 > Status: design baseline  
 > Date: 2026-08-25  
@@ -33,13 +33,13 @@ Excluded from this slice: customer accounts, multi-coach administration, busines
 
 ## 2. Blueprint adaptation
 
-| Reference | Reused guarantee | K'FIT adaptation |
-| --- | --- | --- |
-| Administrative Foundation | atomic one-time bootstrap, no default credentials, audit | one privileged coach/admin in V1; future-role-ready schema |
-| Cookie JWT Authentication | short access lifetime, refresh rotation/revocation, stable errors, /me restoration | refresh tokens are bound to a DB session and token family |
-| OTP Account Activation / First-Login OTP | cryptographic code, digest only, expiry, attempt limit, single use, resend invalidation | purposes include recovery, suspicious-device login and sensitive actions |
-| Audit Event System | append-only actor/action/target/outcome/correlation envelope | authentication failures may have no authenticated actor |
-| Domain Error Taxonomy | stable machine-readable error codes | French UI messages map from shared codes; API does not expose account existence |
+| Reference                                | Reused guarantee                                                                        | K'FIT adaptation                                                                |
+| ---------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Administrative Foundation                | atomic one-time bootstrap, no default credentials, audit                                | one privileged coach/admin in V1; future-role-ready schema                      |
+| Cookie JWT Authentication                | short access lifetime, refresh rotation/revocation, stable errors, /me restoration      | refresh tokens are bound to a DB session and token family                       |
+| OTP Account Activation / First-Login OTP | cryptographic code, digest only, expiry, attempt limit, single use, resend invalidation | purposes include recovery, suspicious-device login and sensitive actions        |
+| Audit Event System                       | append-only actor/action/target/outcome/correlation envelope                            | authentication failures may have no authenticated actor                         |
+| Domain Error Taxonomy                    | stable machine-readable error codes                                                     | French UI messages map from shared codes; API does not expose account existence |
 
 ## 3. Existing schema assessment
 
@@ -185,25 +185,25 @@ Public recovery and resend endpoints return neutral success responses when the t
 
 ## 6. API contract baseline
 
-| Method | Path | Authentication | CSRF | Result |
-| --- | --- | --- | --- | --- |
-| GET | `/api/auth/bootstrap/status` | public | no | `{ required }` |
-| POST | `/api/auth/bootstrap` | public + one-time gate | origin/rate guard | first identity created |
-| POST | `/api/auth/login` | public | origin/rate guard | authenticated cookies or OTP challenge |
-| POST | `/api/auth/login/otp/verify` | pending challenge | origin/rate guard | authenticated cookies |
-| POST | `/api/auth/refresh` | refresh cookie | required by final cookie design | rotated cookies |
-| POST | `/api/auth/logout` | current session when available | yes | revoke + clear cookies |
-| POST | `/api/auth/logout-all` | authenticated | yes + fresh OTP | revoke all sessions |
-| GET | `/api/auth/me` | access cookie | no | current user/session summary |
-| POST | `/api/auth/recovery/request` | public | origin/rate guard | neutral accepted response |
-| POST | `/api/auth/recovery/verify` | recovery challenge | origin/rate guard | short-lived reset authorization |
-| POST | `/api/auth/recovery/reset` | reset authorization | origin/rate guard | password changed; sessions/devices revoked |
-| POST | `/api/auth/sensitive-otp/request` | authenticated | yes | challenge issued |
-| POST | `/api/auth/sensitive-otp/verify` | authenticated | yes | session-bound fresh proof |
-| GET | `/api/auth/sessions` | authenticated | no | redacted active sessions |
-| DELETE | `/api/auth/sessions/:sessionId` | authenticated | yes + fresh OTP for other session | revoke session |
-| GET | `/api/auth/trusted-devices` | authenticated | no | redacted devices |
-| DELETE | `/api/auth/trusted-devices/:deviceId` | authenticated | yes + fresh OTP | revoke device |
+| Method | Path                                  | Authentication                 | CSRF                              | Result                                     |
+| ------ | ------------------------------------- | ------------------------------ | --------------------------------- | ------------------------------------------ |
+| GET    | `/api/auth/bootstrap/status`          | public                         | no                                | `{ required }`                             |
+| POST   | `/api/auth/bootstrap`                 | public + one-time gate         | origin/rate guard                 | first identity created                     |
+| POST   | `/api/auth/login`                     | public                         | origin/rate guard                 | authenticated cookies or OTP challenge     |
+| POST   | `/api/auth/login/otp/verify`          | pending challenge              | origin/rate guard                 | authenticated cookies                      |
+| POST   | `/api/auth/refresh`                   | refresh cookie                 | required by final cookie design   | rotated cookies                            |
+| POST   | `/api/auth/logout`                    | current session when available | yes                               | revoke + clear cookies                     |
+| POST   | `/api/auth/logout-all`                | authenticated                  | yes + fresh OTP                   | revoke all sessions                        |
+| GET    | `/api/auth/me`                        | access cookie                  | no                                | current user/session summary               |
+| POST   | `/api/auth/recovery/request`          | public                         | origin/rate guard                 | neutral accepted response                  |
+| POST   | `/api/auth/recovery/verify`           | recovery challenge             | origin/rate guard                 | short-lived reset authorization            |
+| POST   | `/api/auth/recovery/reset`            | reset authorization            | origin/rate guard                 | password changed; sessions/devices revoked |
+| POST   | `/api/auth/sensitive-otp/request`     | authenticated                  | yes                               | challenge issued                           |
+| POST   | `/api/auth/sensitive-otp/verify`      | authenticated                  | yes                               | session-bound fresh proof                  |
+| GET    | `/api/auth/sessions`                  | authenticated                  | no                                | redacted active sessions                   |
+| DELETE | `/api/auth/sessions/:sessionId`       | authenticated                  | yes + fresh OTP for other session | revoke session                             |
+| GET    | `/api/auth/trusted-devices`           | authenticated                  | no                                | redacted devices                           |
+| DELETE | `/api/auth/trusted-devices/:deviceId` | authenticated                  | yes + fresh OTP                   | revoke device                              |
 
 Exact DTOs will live in `packages/shared` and be validated with Zod at the server boundary.
 

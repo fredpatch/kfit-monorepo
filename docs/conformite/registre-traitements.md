@@ -6,7 +6,7 @@ vérifié-sur: d2fc5df
 couvre: [S7.3, DOC-01a]
 ---
 
-> **Brouillon technique — à faire valider par un juriste avant toute mise en production. Ne constitue pas un avis juridique.**
+> **Brouillon technique - à faire valider par un juriste avant toute mise en production. Ne constitue pas un avis juridique.**
 
 # Registre des traitements (brouillon technique)
 
@@ -22,19 +22,19 @@ Source : schéma `packages/server/src/db/schema/` et fonctionnalités en place.
 
 ## Catégories de données (par groupe de tables)
 
-| Groupe | Tables | Données |
-| --- | --- | --- |
-| Identité et contact | `prospects`, `customers` | Nom complet, numéro WhatsApp, e-mail, ville, pays. |
-| Demandes et qualification | `service_requests`, `contact_attempts`, `qualification_reviews`, `waitlist_entries` | Objectif, message libre, prises de contact et notes, avis de qualification (dont notes d'aptitude), liste d'attente. |
-| Santé | `questionnaire_submissions`, `questionnaire_answers` (modèles de catégorie santé), `medical_clearance_records`, `progress_measurements` | Réponses aux questionnaires de santé, attestations médicales, mesures (poids, tours de taille / hanches / poitrine, masse grasse estimée), ressenti. |
-| Photos et documents | `documents`, `document_versions`, `progress_photos` ; fichiers dans `PRIVATE_STORAGE_ROOT` | Photos de progression et documents marqués `sensitive_health` ; autres documents privés ; nom d'origine, type et empreinte de chaque fichier. |
-| Suivi du coaching | `subscriptions` et tables liées, `appointments`, `follow_ups`, `goals`, `onboarding_items` | Abonnements, pauses (avec motif), rendez-vous, suivis et notes, objectifs. |
-| Paiements | `payment_plans`, `installments`, `payment_events`, `payment_allocations`, `payment_proofs`, `quotes`, `receipts` | Montants, moyens et références de paiement, justificatifs déposés, devis, reçus. |
-| Consentements | `consent_definitions`, `consent_records` | Textes versionnés et décisions (accepté / refusé, canal, date, nom saisi en confirmation). |
-| Notifications | `notifications`, `notification_email_outbox` | Notifications du coach (avec nom du client affiché), e-mails en file d'envoi. |
-| Comptes et sécurité | `users`, `auth_sessions`, `otp_challenges`, `trusted_devices` | E-mail et mot de passe haché des administrateurs, sessions, codes à usage unique (hachés). |
-| Audit | `audit_events`, `external_access_events` | Acteur, action, résultat, identifiant de requête ; IP et user-agent **sous forme d'empreinte uniquement**. |
-| Confidentialité | `anonymization_events`, `retention_holds`, journal de confidentialité (fichier hors base) | Identifiants des personnes anonymisées, motifs de blocage de conservation. Le journal ne contient que des identifiants. |
+| Groupe                    | Tables                                                                                                                                  | Données                                                                                                                                              |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identité et contact       | `prospects`, `customers`                                                                                                                | Nom complet, numéro WhatsApp, e-mail, ville, pays.                                                                                                   |
+| Demandes et qualification | `service_requests`, `contact_attempts`, `qualification_reviews`, `waitlist_entries`                                                     | Objectif, message libre, prises de contact et notes, avis de qualification (dont notes d'aptitude), liste d'attente.                                 |
+| Santé                     | `questionnaire_submissions`, `questionnaire_answers` (modèles de catégorie santé), `medical_clearance_records`, `progress_measurements` | Réponses aux questionnaires de santé, attestations médicales, mesures (poids, tours de taille / hanches / poitrine, masse grasse estimée), ressenti. |
+| Photos et documents       | `documents`, `document_versions`, `progress_photos` ; fichiers dans `PRIVATE_STORAGE_ROOT`                                              | Photos de progression et documents marqués `sensitive_health` ; autres documents privés ; nom d'origine, type et empreinte de chaque fichier.        |
+| Suivi du coaching         | `subscriptions` et tables liées, `appointments`, `follow_ups`, `goals`, `onboarding_items`                                              | Abonnements, pauses (avec motif), rendez-vous, suivis et notes, objectifs.                                                                           |
+| Paiements                 | `payment_plans`, `installments`, `payment_events`, `payment_allocations`, `payment_proofs`, `quotes`, `receipts`                        | Montants, moyens et références de paiement, justificatifs déposés, devis, reçus.                                                                     |
+| Consentements             | `consent_definitions`, `consent_records`                                                                                                | Textes versionnés et décisions (accepté / refusé, canal, date, nom saisi en confirmation).                                                           |
+| Notifications             | `notifications`, `notification_email_outbox`                                                                                            | Notifications du coach (avec nom du client affiché), e-mails en file d'envoi.                                                                        |
+| Comptes et sécurité       | `users`, `auth_sessions`, `otp_challenges`, `trusted_devices`                                                                           | E-mail et mot de passe haché des administrateurs, sessions, codes à usage unique (hachés).                                                           |
+| Audit                     | `audit_events`, `external_access_events`                                                                                                | Acteur, action, résultat, identifiant de requête ; IP et user-agent **sous forme d'empreinte uniquement**.                                           |
+| Confidentialité           | `anonymization_events`, `retention_holds`, journal de confidentialité (fichier hors base)                                               | Identifiants des personnes anonymisées, motifs de blocage de conservation. Le journal ne contient que des identifiants.                              |
 
 ## Finalités telles qu'implémentées
 

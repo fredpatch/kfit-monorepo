@@ -6,7 +6,7 @@ vérifié-sur: d2fc5df
 couvre: [S7.3, S7.4a, S7.4b, SEC-01, ARCH-01, DOC-01a]
 ---
 
-> **Brouillon technique — à faire valider par un juriste avant toute mise en production. Ne constitue pas un avis juridique.**
+> **Brouillon technique - à faire valider par un juriste avant toute mise en production. Ne constitue pas un avis juridique.**
 
 # Mesures de sécurité (brouillon technique)
 

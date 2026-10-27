@@ -41,7 +41,7 @@
   --brand-50: #f5faf2;
   --lime: #b8e05a;
 
-  /* Status tones — background / foreground pairs (text contrast ≥ 4.5:1) */
+  /* Status tones - background / foreground pairs (text contrast ≥ 4.5:1) */
   --tone-success-bg: #e3f4e6;
   --tone-success-fg: #1f6b33;
   --tone-info-bg: #e8effd;
@@ -55,7 +55,7 @@
   --tone-waitlist-bg: #f1ecfe;
   --tone-waitlist-fg: #5b34b8;
 
-  /* Offer families — fixed order, validated for colour-blind separation (board 01b) */
+  /* Offer families - fixed order, validated for colour-blind separation (board 01b) */
   --family-transpitime: #3b6fd8;
   --family-nutrition: #3e8e41;
   --family-pilates: #8a5cd6;
@@ -70,7 +70,9 @@
 }
 
 @theme inline {
-  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans:
+    "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
 
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);

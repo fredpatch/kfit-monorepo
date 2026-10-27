@@ -1,6 +1,6 @@
 /*
  * Public contact links (UX-11, Fred 2026-10-23). Set at build time; a button is hidden when its value is unset.
- * Later replaced by the coach onboarding settings (name, logo, links) — Notion backlog.
+ * Later replaced by the coach onboarding settings (name, logo, links) - Notion backlog.
  *
  *   VITE_PUBLIC_WHATSAPP   international number, digits only or with +, e.g. +24107000000
  *   VITE_PUBLIC_INSTAGRAM  full https URL of the Instagram profile
@@ -25,6 +25,10 @@ function httpsUrl(raw: string | undefined): string | null {
 
 export const publicLinks = {
   whatsapp: whatsappUrl(env.VITE_PUBLIC_WHATSAPP),
-  whatsappAbout: (offer: string) => whatsappUrl(env.VITE_PUBLIC_WHATSAPP, `Bonjour, j'aimerais des informations sur l'offre « ${offer} ».`),
+  whatsappAbout: (offer: string) =>
+    whatsappUrl(
+      env.VITE_PUBLIC_WHATSAPP,
+      `Bonjour, j'aimerais des informations sur l'offre « ${offer} ».`,
+    ),
   instagram: httpsUrl(env.VITE_PUBLIC_INSTAGRAM),
 } as const;

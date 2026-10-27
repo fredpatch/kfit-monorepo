@@ -76,6 +76,7 @@ function healthy(): SupervisionState {
       activeHolds: 0,
       purgesDue7d: 0,
       anonymizedTotal: 0,
+      inactiveProspects: { count: 0, months: 12, items: [] },
     },
     runtime: {
       nodeVersion: "v24.22.1",
@@ -240,6 +241,19 @@ test("OPS-01 O5-O9: every alert code is raised alone by its own condition", () =
       },
       PRIVACY_JOURNAL_UNAVAILABLE: (s) => {
         s.privacy.journal.writable = false;
+      },
+      PROSPECTS_INACTIVE: (s) => {
+        s.privacy.inactiveProspects = {
+          count: 1,
+          months: 12,
+          items: [
+            {
+              requestId: "r",
+              reference: "DEM-1",
+              lastRequestAt: hoursAgo(9000),
+            },
+          ],
+        };
       },
       PURGE_FAILED: (s) => {
         s.privacy.lastPurge = {

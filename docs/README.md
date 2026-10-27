@@ -13,7 +13,7 @@ couvre: [DOC-01a]
 | Document                                                                                | Public                    | Statut    | Vérifié sur |
 | --------------------------------------------------------------------------------------- | ------------------------- | --------- | ----------- |
 | [Guide du coach](guides/guide-coach.md)                                                 | coach                     | brouillon | e0d6158     |
-| [Guide de l'administrateur](guides/guide-administrateur.md)                             | administrateur            | brouillon | 99f2616     |
+| [Guide de l'administrateur](guides/guide-administrateur.md)                             | administrateur            | brouillon | 482f843     |
 | [Runbooks (index)](runbooks/README.md)                                                  | exploitation              | à jour    | d2fc5df     |
 | [Démarrage en production](runbooks/demarrage-production.md)                             | exploitation              | à jour    | 4db73be     |
 | [Premier compte administrateur](runbooks/premier-compte-administrateur.md)              | exploitation              | brouillon | e0d6158     |
@@ -28,10 +28,10 @@ couvre: [DOC-01a]
 | [Codes d'erreur](reference/codes-erreur.md)                                             | développeur               | à jour    | généré      |
 | [Variables d'environnement](reference/variables-environnement.md)                       | exploitation              | à jour    | généré      |
 | [Scripts npm](reference/scripts-npm.md)                                                 | développeur               | à jour    | généré      |
-| [Jobs planifiés et scripts d'exploitation](reference/jobs.md)                           | exploitation, développeur | à jour    | 99f2616     |
+| [Jobs planifiés et scripts d'exploitation](reference/jobs.md)                           | exploitation, développeur | à jour    | 482f843     |
 | [Conformité (dossier)](conformite/README.md)                                            | juriste                   | brouillon | d2fc5df     |
 | [Registre des traitements](conformite/registre-traitements.md)                          | juriste                   | brouillon | d2fc5df     |
-| [Politique de conservation](conformite/politique-conservation.md)                       | juriste                   | brouillon | d2fc5df     |
+| [Politique de conservation](conformite/politique-conservation.md)                       | juriste                   | brouillon | 482f843     |
 | [Mesures de sécurité](conformite/mesures-securite.md)                                   | juriste                   | brouillon | d2fc5df     |
 | [Sous-traitants](conformite/sous-traitants.md)                                          | juriste                   | brouillon | d2fc5df     |
 | [Notice de confidentialité (brouillon)](conformite/notice-confidentialite-brouillon.md) | juriste                   | brouillon | d2fc5df     |

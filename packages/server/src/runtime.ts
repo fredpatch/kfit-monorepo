@@ -75,6 +75,7 @@ import {
 import { PrivacyController } from "./modules/privacy/controllers/privacy.controller.js";
 import { privacyPurgeJob } from "./modules/privacy/jobs/privacy-purge.job.js";
 import { DrizzlePrivacyRepository } from "./modules/privacy/repositories/privacy.repository.js";
+import { DrizzleRetentionRepository } from "./modules/privacy/repositories/retention.repository.js";
 import {
   createPrivacyJournal,
   PRIVACY_JOURNAL_DIR_ENV,
@@ -417,7 +418,13 @@ export function createRuntime({
     startScheduledJobs(
       pool,
       db,
-      [privacyPurgeJob(privacyRepository, (key) => privacyStorage.remove(key))],
+      [
+        privacyPurgeJob(
+          privacyRepository,
+          (key) => privacyStorage.remove(key),
+          new DrizzleRetentionRepository(db),
+        ),
+      ],
       log,
     );
 

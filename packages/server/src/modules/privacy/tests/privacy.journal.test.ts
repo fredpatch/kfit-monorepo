@@ -128,20 +128,68 @@ test("purge job: daily 03:00 Africa/Libreville, one run per business date, batch
       },
     },
     async () => undefined,
+    {
+      async run(at, limit) {
+        calls.push(`retention:${at.toISOString()}:${limit}`);
+        return {
+          outboxRedacted: 3,
+          notificationsDeleted: 2,
+          auditEventsDeleted: 1,
+          accessEventsDeleted: 4,
+          retentionStepsFailed: 0,
+        };
+      },
+    },
     () => now,
   );
   assert.equal(job.jobKey, "privacy.purge");
   assert.equal(job.cron, "0 3 * * *");
   assert.equal(job.timezone, "Africa/Libreville");
   assert.equal(job.runKey?.(now), businessDateKey(now));
-  assert.deepEqual(await job.work(), {
+  const counts = {
     scanned: 2,
     purged: 1,
     skippedHold: 1,
     failed: 0,
-  });
+    outboxRedacted: 3,
+    notificationsDeleted: 2,
+    auditEventsDeleted: 1,
+    accessEventsDeleted: 4,
+    retentionStepsFailed: 0,
+  };
+  assert.deepEqual(await job.work(), counts);
   assert.deepEqual(calls, [
     `purge:${now.toISOString()}:50`,
-    `audit:{"scanned":2,"purged":1,"skippedHold":1,"failed":0}`,
+    `retention:${now.toISOString()}:50`,
+    `audit:${JSON.stringify(counts)}`,
   ]);
+});
+
+test("RET-01 R6: a failed retention step still audits every count, then fails the run with RETENTION_STEP_FAILED", async () => {
+  const audited: Array<Record<string, number>> = [];
+  const job = privacyPurgeJob(
+    {
+      async purgeDue() {
+        return { scanned: 0, purged: 0, skippedHold: 0, failed: 0 };
+      },
+      async recordPurgeRun(counts) {
+        audited.push(counts);
+      },
+    },
+    async () => undefined,
+    {
+      async run() {
+        return {
+          outboxRedacted: 5,
+          notificationsDeleted: 0,
+          auditEventsDeleted: 0,
+          accessEventsDeleted: 0,
+          retentionStepsFailed: 1,
+        };
+      },
+    },
+  );
+  await assert.rejects(job.work(), { message: "RETENTION_STEP_FAILED" });
+  assert.equal(audited[0]?.outboxRedacted, 5);
+  assert.equal(audited[0]?.retentionStepsFailed, 1);
 });

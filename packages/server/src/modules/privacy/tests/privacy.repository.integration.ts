@@ -1378,6 +1378,16 @@ test("PostgreSQL purge job (S7.2 runner work) purges a due document and audits c
       recordPurgeRun: (counts) => repo.recordPurgeRun(counts),
     },
     removeStoredObject,
+    // Retention is covered by retention.integration.ts; here the run stays scoped to this fixture.
+    {
+      run: async () => ({
+        outboxRedacted: 0,
+        notificationsDeleted: 0,
+        auditEventsDeleted: 0,
+        accessEventsDeleted: 0,
+        retentionStepsFailed: 0,
+      }),
+    },
     () => later,
   );
   assert.deepEqual(await job.work(), {
@@ -1385,6 +1395,13 @@ test("PostgreSQL purge job (S7.2 runner work) purges a due document and audits c
     purged: 1,
     skippedHold: 0,
     failed: 0,
+    ...{
+      outboxRedacted: 0,
+      notificationsDeleted: 0,
+      auditEventsDeleted: 0,
+      accessEventsDeleted: 0,
+      retentionStepsFailed: 0,
+    },
   });
   const [audit] = (
     await db.execute(
@@ -1396,5 +1413,12 @@ test("PostgreSQL purge job (S7.2 runner work) purges a due document and audits c
     purged: 1,
     skippedHold: 0,
     failed: 0,
+    ...{
+      outboxRedacted: 0,
+      notificationsDeleted: 0,
+      auditEventsDeleted: 0,
+      accessEventsDeleted: 0,
+      retentionStepsFailed: 0,
+    },
   });
 });

@@ -22,6 +22,10 @@ import {
 import { OPS_JOB_KEYS } from "../../../ops/run-records.js";
 import { REQUEST_ENCODING_UNSUPPORTED } from "../../../security/reject-encoded-request-bodies.js";
 import { AuditService } from "../../auth/services/audit.service.js";
+import {
+  inactiveProspects,
+  readRetentionCutoffs,
+} from "../../privacy/repositories/retention.repository.js";
 import { PURGE_JOB_KEY } from "../../privacy/services/privacy.policy.js";
 import {
   FAILURE_RATE_WINDOW_DAYS,
@@ -235,6 +239,8 @@ export class DrizzleSupervisionRepository {
       .select({ n: sql<number>`count(*)::int` })
       .from(anonymizationEvents)
       .where(eq(anonymizationEvents.status, "executed"));
+    const cutoffs = await readRetentionCutoffs(this.db, now);
+    const inactive = await inactiveProspects(this.db, cutoffs.prospects);
     return {
       lastPurge: purge
         ? {
@@ -254,6 +260,7 @@ export class DrizzleSupervisionRepository {
       activeHolds: holds?.n ?? 0,
       purgesDue7d: due?.n ?? 0,
       anonymizedTotal: anonymized?.n ?? 0,
+      inactiveProspects: { ...inactive, months: cutoffs.prospectMonths },
     };
   }
 

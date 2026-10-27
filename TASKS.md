@@ -10,8 +10,8 @@ Sprint 6 S6.1-S6.4 are validated and Sprint 6 is closed on `main`. The former `s
 ```text
 Branch            main
 Sprint            7 - Dashboard, notifications, rétention, sauvegardes et durcissement
-Active slice      PRETTY-01 + OPS-01b
-Workflow state    PRETTY-01 + OPS-01b validated by Fred and committed 2026-10-27 (sprint-7.md § PRETTY-01 + OPS-01b execution); next RET-01
+Active slice      RET-01
+Workflow state    RET-01 reviewed (1 blocking fixed), QA passed, committed 2026-10-27 on Fred's instruction (sprint-7.md § RET-01 execution); next Sprint 8 - V1 Core UAT
 S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) - validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
 Last validated    S7.2 - validated by Fred 2026-10-25
 Implementation    2dc7c43 (S7.2a server) + 0eac6d4 (S7.2b client, UX-16)
@@ -45,8 +45,9 @@ SEC-02            closed (e0d6158, bb2e993), BOOT-01 closed (bb2e993)
 OPS-01a           supervision API + supervision_alert notifications (migration 0018) - committed 0a1c210 (Fred: migrate kfit_dev; validation after OPS-01b)
 ROLE-01           superadmin role, hasRole guard, migration 0019, ops:create-user / ops:set-role - validated by Fred, committed 2363b57; style commit 99f2616 (Fred)
 PRETTY-01         Prettier 3.8.5 + format/format:check/lint:dashes in CI - validated by Fred, committed 2026-10-27
-OPS-01b           Supervision page, menu dot, 14 messages, generator fix - validated by Fred, committed 2026-10-27
-Next action       RET-01, Sprint 8 UAT
+OPS-01b           Supervision page, menu dot, 14 messages, generator fix - validated by Fred, committed 482f843
+RET-01            retention steps in privacy.purge, inactive prospects alert, 4 settings - committed 2026-10-27 (review + QA passed) → Fred: validate live
+Next action       Sprint 8 - V1 Core UAT
 Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »
 Backlog           « Flaky express unit tests (fetch failed, random test) - diagnose with the pgErrorInfo fix »
 Backlog           « OPS-01 Supervision (jobs, sauvegardes, contrôle de restauration, confidentialité, sécurité) - après SEC-02, avant UAT »

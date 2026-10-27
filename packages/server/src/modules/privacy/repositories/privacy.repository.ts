@@ -43,6 +43,11 @@ import { prospects, serviceRequests } from "../../../db/schema/prospects.js";
 import { AuditService } from "../../auth/services/audit.service.js";
 import { readSettings } from "../../notifications/repositories/notifications.repository.js";
 import {
+  readRetentionCutoffs,
+  retentionCounts,
+  type RetentionCounts,
+} from "./retention.repository.js";
+import {
   ANONYMIZATION_PLAN_VERSION,
   ANONYMIZATION_REASON,
   OPEN_OUTBOX_STATUSES,
@@ -1209,12 +1214,14 @@ export class DrizzlePrivacyRepository {
    * OPS-01 O4: what purgeDue would do now - same eligibility (pending_purge, purge_after reached) and the same hold check -
    * in a READ ONLY transaction. Counts only; deletes nothing, writes no run row.
    */
-  async simulatePurge(now: Date): Promise<{
-    subjectsDue: number;
-    filesDue: number;
-    bytesDue: number;
-    heldBack: number;
-  }> {
+  async simulatePurge(now: Date): Promise<
+    {
+      subjectsDue: number;
+      filesDue: number;
+      bytesDue: number;
+      heldBack: number;
+    } & RetentionCounts
+  > {
     return this.db.transaction(
       async (tx) => {
         const due = await tx
@@ -1277,13 +1284,17 @@ export class DrizzlePrivacyRepository {
           result.bytesDue += Number(files?.bytes ?? 0);
         }
         result.subjectsDue = subjects.size;
-        return result;
+        // RET-01 R7: the retention steps of the same run, same predicates, same read-only transaction.
+        return {
+          ...result,
+          ...(await retentionCounts(tx, await readRetentionCutoffs(tx, now))),
+        };
       },
       { accessMode: "read only" },
     );
   }
 
-  async recordPurgeRun(counts: PurgeBatchResult) {
+  async recordPurgeRun(counts: Record<string, number>) {
     await this.db.transaction((tx) =>
       this.audit(tx, null, "privacy.purge_run", "document", null, counts),
     );

@@ -2,8 +2,8 @@
 titre: Guide de l'administrateur
 public: administrateur
 statut: brouillon
-vérifié-sur: 99f2616
-couvre: [DOC-01a, DOC-01b, SEC-02a, SEC-02b, ROLE-01, OPS-01b]
+vérifié-sur: 482f843
+couvre: [DOC-01a, DOC-01b, SEC-02a, SEC-02b, ROLE-01, OPS-01b, RET-01]
 ---
 
 # Guide de l'administrateur
@@ -28,22 +28,26 @@ Trois rôles (ROLE-01). Le rôle s'affiche dans « Mon compte ».
 
 Menu « Réglages » (section « Configuration »). Les modifications s'appliquent après « Enregistrer ».
 
-| Réglage                                          | Effet                                                                               | Défaut            | Plage         |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------- | ----------------- | ------------- |
-| « Notifications dans l'application »             | La cloche affiche ce qui demande une action.                                        | Toujours activées | -             |
-| « Recevoir des e-mails »                         | Envoie des e-mails aux comptes administrateurs actifs.                              | Activé            | oui / non     |
-| « Résumé quotidien »                             | Un seul e-mail par jour avec le nombre d'actions à traiter.                         | Activé            | oui / non     |
-| Heure du résumé (Libreville)                     | Heure d'envoi du résumé quotidien.                                                  | 08:00             | 00:00 à 23:00 |
-| « Suivis en retard »                             | Un e-mail par suivi en retard, puis une relance.                                    | Désactivé         | oui / non     |
-| Relance des suivis en retard (jours)             | Rythme de la relance.                                                               | 3                 | 1 à 30        |
-| « Demandes à contacter »                         | Un e-mail par nouvelle demande.                                                     | Désactivé         | oui / non     |
-| « Échéances en retard »                          | Un e-mail par échéance en retard, puis une relance.                                 | Désactivé         | oui / non     |
-| Relance des échéances en retard (jours)          | Rythme de la relance.                                                               | 7                 | 1 à 30        |
-| « Justificatifs à vérifier »                     | Un e-mail par justificatif déposé.                                                  | Désactivé         | oui / non     |
-| « Modifications de devis »                       | Un e-mail quand une cliente demande un changement de devis.                         | Désactivé         | oui / non     |
-| « Préparations bloquées »                        | Un e-mail par préparation bloquée.                                                  | Désactivé         | oui / non     |
-| « Revues de fin »                                | Un e-mail par revue de fin à effectuer.                                             | Désactivé         | oui / non     |
-| « Délai avant suppression des fichiers (jours) » | Les fichiers d'une cliente anonymisée sont supprimés définitivement après ce délai. | 30                | 1 à 365       |
+| Réglage                                          | Effet                                                                                                                                                | Défaut            | Plage         |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------- |
+| « Notifications dans l'application »             | La cloche affiche ce qui demande une action.                                                                                                         | Toujours activées | -             |
+| « Recevoir des e-mails »                         | Envoie des e-mails aux comptes administrateurs actifs.                                                                                               | Activé            | oui / non     |
+| « Résumé quotidien »                             | Un seul e-mail par jour avec le nombre d'actions à traiter.                                                                                          | Activé            | oui / non     |
+| Heure du résumé (Libreville)                     | Heure d'envoi du résumé quotidien.                                                                                                                   | 08:00             | 00:00 à 23:00 |
+| « Suivis en retard »                             | Un e-mail par suivi en retard, puis une relance.                                                                                                     | Désactivé         | oui / non     |
+| Relance des suivis en retard (jours)             | Rythme de la relance.                                                                                                                                | 3                 | 1 à 30        |
+| « Demandes à contacter »                         | Un e-mail par nouvelle demande.                                                                                                                      | Désactivé         | oui / non     |
+| « Échéances en retard »                          | Un e-mail par échéance en retard, puis une relance.                                                                                                  | Désactivé         | oui / non     |
+| Relance des échéances en retard (jours)          | Rythme de la relance.                                                                                                                                | 7                 | 1 à 30        |
+| « Justificatifs à vérifier »                     | Un e-mail par justificatif déposé.                                                                                                                   | Désactivé         | oui / non     |
+| « Modifications de devis »                       | Un e-mail quand une cliente demande un changement de devis.                                                                                          | Désactivé         | oui / non     |
+| « Préparations bloquées »                        | Un e-mail par préparation bloquée.                                                                                                                   | Désactivé         | oui / non     |
+| « Revues de fin »                                | Un e-mail par revue de fin à effectuer.                                                                                                              | Désactivé         | oui / non     |
+| « Délai avant suppression des fichiers (jours) » | Les fichiers d'une cliente anonymisée sont supprimés définitivement après ce délai.                                                                  | 30                | 1 à 365       |
+| « Contenu des e-mails envoyés (jours) »          | Après ce délai, l'adresse, l'objet et le texte des e-mails envoyés sont effacés ; la trace de l'envoi reste.                                         | 30                | 7 à 365       |
+| « Notifications résolues (jours) »               | Les notifications résolues depuis plus longtemps sont supprimées.                                                                                    | 180               | 30 à 730      |
+| « Journaux de sécurité (jours) »                 | Les journaux de connexion et d'accès aux liens publics plus anciens sont supprimés ; les créations de comptes et changements de rôle sont conservés. | 395               | 90 à 1095     |
+| « Prospects inactifs (mois) »                    | Un prospect sans nouvelle demande depuis ce délai apparaît dans la Supervision.                                                                      | 12                | 3 à 60        |
 
 Règles :
 
@@ -185,19 +189,20 @@ Règles :
 - **Alertes** : une ligne par alerte en cours, rouge (critique) ou orange (avertissement). Rien quand il n'y en a pas.
 - **Tuiles** : « Jobs » (jobs à l'heure sur le total), « Dernière sauvegarde » (âge, taille, copie vérifiée), « Contrôle de restauration » (résultat, âge, tables comparées), « Plancher de sécurité » (version de Node et mode). Une tuile passe en orange ou en rouge seulement quand son bloc a une alerte.
 - **Jobs planifiés** : pour chaque job, l'intervalle, le taux d'échec sur 30 jours, l'état (« Réussi », « En retard », « En échec », « Jamais exécuté », « En cours »), la dernière exécution et sa durée, la prochaine exécution. « Lancer maintenant » relance tout de suite la mise à jour des notifications ou l'envoi des e-mails (une fois par minute et par job ; « Ce job est déjà en cours. » s'il tourne déjà). « Simuler » montre ce que la suppression des fichiers supprimerait maintenant, sans rien supprimer. La sauvegarde et le contrôle de restauration se lancent sur le serveur, pas depuis la page (« - »).
-- **Confidentialité** : journal (OK, indisponible ou non configuré), blocages actifs, purges prévues dans 7 jours, personnes anonymisées, dernier rejeu.
+- **Confidentialité** : journal (OK, indisponible ou non configuré), blocages actifs, purges prévues dans 7 jours, personnes anonymisées, dernier rejeu, « Prospects inactifs » (RET-01) : leur nombre et, au plus, les 20 plus anciens, sous la forme « référence de la demande · dernière demande le JJ/MM/AAAA » avec un lien vers la demande. Ni nom, ni téléphone, ni e-mail. « Simuler » montre aussi les e-mails à purger, les notifications et les journaux de sécurité à supprimer.
 - **Sécurité** : refus par jour sur 7 ou 30 jours, en deux familles : connexions refusées, codes faux et comptes bloqués ; refus pour trop de requêtes (429), corps refusés (415) et liens publics invalides. Survoler une colonne donne le détail. « Aucun événement sur la période. » quand tout est à zéro.
 
 **Que faire selon l'alerte.**
 
-| Alerte                                           | Que faire                                                                                                                    |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Sauvegarde trop ancienne ou en échec             | Prévenir l'exploitation : [sauvegarde et restauration](../runbooks/sauvegarde-restauration.md).                              |
-| Contrôle de restauration trop ancien ou en échec | Prévenir l'exploitation : lancer `ops:restore-drill` ([sauvegarde et restauration](../runbooks/sauvegarde-restauration.md)). |
-| Journal de confidentialité indisponible          | Prévenir l'exploitation : [incident](../runbooks/incident.md).                                                               |
-| Suppression des fichiers en échec                | « Simuler », puis prévenir l'exploitation : [échec de job](../runbooks/echec-job.md).                                        |
-| Plancher de sécurité non respecté                | Mettre Node à jour : [plancher de sécurité](../runbooks/plancher-securite.md).                                               |
-| Job en échec, en retard ou jamais exécuté        | « Lancer maintenant » quand c'est proposé, sinon [échec de job](../runbooks/echec-job.md).                                   |
+| Alerte                                           | Que faire                                                                                                                                                                                              |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Sauvegarde trop ancienne ou en échec             | Prévenir l'exploitation : [sauvegarde et restauration](../runbooks/sauvegarde-restauration.md).                                                                                                        |
+| Contrôle de restauration trop ancien ou en échec | Prévenir l'exploitation : lancer `ops:restore-drill` ([sauvegarde et restauration](../runbooks/sauvegarde-restauration.md)).                                                                           |
+| Journal de confidentialité indisponible          | Prévenir l'exploitation : [incident](../runbooks/incident.md).                                                                                                                                         |
+| Suppression des fichiers en échec                | « Simuler », puis prévenir l'exploitation : [échec de job](../runbooks/echec-job.md).                                                                                                                  |
+| Prospects inactifs                               | Ouvrir chaque demande de la liste ; archiver puis anonymiser les prospects qui ne reviendront pas ([confidentialité](#7-confidentialité)). L'alerte disparaît quand plus aucun prospect n'est inactif. |
+| Plancher de sécurité non respecté                | Mettre Node à jour : [plancher de sécurité](../runbooks/plancher-securite.md).                                                                                                                         |
+| Job en échec, en retard ou jamais exécuté        | « Lancer maintenant » quand c'est proposé, sinon [échec de job](../runbooks/echec-job.md).                                                                                                             |
 
 Détails techniques : [jobs § Supervision](../reference/jobs.md#supervision-ops-01).
 

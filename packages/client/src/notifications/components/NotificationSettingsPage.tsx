@@ -9,6 +9,10 @@ import {
   notificationSettingRegistry,
   privacyPurgeDelayDaysKey,
   reminderDaysKey,
+  retentionEmailOutboxDaysKey,
+  retentionNotificationsDaysKey,
+  retentionProspectInactiveMonthsKey,
+  retentionSecurityLogsDaysKey,
   type NotificationSettingDefinition,
   type NotificationSettingKey,
   type NotificationSettings,
@@ -49,6 +53,39 @@ const TestDataCard = import.meta.env.DEV
     )
   : null;
 const hours = Array.from({ length: 24 }, (_, h) => h);
+
+/** S7.3b-2 D9 + RET-01 R8: the privacy keys of the registry, saved with the rest of the page. */
+const privacySettings: Array<{
+  key: NotificationSettingKey;
+  unit: "jours" | "mois";
+  hint: string;
+}> = [
+  {
+    key: privacyPurgeDelayDaysKey,
+    unit: "jours",
+    hint: "Les fichiers d'un client anonymisé sont supprimés définitivement après ce délai.",
+  },
+  {
+    key: retentionEmailOutboxDaysKey,
+    unit: "jours",
+    hint: "Après ce délai, l'adresse, l'objet et le texte des e-mails envoyés sont effacés. La trace de l'envoi reste.",
+  },
+  {
+    key: retentionNotificationsDaysKey,
+    unit: "jours",
+    hint: "Les notifications résolues depuis plus longtemps sont supprimées.",
+  },
+  {
+    key: retentionSecurityLogsDaysKey,
+    unit: "jours",
+    hint: "Les journaux de connexion et d'accès aux liens publics plus anciens sont supprimés. Les créations de comptes et les changements de rôle sont conservés.",
+  },
+  {
+    key: retentionProspectInactiveMonthsKey,
+    unit: "mois",
+    hint: "Un prospect sans nouvelle demande depuis ce délai apparaît dans la Supervision. L'anonymisation reste manuelle.",
+  },
+];
 
 function SettingRow({
   id,
@@ -143,13 +180,6 @@ export function NotificationSettingsPage() {
   const set = (key: NotificationSettingKey, value: boolean | number) =>
     setDraft((current) => (current ? { ...current, [key]: value } : current));
   const emailOn = draft?.["notifications.email.enabled"] === true;
-  const purgeDelay = draft?.[privacyPurgeDelayDaysKey],
-    purgeBounds = range(privacyPurgeDelayDaysKey);
-  const purgeDelayValid =
-    typeof purgeDelay === "number" &&
-    Number.isInteger(purgeDelay) &&
-    purgeDelay >= purgeBounds.min &&
-    purgeDelay <= purgeBounds.max;
 
   return (
     <AdminPage
@@ -320,38 +350,53 @@ export function NotificationSettingsPage() {
             <CardHeader>
               <CardTitle>Confidentialité</CardTitle>
             </CardHeader>
-            <CardContent>
-              {/* S7.3b-2 D9: the only privacy key of the registry; saved with the rest of the page. */}
-              <Field
-                label={definition(privacyPurgeDelayDaysKey).label}
-                hint="Les fichiers d'un client anonymisé sont supprimés définitivement après ce délai."
-                error={
-                  purgeDelayValid
-                    ? undefined
-                    : `Saisis un nombre entier de jours, de ${purgeBounds.min} à ${purgeBounds.max}.`
-                }
-              >
-                {(control) => (
-                  <Input
-                    {...control}
-                    type="number"
-                    inputMode="numeric"
-                    min={purgeBounds.min}
-                    max={purgeBounds.max}
-                    step={1}
-                    className="w-28"
-                    value={Number.isNaN(purgeDelay) ? "" : String(purgeDelay)}
-                    onChange={(event) =>
-                      set(
-                        privacyPurgeDelayDaysKey,
-                        event.target.value === ""
-                          ? Number.NaN
-                          : Number(event.target.value),
-                      )
+            <CardContent className="flex flex-col gap-4">
+              {privacySettings.map(({ key, unit, hint }) => {
+                const value = draft[key],
+                  bounds = range(key);
+                const valid =
+                  typeof value === "number" &&
+                  Number.isInteger(value) &&
+                  value >= bounds.min &&
+                  value <= bounds.max;
+                return (
+                  <Field
+                    key={key}
+                    label={definition(key).label}
+                    hint={hint}
+                    error={
+                      valid
+                        ? undefined
+                        : `Saisis un nombre entier de ${unit}, de ${bounds.min} à ${bounds.max}.`
                     }
-                  />
-                )}
-              </Field>
+                  >
+                    {(control) => (
+                      <Input
+                        {...control}
+                        type="number"
+                        inputMode="numeric"
+                        min={bounds.min}
+                        max={bounds.max}
+                        step={1}
+                        className="w-28"
+                        value={
+                          typeof value === "number" && !Number.isNaN(value)
+                            ? String(value)
+                            : ""
+                        }
+                        onChange={(event) =>
+                          set(
+                            key,
+                            event.target.value === ""
+                              ? Number.NaN
+                              : Number(event.target.value),
+                          )
+                        }
+                      />
+                    )}
+                  </Field>
+                );
+              })}
             </CardContent>
           </Card>
           {query.data?.updatedAt ? (

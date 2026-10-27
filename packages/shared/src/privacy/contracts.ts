@@ -83,6 +83,22 @@ export type UnarchiveSubjectResponse = {
 /** D6: the only privacy key of the widened settings registry (declared in notifications/contracts.ts). */
 export const privacyPurgeDelayDaysKey = "privacy.purge.delay_days" as const;
 
+/** RET-01 T1-T4: retention settings (privacy keys of the same registry). */
+export const retentionEmailOutboxDaysKey =
+  "retention.email_outbox_days" as const;
+export const retentionNotificationsDaysKey =
+  "retention.notifications_days" as const;
+export const retentionSecurityLogsDaysKey =
+  "retention.security_logs_days" as const;
+export const retentionProspectInactiveMonthsKey =
+  "retention.prospect_inactive_months" as const;
+export const retentionSettingKeys = [
+  retentionEmailOutboxDaysKey,
+  retentionNotificationsDaysKey,
+  retentionSecurityLogsDaysKey,
+  retentionProspectInactiveMonthsKey,
+] as const;
+
 export type ArchiveSubjectResponse = {
   subjectType: PrivacySubjectType;
   subjectId: string;

@@ -7,6 +7,7 @@ import {
   formatBytes,
   formatDuration,
   formatRate,
+  inactiveProspectLine,
   intervalLabel,
   jobRows,
   jobStateDisplay,
@@ -68,6 +69,7 @@ const overview = (
     activeHolds: 0,
     purgesDue7d: 0,
     anonymizedTotal: 0,
+    inactiveProspects: { count: 0, months: 12, items: [] },
   },
   runtime: {
     nodeVersion: "v24.22.1",
@@ -139,6 +141,21 @@ test("OPS-01b S1/S3: a tile follows its own block's alerts (critical wins); the 
   assert.equal(blockSeverity([...alerts], "backup"), "critical");
   assert.equal(blockSeverity([...alerts], "jobs"), "warning");
   assert.equal(blockSeverity([...alerts], "floor"), null);
+  assert.equal(
+    blockSeverity(
+      [{ code: "PROSPECTS_INACTIVE", severity: "warning", message: "x" }],
+      "privacy",
+    ),
+    "warning",
+  );
+  // Libreville is UTC+1: 23:30 UTC on 31/12 is already 01/01 there.
+  assert.equal(
+    inactiveProspectLine({
+      reference: "DEM-2025-0042",
+      lastRequestAt: "2025-12-31T23:30:00.000Z",
+    }),
+    "DEM-2025-0042 · dernière demande le 01/01/2026",
+  );
   assert.deepEqual(
     [
       statusDotTone({ level: "critical", alertCount: 2 }),
@@ -252,14 +269,21 @@ test("OPS-01b S1/S2: security columns per day, simulation and manual run sentenc
   });
   assert.equal(securityTotal(columns), 10);
   assert.equal(securityTotal(columns.slice(1)), 0);
-  assert.equal(
+  assert.deepEqual(
     purgeSimulationText({
       subjectsDue: 2,
       filesDue: 5,
       bytesDue: 4_823_449,
       heldBack: 1,
+      outboxToRedact: 3,
+      notificationsToDelete: 4,
+      auditEventsToDelete: 5,
+      accessEventsToDelete: 6,
     }),
-    "Personnes dont les fichiers seraient supprimés : 2 · Fichiers : 5 · Taille : 4,6 Mo · Retenus par un blocage : 1",
+    [
+      "Personnes dont les fichiers seraient supprimés : 2 · Fichiers : 5 · Taille : 4,6 Mo · Retenus par un blocage : 1",
+      "E-mails à purger : 3 · Notifications à supprimer : 4 · Journaux de sécurité à supprimer : 11",
+    ],
   );
   assert.equal(
     manualRunText({ outcome: "succeeded", durationMs: 1200, errorCode: null }),

@@ -251,6 +251,7 @@ export const supervisionAlertTitles: Record<SupervisionAlertCode, string> = {
   JOB_FAILING: "Tâche planifiée en échec",
   JOB_LATE: "Tâche planifiée en retard",
   JOB_NEVER_RUN: "Tâche planifiée jamais exécutée",
+  PROSPECTS_INACTIVE: "Prospects inactifs",
 };
 
 /** O9: each code has one severity, so the status endpoint can read it back from the stored dedupe key. */
@@ -268,6 +269,7 @@ export const supervisionAlertSeverity: Record<
   JOB_FAILING: "warning",
   JOB_LATE: "warning",
   JOB_NEVER_RUN: "warning",
+  PROSPECTS_INACTIVE: "warning",
 };
 
 const ageHours = (iso: string, now: Date) =>
@@ -345,6 +347,14 @@ export function computeSupervisionAlerts(
     add(
       "PURGE_FAILED",
       "La dernière suppression des fichiers a échoué. Consulte le runbook « Échec de job ».",
+    );
+  }
+  // RET-01 T4: anonymization stays manual (S7.3 D6); the alert only points to the list.
+  if (privacy.inactiveProspects.count > 0) {
+    const { count, months } = privacy.inactiveProspects;
+    add(
+      "PROSPECTS_INACTIVE",
+      `${count} prospect${count > 1 ? "s" : ""} sans nouvelle demande depuis plus de ${months} mois. Consulte la liste dans « Confidentialité » et anonymise ceux qui ne reviendront pas.`,
     );
   }
   if (!runtime.floor.ok) {

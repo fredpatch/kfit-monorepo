@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
+import { Link } from "react-router";
 import { toast } from "sonner";
 import {
   blockSeverity,
@@ -18,6 +19,7 @@ import {
   formatDuration,
   formatRate,
   hoursSince,
+  inactiveProspectLine,
   jobRows,
   jobStateDisplay,
   manualRunText,
@@ -347,7 +349,9 @@ function JobsCard({ rows }: { rows: SupervisionJobRow[] }) {
         >
           {simulation ? (
             <div className="flex flex-col gap-2 text-sm">
-              <p>{purgeSimulationText(simulation)}</p>
+              {purgeSimulationText(simulation).map((line) => (
+                <p key={line}>{line}</p>
+              ))}
               <p className="font-semibold">Rien n'a été supprimé.</p>
             </div>
           ) : null}
@@ -371,6 +375,7 @@ function PrivacyCard({ overview }: { overview: SupervisionOverviewResponse }) {
     ["Purges dans 7 j", String(privacy.purgesDue7d)],
     ["Personnes anonymisées", String(privacy.anonymizedTotal)],
     ["Dernier rejeu", dateTimeFr(privacy.lastReplay?.at)],
+    ["Prospects inactifs", String(privacy.inactiveProspects.count)],
   ];
   return (
     <Card className={cn(severity ? toneBorder(severity) : undefined)}>
@@ -389,6 +394,27 @@ function PrivacyCard({ overview }: { overview: SupervisionOverviewResponse }) {
             </div>
           ))}
         </dl>
+        {privacy.inactiveProspects.items.length ? (
+          <div className="mt-2 flex flex-col gap-1.5 border-t border-border-subtle pt-3">
+            <p className="text-xs text-muted-foreground">
+              Sans nouvelle demande depuis plus de{" "}
+              {privacy.inactiveProspects.months} mois. L'anonymisation reste
+              manuelle.
+            </p>
+            <ul className="flex flex-col gap-1 text-sm">
+              {privacy.inactiveProspects.items.map((item) => (
+                <li key={item.requestId}>
+                  <Link
+                    to={`/admin/demandes?demande=${item.requestId}`}
+                    className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {inactiveProspectLine(item)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

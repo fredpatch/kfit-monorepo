@@ -2,8 +2,8 @@
 titre: Jobs planifiés et scripts d'exploitation
 public: exploitation, développeur
 statut: à jour
-vérifié-sur: 99f2616
-couvre: [S7.2, S7.3, S7.4a, S7.4b, OPS-01a, ROLE-01, OPS-01b]
+vérifié-sur: 482f843
+couvre: [S7.2, S7.3, S7.4a, S7.4b, OPS-01a, ROLE-01, OPS-01b, RET-01]
 ---
 
 # Jobs planifiés et scripts d'exploitation
@@ -17,11 +17,11 @@ Toutes les exécutions sont tracées dans la table `scheduled_job_runs`. Le coup
 
 ## Jobs de l'API
 
-| `job_key`                      | Planning                                                | `run_key`                                | Rôle                                                                                                                                             | Désactivable                                                                           |
-| ------------------------------ | ------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `notifications.reconcile`      | toutes les 15 min (`*/15 * * * *`)                      | début de la fenêtre de 15 min (ISO UTC)  | Réconcilie les notifications du coach (S7.2) ; en cas d'échec, l'exécution est marquée `failed` et aucun e-mail ne part sans historique durable. | `KFIT_NOTIFICATION_JOBS=off` (avertissement en production)                             |
-| `notifications.email-delivery` | toutes les 5 min (`*/5 * * * *`)                        | début de la fenêtre de 5 min (ISO UTC)   | Envoie les e-mails en attente ; l'envoi SMTP se fait hors transaction et un échec SMTP ne touche ni les notifications ni les données métier.     | `KFIT_NOTIFICATION_JOBS=off`                                                           |
-| `privacy.purge`                | tous les jours à 03:00, Africa/Libreville (`0 3 * * *`) | date du jour à Libreville (`AAAA-MM-JJ`) | Supprime les fichiers des personnes anonymisées dont le délai est échu, par lots de 50. Les blocages de conservation actifs sont respectés.      | Non en production (`PRIVACY_JOBS_DISABLED`) ; `KFIT_PRIVACY_JOBS=off` en développement |
+| `job_key`                      | Planning                                                | `run_key`                                | Rôle                                                                                                                                                                                                     | Désactivable                                                                           |
+| ------------------------------ | ------------------------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `notifications.reconcile`      | toutes les 15 min (`*/15 * * * *`)                      | début de la fenêtre de 15 min (ISO UTC)  | Réconcilie les notifications du coach (S7.2) ; en cas d'échec, l'exécution est marquée `failed` et aucun e-mail ne part sans historique durable.                                                         | `KFIT_NOTIFICATION_JOBS=off` (avertissement en production)                             |
+| `notifications.email-delivery` | toutes les 5 min (`*/5 * * * *`)                        | début de la fenêtre de 5 min (ISO UTC)   | Envoie les e-mails en attente ; l'envoi SMTP se fait hors transaction et un échec SMTP ne touche ni les notifications ni les données métier.                                                             | `KFIT_NOTIFICATION_JOBS=off`                                                           |
+| `privacy.purge`                | tous les jours à 03:00, Africa/Libreville (`0 3 * * *`) | date du jour à Libreville (`AAAA-MM-JJ`) | Supprime les fichiers des personnes anonymisées dont le délai est échu, par lots de 50 (blocages de conservation respectés), puis applique les [durées de conservation](#durées-de-conservation-ret-01). | Non en production (`PRIVACY_JOBS_DISABLED`) ; `KFIT_PRIVACY_JOBS=off` en développement |
 
 Chaque job s'exécute une première fois au démarrage, puis selon son planning.
 
@@ -71,21 +71,36 @@ Sources : `packages/server/src/modules/supervision/*`, `packages/shared/src/supe
 
 **Lancement manuel.** Même verrou et même travail que le planning, avec la clé `manual:<uuid>` : il laisse sa propre ligne dans `scheduled_job_runs`. Un lancement par job et par minute (sinon `429 SUPERVISION_RATE_LIMITED`, compté `RATE_LIMITED:supervision_run`). Si le job tourne déjà : `409 SUPERVISION_JOB_BUSY`. Chaque lancement est audité (`ops.job.manual_run` : job, résultat, durée). La route exige le jeton CSRF et la même origine.
 
-**Simulation de la suppression des fichiers.** Même sélection que `privacy.purge` (documents `pending_purge` dont le délai est échu, blocages de conservation respectés), dans une transaction en lecture seule. Réponse : `subjectsDue` (personnes), `filesDue` (fichiers), `bytesDue` (octets), `heldBack` (documents retenus par un blocage). Rien n'est supprimé, aucune ligne `scheduled_job_runs` n'est écrite ; seul l'audit `ops.purge.simulated` est ajouté.
+**Simulation de la suppression des fichiers.** Même sélection que `privacy.purge` (documents `pending_purge` dont le délai est échu, blocages de conservation respectés), dans une transaction en lecture seule. Réponse : `subjectsDue` (personnes), `filesDue` (fichiers), `bytesDue` (octets), `heldBack` (documents retenus par un blocage). Elle ajoute les comptes des étapes de conservation (RET-01), avec les mêmes conditions : `outboxToRedact`, `notificationsToDelete`, `auditEventsToDelete`, `accessEventsToDelete`. Rien n'est supprimé, aucune ligne `scheduled_job_runs` n'est écrite ; seul l'audit `ops.purge.simulated` est ajouté.
 
 **Alertes.**
 
-| Code                          | Gravité       | Condition                                                                                                                  |
-| ----------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `BACKUP_STALE`                | critique      | Dernière sauvegarde réussie de plus de 26 heures, ou aucune en production.                                                 |
-| `BACKUP_FAILED`               | critique      | La dernière sauvegarde (plus récente que la dernière réussite) a échoué.                                                   |
-| `RESTORE_CHECK_FAILED`        | critique      | Le dernier contrôle de restauration a échoué.                                                                              |
-| `RESTORE_CHECK_STALE`         | avertissement | Dernier contrôle de restauration de plus de 8 jours, ou aucun en production.                                               |
-| `PRIVACY_JOURNAL_UNAVAILABLE` | critique      | Le dossier du journal n'est pas accessible en écriture (vérification sans écriture), ou n'est pas configuré en production. |
-| `PURGE_FAILED`                | avertissement | La dernière exécution de `privacy.purge` a échoué.                                                                         |
-| `SECURITY_FLOOR_NOT_MET`      | critique      | Node est sous le [plancher de sécurité](../runbooks/plancher-securite.md).                                                 |
-| `JOB_FAILING`                 | avertissement | Un job est en échec (voir ci-dessus).                                                                                      |
-| `JOB_LATE`                    | avertissement | Un job est en retard.                                                                                                      |
-| `JOB_NEVER_RUN`               | avertissement | Un job ne s'est jamais exécuté (production seulement).                                                                     |
+| Code                          | Gravité       | Condition                                                                                                                                         |
+| ----------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BACKUP_STALE`                | critique      | Dernière sauvegarde réussie de plus de 26 heures, ou aucune en production.                                                                        |
+| `BACKUP_FAILED`               | critique      | La dernière sauvegarde (plus récente que la dernière réussite) a échoué.                                                                          |
+| `RESTORE_CHECK_FAILED`        | critique      | Le dernier contrôle de restauration a échoué.                                                                                                     |
+| `RESTORE_CHECK_STALE`         | avertissement | Dernier contrôle de restauration de plus de 8 jours, ou aucun en production.                                                                      |
+| `PRIVACY_JOURNAL_UNAVAILABLE` | critique      | Le dossier du journal n'est pas accessible en écriture (vérification sans écriture), ou n'est pas configuré en production.                        |
+| `PURGE_FAILED`                | avertissement | La dernière exécution de `privacy.purge` a échoué.                                                                                                |
+| `PROSPECTS_INACTIVE`          | avertissement | Au moins un prospect jamais converti, ni archivé ni anonymisé, n'a pas fait de demande depuis `retention.prospect_inactive_months` mois (RET-01). |
+| `SECURITY_FLOOR_NOT_MET`      | critique      | Node est sous le [plancher de sécurité](../runbooks/plancher-securite.md).                                                                        |
+| `JOB_FAILING`                 | avertissement | Un job est en échec (voir ci-dessus).                                                                                                             |
+| `JOB_LATE`                    | avertissement | Un job est en retard.                                                                                                                             |
+| `JOB_NEVER_RUN`               | avertissement | Un job ne s'est jamais exécuté (production seulement).                                                                                            |
 
 **Notifications et e-mails.** `notifications.reconcile` calcule ces alertes à chaque passage. Chaque alerte ouvre une notification « Alerte de supervision » pour chaque super-administrateur actif (jamais un administrateur ni un coach ; une alerte ouverte pour un administrateur avant ROLE-01 est fermée au passage suivant), avec un lien vers `/admin/supervision`, et la ferme quand la condition disparaît. La colonne `severity` ne connaît que `warning` et `info` : une alerte critique est enregistrée `warning`, la gravité exacte reste dans l'API. E-mail : réglage « Alertes de supervision » (`notifications.supervision_alert.email_enabled`), activé par défaut. Au plus un e-mail par alerte, par super-administrateur et par jour de Libreville (clé d'envoi `supervision:<destinataire>:<alerte>:<AAAA-MM-JJ>`) : une alerte qui disparaît puis revient le même jour n'est pas renvoyée, une alerte qui dure est rappelée une fois par jour.
+
+## Durées de conservation (RET-01)
+
+Sources : `packages/server/src/modules/privacy/repositories/retention.repository.ts`, `packages/server/src/modules/privacy/services/retention.policy.ts`, `packages/server/src/modules/privacy/jobs/privacy-purge.job.ts`. Valeurs et justification : [politique de conservation](../conformite/politique-conservation.md#durées-de-conservation-automatiques-ret-01).
+
+Dans `privacy.purge`, après la suppression des fichiers, et dans cet ordre (réglages lus au moment de l'exécution) :
+
+1. **E-mails** : lignes `sent` (date d'envoi) ou `dead_letter` (dernier essai, ou passage en échec définitif pour une ligne jamais tentée, par exemple après une anonymisation) plus anciennes que `retention.email_outbox_days` : adresse, objet et textes remplacés par « [purgé] ». `failed` n'est pas final (le worker le reprend) et n'est donc jamais touché, pas plus que `pending` et `sending`.
+2. **Notifications** résolues depuis plus de `retention.notifications_days` : la file d'e-mails est d'abord détachée (`notification_id` vide), puis la notification est supprimée, dans la même transaction.
+3. **Journaux de sécurité** plus anciens que `retention.security_logs_days` : événements d'audit `auth.*` et `ops.*` (hors `RETENTION_EVIDENCE_EVENT_TYPES`), puis `external_access_events`.
+
+Chaque étape traite des lots de 50 lignes, au plus 200 lots par exécution ; le reste attend le lendemain. « Simuler » compte tout ce qui est dû : au-delà de 10 000 lignes pour une étape, il annonce plus qu'une seule exécution n'en traite. Chaque lot est validé seul : une exécution relancée reprend là où la précédente s'est arrêtée. Si une étape échoue, les étapes suivantes s'exécutent quand même, les lots déjà validés restent, l'audit `privacy.purge_run` garde tous les comptes et l'exécution est marquée `failed` (`RETENTION_STEP_FAILED`), ce qui ouvre l'alerte `PURGE_FAILED`. Résultat et audit : `scanned`, `purged`, `skippedHold`, `failed`, `outboxRedacted`, `notificationsDeleted`, `auditEventsDeleted`, `accessEventsDeleted`, `retentionStepsFailed`.
+
+**Prospects inactifs** (lecture seule, aucune étape du job) : calculés par la Supervision à chaque affichage et à chaque `notifications.reconcile`. Mois de calendrier, heure de Libreville ; une demande faite exactement à la limite n'est pas encore inactive.

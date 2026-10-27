@@ -33,6 +33,8 @@ export const supervisionAlertCodes = [
   "JOB_FAILING",
   "JOB_LATE",
   "JOB_NEVER_RUN",
+  // RET-01 T4: never converted, not archived, last request older than the setting.
+  "PROSPECTS_INACTIVE",
 ] as const;
 export type SupervisionAlertCode = (typeof supervisionAlertCodes)[number];
 export type SupervisionAlertSeverity = "critical" | "warning";
@@ -103,6 +105,16 @@ export type SupervisionPrivacy = {
   activeHolds: number;
   purgesDue7d: number;
   anonymizedTotal: number;
+  /** RET-01 T4: request reference and date only - never a name, phone or e-mail. Items: max 20, oldest first. */
+  inactiveProspects: {
+    count: number;
+    months: number;
+    items: Array<{
+      requestId: string;
+      reference: string;
+      lastRequestAt: string;
+    }>;
+  };
 };
 
 export type SupervisionRuntime = {
@@ -157,4 +169,9 @@ export type SupervisionPurgeSimulationResponse = {
   filesDue: number;
   bytesDue: number;
   heldBack: number;
+  /** RET-01 R7: what the retention steps of the same run would change now. */
+  outboxToRedact: number;
+  notificationsToDelete: number;
+  auditEventsToDelete: number;
+  accessEventsToDelete: number;
 };

@@ -1,3 +1,4 @@
+import { businessDateKey } from "../time/business-time.js";
 import type {
   SupervisionAlert,
   SupervisionAlertCode,
@@ -114,6 +115,7 @@ const alertBlock: Record<SupervisionAlertCode, SupervisionBlock> = {
   JOB_FAILING: "jobs",
   JOB_LATE: "jobs",
   JOB_NEVER_RUN: "jobs",
+  PROSPECTS_INACTIVE: "privacy",
 };
 
 /** S1: a tile turns warning or danger only when its own block has an open alert (critical wins). */
@@ -255,16 +257,22 @@ export function securityTotal(columns: SecurityColumn[]): number {
   );
 }
 
-/** S2 « Simuler »: counts only, sizes in Mo. */
+/** S2 « Simuler »: counts only, sizes in Mo; RET-01 R7 adds the retention line (audit and access events summed). */
 export function purgeSimulationText(
   simulation: SupervisionPurgeSimulationResponse,
-): string {
-  return [
+): string[] {
+  const files = [
     `Personnes dont les fichiers seraient supprimés : ${simulation.subjectsDue}`,
     `Fichiers : ${simulation.filesDue}`,
     `Taille : ${decimal(simulation.bytesDue / 1024 / 1024)} Mo`,
     `Retenus par un blocage : ${simulation.heldBack}`,
   ].join(" · ");
+  const retention = [
+    `E-mails à purger : ${simulation.outboxToRedact}`,
+    `Notifications à supprimer : ${simulation.notificationsToDelete}`,
+    `Journaux de sécurité à supprimer : ${simulation.auditEventsToDelete + simulation.accessEventsToDelete}`,
+  ].join(" · ");
+  return [files, retention];
 }
 
 /** S2 toast after « Lancer maintenant ». */
@@ -276,4 +284,16 @@ export function manualRunText(run: {
   return run.outcome === "succeeded"
     ? `Job lancé : réussi en ${formatDuration(run.durationMs)}.`
     : `Job lancé : en échec (${run.errorCode ?? "erreur inconnue"}).`;
+}
+
+/** RET-01 R5: request reference and Libreville date only, never a name, phone or e-mail. */
+export function inactiveProspectLine(item: {
+  reference: string;
+  lastRequestAt: string;
+}): string {
+  const day = businessDateKey(new Date(item.lastRequestAt))
+    .split("-")
+    .reverse()
+    .join("/");
+  return `${item.reference} · dernière demande le ${day}`;
 }

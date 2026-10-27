@@ -2,7 +2,13 @@
  * S7.2 - internal operational notifications and optional e-mail reminders/digest (Gate 1 approved 2026-10-23).
  * Source modules own business truth; notifications are durable delivery/history; e-mail is an optional side effect.
  */
-import { privacyPurgeDelayDaysKey } from "../privacy/contracts.js";
+import {
+  privacyPurgeDelayDaysKey,
+  retentionEmailOutboxDaysKey,
+  retentionNotificationsDaysKey,
+  retentionProspectInactiveMonthsKey,
+  retentionSecurityLogsDaysKey,
+} from "../privacy/contracts.js";
 
 /** Closed vocabulary. quote_action_required is kept: S7.1 already derives one precise condition (quote status « changes_requested »). */
 export const notificationKinds = [
@@ -172,12 +178,41 @@ export const notificationSettingRegistry = {
     true,
     "Alertes de supervision",
   ),
-  // S7.3 (D6): the registry is the closed union of operational settings; privacy adds only the purge delay.
+  // S7.3 (D6): the registry is the closed union of operational settings; privacy adds the purge delay and (RET-01) retention.
   [privacyPurgeDelayDaysKey]: int(
     30,
     1,
     365,
     "Délai avant suppression des fichiers (jours)",
+    "privacy",
+  ),
+  // RET-01 T1-T4 (defaults and minimums: Gate 1; maximums: implementation bounds).
+  [retentionEmailOutboxDaysKey]: int(
+    30,
+    7,
+    365,
+    "Contenu des e-mails envoyés (jours)",
+    "privacy",
+  ),
+  [retentionNotificationsDaysKey]: int(
+    180,
+    30,
+    730,
+    "Notifications résolues (jours)",
+    "privacy",
+  ),
+  [retentionSecurityLogsDaysKey]: int(
+    395,
+    90,
+    1095,
+    "Journaux de sécurité (jours)",
+    "privacy",
+  ),
+  [retentionProspectInactiveMonthsKey]: int(
+    12,
+    3,
+    60,
+    "Prospects inactifs (mois)",
     "privacy",
   ),
 } as const satisfies Record<string, NotificationSettingDefinition>;

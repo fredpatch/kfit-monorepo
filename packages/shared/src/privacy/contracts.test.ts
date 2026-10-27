@@ -13,6 +13,11 @@ import {
   privacyApiRoutes,
   privacyErrorCodes,
   privacyPurgeDelayDaysKey,
+  retentionEmailOutboxDaysKey,
+  retentionNotificationsDaysKey,
+  retentionProspectInactiveMonthsKey,
+  retentionSecurityLogsDaysKey,
+  retentionSettingKeys,
   subjectArchivedErrorCodes,
   unarchiveReasonLabels,
   unarchiveReasons,
@@ -20,11 +25,14 @@ import {
 
 const id = "11111111-1111-4111-8111-111111111111";
 
-test("widened settings registry holds exactly one privacy key: purge delay 1-365, default 30 (D6)", () => {
+test("widened settings registry holds the purge delay (1-365, default 30, D6) and the four RET-01 retention keys as privacy keys", () => {
   const privacyKeys = Object.entries(operationalSettingRegistry)
     .filter(([, d]) => d.sensitivity === "privacy")
     .map(([key]) => key);
-  assert.deepEqual(privacyKeys, [privacyPurgeDelayDaysKey]);
+  assert.deepEqual(privacyKeys, [
+    privacyPurgeDelayDaysKey,
+    ...retentionSettingKeys,
+  ]);
   assert.equal(notificationSettingDefaults()[privacyPurgeDelayDaysKey], 30);
   assert.deepEqual(
     parseNotificationSettingsUpdate({
@@ -46,6 +54,38 @@ test("widened settings registry holds exactly one privacy key: purge delay 1-365
     null,
     "no inert retention keys",
   );
+});
+
+test("RET-01 R1: retention defaults and ranges; an out-of-range update is refused", () => {
+  const expected = {
+    [retentionEmailOutboxDaysKey]: [30, 7, 365],
+    [retentionNotificationsDaysKey]: [180, 30, 730],
+    [retentionSecurityLogsDaysKey]: [395, 90, 1095],
+    [retentionProspectInactiveMonthsKey]: [12, 3, 60],
+  } as const;
+  const defaults = notificationSettingDefaults();
+  for (const [key, [value, min, max]] of Object.entries(expected)) {
+    const definition = operationalSettingRegistry[key as keyof typeof expected];
+    assert.deepEqual(
+      [definition.type, defaults[key as keyof typeof expected]],
+      ["integer", value],
+      key,
+    );
+    assert.deepEqual(
+      parseNotificationSettingsUpdate({ settings: { [key]: min } }),
+      { [key]: min },
+    );
+    assert.deepEqual(
+      parseNotificationSettingsUpdate({ settings: { [key]: max } }),
+      { [key]: max },
+    );
+    for (const bad of [min - 1, max + 1, min + 0.5, String(value)])
+      assert.equal(
+        parseNotificationSettingsUpdate({ settings: { [key]: bad } }),
+        null,
+        `${key} ${bad}`,
+      );
+  }
 });
 
 test("anonymize input requires a non-blank confirmation name and nothing else", () => {

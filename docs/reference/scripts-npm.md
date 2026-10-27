@@ -106,11 +106,11 @@ Lancer depuis la racine : `npm run <script> --workspace @kfit/server`.
 | `db:generate` | `drizzle-kit generate` |
 | `db:migrate` | `drizzle-kit migrate` |
 | `db:test:prepare` | `npm run build && node ./scripts/db/prepare-test-database.mjs` |
-| `privacy:replay` | `npm run build && node ./scripts/privacy/replay.mjs` |
-| `privacy:journal-sync` | `npm run build && node ./scripts/privacy/journal-sync.mjs` |
-| `ops:backup` | `npm run build && node ./scripts/ops/backup.mjs` |
-| `ops:restore` | `npm run build && node ./scripts/ops/restore.mjs` |
-| `ops:restore-drill` | `npm run build && node ./scripts/ops/restore-drill.mjs` |
+| `privacy:replay` | `node ./scripts/ops/run.mjs privacy-replay` |
+| `privacy:journal-sync` | `node ./scripts/ops/run.mjs privacy-journal-sync` |
+| `ops:backup` | `node ./scripts/ops/run.mjs backup` |
+| `ops:restore` | `node ./scripts/ops/run.mjs restore` |
+| `ops:restore-drill` | `node ./scripts/ops/run.mjs restore-drill` |
 | `db:check` | `drizzle-kit check` |
 | `preflight:onboarding-uniqueness` | `node ./scripts/preflight/onboarding-uniqueness.mjs` |
 | `preflight:consents` | `node ./scripts/preflight/consents.mjs` |

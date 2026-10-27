@@ -2,8 +2,8 @@
 titre: Démarrage en production
 public: exploitation
 statut: à jour
-vérifié-sur: d2fc5df
-couvre: [S7.4a, SEC-01]
+vérifié-sur: 7b1d467
+couvre: [S7.4a, SEC-01, FIX-03]
 ---
 
 # Démarrage en production
@@ -18,7 +18,7 @@ L'API de production refuse de démarrer tant qu'un contrôle échoue. Tous les �
 - [ ] Dépendances et build : `npm ci` puis `npm run build` à la racine. `start:prod` lit `packages/server/dist/` et ne compile pas.
 - [ ] PostgreSQL démarré, base de production migrée (`npm run db:migrate` avec le `DATABASE_URL` de production dans l'environnement). **À vérifier — Sprint 9** : procédure de migration dans le compose de production.
 - [ ] Dossier du journal de confidentialité (`KFIT_PRIVACY_JOURNAL_DIR`) créé et accessible en écriture.
-- [ ] Dossier des fichiers privés (`PRIVATE_STORAGE_ROOT`) persistant.
+- [ ] Dossier des fichiers privés (`PRIVATE_STORAGE_ROOT`) persistant. Ce dossier et celui du journal sont donnés en **chemins absolus**.
 - [ ] Toutes les variables « requis en production » renseignées, sans valeur d'exemple ([liste](../reference/variables-environnement.md)). Modèle : `.env.prod.example`.
 - [ ] Aucun texte de consentement publié portant « DÉMONSTRATION » dans son titre (Configuration › Consentements).
 
@@ -57,6 +57,7 @@ Ordre :
 | `ENV_WEAK_SECRET` | Un des 5 secrets (`AUTH_OTP_PEPPER`, `AUTH_AUDIT_HASH_PEPPER`, `AUTH_REFRESH_TOKEN_PEPPER`, `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_RECOVERY_TOKEN_SECRET`) fait moins de 32 caractères. | Générer un secret long (ex. `openssl rand -base64 48`), différent pour chacun. |
 | `APP_BASE_URL_NOT_HTTPS` | `KFIT_APP_BASE_URL` n'est pas une URL `https://`. | Mettre l'adresse publique en `https`. |
 | `DATABASE_TARGET_FORBIDDEN` | `DATABASE_URL` vise `kfit_dev` ou `kfit_test`, ou le port de développement `5433` sur `localhost` / `127.0.0.1`. Détail `DATABASE_URL unreadable` si l'URL est illisible. | Pointer sur la base de production. |
+| `PATH_NOT_ABSOLUTE` | `PRIVATE_STORAGE_ROOT` ou `KFIT_PRIVACY_JOURNAL_DIR` est un chemin relatif. En production, ces dossiers doivent être absolus pour ne pas dépendre du dossier de lancement. | Donner le chemin absolu (ex. `/srv/kfit/private`). |
 | `PRIVACY_JOURNAL_UNAVAILABLE` | Le dossier `KFIT_PRIVACY_JOURNAL_DIR` est absent (`missing`), n'est pas un dossier (`not a directory`) ou refuse l'écriture (`not writable`). | Créer le dossier et donner les droits d'écriture à l'utilisateur de l'API. |
 | `PRIVACY_JOBS_DISABLED` | `KFIT_PRIVACY_JOBS=off`. La purge des fichiers des personnes anonymisées est obligatoire en production. | Retirer la variable ou la mettre à `on`. |
 | `DEMO_CONSENT_PUBLISHED` | Un texte de consentement publié contient « démonstration » dans son titre, sans tenir compte des accents ni de la casse. Le détail donne le nombre et les types. `not verified: database unreachable` : la base n'a pas répondu. | Retirer ou remplacer le texte de démonstration ; ou rendre la base joignable. |

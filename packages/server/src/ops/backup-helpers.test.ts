@@ -193,7 +193,7 @@ test("B10: ops env refuses a bad key, an unknown pg mode and overlapping directo
   const root = path.resolve(tmpdir(), "kfit-ops-env");
   const base = { BACKUP_ENCRYPTION_KEY: key.toString("hex"), DATABASE_URL: "postgresql://u:p@localhost:5433/kfit_x", PRIVATE_STORAGE_ROOT: path.join(root, "storage"),
     KFIT_PRIVACY_JOURNAL_DIR: path.join(root, "journal"), BACKUP_DIR: path.join(root, "primary"), BACKUP_SECONDARY_DIR: path.join(root, "secondary") };
-  const load = (overrides: Record<string, string>) => loadOpsConfig({ ...base, ...overrides }, { cwd: root, composeDir: root });
+  const load = (overrides: Record<string, string>) => loadOpsConfig({ ...base, ...overrides }, { composeDir: root });
   const config = load({});
   assert.equal(config.pg.mode, "docker");
   assert.equal(config.pg.service, "postgres");
@@ -205,6 +205,8 @@ test("B10: ops env refuses a bad key, an unknown pg mode and overlapping directo
     [{ BACKUP_DIR: path.join(root, "storage", "backups") }, "ENV_INVALID"],
     [{ BACKUP_DIR: path.join(root, "journal") }, "ENV_INVALID"],
     [{ DATABASE_URL: "" }, "ENV_INVALID"],
+    [{ NODE_ENV: "production", BACKUP_DIR: "backups/primary" }, "ENV_INVALID"],
+    [{ NODE_ENV: "production", BACKUP_COMPOSE_FILE: "docker-compose.prod.yml" }, "ENV_INVALID"],
   ];
   for (const [overrides, code] of refusals) {
     assert.throws(() => load(overrides), (error: unknown) => error instanceof OpsError && error.code === code && !error.detail.includes(root) && !error.detail.includes("short"), JSON.stringify(Object.keys(overrides)));

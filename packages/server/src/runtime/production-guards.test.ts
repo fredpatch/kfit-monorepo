@@ -71,6 +71,12 @@ test("S7.4 D3: KFIT_PRIVACY_JOBS=off is refused; KFIT_NOTIFICATION_JOBS=off is o
   assert.equal(notifications.warnings.length, 1);
 });
 
+test("FIX-03 F2: a relative PRIVATE_STORAGE_ROOT or KFIT_PRIVACY_JOURNAL_DIR is PATH_NOT_ABSOLUTE, by name only", () => {
+  assert.deepEqual(codes({ ...goodEnv(), PRIVATE_STORAGE_ROOT: "storage/private" }), ["PATH_NOT_ABSOLUTE"]);
+  assert.equal(detail({ ...goodEnv(), PRIVATE_STORAGE_ROOT: "./storage", KFIT_PRIVACY_JOURNAL_DIR: "privacy-journal" }, "PATH_NOT_ABSOLUTE"), "PRIVATE_STORAGE_ROOT, KFIT_PRIVACY_JOURNAL_DIR");
+  assert.ok(!codes({ ...goodEnv(), KFIT_PRIVACY_JOURNAL_DIR: "" }).includes("PATH_NOT_ABSOLUTE"), "a missing key is ENV_MISSING only");
+});
+
 test("S7.4 D2: several failures are reported together", () => {
   const env: NodeJS.ProcessEnv = { ...goodEnv(), KFIT_APP_BASE_URL: "http://app.kfit.ga", DATABASE_URL: "postgresql://u:p@db:5432/kfit_dev", KFIT_PRIVACY_JOBS: "off", AUTH_OTP_PEPPER: "short" };
   delete env.SMTP_HOST;

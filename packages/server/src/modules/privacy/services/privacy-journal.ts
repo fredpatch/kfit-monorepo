@@ -1,6 +1,7 @@
 import { mkdir, open, readFile } from "node:fs/promises";
 import path from "node:path";
 import { privacySubjectTypes, type PrivacySubjectType } from "@kfit/shared";
+import { resolveConfiguredPath } from "../../../config/paths.js";
 import type { ExecutedPrivacyEvent, LinkedSubject } from "../repositories/privacy.repository.js";
 
 /*
@@ -42,8 +43,9 @@ export function parseJournalLine(raw: string): ExecutedPrivacyEvent | null {
   }
 }
 
-/** Null when the directory is not configured: the journal is then disabled (dev warns at startup). */
-export function createPrivacyJournal(directory: string | undefined): PrivacyJournal | null {
+/** Null when the directory is not configured: the journal is then disabled (dev warns at startup). Relative = from the repository root (FIX-03 F1). */
+export function createPrivacyJournal(configured: string | undefined): PrivacyJournal | null {
+  const directory = resolveConfiguredPath(configured);
   if (!directory) return null;
   const file = path.join(directory, PRIVACY_JOURNAL_FILE);
   return {

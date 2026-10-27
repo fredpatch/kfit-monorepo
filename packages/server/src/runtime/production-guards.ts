@@ -20,6 +20,7 @@ export const productionGuardCodes = [
   "APP_BASE_URL_NOT_HTTPS",
   "DATABASE_TARGET_FORBIDDEN",
   "PRIVACY_JOURNAL_UNAVAILABLE",
+  "PATH_NOT_ABSOLUTE",
   "PRIVACY_JOBS_DISABLED",
   "DEMO_CONSENT_PUBLISHED",
 ] as const;
@@ -46,6 +47,8 @@ export const PRODUCTION_REQUIRED_ENV = [
   "SMTP_FROM",
   ...PRODUCTION_SECRET_ENV,
 ] as const;
+/** FIX-03 F2: directories the production API must receive as absolute paths (a relative one depends on where it is started). */
+export const PRODUCTION_ABSOLUTE_PATH_ENV = ["PRIVATE_STORAGE_ROOT", PRIVACY_JOURNAL_DIR_ENV] as const;
 /** S7.4 D2: an unedited example or a dev value counts as missing (case-insensitive substring); "change_me" matches the existing .env.*.example files. */
 export const PLACEHOLDER_PATTERNS = ["change-me", "changeme", "change_me", "example", "dev-", "xxx", "todo"] as const;
 /** S7.3 D9: demo consent texts must never be live in production; matched without case or accents. */
@@ -68,6 +71,8 @@ export function evaluateProductionEnv(env: NodeJS.ProcessEnv, version: string): 
   if (missing.length) failures.push({ code: "ENV_MISSING", detail: missing.join(", ") });
   const weak = PRODUCTION_SECRET_ENV.filter((key) => !missing.includes(key) && (env[key]?.trim().length ?? 0) < PRODUCTION_SECRET_MIN_LENGTH);
   if (weak.length) failures.push({ code: "ENV_WEAK_SECRET", detail: weak.join(", ") });
+  const relative = PRODUCTION_ABSOLUTE_PATH_ENV.filter((key) => !missing.includes(key) && !path.isAbsolute(env[key]!.trim()));
+  if (relative.length) failures.push({ code: "PATH_NOT_ABSOLUTE", detail: relative.join(", ") });
 
   const baseUrl = env.KFIT_APP_BASE_URL?.trim();
   if (baseUrl && !missing.includes("KFIT_APP_BASE_URL")) {
@@ -128,8 +133,8 @@ export async function findPublishedDemoConsents(database: typeof appDb): Promise
 /** `database` is loaded lazily: the DB client refuses to load without DATABASE_URL, and the env checks must still report. */
 export async function runProductionGuards({ env, database, version = process.version }: { env: NodeJS.ProcessEnv; database: () => Promise<typeof appDb>; version?: string }): Promise<ProductionGuardResult> {
   const { failures, warnings } = evaluateProductionEnv(env, version);
-  const missing = new Set(failures.find((f) => f.code === "ENV_MISSING")?.detail.split(", ") ?? []);
-  // A key already reported as missing or placeholder is not probed again.
+  const missing = new Set(["ENV_MISSING", "PATH_NOT_ABSOLUTE"].flatMap((code) => failures.find((f) => f.code === code)?.detail.split(", ") ?? []));
+  // A key already reported as missing, placeholder or relative is not probed again.
   if (!missing.has(PRIVACY_JOURNAL_DIR_ENV)) {
     const journal = await checkPrivacyJournalDir(env[PRIVACY_JOURNAL_DIR_ENV]);
     if (journal) failures.push(journal);

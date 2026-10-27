@@ -10,8 +10,8 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 ```text
 Branch            main
 Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
-Active slice      DOC-01a documentation foundation + S7.4c runbook
-Workflow state    AWAITING_HUMAN_VALIDATION — DOC-01a delivered 2026-10-26, uncommitted (sprint-7.md § DOC-01a execution)
+Active slice      FIX-03 + DOC-01b
+Workflow state    AWAITING_HUMAN_VALIDATION — FIX-03 + DOC-01b delivered 2026-10-27, uncommitted (sprint-7.md § FIX-03 + DOC-01b execution)
 S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) — validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
 Last validated    S7.2 — validated by Fred 2026-10-25
 Implementation    2dc7c43 (S7.2a server) + 0eac6d4 (S7.2b client, UX-16)
@@ -36,12 +36,14 @@ SEC-01            validated, committed 92d352a, CI green 2026-10-26
 S7.4 prereqs      base image pinned to an exact patched Node tag; smoke test records node --version; security:check in the image build (SEC-01 D6)
 S7.4a             production entrypoint + refuse-to-start guards + X-Request-Id — validated, committed 302902d, CI green
 S7.4b             backup/restore tooling + security counters (migration 0017) — validated, committed d2fc5df
-S7.4c             merged into DOC-01a (runbook) — Fred runs the drill from the runbook
-DOC-01a           documentation foundation + S7.4c runbook — delivered 2026-10-26 → Fred: review docs + run S7.4c drill from the runbook
-Next action       Fred: S7.4c drill from the runbook; DOC-01b guides; SEC-02; OPS-01; Sprint 8 UAT
+S7.4c             drill run by Fred 2026-10-26 from the runbook — 2 defects → FIX-03; S7.4 CLOSED after FIX-03 is validated (deployment = Sprint 9)
+DOC-01a           documentation foundation + S7.4c runbook — committed 953cb22
+FIX-03 + DOC-01b  paths from the repo root, ops runner, coach + admin guides — delivered 2026-10-27 → Fred: validate FIX-03, review guides (then coach review)
+Next action       SEC-02, OPS-01, RET-01, Sprint 8 UAT
 Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »
 Backlog           « Flaky express unit tests (fetch failed, random test) — diagnose with the pgErrorInfo fix »
 Backlog           « OPS-01 Supervision (jobs, sauvegardes, contrôle de restauration, confidentialité, sécurité) — après SEC-02, avant UAT »
+Backlog           « RET-01 rétention : purge de la file e-mail après envoi, durées audit/notifications, rappel prospects inactifs dans Supervision (après OPS-01) »
 Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser
 
 UI refonte        UX-1 → UX-15 done; Fred local checks of UX-9d, UX-10, UX-13 passed (2026-10-24)

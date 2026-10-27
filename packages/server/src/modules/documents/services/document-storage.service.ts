@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
+import { DEFAULT_PRIVATE_STORAGE_DIR, resolveConfiguredPath } from "../../../config/paths.js";
 
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 export type SupportedDocumentMime = "application/pdf" | "image/jpeg" | "image/png" | "image/webp";
@@ -20,8 +21,8 @@ export type StoredDocumentFile = {
 export class DocumentStorageError extends Error {
   constructor(public readonly code: "DOCUMENT_FILE_TOO_LARGE" | "DOCUMENT_FILE_TYPE_UNSUPPORTED" | "DOCUMENT_FILE_SIGNATURE_INVALID" | "DOCUMENT_FILE_INFECTED" | "DOCUMENT_FILE_SCAN_FAILED" | "DOCUMENT_STORAGE_FAILURE") { super(code); }
 }
-/** PRIVATE_STORAGE_ROOT, or storage/private/documents at the repository root when the API runs from packages/server. Shared with the ops scripts (S7.4b). */
-export const resolvePrivateStorageRoot = (root: string | undefined) => path.resolve(root ?? path.join(process.cwd(), "../../storage/private/documents"));
+/** PRIVATE_STORAGE_ROOT (relative = from the repository root, FIX-03 F1), default storage/private/documents. Shared with the ops scripts (S7.4b). */
+export const resolvePrivateStorageRoot = (root: string | undefined) => resolveConfiguredPath(root, { fallback: DEFAULT_PRIVATE_STORAGE_DIR });
 export class PrivateDocumentStorage {
   private readonly root: string;
   constructor(private readonly options: { root?: string; clamavHost?: string; clamavPort?: number } = {}) {

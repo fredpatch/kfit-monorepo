@@ -1,4 +1,5 @@
 import path from "node:path";
+import { REPO_ROOT, resolveConfiguredPath } from "../config/paths.js";
 import { resolvePrivateStorageRoot } from "../modules/documents/services/document-storage.service.js";
 import { PRIVACY_JOURNAL_DIR_ENV } from "../modules/privacy/services/privacy-journal.js";
 import { BACKUP_KEY_ENV, parseBackupKey } from "./backup-crypto.js";
@@ -9,6 +10,8 @@ export const BACKUP_PG_MODES = ["docker", "native"] as const;
 export type BackupPgMode = (typeof BACKUP_PG_MODES)[number];
 export const DEFAULT_BACKUP_PG_SERVICE = "postgres";
 
+/** FIX-03 F2: ops paths refused when relative under NODE_ENV=production. */
+export const OPS_ABSOLUTE_PATH_ENV = ["BACKUP_DIR", "BACKUP_SECONDARY_DIR", "BACKUP_COMPOSE_FILE"] as const;
 export type PgAccess = { mode: BackupPgMode; composeFile: string | null; service: string; composeDir: string };
 export type OpsConfig = {
   key: Buffer;
@@ -28,16 +31,20 @@ export function isWithin(child: string, parent: string): boolean {
 
 /**
  * S7.4b B10: the ops scripts validate their own environment (the API does not need BACKUP_*). Relative directories resolve
- * against `cwd`. Errors name keys only.
+ * against the repository root (FIX-03 F1); in production the backup paths must be absolute (FIX-03 F2). Errors name keys only.
  */
-export function loadOpsConfig(env: NodeJS.ProcessEnv, options: { cwd: string; composeDir: string }): OpsConfig {
+export function loadOpsConfig(env: NodeJS.ProcessEnv, options: { composeDir?: string } = {}): OpsConfig {
   const key = parseBackupKey(env[BACKUP_KEY_ENV]);
   if (!key) throw new OpsError("BACKUP_KEY_INVALID", `${BACKUP_KEY_ENV} must be 64 hex characters`);
   const databaseUrl = env.DATABASE_URL?.trim();
   if (!databaseUrl) throw new OpsError("ENV_INVALID", "DATABASE_URL missing");
   const mode = env.BACKUP_PG_MODE?.trim() || "docker";
   if (!(BACKUP_PG_MODES as readonly string[]).includes(mode)) throw new OpsError("ENV_INVALID", "BACKUP_PG_MODE must be docker or native");
-  const resolve = (value: string | undefined) => (value?.trim() ? path.resolve(options.cwd, value.trim()) : null);
+  if (env.NODE_ENV === "production") {
+    const relative = OPS_ABSOLUTE_PATH_ENV.filter((name) => env[name]?.trim() && !path.isAbsolute(env[name]!.trim()));
+    if (relative.length) throw new OpsError("ENV_INVALID", `${relative.join(", ")} must be absolute in production`);
+  }
+  const resolve = (value: string | undefined) => resolveConfiguredPath(value);
   const storageRoot = resolvePrivateStorageRoot(env.PRIVATE_STORAGE_ROOT);
   const journalDir = resolve(env[PRIVACY_JOURNAL_DIR_ENV]);
   const backupDir = resolve(env.BACKUP_DIR), secondaryDir = resolve(env.BACKUP_SECONDARY_DIR);
@@ -51,7 +58,7 @@ export function loadOpsConfig(env: NodeJS.ProcessEnv, options: { cwd: string; co
   }
   return {
     key, databaseUrl, storageRoot, journalDir, backupDir, secondaryDir,
-    pg: { mode: mode as BackupPgMode, composeFile: resolve(env.BACKUP_COMPOSE_FILE), service: env.BACKUP_PG_SERVICE?.trim() || DEFAULT_BACKUP_PG_SERVICE, composeDir: options.composeDir },
+    pg: { mode: mode as BackupPgMode, composeFile: resolve(env.BACKUP_COMPOSE_FILE), service: env.BACKUP_PG_SERVICE?.trim() || DEFAULT_BACKUP_PG_SERVICE, composeDir: options.composeDir ?? REPO_ROOT },
   };
 }
 

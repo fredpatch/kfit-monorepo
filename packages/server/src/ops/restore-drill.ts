@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { BackupManifest } from "./backup-manifest.js";
+import { resolveConfiguredPath } from "../config/paths.js";
 import { fileStats, listBundles } from "./bundle-store.js";
 import { requireDir, type OpsConfig } from "./ops-config.js";
 import { databaseExists, dropDatabase, migrationState, tableCounts, withClient } from "./ops-database.js";
@@ -45,7 +46,7 @@ export async function runRestoreDrill(config: OpsConfig, options: { bundleDir?: 
     if (filesTarget) await rm(filesTarget, { recursive: true, force: true });
   };
   try {
-    const bundleDir = options.bundleDir ? path.resolve(options.bundleDir) : await newestValidBundle(requireDir(config.backupDir, "BACKUP_DIR"), config.key);
+    const bundleDir = options.bundleDir ? resolveConfiguredPath(options.bundleDir, { fallback: options.bundleDir }) : await newestValidBundle(requireDir(config.backupDir, "BACKUP_DIR"), config.key);
     runKey = `${path.basename(bundleDir)}:${drillId}`;
     await recordOpsRun(config.databaseUrl, { jobKey: OPS_JOB_KEYS.drill, runKey, status: "running", startedAt: now });
     filesTarget = await mkdtemp(path.join(tmpdir(), "kfit-restore-drill-"));

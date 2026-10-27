@@ -12,7 +12,7 @@ couvre: [DOC-01a]
 
 Sources : tableaux `…ErrorCodes` de `packages/shared/src`, codes serveur listés dans `scripts/docs/generate-references.mjs`. Message affiché : texte des tables de messages du client (`packages/client/src`), « — » quand le client n'en a pas (code non affiché tel quel ou message générique).
 
-317 codes, 24 modules.
+318 codes, 24 modules.
 
 ## appointments
 
@@ -459,6 +459,7 @@ Source : `packages/server/src/runtime/production-guards.ts · productionGuardCod
 | `APP_BASE_URL_NOT_HTTPS` | — |
 | `DATABASE_TARGET_FORBIDDEN` | — |
 | `PRIVACY_JOURNAL_UNAVAILABLE` | — |
+| `PATH_NOT_ABSOLUTE` | — |
 | `PRIVACY_JOBS_DISABLED` | — |
 | `DEMO_CONSENT_PUBLISHED` | — |
 

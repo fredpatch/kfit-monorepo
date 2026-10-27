@@ -49,7 +49,7 @@ before(async () => {
     BACKUP_ENCRYPTION_KEY: randomBytes(32).toString("hex"), DATABASE_URL: process.env.DATABASE_URL, BACKUP_PG_MODE: pgMode,
     PRIVATE_STORAGE_ROOT: path.join(work, "storage"), KFIT_PRIVACY_JOURNAL_DIR: path.join(work, "journal"),
     BACKUP_DIR: path.join(work, "primary"), BACKUP_SECONDARY_DIR: path.join(work, "secondary"),
-  }, { cwd: work, composeDir: repositoryRoot });
+  }, { composeDir: repositoryRoot });
   await db.insert(users).values({ id: userId, email: `ops-${userId}@example.invalid`, passwordHash: "synthetic", role: "admin", status: "active" });
   await db.insert(prospects).values({ id: prospectId, fullName: name, whatsapp: `+24166${customerId.replace(/\D/g, "1").slice(0, 6)}`, email: `ops-${customerId}@example.invalid`, city: "Libreville" });
   await db.insert(customers).values({ id: customerId, prospectId, fullName: name, whatsapp: `+24166${customerId.replace(/\D/g, "1").slice(0, 6)}`, email: `ops-${customerId}@example.invalid`, city: "Libreville", country: "GA", archivedAt: new Date() });

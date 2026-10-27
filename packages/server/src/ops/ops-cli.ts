@@ -1,5 +1,5 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolveConfiguredPath } from "../config/paths.js";
 import { loadAuthConfig } from "../modules/auth/config/auth.config.js";
 import { bundleName } from "./backup-manifest.js";
 import { runBackup } from "./backup.js";
@@ -15,10 +15,10 @@ export const OPS_USAGE: Record<OpsJob, string> = {
   restore: "npm run ops:restore -- --bundle <dir> --target-db <name> --files-target <dir> [--confirm-overwrite]",
   drill: "npm run ops:restore-drill [-- --bundle <dir>]",
 };
-/** dist/ops → repository root, where docker-compose.yml lives (BACKUP_COMPOSE_FILE overrides the file). */
-const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 
 const option = (argv: string[], name: string) => { const index = argv.indexOf(name); return index >= 0 ? argv[index + 1] : undefined; };
+/** FIX-03 F1: --bundle and --files-target resolve from the repository root, like the configured directories. */
+const pathOption = (argv: string[], name: string) => resolveConfiguredPath(option(argv, name)) ?? undefined;
 
 function auditHashPepper(env: NodeJS.ProcessEnv): string {
   try {
@@ -30,18 +30,18 @@ function auditHashPepper(env: NodeJS.ProcessEnv): string {
 
 async function execute(job: OpsJob, argv: string[], env: NodeJS.ProcessEnv, now: Date): Promise<OpsOutcome> {
   try {
-    const config = loadOpsConfig(env, { cwd: process.cwd(), composeDir: repositoryRoot });
+    const config = loadOpsConfig(env);
     if (job === "backup") return await runBackup(config, now);
-    const bundle = option(argv, "--bundle");
+    const bundle = pathOption(argv, "--bundle");
     if (job === "drill") return await runRestoreDrill(config, { ...(bundle ? { bundleDir: bundle } : {}), auditHashPepper: auditHashPepper(env) }, now);
-    const targetDb = option(argv, "--target-db"), filesTarget = option(argv, "--files-target");
+    const targetDb = option(argv, "--target-db"), filesTarget = pathOption(argv, "--files-target");
     if (!bundle || !targetDb || !filesTarget) throw new OpsError("ENV_INVALID", `usage: ${OPS_USAGE.restore}`);
-    return await runRestore(config, { bundleDir: bundle, targetDb, filesTarget: path.resolve(filesTarget), confirmOverwrite: argv.includes("--confirm-overwrite"), auditHashPepper: auditHashPepper(env) }, now);
+    return await runRestore(config, { bundleDir: bundle, targetDb, filesTarget, confirmOverwrite: argv.includes("--confirm-overwrite"), auditHashPepper: auditHashPepper(env) }, now);
   } catch (error) {
     // Configuration refused before the job started: still one row when the source database is reachable (B8).
     const opsError = error instanceof OpsError ? error : new OpsError("ENV_INVALID", "unexpected configuration failure", { cause: error });
-    const bundle = option(argv, "--bundle");
-    const runKey = job === "backup" ? bundleName(now) : job === "restore" ? path.basename(path.resolve(bundle ?? "unknown")) : `config:${now.toISOString()}`;
+    const bundle = pathOption(argv, "--bundle");
+    const runKey = job === "backup" ? bundleName(now) : job === "restore" ? path.basename(bundle ?? "unknown") : `config:${now.toISOString()}`;
     const recorded = env.DATABASE_URL ? await recordOpsRun(env.DATABASE_URL, { jobKey: OPS_JOB_KEYS[job], runKey, status: "failed", startedAt: now, result: {}, errorCode: opsError.code }) : false;
     return { status: "failed", error: opsError, result: {}, recorded };
   }

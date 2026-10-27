@@ -12,11 +12,11 @@ couvre: [DOC-01a]
 
 | Document                                                                                | Public                    | Statut    | Vérifié sur |
 | --------------------------------------------------------------------------------------- | ------------------------- | --------- | ----------- |
-| [Guide du coach](guides/guide-coach.md)                                                 | coach                     | brouillon | d2fc5df     |
-| [Guide de l'administrateur](guides/guide-administrateur.md)                             | administrateur            | brouillon | d2fc5df     |
+| [Guide du coach](guides/guide-coach.md)                                                 | coach                     | brouillon | 7b1d467     |
+| [Guide de l'administrateur](guides/guide-administrateur.md)                             | administrateur            | brouillon | 7b1d467     |
 | [Runbooks (index)](runbooks/README.md)                                                  | exploitation              | à jour    | d2fc5df     |
-| [Démarrage en production](runbooks/demarrage-production.md)                             | exploitation              | à jour    | d2fc5df     |
-| [Sauvegarde et restauration](runbooks/sauvegarde-restauration.md)                       | exploitation              | à jour    | 953cb22     |
+| [Démarrage en production](runbooks/demarrage-production.md)                             | exploitation              | à jour    | 7b1d467     |
+| [Sauvegarde et restauration](runbooks/sauvegarde-restauration.md)                       | exploitation              | à jour    | 7b1d467     |
 | [Plancher de sécurité](runbooks/plancher-securite.md)                                   | exploitation, développeur | à jour    | d2fc5df     |
 | [Incident](runbooks/incident.md)                                                        | exploitation              | brouillon | d2fc5df     |
 | [Rotation des secrets](runbooks/rotation-secrets.md)                                    | exploitation              | brouillon | d2fc5df     |

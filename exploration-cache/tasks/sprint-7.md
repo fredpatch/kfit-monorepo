@@ -1694,3 +1694,206 @@ Status: delivered, uncommitted → Fred: review docs + run S7.4c drill from the 
 - À vérifier: (1) ops:restore with --confirm-overwrite (pg_restore --clean --if-exists) has no automated test; (2) no command replays privacy events alone against a restore target (privacy:replay is local-5433 only); (3) switching the API to the restored database and files, and production migrations — Sprint 9; (4) SMTP outage: how the outbox resumes; (5) effects of rotating each secret (sessions, links, audit hashes); (6) no automatic retention found for never-converted prospects, audit_events, notifications / e-mail outbox.
 - Deviations: codes-erreur scans every non-test .ts of packages/shared/src (not only contracts.ts) so devToolsErrorCodes (dev/test-data.ts) is included; variables-environnement has a « Groupe » column (section heading) beside « Description » (comment directly above the key) and lists PRIVATE_STORAGE_ROOT, required in production but absent from .env.example; docs:check also checks front matter and the root README links; README.md / AGENTS.md describe AGENTS.md and .github/agents/ as portable « do not edit per project » — edited per DC7.
 - Limits: .env.example comments are English, so the generated descriptions are English; guides and four runbooks are skeletons for DOC-01b; conformité drafts contain code facts only.
+
+## S7.4c drill — 2026-10-26 (Fred)
+
+Runbook docs/runbooks/sauvegarde-restauration.md §1–§8 confirmed on the local dev cluster (counts restored: customers 13, subscriptions 12, payments 5, documents 34, files 26; TARGET_NOT_EMPTY, VERIFY_FAILED, MANIFEST_INVALID, BACKUP_KEY_INVALID, unreachable DB all as documented; --confirm-overwrite verified by hand). Two defects found → FIX-03 (Windows: a path with a space passed through `npm run` arrives with a trailing `^`; relative paths resolve from the current directory, so a restore run from the repo root merged into a journal the API does not read).
+
+S7.4 status: CLOSED after FIX-03 is validated (deployment = Sprint 9).
+
+## FIX-03 + DOC-01b Gate 1 — approved 2026-10-26
+
+### FIX-03 decisions
+F1. One helper src/config/paths.ts: REPO_ROOT (derived from the module location: dist/config → repo root, works from src via tests too) and resolveConfiguredPath(value, { fallback }) — absolute stays absolute; relative resolves against REPO_ROOT, never cwd. Use it for PRIVATE_STORAGE_ROOT (and its default → REPO_ROOT/storage/private/documents — must equal today's default when started from packages/server: verify and state it), KFIT_PRIVACY_JOURNAL_DIR, BACKUP_DIR, BACKUP_SECONDARY_DIR, and the ops CLI path args (--bundle, --files-target). Grep for any other env/path read via process.cwd() in src and scripts/ops, scripts/privacy; fix the same way, list them.
+F2. Production guard (S7.4a) gains PATH_NOT_ABSOLUTE for PRIVATE_STORAGE_ROOT and KFIT_PRIVACY_JOURNAL_DIR; ops scripts refuse relative BACKUP_* when NODE_ENV=production (ENV_INVALID).
+F3. ops:* npm scripts become a single node command (no `&&` chain): scripts/ops/run.mjs <backup|restore|restore-drill> builds first by spawning `npm run build` WITHOUT forwarding user args (stdio inherit; exit on failure), then imports the target script with process.argv rewritten to the user args exactly. Same treatment for privacy:replay and privacy:journal-sync if they share the pattern (report). Root scripts keep forwarding with `--`.
+F4. Runbook: replace Fred's Windows workaround paragraph with the fixed behaviour (keep a one-line note « corrigé par FIX-03 »); relative paths now always resolve from the repo root — say it once in §2.
+
+### DOC-01b decisions
+G1. docs/guides/guide-coach.md (public: coach, FR, tutoiement, same words as the UI labels): one chapter per workflow, in the order the coach works: Se connecter (session, mot de passe oublié) → Aujourd'hui (tableau de bord, alertes) → Demandes (file, qualification, conversion) → Clients et fiche client → Abonnements (cycle de vie, pause, fin) → Paiements, reçus, preuves de paiement → Devis → Rendez-vous → Suivis → Questionnaires et consentements (liens envoyés à la cliente) → Documents (envoi, liens, code de vérification) → Progression et objectifs → Notifications (cloche, e-mails) → Archiver / anonymiser (côté coach : ce que ça change) → FAQ « Pourquoi je ne peux pas… » (one entry per refusal a coach can hit: archived customer, active subscription blocking archive, expired link, duplicate payment, etc., each mapped to its error code). Each chapter: À quoi ça sert · Étapes (numbered, UI labels in « ») · Règles métier (explicit) · Ce que voit la cliente (for public links) · Erreurs fréquentes. No screenshots in this run (placeholders « [capture : …] » allowed, max 1 per chapter).
+G2. docs/guides/guide-administrateur.md (public: administrateur, FR): Rôles et accès · Réglages (each setting: effect, default, range — from the settings registry) · Catalogue (services, variantes, composants, règles, « Avant publication ») · Textes de consentement (versions, publication, pourquoi « DÉMONSTRATION » bloque la production) · Utilisateurs et sessions (durées, OTP; appareils de confiance = « SEC-02, à venir ») · Confidentialité (archiver, désarchiver, anonymiser — irréversible, blocages de conservation, délai de purge, journal) · Supervision (« OPS-01, à venir ») · Sauvegardes (link to runbook, rôle de l'administrateur) · Données de test (dev uniquement).
+G3. Source of truth for labels and rules: the client components + shared contracts + settings registry. Every business rule stated must cite nothing in the guide (no code refs for readers), but keep a hidden list in sprint-7.md « DOC-01b sources » (rule → file:line) so a reviewer can verify.
+G4. Error codes without French message (61 in codes-erreur.md): classify each as reachable by a coach/admin in the UI, reachable only via public links (customer), or internal/unreachable — table in sprint-7.md (code, module, class, where it surfaces). Do NOT write the missing messages (they go into OPS-01 client part). In the guides' FAQ use the existing generic message for those.
+G5. Update docs/README.md statuses (guides → « brouillon » until Fred + coach review), vérifié-sur on touched docs, docs:generate if anything generated changed.
+
+## FIX-03 + DOC-01b execution — 2026-10-27 (Claude)
+
+Status: delivered, uncommitted → Fred: validate FIX-03, review guides (then coach review).
+
+### FIX-03
+- Counts: shared 77 → 77; server unit 679 → 686 (685 pass + 1 skipped on Windows, unchanged); integration on kfit_test 627 → 627. security:check ✔, tsc shared/server/client clean, client build ok, docs:check ok (318 codes: + PATH_NOT_ABSOLUTE).
+- F1 `src/config/paths.ts`: REPO_ROOT (module location, 4 levels up from src/config or dist/config), DEFAULT_PRIVATE_STORAGE_DIR = storage/private/documents, resolveConfiguredPath(value, { fallback }). Paths now resolved from the repository root, never cwd:
+  - PRIVATE_STORAGE_ROOT and its default — resolvePrivateStorageRoot (document-storage.service.ts), used by the API, privacy:replay and the ops scripts. Default verified equal to the pre-FIX-03 default of an API started from packages/server (unit test, and 3/3 recent documents read through the storage class).
+  - KFIT_PRIVACY_JOURNAL_DIR — inside createPrivacyJournal, so the API runtime, privacy:replay, privacy:journal-sync and ops:restore all resolve it the same way.
+  - BACKUP_DIR, BACKUP_SECONDARY_DIR, BACKUP_COMPOSE_FILE — loadOpsConfig (the `cwd` option is gone; composeDir defaults to REPO_ROOT).
+  - --bundle, --files-target — ops-cli.ts; restore-drill.ts no longer path.resolve()s against cwd.
+  - No other cwd-relative path read in src, scripts/ops, scripts/privacy (grep of process.cwd / path.resolve).
+- F2: production guard PATH_NOT_ABSOLUTE (PRIVATE_STORAGE_ROOT, KFIT_PRIVACY_JOURNAL_DIR; a relative key is not probed further); ops config refuses relative BACKUP_DIR / BACKUP_SECONDARY_DIR / BACKUP_COMPOSE_FILE under NODE_ENV=production (ENV_INVALID).
+- F3: `scripts/ops/run.mjs <backup|restore|restore-drill|privacy-replay|privacy-journal-sync>` — builds with a fixed `npm run build` (no user args, stdio inherit, exit on failure), then imports the target with process.argv = user args. ops:backup, ops:restore, ops:restore-drill, privacy:replay and privacy:journal-sync (same `npm run build && node …` pattern) now call it; root scripts unchanged (forward with `--`). --skip-build and KFIT_OPS_RUNNER_TARGET only with NODE_ENV=test.
+- Windows manual: `npm run ops:restore -- --bundle "<absolute path with a space>" --target-db kfit_restore_fix03 --files-target "backups/fix03 restored files"` from the repo root → succeeded, bundle name intact (no `^`), 26 files under the repo-root target, journalLive 2 (the real journal), then dropped/removed. PowerShell `npm run ops:restore -- --bundle "C:/Users/Prime Daily/x/…"` → name intact (MANIFEST_INVALID, expected for a missing bundle).
+- Local .env (Fred's yes, 2026-10-27): KFIT_PRIVACY_JOURNAL_DIR=packages/server/privacy-journal, BACKUP_DIR=backups/primary, BACKUP_SECONDARY_DIR=backups/secondary (same folders as before). .env.example and the runbook example use the repo-root form.
+- Dev API: `npm run dev:api` starts unchanged (database, SMTP, ClamAV ready, journal found, /health ok); watch-mode API restarted afterwards.
+- F4: runbook §2 says once that relative paths resolve from the repo root; Fred's Windows workaround replaced by « corrigé par FIX-03 »; démarrage-production gains PATH_NOT_ABSOLUTE.
+
+### DOC-01b
+- guide-coach.md chapters: 1 Se connecter · 2 Aujourd'hui · 3 Demandes · 4 Clients et fiche client · 5 Abonnements · 6 Paiements, reçus et justificatifs · 7 Devis · 8 Rendez-vous · 9 Suivis · 10 Questionnaires et consentements · 11 Documents · 12 Progression et objectifs · 13 Notifications · 14 Archiver, désarchiver, anonymiser · 15 FAQ « Pourquoi je ne peux pas… » (28 entries, each with its code). One « [capture : …] » placeholder.
+- guide-administrateur.md sections: Rôles et accès · Réglages (14 settings: effect, default, range) · Catalogue · Textes de consentement (« DÉMONSTRATION ») · Questionnaires · Comptes et sessions · Confidentialité · Supervision (OPS-01, à venir) · Sauvegardes · Données de test.
+- docs/README.md: guides stay « brouillon »; vérifié-sur 7b1d467 on the 4 touched docs.
+
+### DOC-01b sources (rule → file:line, for review)
+
+| Règle | Source |
+| --- | --- |
+| Mot de passe : 12 caractères, une lettre, un chiffre | `packages/shared/src/auth/password-policy.ts:7` |
+| Code de récupération expire en 5 minutes (texte écran) | `packages/client/src/auth/components/RecoveryFlow.tsx:150` |
+| Inactivité 30 min / session 12 h / OTP 5 min, 5 essais / vérification récente 10 min / délai mot de passe 10 min | `packages/server/src/modules/auth/config/auth.config.ts:11` |
+| Message unique de connexion refusée | `packages/client/src/auth/api/auth-errors.ts:24` |
+| Lignes « À traiter » et leurs boutons | `packages/client/src/dashboard/components/TodayPage.tsx:33` |
+| Vues des demandes | `packages/client/src/requests/lib/request-labels.ts:34` |
+| Transitions autorisées des demandes | `packages/shared/src/requests/contracts.ts:111` |
+| Contact jamais dans le futur | `packages/client/src/requests/components/request-actions.tsx:71` |
+| Une décision de qualification par demande | `packages/client/src/requests/components/request-actions.tsx:207` |
+| Conversion : abonnement en préparation, demande close définitivement | `packages/client/src/requests/components/request-actions.tsx:431` |
+| Retirer de la liste d'attente → Abandonnée | `packages/client/src/requests/components/RequestDetail.tsx:308` |
+| Page publique « Ma demande » : aucun paiement | `packages/client/src/requests/components/PublicRequestForm.tsx:200` |
+| Vues des clients | `packages/client/src/customers/components/ClientsPage.tsx:29` |
+| WhatsApp vérifié avant création | `packages/client/src/customers/components/NewCustomerSheet.tsx:92` |
+| Onglets de la fiche | `packages/client/src/app/routes/client-profile.tsx:61` |
+| Analyse masquée hors cliente active ; onglets effacés après anonymisation | `packages/shared/src/privacy/subject-view.ts:49` |
+| États d'abonnement | `packages/client/src/lib/status-map.ts:41` |
+| Décisions d'abonnement et leurs effets | `packages/client/src/profile/overview/subscription-commands.ts:19` |
+| Motif obligatoire (pause, annulation, reprise après revue, revue anticipée, fin avec prestations dues) | `packages/client/src/profile/overview/subscription-commands.ts:39` |
+| Préparation : exigences + place avant « Prêt à démarrer » ; démarrage séparé | `packages/client/src/profile/preparation/PreparationTab.tsx:257` |
+| Réservation expirée : préparation arrêtée, état conservé | `packages/client/src/profile/preparation/PreparationTab.tsx:166` |
+| Statut financier sans effet sur l'abonnement | `packages/client/src/profile/payments/PaymentsTab.tsx:70` |
+| Paiement confirmé et réparti par ordre d'exigibilité | `packages/client/src/profile/payments/FinanceOperationDialog.tsx:156` |
+| Pas de trop-perçu | `packages/shared/src/finance/contracts.ts:18` |
+| Correction = écriture compensatoire | `packages/client/src/profile/payments/PaymentsTab.tsx:262` |
+| Un seul reçu par paiement confirmé | `packages/client/src/profile/payments/receipt-actions.tsx:44` |
+| Lien de reçu : 1 à 20 téléchargements | `packages/client/src/profile/payments/receipt-actions.tsx:113` |
+| Annulation de reçu seulement si paiement entièrement corrigé | `packages/client/src/profile/payments/receipt-actions.tsx:176` |
+| Lien de dépôt : un seul dépôt réussi | `packages/client/src/profile/payments/proof-actions.tsx:92` |
+| Confirmation complète = montant déclaré | `packages/client/src/profile/payments/ProofReviewDialog.tsx:98` |
+| Lien affiché une seule fois | `packages/client/src/profile/payments/OneTimeLink.tsx:24` |
+| Justificatif : l'envoi ne confirme pas le paiement | `packages/client/src/payment-proofs/components/PublicPaymentProofPage.tsx:63` |
+| Devis : version émise figée ; service/formule/durée figés | `packages/client/src/profile/payments/QuotesCard.tsx:197` |
+| Devis : application du montant après acceptation ; blocage si activité financière | `packages/shared/src/quotes/contracts.ts:5` |
+| Devis public : Accepter / Demander un changement / Refuser | `packages/client/src/quotes/components/PublicQuotePage.tsx:13` |
+| Rendez-vous : abonnement actif pour planifier/reporter | `packages/client/src/profile/appointments/AppointmentsTab.tsx:150` |
+| Séance déduite à la fin ou selon la règle d'absence / annulation tardive | `packages/client/src/profile/appointments/AppointmentsTab.tsx:261` |
+| Lien de rendez-vous expire au début | `packages/client/src/profile/appointments/AppointmentsTab.tsx:255` |
+| Rendez-vous public : une seule réponse par lien | `packages/client/src/appointments/components/PublicAppointmentPage.tsx:121` |
+| Suivi : abonnement actif seulement | `packages/client/src/profile/follow-ups/FollowUpsTab.tsx:90` |
+| Suivi remet le rythme à zéro | `packages/client/src/profile/follow-ups/FollowUpsTab.tsx:205` |
+| Pause ne consomme pas le rythme | `packages/client/src/profile/follow-ups/FollowUpsTab.tsx:82` |
+| Conditions obligatoires / accords facultatifs | `packages/shared/src/consents/contracts.ts:3` |
+| Périodes de recueil des consentements | `packages/shared/src/consents/contracts.ts:9` |
+| Consentement public : refus sans effet sur l'accompagnement, aucune case pré-cochée | `packages/client/src/consents/components/PublicConsentPage.tsx:83` |
+| Document : lien 24 h, 3 ouvertures | `packages/client/src/profile/documents/DocumentsTab.tsx:35` |
+| Code envoyé séparément du lien | `packages/client/src/profile/documents/DocumentsTab.tsx:234` |
+| Photos privées, accord photos requis | `packages/client/src/profile/documents/DocumentsTab.tsx:207` |
+| Mesure : actif ou en pause, consentement santé | `packages/shared/src/progress/contracts.ts:16` |
+| Objectif : la confirmation du coach fait foi | `packages/client/src/profile/progress/GoalDecisionDialog.tsx:21` |
+| Types de notifications | `packages/shared/src/notifications/contracts.ts:19` |
+| Notification résolue quand la situation est réglée ; e-mails sans montant ni santé | `packages/client/src/notifications/components/NotificationSettingsPage.tsx:116` |
+| Registre des réglages (défauts, plages) | `packages/shared/src/notifications/contracts.ts:86` |
+| Délai de purge 30 j (1–365) | `packages/shared/src/notifications/contracts.ts:100` |
+| Menu confidentialité selon l'état | `packages/shared/src/privacy/subject-view.ts:30` |
+| Archiver : tous les abonnements terminés ou annulés | `packages/client/src/privacy/components/SubjectPrivacyDialogs.tsx:36` |
+| Archivage : lecture seule, liens publics désactivés | `packages/client/src/privacy/components/SubjectPrivacyDialogs.tsx:105` |
+| Désarchiver ne rétablit pas les liens | `packages/client/src/privacy/components/SubjectPrivacyDialogs.tsx:150` |
+| Motifs de désarchivage | `packages/shared/src/privacy/contracts.ts:59` |
+| Anonymisation irréversible ; paiements, devis, reçus conservés | `packages/client/src/privacy/components/SubjectPrivacyDialogs.tsx:221` |
+| Types de blocage | `packages/shared/src/privacy/contracts.ts:16` |
+| Motif de blocage 3 à 500 caractères | `packages/shared/src/privacy/contracts.ts:96` |
+| Blocage : pas d'anonymisation ni de suppression de fichiers | `packages/client/src/privacy/components/CustomerHoldsCard.tsx:89` |
+| Portée des blocages (client, prospect, document) | `packages/shared/src/privacy/contracts.ts:9` |
+| Purge quotidienne 03:00 Libreville | `packages/server/src/modules/privacy/services/privacy.policy.ts:22` |
+| Catalogue : onglets | `packages/client/src/catalogue/lib/catalogue-meta.ts:19` |
+| Catalogue : sections de l'offre | `packages/client/src/catalogue/components/ServiceSheet.tsx:160` |
+| Slug fixé après publication | `packages/client/src/catalogue/components/ServiceSheet.tsx:239` |
+| Contenu : nouvelles ventes seulement | `packages/client/src/catalogue/components/ServiceSheet.tsx:280` |
+| Limites des règles (cadence 1–90 j, annulation 1–168 h) | `packages/shared/src/catalogue/contracts.ts:53` |
+| Avis médical appliqué tout de suite aux clientes en préparation | `packages/client/src/catalogue/components/RulesEditor.tsx:67` |
+| Avant publication : 4 points | `packages/client/src/catalogue/components/DeliverabilityChecklist.tsx:9` |
+| Offre archivée : hors page publique, lecture seule, abonnements inchangés | `packages/client/src/catalogue/components/CataloguePage.tsx:301` |
+| Textes : version publiée immuable, code OTP pour publier | `packages/client/src/consents/components/ConsentTextsPage.tsx:246` |
+| « DÉMONSTRATION » bloque la production | `packages/server/src/runtime/production-guards.ts:55` |
+| Questionnaires : versions figées, héritage variante → offre | `packages/client/src/questionnaires/components/QuestionnairesPage.tsx:235` |
+| Rôle unique « Coach · administratrice » | `packages/client/src/app/layout/UserMenu.tsx:5` |
+| Données de test : dev uniquement, audit et comptes jamais supprimés | `packages/client/src/dev/TestDataCard.tsx:134` |
+
+### G4 — codes without a French message
+
+62 codes sans message dédié dans docs/reference/codes-erreur.md : 27 atteignables par le coach / l'administrateur dans l'interface, 1 uniquement par un lien public (cliente), 34 internes ou inatteignables depuis l'interface.
+
+| Code | Module | Classe | Où il apparaît |
+| --- | --- | --- | --- |
+| `BOOTSTRAP_ALREADY_COMPLETED` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_BOOTSTRAP_INVALID_FORMAT` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_PASSWORD_POLICY_FAILED` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_INVALID_CREDENTIALS` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_ACCOUNT_UNAVAILABLE` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_LOGIN_INVALID_FORMAT` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_REFRESH_INVALID` | auth | interne / inatteignable | renouvellement de session en arrière-plan ; en cas d'échec l'écran revient à « Connexion » — À vérifier |
+| `AUTH_OTP_CODE_INVALID_FORMAT` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_OTP_REJECTED` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_RECOVERY_INVALID_FORMAT` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_RECOVERY_CODE_INVALID` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_RECOVERY_GRANT_INVALID` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_RATE_LIMITED` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `CATALOGUE_ROUTE_UNEXPECTED_FAILURE` | catalogue | coach/admin (UI) | message générique du module : « L'action n'a pas pu être enregistrée. Réessaie dans un instant. » |
+| `CONSENT_ADMIN_FORBIDDEN` | consents | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès |
+| `CONSENT_HISTORY_INVALID` | consents | interne / inatteignable | incohérence d'historique côté serveur (intégrité des données) |
+| `CONSENT_ROUTE_UNEXPECTED_FAILURE` | consents | coach/admin (UI) | message générique du module : « Impossible de traiter les consentements. Actualise la page et vérifie l'état avant de réessayer. » |
+| `CUSTOMER_INVALID_INPUT` | customers | coach/admin (UI) | « Nouveau client » — message produit par un switch (customers-api.ts), non détecté par le générateur |
+| `CUSTOMER_DUPLICATE_WHATSAPP` | customers | coach/admin (UI) | « Nouveau client » — message produit par un switch (customers-api.ts), non détecté par le générateur |
+| `CUSTOMER_ADMIN_FORBIDDEN` | customers | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès |
+| `CUSTOMER_NOT_FOUND` | customers | coach/admin (UI) | message générique du module : « Impossible de joindre le service clients. Réessaie dans un instant. » |
+| `CUSTOMER_ROUTE_UNEXPECTED_FAILURE` | customers | coach/admin (UI) | message générique du module : « Impossible de joindre le service clients. Réessaie dans un instant. » |
+| `DASHBOARD_INVALID_INPUT` | dashboard | interne / inatteignable | paramètres construits par l'écran « Aujourd'hui » |
+| `DASHBOARD_ADMIN_FORBIDDEN` | dashboard | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès |
+| `DASHBOARD_ROUTE_UNEXPECTED_FAILURE` | dashboard | coach/admin (UI) | message générique du module : « Impossible de charger le tableau de bord. Réessaie dans un instant. » |
+| `DOCUMENT_NOT_FOUND` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
+| `DOCUMENT_VERSION_NOT_FOUND` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
+| `DOCUMENT_INVALID_INPUT` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
+| `DOCUMENT_TYPE_INVALID` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
+| `DOCUMENT_STORAGE_FAILURE` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
+| `DOCUMENT_MEASUREMENT_INVALID` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
+| `DOCUMENT_LINK_INVALID` | documents | public (cliente) | page « Document personnel » — message générique « Action impossible. Réessaie dans un instant. » |
+| `DOCUMENT_ADMIN_FORBIDDEN` | documents | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès |
+| `DOCUMENT_ROUTE_UNEXPECTED_FAILURE` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
+| `QUESTIONNAIRE_ADMIN_FORBIDDEN` | questionnaires | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès |
+| `QUESTIONNAIRE_HISTORY_INVALID` | questionnaires | interne / inatteignable | incohérence d'historique côté serveur (intégrité des données) |
+| `QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE` | questionnaires | coach/admin (UI) | message générique du module : « Impossible de traiter le questionnaire. Actualise et vérifie l'état avant de réessayer. » |
+| `SECURITY_FLOOR` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `ENV_MISSING` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `ENV_WEAK_SECRET` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `APP_BASE_URL_NOT_HTTPS` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `DATABASE_TARGET_FORBIDDEN` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `PRIVACY_JOURNAL_UNAVAILABLE` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `PATH_NOT_ABSOLUTE` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `PRIVACY_JOBS_DISABLED` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `DEMO_CONSENT_PUBLISHED` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `BACKUP_KEY_INVALID` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `PG_CLIENT_TOO_OLD` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `DUMP_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `ENCRYPT_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `VERIFY_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `SECONDARY_COPY_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `ROTATION_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `MANIFEST_INVALID` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `TARGET_FORBIDDEN` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `TARGET_NOT_EMPTY` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `RESTORE_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `REPLAY_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `DRILL_MISMATCH` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `ENV_INVALID` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `SECURITY_FLOOR_NOT_MET` | plancher de sécurité (SEC-01) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
+| `REQUEST_ENCODING_UNSUPPORTED` | requêtes HTTP (SEC-01) | interne / inatteignable | 415 : aucun écran K'FIT n'envoie de corps compressé |
+
+### À vérifier
+1. Adding or removing an admin account: no screen exists.
+2. AUTH_REFRESH_INVALID: what the coach sees when the background session refresh fails.
+3. Consent type `publication` exists in the contract but has no label on the consent texts page or the health tab.
+4. Generator limit (not changed here): messages produced by functions or switch statements (auth-errors.ts, customers-api.ts) are shown « — » in codes-erreur.md.

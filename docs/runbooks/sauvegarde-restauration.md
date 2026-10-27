@@ -2,8 +2,8 @@
 titre: Sauvegarde et restauration
 public: exploitation
 statut: à jour
-vérifié-sur: 953cb22
-couvre: [S7.4b, S7.4c]
+vérifié-sur: 7b1d467
+couvre: [S7.4b, S7.4c, FIX-03]
 ---
 
 # Sauvegarde et restauration
@@ -79,23 +79,15 @@ Règles vérifiées au démarrage du script (échec `ENV_INVALID`) :
 - `BACKUP_DIR` et `BACKUP_SECONDARY_DIR` sont différents et aucun n'est contenu dans l'autre ;
 - aucun des deux n'est dans `PRIVATE_STORAGE_ROOT` ni dans le dossier du journal, et inversement.
 
-Les chemins relatifs (variables et options `--bundle`, `--files-target`) sont résolus depuis le dossier courant. Avec `npm run ops:*`, c'est toujours `packages/server`. En lançant `node` directement, se placer d'abord dans `packages/server`. Sinon, un `KFIT_PRIVACY_JOURNAL_DIR` relatif désigne un autre dossier, et la restauration écrit dans un journal qui n'est pas celui de l'API. Utiliser de préférence des **chemins absolus**.
+Les chemins relatifs (variables `PRIVATE_STORAGE_ROOT`, `KFIT_PRIVACY_JOURNAL_DIR`, `BACKUP_*` et options `--bundle`, `--files-target`) sont **toujours résolus depuis la racine du dépôt**, quel que soit le dossier d'où la commande est lancée. L'API et les scripts lisent donc les mêmes dossiers. En production, `BACKUP_DIR`, `BACKUP_SECONDARY_DIR` et `BACKUP_COMPOSE_FILE` doivent être absolus (sinon `ENV_INVALID`).
 
-**Windows : chemins avec une espace.** Passé par `npm run …` (cmd, PowerShell ou Git Bash), un chemin contenant une espace arrive au script avec un `^` final, par exemple `…\Prime Daily\…\kfit-backup-…Z^`. La restauration s'arrête alors sur `MANIFEST_INVALID` sans rien écrire. Dans ce cas, utiliser un chemin sans espace, ou compiler puis appeler le script directement :
-
-```bash
-npm run build --workspace @kfit/server
-cd packages/server
-node scripts/ops/restore.mjs --bundle "C:/Chemin avec espace/kfit-backup-20261026T020000Z" --target-db kfit_restore_manual --files-target "C:/Chemin avec espace/fichiers"
-```
-
-Constaté le 2026-10-26 sous Windows. Sous Linux : **À vérifier** au Sprint 9.
+Sous Windows, un chemin contenant une espace passe sans altération par `npm run ops:*` (corrigé par FIX-03).
 
 Exemple de `.env` local (valeurs fictives) :
 
 ```dotenv
-BACKUP_DIR=../../backups/primary
-BACKUP_SECONDARY_DIR=../../backups/secondary
+BACKUP_DIR=backups/primary
+BACKUP_SECONDARY_DIR=backups/secondary
 BACKUP_PG_MODE=docker
 BACKUP_COMPOSE_FILE=
 BACKUP_PG_SERVICE=postgres
@@ -434,7 +426,7 @@ Chaque échec affiche `✖ <job> failed: <CODE> (<détail>)` et sort avec le cod
 
 | Code                    | Cause                                                                                                                                                                                                                                           | Action                                                                                                                                                                                                                                                                                                                                  |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ENV_INVALID`           | Variable manquante (`DATABASE_URL`, `BACKUP_DIR`, `BACKUP_SECONDARY_DIR`, `KFIT_PRIVACY_JOURNAL_DIR` pour la restauration, pepper d'audit), `BACKUP_PG_MODE` inconnu, dossiers confondus ou imbriqués, ou arguments de `ops:restore` manquants. | Lire le détail (il nomme la variable) et corriger l'environnement.                                                                                                                                                                                                                                                                      |
+| `ENV_INVALID`           | Variable manquante (`DATABASE_URL`, `BACKUP_DIR`, `BACKUP_SECONDARY_DIR`, `KFIT_PRIVACY_JOURNAL_DIR` pour la restauration, pepper d'audit), `BACKUP_PG_MODE` inconnu, dossiers confondus ou imbriqués, chemin `BACKUP_*` relatif en production, ou arguments de `ops:restore` manquants. | Lire le détail (il nomme la variable) et corriger l'environnement.                                                                                                                                                                                                                                                                      |
 | `BACKUP_KEY_INVALID`    | Clé absente ou pas en 64 hexadécimaux ; ou, à la restauration, clé différente de celle de la sauvegarde (« key fingerprint mismatch »).                                                                                                         | Corriger `BACKUP_ENCRYPTION_KEY`. Pour une ancienne sauvegarde, utiliser la clé de l'époque.                                                                                                                                                                                                                                            |
 | `PG_CLIENT_TOO_OLD`     | `pg_dump` / `pg_restore` d'une version majeure inférieure au serveur.                                                                                                                                                                           | Installer un client PostgreSQL de même version majeure, ou passer en mode `docker`.                                                                                                                                                                                                                                                     |
 | `DUMP_FAILED`           | Base source injoignable, `pg_dump` ou `tar` indisponible ou en échec, `PRIVATE_STORAGE_ROOT` absent, fichiers illisibles.                                                                                                                       | Vérifier PostgreSQL (`docker compose ps`), le chemin des fichiers privés et les droits. Relancer.                                                                                                                                                                                                                                       |

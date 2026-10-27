@@ -3,8 +3,19 @@ import { MoreHorizontal } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router";
 import { cn } from "../../lib/utils.js";
 import { useAuth } from "../../auth/state/auth-context.js";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu.js";
-import { navFor, type NavGroup, type NavItem } from "./nav-config.js";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu.js";
+import {
+  navFor,
+  type NavBadgeValue,
+  type NavGroup,
+  type NavItem,
+} from "./nav-config.js";
 import { useNavBadges } from "./use-nav-badges.js";
 import { UserMenu } from "./UserMenu.js";
 import { NotificationCenter } from "../../notifications/components/NotificationCenter.js";
@@ -12,34 +23,69 @@ import { NotificationCenter } from "../../notifications/components/NotificationC
 function Brand() {
   return (
     <div className="flex items-center gap-2.5 px-2 py-1">
-      <span aria-hidden="true" className="flex size-[34px] items-center justify-center rounded-[10px] bg-lime text-[15px] font-extrabold text-brand-950">
+      <span
+        aria-hidden="true"
+        className="flex size-[34px] items-center justify-center rounded-[10px] bg-lime text-[15px] font-extrabold text-brand-950"
+      >
         K
       </span>
       <span className="flex flex-col leading-tight">
-        <span className="text-base font-extrabold tracking-tight text-white">K'FIT</span>
+        <span className="text-base font-extrabold tracking-tight text-white">
+          K'FIT
+        </span>
         <span className="text-[11px] text-sidebar-muted">Espace coach</span>
       </span>
     </div>
   );
 }
 
-function CountBadge({ value, hot }: { value: number | null; hot: boolean }) {
+/** OPS-01b S3: a dot, not a number; danger for a critical alert, warning otherwise. */
+function AlertDot({ tone }: { tone: "warning" | "danger" }) {
+  return (
+    <span
+      role="img"
+      aria-label="Alerte de supervision"
+      className={cn(
+        "size-2.5 shrink-0 rounded-full",
+        tone === "danger" ? "bg-danger" : "bg-warning",
+      )}
+    />
+  );
+}
+
+function CountBadge({ value, hot }: { value: NavBadgeValue; hot: boolean }) {
+  if (typeof value === "string") return <AlertDot tone={value} />;
   if (!value) return null;
   return (
-    <span className={cn("flex h-5 min-w-[22px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold", hot ? "bg-lime text-brand-950" : "bg-white/12 text-brand-100")}>
+    <span
+      className={cn(
+        "flex h-5 min-w-[22px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold",
+        hot ? "bg-lime text-brand-950" : "bg-white/12 text-brand-100",
+      )}
+    >
       {value}
     </span>
   );
 }
 
-function Sidebar({ badges, nav }: { badges: ReturnType<typeof useNavBadges>; nav: NavGroup[] }) {
+function Sidebar({
+  badges,
+  nav,
+}: {
+  badges: ReturnType<typeof useNavBadges>;
+  nav: NavGroup[];
+}) {
   return (
     <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col gap-6 overflow-y-auto bg-sidebar px-3.5 py-5 md:flex">
       <Brand />
       <nav aria-label="Navigation principale" className="flex flex-col gap-4">
         {nav.map((group) => (
           <div key={group.title ?? "root"} className="flex flex-col gap-0.5">
-            {group.title ? <span className="px-2.5 pb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-sidebar-muted">{group.title}</span> : null}
+            {group.title ? (
+              <span className="px-2.5 pb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-sidebar-muted">
+                {group.title}
+              </span>
+            ) : null}
             {group.items.map((item) => (
               <NavLink
                 key={item.to}
@@ -48,13 +94,20 @@ function Sidebar({ badges, nav }: { badges: ReturnType<typeof useNavBadges>; nav
                 className={({ isActive }) =>
                   cn(
                     "flex h-[38px] items-center gap-2.5 rounded-[10px] px-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime",
-                    isActive ? "bg-sidebar-active font-bold text-white" : "font-medium text-sidebar-foreground hover:bg-white/5 hover:text-white",
+                    isActive
+                      ? "bg-sidebar-active font-bold text-white"
+                      : "font-medium text-sidebar-foreground hover:bg-white/5 hover:text-white",
                   )
                 }
               >
                 <item.icon className="size-[18px]" aria-hidden="true" />
                 <span className="flex-1">{item.label}</span>
-                {item.badge ? <CountBadge value={badges[item.badge]} hot={item.badge === "followUpsOverdue"} /> : null}
+                {item.badge ? (
+                  <CountBadge
+                    value={badges[item.badge]}
+                    hot={item.badge === "followUpsOverdue"}
+                  />
+                ) : null}
               </NavLink>
             ))}
           </div>
@@ -64,18 +117,31 @@ function Sidebar({ badges, nav }: { badges: ReturnType<typeof useNavBadges>; nav
   );
 }
 
-function MobileTab({ item, badge }: { item: NavItem; badge: number | null }) {
+function MobileTab({ item, badge }: { item: NavItem; badge: NavBadgeValue }) {
   return (
     <NavLink
       to={item.to}
       end={item.end ?? false}
       className={({ isActive }) =>
-        cn("flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", isActive ? "font-bold text-primary" : "font-semibold text-muted-foreground")
+        cn(
+          "flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          isActive
+            ? "font-bold text-primary"
+            : "font-semibold text-muted-foreground",
+        )
       }
     >
       <span className="relative flex">
         <item.icon className="size-[22px]" aria-hidden="true" />
-        {badge ? <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">{badge}</span> : null}
+        {typeof badge === "string" ? (
+          <span className="absolute -right-1 -top-0.5 flex">
+            <AlertDot tone={badge} />
+          </span>
+        ) : badge ? (
+          <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+            {badge}
+          </span>
+        ) : null}
       </span>
       {item.label}
     </NavLink>
@@ -83,7 +149,13 @@ function MobileTab({ item, badge }: { item: NavItem; badge: number | null }) {
 }
 
 /** Phone navigation (board 04b): primary screens as tabs, the rest under « Plus ». */
-function MobileNav({ badges, nav }: { badges: ReturnType<typeof useNavBadges>; nav: NavGroup[] }) {
+function MobileNav({
+  badges,
+  nav,
+}: {
+  badges: ReturnType<typeof useNavBadges>;
+  nav: NavGroup[];
+}) {
   const navigate = useNavigate();
   const auth = useAuth();
   const items = nav.flatMap((group) => group.items);
@@ -91,9 +163,16 @@ function MobileNav({ badges, nav }: { badges: ReturnType<typeof useNavBadges>; n
   const more = items.filter((item) => !item.mobile);
 
   return (
-    <nav aria-label="Navigation principale" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-card px-1 pb-[max(env(safe-area-inset-bottom),8px)] pt-1.5 md:hidden">
+    <nav
+      aria-label="Navigation principale"
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-card px-1 pb-[max(env(safe-area-inset-bottom),8px)] pt-1.5 md:hidden"
+    >
       {primary.map((item) => (
-        <MobileTab key={item.to} item={item} badge={item.badge ? badges[item.badge] : null} />
+        <MobileTab
+          key={item.to}
+          item={item}
+          badge={item.badge ? badges[item.badge] : null}
+        />
       ))}
       <DropdownMenu>
         <DropdownMenuTrigger className="flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -101,14 +180,23 @@ function MobileNav({ badges, nav }: { badges: ReturnType<typeof useNavBadges>; n
           Plus
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" align="end">
-          {more.map((item) => (
-            <DropdownMenuItem key={item.to} onSelect={() => void navigate(item.to)}>
-              <item.icon aria-hidden="true" />
-              {item.label}
-            </DropdownMenuItem>
-          ))}
+          {more.map((item) => {
+            const badge = item.badge ? badges[item.badge] : null;
+            return (
+              <DropdownMenuItem
+                key={item.to}
+                onSelect={() => void navigate(item.to)}
+              >
+                <item.icon aria-hidden="true" />
+                <span className="flex-1">{item.label}</span>
+                {typeof badge === "string" ? <AlertDot tone={badge} /> : null}
+              </DropdownMenuItem>
+            );
+          })}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => void auth.logout()}>Se déconnecter</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => void auth.logout()}>
+            Se déconnecter
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </nav>
@@ -126,7 +214,10 @@ export function AdminLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-card/95 px-4 backdrop-blur sm:px-8">
           <span className="flex items-center gap-2 md:hidden">
-            <span aria-hidden="true" className="flex size-8 items-center justify-center rounded-[9px] bg-brand-950 text-sm font-extrabold text-lime">
+            <span
+              aria-hidden="true"
+              className="flex size-8 items-center justify-center rounded-[9px] bg-brand-950 text-sm font-extrabold text-lime"
+            >
               K
             </span>
             <span className="font-extrabold tracking-tight">K'FIT</span>
@@ -136,7 +227,13 @@ export function AdminLayout() {
           <UserMenu />
         </header>
         <main className="w-full max-w-[1240px] flex-1 px-4 pb-28 pt-6 sm:px-8 md:pb-12">
-          <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Chargement…</p>}>
+          <Suspense
+            fallback={
+              <p role="status" className="text-sm text-muted-foreground">
+                Chargement…
+              </p>
+            }
+          >
             <Outlet />
           </Suspense>
         </main>

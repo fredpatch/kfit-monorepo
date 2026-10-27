@@ -3,9 +3,9 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { hasRole } from "@kfit/shared";
 import { AuthProvider, useAuth } from "../auth/state/auth-context.js";
 import { PublicCataloguePage } from "../catalogue/components/PublicCataloguePage.js";
-import { EmptyState } from "../components/ui/empty-state.js";
 import { AuthGate } from "./AuthGate.js";
 import { AdminLayout } from "./layout/AdminLayout.js";
+import { AdminNotFound } from "./layout/AdminNotFound.js";
 import { AdminPage } from "./layout/AdminPage.js";
 import {
   LegacySubscriptionRedirect,
@@ -38,6 +38,11 @@ const PublicPaymentProofPage = lazy(() =>
   import("../payment-proofs/components/PublicPaymentProofPage.js").then(
     (m) => ({ default: m.PublicPaymentProofPage }),
   ),
+);
+const SupervisionPage = lazy(() =>
+  import("../supervision/components/SupervisionPage.js").then((m) => ({
+    default: m.SupervisionPage,
+  })),
 );
 const NotificationSettingsPage = lazy(() =>
   import("../notifications/components/NotificationSettingsPage.js").then(
@@ -117,26 +122,11 @@ function AdminRoot() {
   );
 }
 
-function AdminNotFound() {
-  return (
-    <AdminPage title="Page introuvable">
-      <EmptyState
-        title="Cette page n'existe pas"
-        description="Utilise le menu pour revenir à un écran de l'espace coach."
-      />
-    </AdminPage>
-  );
-}
-
-/** ROLE-01 R6: superadmin only (the server refuses the API to others); the screen itself comes with OPS-01b. */
+/** ROLE-01 R6 / OPS-01b S1: superadmin only (the server refuses the API to others). */
 function SupervisionRoute() {
   const user = useAuth().session?.user ?? null;
   if (!hasRole(user, "superadmin")) return <AdminNotFound />;
-  return (
-    <AdminPage title="Supervision">
-      <EmptyState title="Supervision - écran en cours de construction (OPS-01b)" />
-    </AdminPage>
-  );
+  return <SupervisionPage />;
 }
 
 export function App() {

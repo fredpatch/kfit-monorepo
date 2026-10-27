@@ -322,6 +322,8 @@ const catalogueMessages: Record<string, string> = {
     "Cette variante suit déjà les règles de l'offre.",
   CATALOGUE_RULES_OVERRIDE_HAS_QUESTIONNAIRE:
     "Cette variante a son propre questionnaire : retire d'abord l'affectation dans Questionnaires.",
+  CATALOGUE_ROUTE_UNEXPECTED_FAILURE:
+    "Le catalogue n'a pas pu être enregistré. Réessaie dans un instant.",
 };
 const reasonMessages: Record<string, string> = {
   name_required: "Renseigne le nom de l'offre.",

@@ -46,27 +46,27 @@ Source : `packages/shared/src/auth/contracts.ts · authErrorCodes`
 
 | Code | Message affiché |
 | --- | --- |
-| `BOOTSTRAP_ALREADY_COMPLETED` | - |
-| `AUTH_BOOTSTRAP_INVALID_FORMAT` | - |
+| `BOOTSTRAP_ALREADY_COMPLETED` | L'initialisation est déjà faite. Recharge la page pour te connecter. |
+| `AUTH_BOOTSTRAP_INVALID_FORMAT` | Vérifie l'e-mail saisi. |
 | `AUTH_PASSWORD_POLICY_FAILED` | - |
-| `AUTH_INVALID_CREDENTIALS` | - |
-| `AUTH_ACCOUNT_UNAVAILABLE` | - |
-| `AUTH_LOGIN_INVALID_FORMAT` | - |
+| `AUTH_INVALID_CREDENTIALS` | Identifiants invalides ou compte indisponible. |
+| `AUTH_ACCOUNT_UNAVAILABLE` | Identifiants invalides ou compte indisponible. |
+| `AUTH_LOGIN_INVALID_FORMAT` | Identifiants invalides ou compte indisponible. |
 | `AUTH_REFRESH_INVALID` | - |
 | `AUTH_SESSION_REQUIRED` | Ta session a expiré. Reconnecte-toi. |
 | `AUTH_CSRF_INVALID` | La vérification de sécurité a échoué. Recharge la page. |
 | `AUTH_FRESH_OTP_REQUIRED` | Confirme d’abord ton identité avec le code envoyé par e-mail. |
-| `AUTH_OTP_CODE_INVALID_FORMAT` | - |
-| `AUTH_OTP_REJECTED` | - |
-| `AUTH_RECOVERY_INVALID_FORMAT` | - |
-| `AUTH_RECOVERY_CODE_INVALID` | - |
-| `AUTH_RECOVERY_GRANT_INVALID` | - |
-| `AUTH_RATE_LIMITED` | - |
+| `AUTH_OTP_CODE_INVALID_FORMAT` | Le code contient 6 chiffres. |
+| `AUTH_OTP_REJECTED` | Code incorrect. Vérifie et réessaie. |
+| `AUTH_RECOVERY_INVALID_FORMAT` | Code invalide ou expiré. |
+| `AUTH_RECOVERY_CODE_INVALID` | Code invalide ou expiré. |
+| `AUTH_RECOVERY_GRANT_INVALID` | Le délai pour choisir un nouveau mot de passe a expiré. Recommence la récupération. |
+| `AUTH_RATE_LIMITED` | Trop de tentatives. Réessaie dans quelques minutes. |
 | `AUTH_ORIGIN_INVALID` | La vérification de sécurité a échoué. Recharge la page. |
-| `AUTH_OTP_DELIVERY_FAILED` | - |
+| `AUTH_OTP_DELIVERY_FAILED` | Le code n'a pas pu être envoyé. Réessaie dans un instant ou contacte l'administrateur. |
 | `AUTH_DEVICE_NOT_FOUND` | - |
 | `BOOTSTRAP_DISABLED` | - |
-| `BOOTSTRAP_TOKEN_INVALID` | - |
+| `BOOTSTRAP_TOKEN_INVALID` | Jeton d'initialisation incorrect. |
 
 ## catalogue
 
@@ -74,7 +74,7 @@ Source : `packages/shared/src/catalogue/contracts.ts · catalogueErrorCodes`
 
 | Code | Message affiché |
 | --- | --- |
-| `CATALOGUE_ROUTE_UNEXPECTED_FAILURE` | - |
+| `CATALOGUE_ROUTE_UNEXPECTED_FAILURE` | Le catalogue n'a pas pu être enregistré. Réessaie dans un instant. |
 | `CATALOGUE_ADMIN_FORBIDDEN` | Cet espace est réservé à l'administrateur. |
 | `CATALOGUE_SERVICE_NOT_FOUND` | Cette offre est introuvable. Actualise la liste. |
 | `CATALOGUE_SERVICE_INVALID_INPUT` | Vérifie les champs saisis. |
@@ -114,7 +114,7 @@ Source : `packages/shared/src/consents/contracts.ts · consentErrorCodes`
 | `CONSENT_DECISION_MISSING` | Aucun accord actuel ne peut être retiré pour ce consentement. |
 | `CONSENT_TYPE_NOT_REQUESTED` | Ce lien ne concerne pas ce consentement. Demande un nouveau lien au coach. |
 | `CONSENT_RATE_LIMITED` | Trop de tentatives. Réessaie dans une minute. |
-| `CONSENT_ROUTE_UNEXPECTED_FAILURE` | - |
+| `CONSENT_ROUTE_UNEXPECTED_FAILURE` | Impossible de traiter les consentements. Actualise la page et réessaie. |
 
 ## customers
 
@@ -122,11 +122,11 @@ Source : `packages/shared/src/customers/contracts.ts · customerErrorCodes`
 
 | Code | Message affiché |
 | --- | --- |
-| `CUSTOMER_INVALID_INPUT` | - |
-| `CUSTOMER_DUPLICATE_WHATSAPP` | - |
-| `CUSTOMER_ADMIN_FORBIDDEN` | - |
-| `CUSTOMER_NOT_FOUND` | - |
-| `CUSTOMER_ROUTE_UNEXPECTED_FAILURE` | - |
+| `CUSTOMER_INVALID_INPUT` | Vérifie les champs saisis et le numéro WhatsApp. |
+| `CUSTOMER_DUPLICATE_WHATSAPP` | Un client actif utilise déjà ce numéro WhatsApp. Relance la recherche pour retrouver sa fiche. |
+| `CUSTOMER_ADMIN_FORBIDDEN` | Cet espace est réservé à l’administrateur. |
+| `CUSTOMER_NOT_FOUND` | Ce client est introuvable. Actualise la liste. |
+| `CUSTOMER_ROUTE_UNEXPECTED_FAILURE` | Impossible de joindre le service clients. Réessaie dans un instant. |
 
 ## dashboard
 
@@ -134,9 +134,9 @@ Source : `packages/shared/src/dashboard/contracts.ts · dashboardErrorCodes`
 
 | Code | Message affiché |
 | --- | --- |
-| `DASHBOARD_INVALID_INPUT` | - |
-| `DASHBOARD_ADMIN_FORBIDDEN` | - |
-| `DASHBOARD_ROUTE_UNEXPECTED_FAILURE` | - |
+| `DASHBOARD_INVALID_INPUT` | La période demandée est invalide. |
+| `DASHBOARD_ADMIN_FORBIDDEN` | Cet espace est réservé à l'administrateur. |
+| `DASHBOARD_ROUTE_UNEXPECTED_FAILURE` | Impossible de charger le tableau de bord. Réessaie dans un instant. |
 
 ## dev
 
@@ -156,10 +156,10 @@ Source : `packages/shared/src/documents/contracts.ts · documentErrorCodes`
 
 | Code | Message affiché |
 | --- | --- |
-| `DOCUMENT_NOT_FOUND` | - |
-| `DOCUMENT_VERSION_NOT_FOUND` | - |
-| `DOCUMENT_INVALID_INPUT` | - |
-| `DOCUMENT_TYPE_INVALID` | - |
+| `DOCUMENT_NOT_FOUND` | Ce document est introuvable. Actualise la fiche. |
+| `DOCUMENT_VERSION_NOT_FOUND` | Cette version du document est introuvable. Actualise la fiche. |
+| `DOCUMENT_INVALID_INPUT` | Vérifie les informations saisies. |
+| `DOCUMENT_TYPE_INVALID` | Choisis un type de document valide. |
 | `DOCUMENT_STATUS_INVALID` | Cette action n'est plus disponible pour ce document. |
 | `DOCUMENT_FILE_TOO_LARGE` | Le fichier dépasse la limite de 10 Mo. |
 | `DOCUMENT_FILE_TYPE_UNSUPPORTED` | Format non pris en charge. Utilise PDF, JPG, PNG ou WebP. |
@@ -167,11 +167,11 @@ Source : `packages/shared/src/documents/contracts.ts · documentErrorCodes`
 | `DOCUMENT_FILE_INFECTED` | Le fichier a été bloqué par l'analyse antivirus. |
 | `DOCUMENT_FILE_SCAN_FAILED` | L'analyse antivirus est indisponible. Le fichier n'a pas été enregistré. |
 | `DOCUMENT_DUPLICATE_UPLOAD` | Ce fichier est déjà enregistré pour ce document. |
-| `DOCUMENT_STORAGE_FAILURE` | - |
+| `DOCUMENT_STORAGE_FAILURE` | Le fichier n'a pas pu être enregistré. Réessaie dans un instant. |
 | `DOCUMENT_HEALTH_CONSENT_REQUIRED` | Le consentement aux données de santé est requis pour générer un bilan. |
 | `DOCUMENT_PHOTO_CONSENT_REQUIRED` | Le consentement au stockage des photos de progression est requis. |
-| `DOCUMENT_MEASUREMENT_INVALID` | - |
-| `DOCUMENT_LINK_INVALID` | - |
+| `DOCUMENT_MEASUREMENT_INVALID` | Cette mesure est introuvable. Actualise l'onglet Progression. |
+| `DOCUMENT_LINK_INVALID` | Ce lien n'est pas valide. Demande un nouveau lien au coach. |
 | `DOCUMENT_LINK_EXPIRED` | Ce lien a expiré. |
 | `DOCUMENT_LINK_REVOKED` | Ce lien a été révoqué. |
 | `DOCUMENT_LINK_EXHAUSTED` | Ce lien a atteint son nombre maximal de téléchargements. |
@@ -179,7 +179,7 @@ Source : `packages/shared/src/documents/contracts.ts · documentErrorCodes`
 | `DOCUMENT_VERIFICATION_INVALID` | Code incorrect. |
 | `DOCUMENT_VERIFICATION_LOCKED` | Trop de tentatives incorrectes. Demande un nouveau lien au coach. |
 | `DOCUMENT_ADMIN_FORBIDDEN` | - |
-| `DOCUMENT_ROUTE_UNEXPECTED_FAILURE` | - |
+| `DOCUMENT_ROUTE_UNEXPECTED_FAILURE` | Action impossible. Réessaie dans un instant. |
 
 ## finance
 
@@ -348,7 +348,7 @@ Source : `packages/shared/src/questionnaires/contracts.ts · questionnaireErrorC
 | `QUESTIONNAIRE_LINK_CONSUMED` | Ce lien a déjà été utilisé. Aucun nouvel envoi n’est possible avec ce lien. |
 | `QUESTIONNAIRE_LINK_STALE` | Le questionnaire ou le consentement a changé, ou une réponse a déjà été enregistrée. Demande un nouveau lien au coach. |
 | `QUESTIONNAIRE_RATE_LIMITED` | Trop de tentatives. Réessaie dans une minute. |
-| `QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE` | - |
+| `QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE` | Impossible de traiter le questionnaire. Actualise et réessaie. |
 
 ## quotes
 
@@ -458,11 +458,11 @@ Source : `packages/shared/src/supervision/contracts.ts · supervisionErrorCodes`
 | Code | Message affiché |
 | --- | --- |
 | `SUPERVISION_SUPERADMIN_FORBIDDEN` | - |
-| `SUPERVISION_INVALID_INPUT` | - |
-| `SUPERVISION_JOB_NOT_RUNNABLE` | - |
-| `SUPERVISION_JOB_BUSY` | - |
-| `SUPERVISION_RATE_LIMITED` | - |
-| `SUPERVISION_ROUTE_UNEXPECTED_FAILURE` | - |
+| `SUPERVISION_INVALID_INPUT` | Période invalide. Actualise la page. |
+| `SUPERVISION_JOB_NOT_RUNNABLE` | Ce job ne se lance pas depuis cette page. |
+| `SUPERVISION_JOB_BUSY` | Ce job est déjà en cours. |
+| `SUPERVISION_RATE_LIMITED` | Patiente une minute avant de relancer ce job. |
+| `SUPERVISION_ROUTE_UNEXPECTED_FAILURE` | Impossible de charger la supervision. Réessaie. |
 
 ## démarrage production (S7.4a)
 

@@ -13,7 +13,7 @@ couvre: [DOC-01a]
 | Document                                                                                | Public                    | Statut    | Vérifié sur |
 | --------------------------------------------------------------------------------------- | ------------------------- | --------- | ----------- |
 | [Guide du coach](guides/guide-coach.md)                                                 | coach                     | brouillon | e0d6158     |
-| [Guide de l'administrateur](guides/guide-administrateur.md)                             | administrateur            | brouillon | e0d6158     |
+| [Guide de l'administrateur](guides/guide-administrateur.md)                             | administrateur            | brouillon | 99f2616     |
 | [Runbooks (index)](runbooks/README.md)                                                  | exploitation              | à jour    | d2fc5df     |
 | [Démarrage en production](runbooks/demarrage-production.md)                             | exploitation              | à jour    | 4db73be     |
 | [Premier compte administrateur](runbooks/premier-compte-administrateur.md)              | exploitation              | brouillon | e0d6158     |
@@ -22,13 +22,13 @@ couvre: [DOC-01a]
 | [Incident](runbooks/incident.md)                                                        | exploitation              | brouillon | d2fc5df     |
 | [Rotation des secrets](runbooks/rotation-secrets.md)                                    | exploitation              | brouillon | d2fc5df     |
 | [Panne de dépendance](runbooks/panne-dependances.md)                                    | exploitation              | brouillon | d2fc5df     |
-| [Échec de job](runbooks/echec-job.md)                                                   | exploitation              | brouillon | bb2e993     |
+| [Échec de job](runbooks/echec-job.md)                                                   | exploitation              | brouillon | 99f2616     |
 | [Manuel de maintenance](maintenance/manuel-maintenance.md)                              | développeur, exploitation | brouillon | d2fc5df     |
 | [Architecture (EN)](architecture/README.md)                                             | développeur               | à jour    | d2fc5df     |
 | [Codes d'erreur](reference/codes-erreur.md)                                             | développeur               | à jour    | généré      |
 | [Variables d'environnement](reference/variables-environnement.md)                       | exploitation              | à jour    | généré      |
 | [Scripts npm](reference/scripts-npm.md)                                                 | développeur               | à jour    | généré      |
-| [Jobs planifiés et scripts d'exploitation](reference/jobs.md)                           | exploitation, développeur | à jour    | bb2e993     |
+| [Jobs planifiés et scripts d'exploitation](reference/jobs.md)                           | exploitation, développeur | à jour    | 99f2616     |
 | [Conformité (dossier)](conformite/README.md)                                            | juriste                   | brouillon | d2fc5df     |
 | [Registre des traitements](conformite/registre-traitements.md)                          | juriste                   | brouillon | d2fc5df     |
 | [Politique de conservation](conformite/politique-conservation.md)                       | juriste                   | brouillon | d2fc5df     |

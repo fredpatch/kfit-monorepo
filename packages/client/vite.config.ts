@@ -8,7 +8,8 @@ function createApiProxy(target: string): ProxyOptions {
     configure(proxy) {
       proxy.on("proxyReq", (proxyReq, req) => {
         const forwardedHost = req.headers.host;
-        if (forwardedHost) proxyReq.setHeader("x-forwarded-host", forwardedHost);
+        if (forwardedHost)
+          proxyReq.setHeader("x-forwarded-host", forwardedHost);
       });
     },
   };
@@ -63,6 +64,7 @@ export default defineConfig(({ mode }) => {
         "/admin/document-versions": apiProxy,
         "/admin/document-delivery-links": apiProxy,
         "/admin/progress-measurements": apiProxy,
+        "/admin/supervision": apiProxy,
         "/health": apiProxy,
       },
     },

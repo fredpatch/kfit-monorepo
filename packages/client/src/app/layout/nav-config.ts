@@ -1,7 +1,24 @@
-import { Activity, ClipboardList, FileCheck, Inbox, Layers, MessageCircle, Settings, Sun, Users, type LucideIcon } from "lucide-react";
+import {
+  Activity,
+  ClipboardList,
+  FileCheck,
+  Inbox,
+  Layers,
+  MessageCircle,
+  Settings,
+  Sun,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { hasRole, type AuthRole, type RequiredRole } from "@kfit/shared";
 
-export type NavBadgeSource = "followUpsOverdue" | "requestsNew" | "todayTasks";
+export type NavBadgeSource =
+  | "followUpsOverdue"
+  | "requestsNew"
+  | "todayTasks"
+  | "supervision";
+/** A counter, or (OPS-01b S3) a dot coloured by severity; null shows nothing. */
+export type NavBadgeValue = number | "warning" | "danger" | null;
 
 export type NavItem = {
   to: string;
@@ -24,18 +41,70 @@ export type NavGroup = { title: string | null; items: NavItem[] };
  * « Abonnements » and « Agenda » come once their screens exist (backlog).
  */
 export const adminNav: NavGroup[] = [
-  { title: null, items: [{ to: "/admin", label: "Aujourd'hui", icon: Sun, badge: "todayTasks", mobile: true, end: true }] },
-  { title: "Coaching", items: [{ to: "/admin/suivis", label: "Suivis", icon: MessageCircle, badge: "followUpsOverdue" }] },
-  { title: "Pipeline", items: [{ to: "/admin/demandes", label: "Demandes", icon: Inbox, badge: "requestsNew", mobile: true }] },
-  { title: "Clients", items: [{ to: "/admin/clients", label: "Clients", icon: Users, mobile: true }] },
+  {
+    title: null,
+    items: [
+      {
+        to: "/admin",
+        label: "Aujourd'hui",
+        icon: Sun,
+        badge: "todayTasks",
+        mobile: true,
+        end: true,
+      },
+    ],
+  },
+  {
+    title: "Coaching",
+    items: [
+      {
+        to: "/admin/suivis",
+        label: "Suivis",
+        icon: MessageCircle,
+        badge: "followUpsOverdue",
+      },
+    ],
+  },
+  {
+    title: "Pipeline",
+    items: [
+      {
+        to: "/admin/demandes",
+        label: "Demandes",
+        icon: Inbox,
+        badge: "requestsNew",
+        mobile: true,
+      },
+    ],
+  },
+  {
+    title: "Clients",
+    items: [
+      { to: "/admin/clients", label: "Clients", icon: Users, mobile: true },
+    ],
+  },
   {
     title: "Configuration",
     items: [
       { to: "/admin/offres", label: "Catalogue", icon: Layers },
-      { to: "/admin/questionnaires", label: "Questionnaires", icon: ClipboardList },
-      { to: "/admin/consentements", label: "Textes de consentement", icon: FileCheck },
+      {
+        to: "/admin/questionnaires",
+        label: "Questionnaires",
+        icon: ClipboardList,
+      },
+      {
+        to: "/admin/consentements",
+        label: "Textes de consentement",
+        icon: FileCheck,
+      },
       { to: "/admin/reglages", label: "Réglages", icon: Settings },
-      { to: "/admin/supervision", label: "Supervision", icon: Activity, requires: "superadmin" },
+      {
+        to: "/admin/supervision",
+        label: "Supervision",
+        icon: Activity,
+        requires: "superadmin",
+        badge: "supervision",
+      },
     ],
   },
 ];
@@ -43,6 +112,11 @@ export const adminNav: NavGroup[] = [
 /** The groups and items this user may see; an emptied group disappears. */
 export function navFor(user: { role: AuthRole } | null): NavGroup[] {
   return adminNav
-    .map((group) => ({ ...group, items: group.items.filter((item) => !item.requires || hasRole(user, item.requires)) }))
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => !item.requires || hasRole(user, item.requires),
+      ),
+    }))
     .filter((group) => group.items.length > 0);
 }

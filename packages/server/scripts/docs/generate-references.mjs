@@ -126,19 +126,89 @@ export function parseNamedCodes(source, { name, kind }, label) {
   return parseCodeList(match[1], `${label} ${name}`);
 }
 
+const LITERAL = String.raw`"((?:[^"\\\n]|\\.)*)"`;
+const unquote = (literal) => JSON.parse(`"${literal}"`);
+function addMessage(messages, code, text) {
+  if (!messages.has(code)) messages.set(code, []);
+  if (!messages.get(code).includes(text)) messages.get(code).push(text);
+}
+
 /** `CODE: "message"` / `"CODE": "message"` entries of the client message maps (several distinct wordings are all kept). */
-export function parseClientMessages(sources) {
-  const messages = new Map();
+export function parseClientMessages(sources, messages = new Map()) {
   for (const source of sources) {
     for (const match of source.matchAll(
       /(?<![\w.])"?([A-Z][A-Z0-9_]{2,})"?\s*:\s*"((?:[^"\\\n]|\\.)*)"/g,
+    ))
+      addMessage(messages, match[1], unquote(match[2]));
+  }
+  return messages;
+}
+
+/**
+ * OPS-01b S6 (a): the auth screens branch on `failure.code === "CODE"` (joined by `||`) and answer with a
+ * `…Messages.key` entry of an exported message object, either as a ternary (`? authMessages.x` / `? "texte"`) or within
+ * the first two statements of an `if` body. Only `packages/client/src/auth` is read with this pattern.
+ */
+export function parseAuthMessages(sources, messages = new Map()) {
+  const objects = new Map();
+  for (const source of sources)
+    for (const object of source.matchAll(
+      /export const (\w+Messages) = \{([^}]*)\}/g,
+    ))
+      for (const entry of object[2].matchAll(
+        new RegExp(String.raw`(\w+):\s*` + LITERAL, "g"),
+      ))
+        objects.set(`${object[1]}.${entry[1]}`, unquote(entry[2]));
+  const reference = /\b(\w+Messages\.\w+)\b/;
+  for (const source of sources) {
+    for (const match of source.matchAll(
+      /failure\.code === "([A-Z][A-Z0-9_]{2,})"((?:\s*\|\|\s*failure\.code === "[A-Z][A-Z0-9_]{2,}")*)/g,
     )) {
-      const text = JSON.parse(`"${match[2]}"`);
-      if (!messages.has(match[1])) messages.set(match[1], []);
-      if (!messages.get(match[1]).includes(text))
-        messages.get(match[1]).push(text);
+      const codes = [
+        match[1],
+        ...[...match[2].matchAll(/"([A-Z0-9_]+)"/g)].map((m) => m[1]),
+      ];
+      const rest = source.slice(match.index + match[0].length);
+      let text;
+      const ternary = new RegExp(
+        String.raw`^\s*\?\s*(?:` + LITERAL + String.raw`|(\w+Messages\.\w+))`,
+      ).exec(rest);
+      if (ternary)
+        text =
+          ternary[1] !== undefined
+            ? unquote(ternary[1])
+            : objects.get(ternary[2]);
+      else if (/^\s*\)/.test(rest)) {
+        const body = rest
+          .split(";")
+          .slice(0, 2)
+          .join(";")
+          .split(/failure\.code\b/)[0];
+        const literal = new RegExp(String.raw`return\s+` + LITERAL).exec(body);
+        const ref = reference.exec(body);
+        text = literal
+          ? unquote(literal[1])
+          : ref
+            ? objects.get(ref[1])
+            : undefined;
+      }
+      if (text) for (const code of codes) addMessage(messages, code, text);
     }
   }
+  return messages;
+}
+
+/** OPS-01b S6 (b): `case "CODE":` (one or several) followed by `return "message";`, as in the customers switch. */
+export function parseSwitchMessages(sources, messages = new Map()) {
+  for (const source of sources)
+    for (const match of source.matchAll(
+      new RegExp(
+        String.raw`((?:case\s+"[A-Z][A-Z0-9_]{2,}":\s*)+)return\s+` + LITERAL,
+        "g",
+      ),
+    ))
+      for (const code of match[1].matchAll(/"([A-Z][A-Z0-9_]{2,})"/g))
+        addMessage(messages, code[1], unquote(match[2]));
   return messages;
 }
 
@@ -283,8 +353,19 @@ export async function renderErrorCodes(root) {
     path.join(root, "packages/client/src"),
     (file) => /\.(ts|tsx)$/.test(file) && !/\.test\.tsx?$/.test(file),
   );
-  const messages = parseClientMessages(
-    await Promise.all(clientFiles.map((file) => readFile(file, "utf8"))),
+  const clientSources = await Promise.all(
+    clientFiles.map(async (file) => ({
+      file,
+      text: await readFile(file, "utf8"),
+    })),
+  );
+  const texts = clientSources.map((source) => source.text);
+  const messages = parseSwitchMessages(texts, parseClientMessages(texts));
+  parseAuthMessages(
+    clientSources
+      .filter((source) => /[\\/]client[\\/]src[\\/]auth[\\/]/.test(source.file))
+      .map((source) => source.text),
+    messages,
   );
   const modules = [...new Set(rows.map((row) => row.module))];
   const lines = [

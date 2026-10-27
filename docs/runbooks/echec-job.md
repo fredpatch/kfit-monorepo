@@ -2,15 +2,22 @@
 titre: Échec de job
 public: exploitation
 statut: brouillon
-vérifié-sur: bb2e993
-couvre: [S7.2, S7.3, S7.4b, OPS-01a]
+vérifié-sur: 99f2616
+couvre: [S7.2, S7.3, S7.4b, OPS-01a, OPS-01b]
 ---
 
 # Échec de job
 
 ## Commencer par la Supervision
 
-Ouvrir d'abord la Supervision (page de l'interface : OPS-01b ; en attendant, `GET /admin/supervision/overview` avec une session super-administrateur). Elle donne, pour chaque job, la dernière exécution, son code d'erreur, la dernière réussite, le taux d'échec sur 30 jours et l'état (`late`, `failing`, `never_run`), ainsi que les alertes en cours. Détails : [jobs § Supervision](../reference/jobs.md#supervision-ops-01).
+1. Se connecter avec le compte super-administrateur, ouvrir « Configuration › Supervision ».
+2. Lire le bandeau d'alertes en haut de la page : une ligne par alerte en cours.
+3. Dans « Jobs planifiés », repérer le job en « En échec », « En retard » ou « Jamais exécuté » : intervalle, taux d'échec sur 30 jours, dernière exécution et sa durée, prochaine exécution.
+4. Pour `notifications.reconcile` et `notifications.email-delivery` : « Lancer maintenant ». Résultat attendu : le message « Job lancé : réussi en … » et l'état « Réussi » après la mise à jour de la page. « Ce job est déjà en cours. » : attendre la fin. « Patiente une minute avant de relancer ce job. » : un seul lancement par minute.
+5. Pour `privacy.purge` : « Simuler » affiche les comptes (« Rien n'a été supprimé. »), puis voir [Relancer](#relancer).
+6. Si l'état ne change pas, chercher le code d'erreur dans `scheduled_job_runs` (ci-dessous).
+
+Détails : [jobs § Supervision](../reference/jobs.md#supervision-ops-01).
 
 ## Faits disponibles aujourd'hui
 

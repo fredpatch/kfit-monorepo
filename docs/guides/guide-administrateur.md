@@ -2,8 +2,8 @@
 titre: Guide de l'administrateur
 public: administrateur
 statut: brouillon
-vérifié-sur: 0a1c210
-couvre: [DOC-01a, DOC-01b, SEC-02a, SEC-02b, ROLE-01]
+vérifié-sur: 99f2616
+couvre: [DOC-01a, DOC-01b, SEC-02a, SEC-02b, ROLE-01, OPS-01b]
 ---
 
 # Guide de l'administrateur
@@ -176,7 +176,30 @@ Règles :
 
 ## 8. Supervision
 
-Réservée au super-administrateur (ROLE-01). L'API est en place (OPS-01a, détails dans [jobs § Supervision](../reference/jobs.md#supervision-ops-01)). L'écran pour suivre les jobs, les sauvegardes, les contrôles de restauration, la confidentialité et les refus de sécurité arrive avec OPS-01b ; en attendant, « Configuration › Supervision » affiche « Supervision - écran en cours de construction (OPS-01b) ».
+**Qui la voit.** Le super-administrateur seulement (ROLE-01) : « Configuration › Supervision ». Pour un administrateur, l'entrée n'apparaît pas et l'adresse `/admin/supervision` affiche « Page introuvable ». Le réglage e-mail « Alertes de supervision » (« Réglages ») n'est montré qu'au super-administrateur.
+
+**Pastille du menu.** Un point à côté de « Supervision » (et dans le menu « Plus » sur téléphone) : rouge pour une alerte critique, orange pour un avertissement, rien quand tout va bien. Il est mis à jour chaque minute.
+
+**La page** (mise à jour chaque minute tant qu'elle est affichée, ou avec « Actualiser ») :
+
+- **Alertes** : une ligne par alerte en cours, rouge (critique) ou orange (avertissement). Rien quand il n'y en a pas.
+- **Tuiles** : « Jobs » (jobs à l'heure sur le total), « Dernière sauvegarde » (âge, taille, copie vérifiée), « Contrôle de restauration » (résultat, âge, tables comparées), « Plancher de sécurité » (version de Node et mode). Une tuile passe en orange ou en rouge seulement quand son bloc a une alerte.
+- **Jobs planifiés** : pour chaque job, l'intervalle, le taux d'échec sur 30 jours, l'état (« Réussi », « En retard », « En échec », « Jamais exécuté », « En cours »), la dernière exécution et sa durée, la prochaine exécution. « Lancer maintenant » relance tout de suite la mise à jour des notifications ou l'envoi des e-mails (une fois par minute et par job ; « Ce job est déjà en cours. » s'il tourne déjà). « Simuler » montre ce que la suppression des fichiers supprimerait maintenant, sans rien supprimer. La sauvegarde et le contrôle de restauration se lancent sur le serveur, pas depuis la page (« - »).
+- **Confidentialité** : journal (OK, indisponible ou non configuré), blocages actifs, purges prévues dans 7 jours, personnes anonymisées, dernier rejeu.
+- **Sécurité** : refus par jour sur 7 ou 30 jours, en deux familles : connexions refusées, codes faux et comptes bloqués ; refus pour trop de requêtes (429), corps refusés (415) et liens publics invalides. Survoler une colonne donne le détail. « Aucun événement sur la période. » quand tout est à zéro.
+
+**Que faire selon l'alerte.**
+
+| Alerte                                           | Que faire                                                                                                                    |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Sauvegarde trop ancienne ou en échec             | Prévenir l'exploitation : [sauvegarde et restauration](../runbooks/sauvegarde-restauration.md).                              |
+| Contrôle de restauration trop ancien ou en échec | Prévenir l'exploitation : lancer `ops:restore-drill` ([sauvegarde et restauration](../runbooks/sauvegarde-restauration.md)). |
+| Journal de confidentialité indisponible          | Prévenir l'exploitation : [incident](../runbooks/incident.md).                                                               |
+| Suppression des fichiers en échec                | « Simuler », puis prévenir l'exploitation : [échec de job](../runbooks/echec-job.md).                                        |
+| Plancher de sécurité non respecté                | Mettre Node à jour : [plancher de sécurité](../runbooks/plancher-securite.md).                                               |
+| Job en échec, en retard ou jamais exécuté        | « Lancer maintenant » quand c'est proposé, sinon [échec de job](../runbooks/echec-job.md).                                   |
+
+Détails techniques : [jobs § Supervision](../reference/jobs.md#supervision-ops-01).
 
 ## 9. Sauvegardes
 

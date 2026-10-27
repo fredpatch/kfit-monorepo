@@ -28,8 +28,8 @@ export type ProductionGuardCode = (typeof productionGuardCodes)[number];
 export type ProductionGuardFailure = { code: ProductionGuardCode; detail: string };
 export type ProductionGuardResult = { ok: true; warnings: string[] } | { ok: false; failures: ProductionGuardFailure[]; warnings: string[] };
 
-/** S7.4 D2: secrets and peppers (loadAuthConfig) — each needs ≥ PRODUCTION_SECRET_MIN_LENGTH characters. */
-export const PRODUCTION_SECRET_ENV = ["AUTH_OTP_PEPPER", "AUTH_AUDIT_HASH_PEPPER", "AUTH_REFRESH_TOKEN_PEPPER", "AUTH_ACCESS_TOKEN_SECRET", "AUTH_RECOVERY_TOKEN_SECRET"] as const;
+/** S7.4 D2 + SEC-02 E2 (AUTH_DEVICE_PEPPER): secrets and peppers (loadAuthConfig) — each needs ≥ PRODUCTION_SECRET_MIN_LENGTH characters. */
+export const PRODUCTION_SECRET_ENV = ["AUTH_OTP_PEPPER", "AUTH_AUDIT_HASH_PEPPER", "AUTH_REFRESH_TOKEN_PEPPER", "AUTH_ACCESS_TOKEN_SECRET", "AUTH_RECOVERY_TOKEN_SECRET", "AUTH_DEVICE_PEPPER"] as const;
 export const PRODUCTION_SECRET_MIN_LENGTH = 32;
 /** S7.4 D2: every key the production runtime reads without a safe default (grep of src, 2026-10-26). */
 export const PRODUCTION_REQUIRED_ENV = [

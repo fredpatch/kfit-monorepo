@@ -2,8 +2,8 @@
 titre: Guide de l'administrateur
 public: administrateur
 statut: brouillon
-vérifié-sur: 7b1d467
-couvre: [DOC-01a, DOC-01b]
+vérifié-sur: 4db73be
+couvre: [DOC-01a, DOC-01b, SEC-02a]
 ---
 
 # Guide de l'administrateur
@@ -13,7 +13,7 @@ Ce guide couvre la configuration de K'FIT : réglages, catalogue, textes de cons
 ## 1. Rôles et accès
 
 - K'FIT a aujourd'hui un seul rôle : administrateur, affiché « Coach · administratrice » dans « Mon compte ». Ce rôle donne accès à tout l'espace coach et à la configuration.
-- Le premier compte se crée sur l'écran « Initialisation », affiché tant qu'aucun compte n'existe. Aucun identifiant par défaut n'est fourni.
+- Le premier compte se crée sur l'écran « Initialisation », affiché tant qu'aucun compte n'existe. Aucun identifiant par défaut n'est fourni. Procédure en production : [premier compte administrateur](../runbooks/premier-compte-administrateur.md).
 - Aucun écran ne permet aujourd'hui d'ajouter ou de retirer un compte. **À vérifier** : procédure pour un second compte.
 - Les clientes n'ont pas de compte. Elles utilisent uniquement les liens personnels que tu leur envoies.
 
@@ -114,6 +114,7 @@ Menu « Questionnaires ».
 | Inactivité avant déconnexion | 30 minutes |
 | Durée maximale d'une session | 12 heures |
 | Validité d'un code de vérification (OTP) | 5 minutes, 5 essais |
+| Appareil de confiance | 30 jours |
 | Fenêtre « vérification récente » pour les actions sensibles | 10 minutes |
 | Délai pour choisir un nouveau mot de passe après le code de récupération | 10 minutes |
 
@@ -121,7 +122,16 @@ Ces valeurs sont réglées par l'exploitation ([variables d'environnement](../re
 
 Actions qui demandent une vérification récente par code : anonymiser une personne, publier un texte de consentement.
 
-Appareils de confiance : **SEC-02, à venir.**
+**Appareils de confiance (SEC-02).**
+- Le mot de passe passe toujours en premier. Depuis un appareil inconnu, K'FIT envoie ensuite un code à 6 chiffres à l'e-mail du compte, valable 5 minutes et limité à 5 essais. Aucune session n'est ouverte avant ce code.
+- Après le code, tu peux faire confiance à l'appareil. Pendant 30 jours, ce navigateur se connecte alors sans code. Les 30 jours ne sont pas prolongés à chaque connexion : au bout de 30 jours, un code est redemandé.
+- Un appareil, c'est un navigateur sur un ordinateur ou un téléphone. Vider les cookies ou changer de navigateur crée un appareil inconnu.
+- Un appareil de confiance ne vaut que pour ton compte : un autre compte connecté depuis le même navigateur reçoit un code.
+- Un nouvel envoi du code invalide le précédent, 3 fois au plus par connexion.
+- Limites (sur 15 minutes) : 10 tentatives de connexion par adresse réseau, 5 codes de connexion par compte, 10 vérifications de code par adresse, 3 renvois par compte. Au-delà : « Trop de tentatives. Réessaie dans quelques minutes. »
+- Révocation : retirer un appareil, ou tous, ne ferme pas la session en cours. L'appareil retiré redemandera un code à sa prochaine connexion. **À venir (SEC-02b)** : l'écran de la liste des appareils et de saisie du code.
+- Une réinitialisation du mot de passe (« Mot de passe oublié ») ferme toutes les sessions et retire tous les appareils de confiance du compte.
+- Il n'existe pas de bouton « déconnecter partout ».
 
 ## 7. Confidentialité
 

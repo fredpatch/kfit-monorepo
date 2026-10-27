@@ -74,13 +74,13 @@ test("password recovery hard commit updates password and revokes sessions/device
   });
 
   const repository = new DrizzlePasswordRecoveryRepository(db);
-  assert.equal(await repository.completeReset({
+  assert.deepEqual(await repository.completeReset({
     userId,
     challengeId,
     verifiedAt: verifiedAt.toISOString(),
     passwordHash: "new-password-hash",
     completedAt,
-  }), true);
+  }), { revokedDeviceIds: [deviceId] });
 
   const [changedUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   const [revokedSession] = await db.select().from(authSessions).where(eq(authSessions.id, sessionId)).limit(1);

@@ -6,7 +6,9 @@ import {
   authCsrfHeaderName,
   authErrorCodes,
   authOtpRejectReasons,
+  isLoginOtpRequired,
   type CurrentSessionResponse,
+  type LoginResponse,
   type BootstrapRequest,
   type LoginRequest,
   type SensitiveActionOtpVerifyRequest,
@@ -19,6 +21,7 @@ test("auth shared contracts expose stable API routes, cookies, CSRF header, erro
     accessToken: "kfit_access",
     refreshToken: "kfit_refresh",
     csrfToken: "kfit_csrf",
+    device: "kfit_device",
   });
   assert.equal(authCsrfHeaderName, "x-csrf-token");
 
@@ -26,6 +29,8 @@ test("auth shared contracts expose stable API routes, cookies, CSRF header, erro
     bootstrapStatus: "/auth/bootstrap/status",
     bootstrap: "/auth/bootstrap",
     login: "/auth/login",
+    verifyLogin: "/auth/login/verify",
+    resendLoginOtp: "/auth/login/resend",
     refresh: "/auth/refresh",
     logout: "/auth/logout",
     currentSession: "/auth/session",
@@ -34,6 +39,9 @@ test("auth shared contracts expose stable API routes, cookies, CSRF header, erro
     requestPasswordRecovery: "/auth/recovery/request",
     verifyPasswordRecovery: "/auth/recovery/verify",
     resetPassword: "/auth/recovery/reset",
+    trustedDevices: "/auth/devices",
+    trustedDevice: "/auth/devices/:id",
+    revokeAllTrustedDevices: "/auth/devices/revoke-all",
   });
 
   assert.deepEqual(authErrorCodes, [
@@ -54,6 +62,8 @@ test("auth shared contracts expose stable API routes, cookies, CSRF header, erro
     "AUTH_RECOVERY_GRANT_INVALID",
     "AUTH_RATE_LIMITED",
     "AUTH_ORIGIN_INVALID",
+    "AUTH_OTP_DELIVERY_FAILED",
+    "AUTH_DEVICE_NOT_FOUND",
   ]);
 
   assert.deepEqual(authOtpRejectReasons, [
@@ -83,4 +93,15 @@ test("auth shared contracts type-check core request and response shapes", () => 
   assert.equal(response.user.role, "coach");
   assert.equal(recovery.email, "coach@kfit.local");
   assert.equal(reset.resetToken, "signed-token");
+});
+
+test("SEC-02 E1: the login response tells a session (200) from an OTP challenge (202)", () => {
+  const session: LoginResponse = {
+    user: { id: "11111111-1111-1111-1111-111111111111", role: "admin" },
+    session: { id: "22222222-2222-2222-2222-222222222222", freshOtp: false },
+  };
+  const challenge: LoginResponse = { status: "otp_required", challengeId: "opaque", expiresAt: "2026-10-27T08:05:00.000Z" };
+
+  assert.equal(isLoginOtpRequired(session), false);
+  assert.equal(isLoginOtpRequired(challenge), true);
 });

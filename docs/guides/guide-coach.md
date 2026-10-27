@@ -2,8 +2,8 @@
 titre: Guide du coach
 public: coach
 statut: brouillon
-vérifié-sur: 7b1d467
-couvre: [DOC-01a, DOC-01b]
+vérifié-sur: 4db73be
+couvre: [DOC-01a, DOC-01b, SEC-02a]
 ---
 
 # Guide du coach
@@ -18,6 +18,13 @@ Ce guide suit ta journée dans K'FIT, dans l'ordre où tu travailles. Les mots e
 1. Sur la page « Connexion », saisis ton « E-mail » et ton « Mot de passe ».
 2. Clique sur « Se connecter ».
 3. Pour te déconnecter, ouvre « Mon compte » (en haut à droite), puis « Se déconnecter ».
+
+**Nouvel appareil (SEC-02).**
+- Sur un ordinateur, un téléphone ou un navigateur que K'FIT ne connaît pas encore, ton mot de passe ne suffit pas : K'FIT t'envoie un code à 6 chiffres par e-mail (sujet « K'FIT — Code de connexion »). Il est valable 5 minutes.
+- **Tu dois donc avoir accès à ta boîte mail sur tout nouvel appareil**, ou sur ton téléphone à côté.
+- Après le code, tu peux faire confiance à l'appareil : pendant 30 jours, il ne te redemandera pas de code. Ne le fais que sur un appareil personnel.
+- Si tu reçois ce code sans avoir essayé de te connecter, change ton mot de passe (« Mot de passe oublié ? »).
+- **À venir (SEC-02b)** : l'écran de saisie du code. D'ici là, l'administrateur valide le premier code d'un navigateur.
 
 **Mot de passe oublié.**
 1. Clique sur « Mot de passe oublié ? ».

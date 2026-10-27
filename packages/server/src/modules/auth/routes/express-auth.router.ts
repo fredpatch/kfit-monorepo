@@ -39,6 +39,7 @@ async function toAuthContext(request: Request, resolveSession: ExpressAuthSessio
     ipAddress: request.ip ?? null,
     userAgent: headers["user-agent"] ?? null,
     session: await resolveSession(request),
+    params: request.params as Record<string, string | undefined>,
   };
 }
 
@@ -78,6 +79,16 @@ async function dispatchAuthRoute(
       return controller.bootstrap(context, typeof body === "object" && body !== null ? body as { email?: unknown; password?: unknown } : {});
     case "login":
       return controller.login(context, typeof body === "object" && body !== null ? body as { email?: unknown; password?: unknown } : {});
+    case "verifyLogin":
+      return controller.verifyLogin(context, typeof body === "object" && body !== null ? body as { challengeId?: unknown; code?: unknown; trustDevice?: unknown } : {});
+    case "resendLoginOtp":
+      return controller.resendLoginOtp(context, typeof body === "object" && body !== null ? body as { challengeId?: unknown } : {});
+    case "listTrustedDevices":
+      return controller.listTrustedDevices(context);
+    case "revokeTrustedDevice":
+      return controller.revokeTrustedDevice(context);
+    case "revokeAllTrustedDevices":
+      return controller.revokeAllTrustedDevices(context);
     case "refresh":
       return controller.refresh(context);
     case "logout":

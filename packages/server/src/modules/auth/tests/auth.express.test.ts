@@ -65,6 +65,12 @@ async function withTestServer<T>(resolveSession: () => AuthenticatedSessionConte
           cookies: [],
         };
       },
+      async verifyLogin() {
+        return { status: "otp_rejected", reason: "invalid" };
+      },
+      async resendLoginOtp() {
+        return { status: "rate_limited" };
+      },
       async refresh() {
         return {
           status: "authenticated",

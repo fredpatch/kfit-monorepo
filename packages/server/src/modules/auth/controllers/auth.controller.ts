@@ -1,5 +1,7 @@
-import type { OtpChallengeService } from "../services/otp-challenge.service.js";
+import type { OtpChallengeService, OtpRejectReason } from "../services/otp-challenge.service.js";
 import { authCookieNames } from "../middleware/auth.cookies.js";
+import { parseDeviceToken } from "../services/crypto/device-token.crypto.js";
+import type { DeviceLoginService } from "../services/device-login.service.js";
 import type { AuthRouteService } from "../services/auth-route.service.js";
 import type { BootstrapService } from "../services/bootstrap.service.js";
 import type { PasswordRecoveryService } from "../services/password-recovery.service.js";
@@ -9,11 +11,28 @@ import type { AuthHttpRequestContext, HttpJsonResponse } from "../types/auth.htt
 
 export type AuthControllerDeps = {
   otpChallengeService: Pick<OtpChallengeService, "issue" | "verify">;
-  authRouteService?: Pick<AuthRouteService, "login" | "refresh" | "logout">;
+  authRouteService?: Pick<AuthRouteService, "login" | "verifyLogin" | "resendLoginOtp" | "refresh" | "logout">;
+  trustedDeviceService?: Pick<DeviceLoginService, "list" | "revoke">;
   bootstrapService?: Pick<BootstrapService, "status" | "create">;
   passwordRecoveryService?: Pick<PasswordRecoveryService, "request" | "verify" | "reset">;
   sensitiveActionOtpService?: Pick<SensitiveActionOtpService, "request">;
 };
+
+const otpRejectedStatus: Record<OtpRejectReason, number> = {
+  not_found: 404,
+  invalid: 400,
+  expired: 410,
+  consumed: 409,
+  superseded: 409,
+  locked: 423,
+};
+
+const otpRejected = (reason: OtpRejectReason): HttpJsonResponse => ({ status: otpRejectedStatus[reason], body: { error: "AUTH_OTP_REJECTED", reason } });
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** SEC-02 E3: the public challenge id is `<uuid>.<resends>.<mac>`, far below this bound. */
+const CHALLENGE_ID_MAX_LENGTH = 200;
+const isChallengeId = (value: unknown): value is string => typeof value === "string" && value !== "" && value.length <= CHALLENGE_ID_MAX_LENGTH;
 
 export class AuthController {
   constructor(private readonly deps: AuthControllerDeps) {}
@@ -76,19 +95,136 @@ export class AuthController {
     const result = await this.deps.authRouteService.login({
       email: body.email,
       password: body.password,
+      deviceCookie: context.cookies[authCookieNames.device],
       requestId: context.requestId,
       ipAddress: context.ipAddress ?? null,
       userAgent: context.userAgent ?? null,
     });
 
-    if (result.status !== "authenticated") {
-      return {
-        status: result.reason === "account_unavailable" ? 403 : 401,
-        body: { error: result.reason === "account_unavailable" ? "AUTH_ACCOUNT_UNAVAILABLE" : "AUTH_INVALID_CREDENTIALS" },
-      };
+    switch (result.status) {
+      case "authenticated":
+        return { status: 200, body: result.body, cookies: result.cookies };
+      case "otp_required":
+        return { status: 202, body: { status: "otp_required", challengeId: result.challengeId, expiresAt: result.expiresAt.toISOString() }, cookies: result.cookies };
+      case "rate_limited":
+        return { status: 429, body: { error: "AUTH_RATE_LIMITED" } };
+      case "delivery_failed":
+        return { status: 503, body: { error: "AUTH_OTP_DELIVERY_FAILED" } };
+      case "rejected":
+        return {
+          status: result.reason === "account_unavailable" ? 403 : 401,
+          body: { error: result.reason === "account_unavailable" ? "AUTH_ACCOUNT_UNAVAILABLE" : "AUTH_INVALID_CREDENTIALS" },
+        };
+    }
+  }
+
+  async verifyLogin(context: AuthHttpRequestContext, body: { challengeId?: unknown; code?: unknown; trustDevice?: unknown }): Promise<HttpJsonResponse> {
+    if (!this.deps.authRouteService) {
+      return { status: 501, body: { error: "AUTH_ROUTE_SERVICE_NOT_BOUND" } };
+    }
+    if (!isChallengeId(body.challengeId) || typeof body.trustDevice !== "boolean") {
+      return { status: 400, body: { error: "AUTH_LOGIN_INVALID_FORMAT" } };
+    }
+    if (typeof body.code !== "string" || !/^\d{6}$/.test(body.code)) {
+      return { status: 400, body: { error: "AUTH_OTP_CODE_INVALID_FORMAT" } };
     }
 
-    return { status: 200, body: result.body, cookies: result.cookies };
+    const result = await this.deps.authRouteService.verifyLogin({
+      challengeId: body.challengeId,
+      code: body.code,
+      trustDevice: body.trustDevice,
+      deviceCookie: context.cookies[authCookieNames.device],
+      requestId: context.requestId,
+      ipAddress: context.ipAddress ?? null,
+      userAgent: context.userAgent ?? null,
+    });
+
+    switch (result.status) {
+      case "authenticated":
+        return { status: 200, body: result.body, cookies: result.cookies };
+      case "otp_rejected":
+        return otpRejected(result.reason);
+      case "rate_limited":
+        return { status: 429, body: { error: "AUTH_RATE_LIMITED" } };
+      case "rejected":
+        return { status: 403, body: { error: "AUTH_ACCOUNT_UNAVAILABLE" } };
+    }
+  }
+
+  async resendLoginOtp(context: AuthHttpRequestContext, body: { challengeId?: unknown }): Promise<HttpJsonResponse> {
+    if (!this.deps.authRouteService) {
+      return { status: 501, body: { error: "AUTH_ROUTE_SERVICE_NOT_BOUND" } };
+    }
+    if (!isChallengeId(body.challengeId)) {
+      return { status: 400, body: { error: "AUTH_LOGIN_INVALID_FORMAT" } };
+    }
+
+    const result = await this.deps.authRouteService.resendLoginOtp({
+      challengeId: body.challengeId,
+      deviceCookie: context.cookies[authCookieNames.device],
+      requestId: context.requestId,
+      ipAddress: context.ipAddress ?? null,
+      userAgent: context.userAgent ?? null,
+    });
+
+    switch (result.status) {
+      case "otp_required":
+        return { status: 202, body: { status: "otp_required", challengeId: result.challengeId, expiresAt: result.expiresAt.toISOString() } };
+      case "otp_rejected":
+        return otpRejected(result.reason);
+      case "rate_limited":
+        return { status: 429, body: { error: "AUTH_RATE_LIMITED" } };
+      case "delivery_failed":
+        return { status: 503, body: { error: "AUTH_OTP_DELIVERY_FAILED" } };
+    }
+  }
+
+  async listTrustedDevices(context: AuthHttpRequestContext): Promise<HttpJsonResponse> {
+    const auth = requireAuthenticatedSession(context);
+    if (!auth.ok) return auth.response;
+    if (!this.deps.trustedDeviceService) return { status: 501, body: { error: "AUTH_DEVICE_SERVICE_NOT_BOUND" } };
+
+    const devices = await this.deps.trustedDeviceService.list(auth.session.userId, parseDeviceToken(context.cookies[authCookieNames.device]));
+    return {
+      status: 200,
+      body: {
+        devices: devices.map((device) => ({
+          id: device.id,
+          label: device.label,
+          lastUsedAt: device.lastUsedAt.toISOString(),
+          trustedUntil: device.trustedUntil.toISOString(),
+          current: device.current,
+        })),
+      },
+    };
+  }
+
+  async revokeTrustedDevice(context: AuthHttpRequestContext): Promise<HttpJsonResponse> {
+    const auth = requireAuthenticatedSession(context);
+    if (!auth.ok) return auth.response;
+    if (!this.deps.trustedDeviceService) return { status: 501, body: { error: "AUTH_DEVICE_SERVICE_NOT_BOUND" } };
+
+    const deviceId = context.params?.id;
+    if (!deviceId || !UUID_PATTERN.test(deviceId)) return { status: 404, body: { error: "AUTH_DEVICE_NOT_FOUND" } };
+    const revoked = await this.deps.trustedDeviceService.revoke(auth.session.userId, deviceId, "user", {
+      requestId: context.requestId,
+      ipAddress: context.ipAddress ?? null,
+      userAgent: context.userAgent ?? null,
+    });
+    return revoked.length ? { status: 200, body: { revoked: true } } : { status: 404, body: { error: "AUTH_DEVICE_NOT_FOUND" } };
+  }
+
+  async revokeAllTrustedDevices(context: AuthHttpRequestContext): Promise<HttpJsonResponse> {
+    const auth = requireAuthenticatedSession(context);
+    if (!auth.ok) return auth.response;
+    if (!this.deps.trustedDeviceService) return { status: 501, body: { error: "AUTH_DEVICE_SERVICE_NOT_BOUND" } };
+
+    const revoked = await this.deps.trustedDeviceService.revoke(auth.session.userId, null, "user", {
+      requestId: context.requestId,
+      ipAddress: context.ipAddress ?? null,
+      userAgent: context.userAgent ?? null,
+    });
+    return { status: 200, body: { revokedCount: revoked.length } };
   }
 
   async refresh(context: AuthHttpRequestContext): Promise<HttpJsonResponse> {
@@ -279,21 +415,6 @@ export class AuthController {
       };
     }
 
-    const statusByReason: Record<typeof result.reason, number> = {
-      not_found: 404,
-      invalid: 400,
-      expired: 410,
-      consumed: 409,
-      superseded: 409,
-      locked: 423,
-    };
-
-    return {
-      status: statusByReason[result.reason],
-      body: {
-        error: "AUTH_OTP_REJECTED",
-        reason: result.reason,
-      },
-    };
+    return otpRejected(result.reason);
   }
 }

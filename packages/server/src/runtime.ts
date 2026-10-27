@@ -41,14 +41,17 @@ import {
   DrizzleOtpChallengeRepository,
   DrizzlePasswordRecoveryRepository,
   DrizzleSessionRepository,
+  DrizzleTrustedDeviceRepository,
 } from "./modules/auth/repositories/auth.repositories.js";
 import { loadSmtpAuthMailConfig, NodemailerAuthMailDelivery } from "./modules/auth/services/auth-mail.delivery.js";
+import { DeviceLoginService } from "./modules/auth/services/device-login.service.js";
+import { createLoginRateLimits } from "./modules/auth/services/login-rate-limits.js";
 import { InMemoryRecoveryRateLimiter, PasswordRecoveryService } from "./modules/auth/services/password-recovery.service.js";
 import { SensitiveActionOtpService } from "./modules/auth/services/sensitive-action-otp.service.js";
 import { createHttpLogger } from "./logging/http-logger.js";
 import { logger } from "./logging/logger.js";
 import { assertRuntimeSecurityFloor } from "./security/runtime-floor.startup.js";
-import { createSecurityEventCounter, drizzleSecurityCounterStore } from "./security/security-event-counters.js";
+import { createSecurityEventCounter, drizzleSecurityCounterStore, rateLimitedCode } from "./security/security-event-counters.js";
 import { PrivacyController } from "./modules/privacy/controllers/privacy.controller.js";
 import { privacyPurgeJob } from "./modules/privacy/jobs/privacy-purge.job.js";
 import { DrizzlePrivacyRepository } from "./modules/privacy/repositories/privacy.repository.js";
@@ -110,18 +113,7 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
   });
 
   const users = new DrizzleAuthUserRepository(db);
-  const authRouteService = new AuthRouteService(
-    users,
-    sessionService,
-    ({ password, passwordHash }) => passwords.verify(password, passwordHash),
-    audit,
-    {
-      accessTokenSecret: authConfig.accessTokenSecret,
-      accessTokenTtlMs: authConfig.accessTokenTtlMs,
-      refreshTokenTtlMs: authConfig.refreshTokenTtlMs,
-      cookieMode: mode,
-    },
-  );
+  const recordSecurityEvent = createSecurityEventCounter(drizzleSecurityCounterStore(db), { warn: (line) => logger.warn(line) });
 
   const bootstrapService = new BootstrapService(
     new DrizzleBootstrapRepository(db),
@@ -166,9 +158,38 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
     ? new SensitiveActionOtpService(otpChallengeService, users, authMail, audit)
     : undefined;
 
+  /*
+   * SEC-02a (Gate 1 approved 2026-10-27): a login from an untrusted device needs the code e-mailed to the account.
+   * Without SMTP that login answers 503 AUTH_OTP_DELIVERY_FAILED; there is no bypass in any environment (E9).
+   */
+  const deviceLoginService = new DeviceLoginService(
+    new DrizzleTrustedDeviceRepository(db),
+    new DrizzleOtpChallengeRepository(db),
+    otpChallengeService,
+    users,
+    authMail ?? null,
+    audit,
+    createLoginRateLimits((scope) => recordSecurityEvent(rateLimitedCode(scope))),
+    { devicePepper: authConfig.devicePepper, trustedDeviceTtlMs: authConfig.trustedDeviceTtlMs, otpTtlMs: authConfig.otpTtlMs },
+  );
+  const authRouteService = new AuthRouteService(
+    users,
+    sessionService,
+    ({ password, passwordHash }) => passwords.verify(password, passwordHash),
+    audit,
+    {
+      accessTokenSecret: authConfig.accessTokenSecret,
+      accessTokenTtlMs: authConfig.accessTokenTtlMs,
+      refreshTokenTtlMs: authConfig.refreshTokenTtlMs,
+      cookieMode: mode,
+    },
+    deviceLoginService,
+  );
+
   const authController = new AuthController({
     otpChallengeService,
     authRouteService,
+    trustedDeviceService: deviceLoginService,
     bootstrapService,
     ...(passwordRecoveryService ? { passwordRecoveryService } : {}),
     ...(sensitiveActionOtpService ? { sensitiveActionOtpService } : {}),
@@ -269,7 +290,7 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
   const receiptStorage = new PrivateDocumentStorage(), receiptRenderer = new PuppeteerReceiptRenderer();
   const app = createServerApp({
     requestLogger: createHttpLogger(),
-    recordSecurityEvent: createSecurityEventCounter(drizzleSecurityCounterStore(db), { warn: (line) => logger.warn(line) }),
+    recordSecurityEvent,
     receiptsController: new ReceiptsController(new ReceiptsService(new DrizzleReceiptsRepository(db,
       { auditHashPepper: authConfig.auditHashPepper, tokenPepper: authConfig.otpPepper }, {
         render: snapshot => receiptRenderer.render(snapshot), persist: input => receiptStorage.persist(input), read: key => receiptStorage.read(key), remove: key => receiptStorage.remove(key),

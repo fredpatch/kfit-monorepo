@@ -2,8 +2,8 @@
 titre: Démarrage en production
 public: exploitation
 statut: à jour
-vérifié-sur: 7b1d467
-couvre: [S7.4a, SEC-01, FIX-03]
+vérifié-sur: 4db73be
+couvre: [S7.4a, SEC-01, FIX-03, SEC-02a]
 ---
 
 # Démarrage en production
@@ -21,6 +21,9 @@ L'API de production refuse de démarrer tant qu'un contrôle échoue. Tous les �
 - [ ] Dossier des fichiers privés (`PRIVATE_STORAGE_ROOT`) persistant. Ce dossier et celui du journal sont donnés en **chemins absolus**.
 - [ ] Toutes les variables « requis en production » renseignées, sans valeur d'exemple ([liste](../reference/variables-environnement.md)). Modèle : `.env.prod.example`.
 - [ ] Aucun texte de consentement publié portant « DÉMONSTRATION » dans son titre (Configuration › Consentements).
+- [ ] `AUTH_DEVICE_PEPPER` renseigné (SEC-02) : c'est la clé de l'empreinte (HMAC) des appareils de confiance. Le changer plus tard invalide tous les appareils de confiance : chaque navigateur redemandera un code par e-mail.
+- [ ] SMTP opérationnel : une connexion depuis un appareil inconnu exige un code envoyé par e-mail. Sans SMTP, elle répond `503 AUTH_OTP_DELIVERY_FAILED`.
+- [ ] Premier démarrage d'une base vide : créer le compte administrateur aussitôt ([premier compte administrateur](premier-compte-administrateur.md)).
 
 ## 2. Démarrer et arrêter
 
@@ -54,7 +57,7 @@ Ordre :
 | --- | --- | --- |
 | `SECURITY_FLOOR` | La version de Node est sous le plancher de sécurité, ou sa ligne majeure n'est pas prise en charge (détail : `<advisory>:below_minimum` ou `:unsupported_line`). | Installer la version de `.nvmrc` ([plancher de sécurité](plancher-securite.md)). |
 | `ENV_MISSING` | Variable requise absente, vide, ou contenant une valeur d'exemple. Le test ignore la casse et refuse toute valeur contenant `change-me`, `changeme`, `change_me`, `example`, `dev-`, `xxx` ou `todo`. | Renseigner la valeur réelle. Attention : une adresse comme `noreply@example.com` est refusée. |
-| `ENV_WEAK_SECRET` | Un des 5 secrets (`AUTH_OTP_PEPPER`, `AUTH_AUDIT_HASH_PEPPER`, `AUTH_REFRESH_TOKEN_PEPPER`, `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_RECOVERY_TOKEN_SECRET`) fait moins de 32 caractères. | Générer un secret long (ex. `openssl rand -base64 48`), différent pour chacun. |
+| `ENV_WEAK_SECRET` | Un des 6 secrets (`AUTH_OTP_PEPPER`, `AUTH_AUDIT_HASH_PEPPER`, `AUTH_REFRESH_TOKEN_PEPPER`, `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_RECOVERY_TOKEN_SECRET`, `AUTH_DEVICE_PEPPER`) fait moins de 32 caractères. | Générer un secret long (ex. `openssl rand -base64 48`), différent pour chacun. |
 | `APP_BASE_URL_NOT_HTTPS` | `KFIT_APP_BASE_URL` n'est pas une URL `https://`. | Mettre l'adresse publique en `https`. |
 | `DATABASE_TARGET_FORBIDDEN` | `DATABASE_URL` vise `kfit_dev` ou `kfit_test`, ou le port de développement `5433` sur `localhost` / `127.0.0.1`. Détail `DATABASE_URL unreadable` si l'URL est illisible. | Pointer sur la base de production. |
 | `PATH_NOT_ABSOLUTE` | `PRIVATE_STORAGE_ROOT` ou `KFIT_PRIVACY_JOURNAL_DIR` est un chemin relatif. En production, ces dossiers doivent être absolus pour ne pas dépendre du dossier de lancement. | Donner le chemin absolu (ex. `/srv/kfit/private`). |

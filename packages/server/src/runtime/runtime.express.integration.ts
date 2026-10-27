@@ -9,9 +9,10 @@ import type { Express } from "express";
 import { eq } from "drizzle-orm";
 import { authApiRoutes, devToolsApiRoutes } from "@kfit/shared";
 import { db, pool } from "../db/client.js";
-import { auditEvents, authSessions, users } from "../db/schema/auth.js";
+import { auditEvents, authSessions, trustedDevices, users } from "../db/schema/auth.js";
 import { CANONICAL_UUID_PATTERN } from "../http/request-id.middleware.js";
 import { PasswordService } from "../modules/auth/services/password.service.js";
+import { digestDeviceToken, generateDeviceToken } from "../modules/auth/services/crypto/device-token.crypto.js";
 import { assertLocalTestDatabase } from "../testing/integration-fixtures.js";
 import { createRuntime, PRODUCTION_TRUST_PROXY, type RuntimeMode } from "../runtime.js";
 import { DevToolsController } from "../modules/dev-tools/controllers/dev-tools.controller.js";
@@ -21,17 +22,23 @@ import { TestDataService } from "../modules/dev-tools/services/test-data.service
 const userId = randomUUID(), email = `runtime-${userId}@example.invalid`, password = "Synthetic-runtime-password-2026!";
 // The integration step has no .env in CI: a synthetic environment drives the runtime; NODE_ENV stays non-production
 // so this exercises the production composition without the entry script's refuse-to-start path.
-const env: NodeJS.ProcessEnv = { DATABASE_URL: process.env.DATABASE_URL, NODE_ENV: "test", AUTH_OTP_PEPPER: "synthetic-runtime-pepper-0123456789abcdef" };
+const env: NodeJS.ProcessEnv = {
+  DATABASE_URL: process.env.DATABASE_URL, NODE_ENV: "test", AUTH_OTP_PEPPER: "synthetic-runtime-pepper-0123456789abcdef", AUTH_DEVICE_PEPPER: "synthetic-runtime-device-pepper-0123456789",
+};
+// SEC-02: these tests cover the session cookies, so the browser is a trusted device (without SMTP an unknown one gets 503).
+const deviceToken = generateDeviceToken();
 let safe = false;
 
 before(async () => {
   assertLocalTestDatabase(); safe = true;
   await db.insert(users).values({ id: userId, email, passwordHash: await new PasswordService().hash(password), role: "admin", status: "active" });
+  await db.insert(trustedDevices).values({ userId, deviceFingerprintHash: digestDeviceToken(deviceToken, env.AUTH_DEVICE_PEPPER!), label: "Autre · Autre", trustedUntil: new Date(Date.now() + 24 * 60 * 60_000) });
 });
 after(async () => {
   try {
     if (safe) {
       await db.delete(authSessions).where(eq(authSessions.userId, userId));
+      await db.delete(trustedDevices).where(eq(trustedDevices.userId, userId));
       await db.delete(auditEvents).where(eq(auditEvents.actorUserId, userId));
       await db.delete(users).where(eq(users.id, userId));
     }
@@ -52,7 +59,7 @@ async function serve(app: Express, run: (url: string) => Promise<void>) {
 }
 
 const login = (url: string, requestId: string) => fetch(url + authApiRoutes.login, {
-  method: "POST", headers: { "content-type": "application/json", "x-request-id": requestId }, body: JSON.stringify({ email, password }),
+  method: "POST", headers: { "content-type": "application/json", "x-request-id": requestId, cookie: `kfit_device=${deviceToken}` }, body: JSON.stringify({ email, password }),
 });
 
 test("S7.4 D1: the production runtime sets Secure on every login cookie, trusts the loopback proxy only and never mounts dev tools", async () => {

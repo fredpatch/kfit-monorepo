@@ -1,7 +1,10 @@
 import type { AuthCookieMode } from "../middleware/auth.cookies.js";
-import { authCookieNames, authCookieOptions, csrfCookieOptions, generateCsrfToken } from "../middleware/auth.cookies.js";
+import { authCookieNames, authCookieOptions, csrfCookieOptions, DEVICE_COOKIE_MAX_AGE_SECONDS, generateCsrfToken } from "../middleware/auth.cookies.js";
+import { generateDeviceToken, parseDeviceToken } from "./crypto/device-token.crypto.js";
 import { signAccessToken } from "./crypto/jwt.crypto.js";
 import type { RecordAuditEventInput } from "./audit.service.js";
+import type { DeviceLoginService } from "./device-login.service.js";
+import type { OtpRejectReason } from "./otp-challenge.service.js";
 import type { AuthSessionRecord, SessionService } from "./session.service.js";
 import type { AuthCookieOptions } from "../types/auth.http.types.js";
 
@@ -63,7 +66,29 @@ export type AuthSuccess = {
   cookies: AuthCookie[];
 };
 
-export type LoginResult = AuthSuccess | { status: "rejected"; reason: "invalid_credentials" | "account_unavailable" };
+export type LoginRejected = { status: "rejected"; reason: "invalid_credentials" | "account_unavailable" };
+
+/** SEC-02 E1: no auth cookie; only the kfit_device cookie when the browser had none. */
+export type LoginOtpRequired = { status: "otp_required"; challengeId: string; expiresAt: Date; cookies: AuthCookie[] };
+
+export type LoginResult = AuthSuccess | LoginOtpRequired | LoginRejected | { status: "rate_limited" } | { status: "delivery_failed" };
+
+export type VerifyLoginResult =
+  | AuthSuccess
+  | LoginRejected
+  | { status: "otp_rejected"; reason: OtpRejectReason }
+  | { status: "rate_limited" };
+
+export type ResendLoginOtpResult =
+  | Omit<LoginOtpRequired, "cookies">
+  | { status: "otp_rejected"; reason: OtpRejectReason }
+  | { status: "rate_limited" }
+  | { status: "delivery_failed" };
+
+export type LoginDeviceGate = Pick<
+  DeviceLoginService,
+  "allowLoginAttempt" | "allowVerifyAttempt" | "useTrustedDevice" | "issueChallenge" | "verifyChallenge" | "resendChallenge" | "trust"
+>;
 
 export type RefreshResult = AuthSuccess | { status: "invalid"; reason: "missing" | "invalid" };
 
@@ -86,6 +111,10 @@ function authSuccessBody(user: AuthUserRecord, session: AuthSessionRecord): Auth
 
 function withOptionalNow<T extends object>(input: T, now: Date | undefined): T & { now?: Date } {
   return now === undefined ? input : { ...input, now };
+}
+
+function deviceContext(input: AuthRouteContext): AuthRouteContext {
+  return withOptionalNow({ requestId: input.requestId ?? null, ipAddress: input.ipAddress ?? null, userAgent: input.userAgent ?? null }, input.now);
 }
 
 function authCookies(input: {
@@ -128,9 +157,17 @@ export class AuthRouteService {
     private readonly passwordVerifier: PasswordVerifier,
     private readonly audit: AuthAuditRecorder,
     private readonly options: AuthRouteServiceOptions,
+    private readonly devices: LoginDeviceGate,
   ) {}
 
-  async login(input: { email: string; password: string } & AuthRouteContext): Promise<LoginResult> {
+  /**
+   * Contract « Login and suspicious device »: password first. A known, active, unexpired trusted device of this user gets
+   * a session (SEC-02 E5); any other device gets an e-mailed code and no session (E1). There is no bypass (E9).
+   */
+  async login(input: { email: string; password: string; deviceCookie?: string | undefined } & AuthRouteContext): Promise<LoginResult> {
+    const context = deviceContext(input);
+    if (!this.devices.allowLoginAttempt(input.ipAddress, input.now ?? new Date())) return { status: "rate_limited" };
+
     const email = canonicalEmail(input.email);
     const user = await this.users.findByEmail(email);
     const passwordMatches = user ? await this.passwordVerifier({ password: input.password, passwordHash: user.passwordHash }) : false;
@@ -166,8 +203,43 @@ export class AuthRouteService {
       return { status: "rejected", reason: "account_unavailable" };
     }
 
+    const knownDevice = parseDeviceToken(input.deviceCookie);
+    const trusted = await this.devices.useTrustedDevice(user.id, knownDevice, context);
+    if (trusted) return this.startSession(user, trusted.id, "trusted_device", input);
+
+    const deviceToken = knownDevice ?? generateDeviceToken();
+    const challenge = await this.devices.issueChallenge(user, deviceToken, context);
+    if (challenge.status !== "otp_required") return challenge;
+    return {
+      ...challenge,
+      cookies: knownDevice ? [] : [{ name: authCookieNames.device, value: deviceToken, options: authCookieOptions(this.options.cookieMode, DEVICE_COOKIE_MAX_AGE_SECONDS) }],
+    };
+  }
+
+  /** SEC-02 E4: the code from the e-mail, from the same device cookie; trusting the device is an explicit choice. */
+  async verifyLogin(input: { challengeId: string; code: string; trustDevice: boolean; deviceCookie?: string | undefined } & AuthRouteContext): Promise<VerifyLoginResult> {
+    const context = deviceContext(input);
+    if (!this.devices.allowVerifyAttempt(input.ipAddress, input.now ?? new Date())) return { status: "rate_limited" };
+
+    const verified = await this.devices.verifyChallenge(input.challengeId, input.code, parseDeviceToken(input.deviceCookie), context);
+    if (verified.status === "rejected") return { status: "otp_rejected", reason: verified.reason };
+
+    const user = await this.users.findById(verified.userId);
+    if (!user || user.status !== "active") return { status: "rejected", reason: "account_unavailable" };
+
+    const trustedDeviceId = input.trustDevice ? (await this.devices.trust(user.id, verified.deviceHash, context)).id : null;
+    return this.startSession(user, trustedDeviceId, "otp", input);
+  }
+
+  async resendLoginOtp(input: { challengeId: string; deviceCookie?: string | undefined } & AuthRouteContext): Promise<ResendLoginOtpResult> {
+    const resent = await this.devices.resendChallenge(input.challengeId, parseDeviceToken(input.deviceCookie), deviceContext(input));
+    return resent.status === "rejected" ? { status: "otp_rejected", reason: resent.reason } : resent;
+  }
+
+  private async startSession(user: AuthUserRecord, trustedDeviceId: string | null, method: "trusted_device" | "otp", input: AuthRouteContext): Promise<AuthSuccess> {
     const created = await this.sessions.createSession(withOptionalNow({
       userId: user.id,
+      trustedDeviceId,
       requestId: input.requestId ?? null,
       ipAddress: input.ipAddress ?? null,
       userAgent: input.userAgent ?? null,
@@ -183,7 +255,7 @@ export class AuthRouteService {
       requestId: input.requestId ?? null,
       ipAddress: input.ipAddress ?? null,
       userAgent: input.userAgent ?? null,
-      metadata: { role: user.role },
+      metadata: { role: user.role, method },
     });
 
     const accessToken = signAccessToken(withOptionalNow({

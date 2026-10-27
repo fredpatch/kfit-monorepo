@@ -2,6 +2,8 @@ import axios, { AxiosHeaders, type AxiosInstance } from "axios";
 import {
   authApiRoutes,
   authCsrfHeaderName,
+  isLoginOtpRequired,
+  type AuthenticatedSessionResponse,
   type BootstrapRequest,
   type BootstrapResponse,
   type BootstrapStatusResponse,
@@ -16,6 +18,7 @@ import {
   type SensitiveActionOtpRequestResponse,
   type SensitiveActionOtpVerifyResponse,
 } from "@kfit/shared";
+import { LoginOtpNotSupportedError } from "./auth-errors.js";
 import { buildCsrfHeaders, requiresCsrfHeader } from "./csrf.js";
 
 export type AuthApiClientOptions = {
@@ -28,7 +31,7 @@ export type AuthSession = CurrentSessionResponse;
 export type AuthApiClient = {
   bootstrapStatus(): Promise<BootstrapStatusResponse>;
   bootstrap(input: BootstrapRequest): Promise<BootstrapResponse>;
-  login(input: LoginRequest): Promise<LoginResponse>;
+  login(input: LoginRequest): Promise<AuthenticatedSessionResponse>;
   currentSession(): Promise<AuthSession | null>;
   refresh(): Promise<RefreshResponse>;
   logout(): Promise<LogoutResponse>;
@@ -74,6 +77,7 @@ export function createAuthApiClient(options: AuthApiClientOptions = {}): AuthApi
     },
     async login(input) {
       const response = await http.post<LoginResponse>(authApiRoutes.login, input);
+      if (isLoginOtpRequired(response.data)) throw new LoginOtpNotSupportedError();
       return response.data;
     },
     async currentSession() {

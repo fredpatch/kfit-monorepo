@@ -4,7 +4,11 @@ import { authPasswordRuleLabels, type AuthPasswordRule } from "@kfit/shared";
 /** What the auth screens need from a failed call: HTTP status (0 = unreachable), API code, policy reason. */
 export type AuthFailure = { status: number; code: string | null; reason: string | null };
 
+/** SEC-02a: the login code screen ships in SEC-02b; until then a 202 « otp_required » shows the generic error. */
+export class LoginOtpNotSupportedError extends Error {}
+
 export function authFailureOf(error: unknown): AuthFailure {
+  if (error instanceof LoginOtpNotSupportedError) return { status: 202, code: null, reason: null };
   if (axios.isAxiosError(error)) {
     const body = error.response?.data as { error?: unknown; reason?: unknown } | undefined;
     return {

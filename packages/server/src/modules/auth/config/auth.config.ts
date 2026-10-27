@@ -2,6 +2,8 @@ export type AuthConfig = {
   otpPepper: string;
   auditHashPepper: string;
   refreshTokenPepper: string;
+  /** SEC-02 E2: keys the stored hash of the kfit_device cookie. */
+  devicePepper: string;
   accessTokenSecret: string;
   otpTtlMs: number;
   otpMaxAttempts: number;
@@ -39,6 +41,7 @@ export function loadAuthConfig(env: NodeJS.ProcessEnv): AuthConfig {
     otpPepper,
     auditHashPepper: env.AUTH_AUDIT_HASH_PEPPER || otpPepper,
     refreshTokenPepper: env.AUTH_REFRESH_TOKEN_PEPPER || otpPepper,
+    devicePepper: env.AUTH_DEVICE_PEPPER || otpPepper,
     accessTokenSecret: env.AUTH_ACCESS_TOKEN_SECRET || otpPepper,
     otpTtlMs: positiveInteger(env, "AUTH_OTP_TTL_MS", 5 * 60_000),
     otpMaxAttempts: positiveInteger(env, "AUTH_OTP_MAX_ATTEMPTS", 5),
@@ -58,6 +61,9 @@ export function loadAuthConfig(env: NodeJS.ProcessEnv): AuthConfig {
 
   if (config.accessTokenSecret.length < 32) {
     throw new Error("AUTH_ACCESS_TOKEN_SECRET must contain at least 32 characters");
+  }
+  if (config.devicePepper.length < 32) {
+    throw new Error("AUTH_DEVICE_PEPPER must contain at least 32 characters");
   }
   if (config.recoveryTokenSecret.length < 32) {
     throw new Error("AUTH_RECOVERY_TOKEN_SECRET must contain at least 32 characters");

@@ -12,7 +12,7 @@ couvre: [S7.4a, S7.4b, DOC-01a]
 
 Source : clés et commentaires de `.env.example` (jamais les valeurs d'un `.env`). « Requis en production » = `PRODUCTION_REQUIRED_ENV` (`packages/server/src/runtime/production-guards.ts`) : l'API de production refuse de démarrer si la variable manque ou contient une valeur d'exemple. « Scripts ops » = lue par `ops:backup`, `ops:restore`, `ops:restore-drill`, pas par l'API.
 
-52 variables.
+53 variables.
 
 | Variable | Groupe | Requis en production | Scripts ops | Description |
 | --- | --- | --- | --- | --- |
@@ -41,6 +41,7 @@ Source : clés et commentaires de `.env.example` (jamais les valeurs d'un `.env`
 | `AUTH_ABSOLUTE_SESSION_TTL_MS` | Sprint 1 authentication policy (durations are milliseconds) | — | — | — |
 | `AUTH_TRUSTED_DEVICE_TTL_MS` | Sprint 1 authentication policy (durations are milliseconds) | — | — | — |
 | `AUTH_RECOVERY_TOKEN_SECRET` | Sprint 1 authentication policy (durations are milliseconds) | oui | — | Optional dedicated password-recovery grant signing secret. Defaults to AUTH_OTP_PEPPER. |
+| `AUTH_DEVICE_PEPPER` | Sprint 1 authentication policy (durations are milliseconds) | oui | — | SEC-02 E2: keys the stored hash of the kfit_device cookie (trusted devices). At least 32 characters; required in production, defaults to AUTH_OTP_PEPPER elsewhere. |
 | `AUTH_RECOVERY_GRANT_TTL_MS` | Sprint 1 authentication policy (durations are milliseconds) | — | — | — |
 | `AUTH_RECOVERY_RATE_LIMIT_WINDOW_MS` | Sprint 1 authentication policy (durations are milliseconds) | — | — | — |
 | `AUTH_RECOVERY_REQUEST_MAX` | Sprint 1 authentication policy (durations are milliseconds) | — | — | — |

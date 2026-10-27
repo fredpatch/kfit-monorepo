@@ -17,7 +17,7 @@ export type PasswordRecoveryRepository = {
     verifiedAt: string;
     passwordHash: string;
     completedAt: Date;
-  }): Promise<boolean>;
+  }): Promise<false | { revokedDeviceIds: string[] }>;
 };
 
 export type RecoveryRateLimitAction = "request" | "verify" | "reset";
@@ -277,6 +277,21 @@ export class PasswordRecoveryService {
       challengeId: claims.cid,
       context,
     });
+    // SEC-02 E6/E7: the reset revoked every trusted device of the user in the same transaction.
+    for (const deviceId of completed.revokedDeviceIds) {
+      await this.audit.record({
+        actorType: "user",
+        actorUserId: claims.sub,
+        eventType: "auth.device.revoked",
+        entityType: "trusted_device",
+        entityId: deviceId,
+        result: "success",
+        requestId: context.requestId ?? null,
+        ipAddress: context.ipAddress ?? null,
+        userAgent: context.userAgent ?? null,
+        metadata: { deviceId, reason: "password_reset" },
+      });
+    }
     return { status: "reset" };
   }
 }

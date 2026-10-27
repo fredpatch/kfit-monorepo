@@ -47,6 +47,8 @@ test("auth routes expose the server-side auth foundation endpoints", () => {
     "/auth/bootstrap/status",
     "/auth/bootstrap",
     "/auth/login",
+    "/auth/login/verify",
+    "/auth/login/resend",
     "/auth/refresh",
     "/auth/logout",
     "/auth/session",
@@ -55,8 +57,21 @@ test("auth routes expose the server-side auth foundation endpoints", () => {
     "/auth/recovery/reset",
     "/auth/otp/sensitive-action",
     "/auth/otp/sensitive-action/verify",
+    "/auth/devices",
+    "/auth/devices/revoke-all",
+    "/auth/devices/:id",
   ]);
-  assert.equal(authRoutes.filter((route) => route.requiresCsrf).length, 4);
+  assert.equal(authRoutes.filter((route) => route.requiresCsrf).length, 6);
+  // SEC-02 E4/E6: the pre-session OTP routes and the device mutations check the origin.
+  assert.deepEqual(authRoutes.filter((route) => route.requiresOriginCheck).map((route) => route.handler), [
+    "verifyLogin",
+    "resendLoginOtp",
+    "requestPasswordRecovery",
+    "verifyPasswordRecovery",
+    "resetPassword",
+    "revokeAllTrustedDevices",
+    "revokeTrustedDevice",
+  ]);
 });
 
 test("auth middleware enforces session, fresh OTP and double-submit CSRF", () => {

@@ -16,6 +16,8 @@ export const authErrorCodes = [
   "AUTH_RECOVERY_GRANT_INVALID",
   "AUTH_RATE_LIMITED",
   "AUTH_ORIGIN_INVALID",
+  "AUTH_OTP_DELIVERY_FAILED",
+  "AUTH_DEVICE_NOT_FOUND",
 ] as const;
 
 export type AuthErrorCode = (typeof authErrorCodes)[number];
@@ -35,6 +37,7 @@ export const authCookieNames = {
   accessToken: "kfit_access",
   refreshToken: "kfit_refresh",
   csrfToken: "kfit_csrf",
+  device: "kfit_device",
 } as const;
 
 export const authCsrfHeaderName = "x-csrf-token";
@@ -43,6 +46,8 @@ export const authApiRoutes = {
   bootstrapStatus: "/auth/bootstrap/status",
   bootstrap: "/auth/bootstrap",
   login: "/auth/login",
+  verifyLogin: "/auth/login/verify",
+  resendLoginOtp: "/auth/login/resend",
   refresh: "/auth/refresh",
   logout: "/auth/logout",
   currentSession: "/auth/session",
@@ -51,6 +56,9 @@ export const authApiRoutes = {
   requestPasswordRecovery: "/auth/recovery/request",
   verifyPasswordRecovery: "/auth/recovery/verify",
   resetPassword: "/auth/recovery/reset",
+  trustedDevices: "/auth/devices",
+  trustedDevice: "/auth/devices/:id",
+  revokeAllTrustedDevices: "/auth/devices/revoke-all",
 } as const;
 
 export type AuthApiRoute = (typeof authApiRoutes)[keyof typeof authApiRoutes];
@@ -105,7 +113,53 @@ export type AuthenticatedSessionResponse = {
   };
 };
 
-export type LoginResponse = AuthenticatedSessionResponse;
+/** SEC-02 E1: a valid password on an untrusted device answers 202 with no auth cookie; the code goes to the account e-mail. */
+export type LoginOtpRequiredResponse = {
+  status: "otp_required";
+  challengeId: string;
+  expiresAt: string;
+};
+
+/** SEC-02 E1: 200 keeps the session shape unchanged; 202 is told apart by its `status`. */
+export type LoginResponse = AuthenticatedSessionResponse | LoginOtpRequiredResponse;
+
+export function isLoginOtpRequired(response: LoginResponse): response is LoginOtpRequiredResponse {
+  return "status" in response && response.status === "otp_required";
+}
+
+export type LoginVerifyRequest = {
+  challengeId: string;
+  code: string;
+  trustDevice: boolean;
+};
+
+export type LoginVerifyResponse = AuthenticatedSessionResponse;
+
+export type LoginResendRequest = {
+  challengeId: string;
+};
+
+export type LoginResendResponse = LoginOtpRequiredResponse;
+
+export type TrustedDeviceSummary = {
+  id: string;
+  label: string | null;
+  lastUsedAt: string;
+  trustedUntil: string;
+  current: boolean;
+};
+
+export type TrustedDevicesResponse = {
+  devices: TrustedDeviceSummary[];
+};
+
+export type RevokeTrustedDeviceResponse = {
+  revoked: true;
+};
+
+export type RevokeAllTrustedDevicesResponse = {
+  revokedCount: number;
+};
 
 export type RefreshResponse = AuthenticatedSessionResponse;
 
@@ -171,5 +225,8 @@ export type AuthApiResponse =
   | PasswordRecoveryRequestResponse
   | PasswordRecoveryVerifyResponse
   | PasswordRecoveryResetResponse
+  | TrustedDevicesResponse
+  | RevokeTrustedDeviceResponse
+  | RevokeAllTrustedDevicesResponse
   | AuthErrorResponse
   | AuthOtpRejectedResponse;

@@ -8,9 +8,12 @@ export type PasswordRecoveryMail = {
 
 export type SensitiveActionMail = PasswordRecoveryMail;
 
+export type LoginCodeMail = PasswordRecoveryMail & { validityMinutes: number };
+
 export type AuthMailDelivery = {
   sendPasswordRecoveryCode(input: PasswordRecoveryMail): Promise<void>;
   sendSensitiveActionCode(input: SensitiveActionMail): Promise<void>;
+  sendLoginCode(input: LoginCodeMail): Promise<void>;
 };
 
 export type SmtpAuthMailConfig = {
@@ -73,6 +76,21 @@ export class NodemailerAuthMailDelivery implements AuthMailDelivery {
         `Code : ${input.code}`,
         `Expiration : ${input.expiresAt.toISOString()}`,
         "Si vous n'êtes pas à l'origine de cette demande, changez votre mot de passe.",
+      ].join("\n\n"),
+    });
+  }
+
+  /** SEC-02 E3: no link, only the code and its validity. */
+  async sendLoginCode(input: LoginCodeMail): Promise<void> {
+    await this.transport.sendMail({
+      from: this.config.from,
+      to: input.to,
+      subject: "K'FIT — Code de connexion",
+      text: [
+        "Une connexion à ton compte K'FIT a été demandée depuis un nouvel appareil.",
+        `Code : ${input.code}`,
+        `Ce code est valable ${input.validityMinutes} minutes.`,
+        "Si ce n'est pas toi, change ton mot de passe.",
       ].join("\n\n"),
     });
   }

@@ -43,7 +43,7 @@ function createHarness(existingUser: AuthUserRecord | null = user) {
     async findByEmail() { return existingUser; },
     async completeReset(input) {
       completed.push(input);
-      return completed.length === 1;
+      return completed.length === 1 && { revokedDeviceIds: [] };
     },
   };
   const service = new PasswordRecoveryService(

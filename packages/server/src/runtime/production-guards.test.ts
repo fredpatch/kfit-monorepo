@@ -25,6 +25,7 @@ const goodEnv = (): NodeJS.ProcessEnv => ({
   AUTH_REFRESH_TOKEN_PEPPER: secret("refresh"),
   AUTH_ACCESS_TOKEN_SECRET: secret("access"),
   AUTH_RECOVERY_TOKEN_SECRET: secret("recovery"),
+  AUTH_DEVICE_PEPPER: secret("device"),
 });
 const patched = "v22.23.4";
 const codes = (env: NodeJS.ProcessEnv, version = patched) => evaluateProductionEnv(env, version).failures.map((f) => f.code);

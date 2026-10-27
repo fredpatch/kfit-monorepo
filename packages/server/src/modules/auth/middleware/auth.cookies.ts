@@ -5,7 +5,11 @@ export const authCookieNames = {
   accessToken: "kfit_access",
   refreshToken: "kfit_refresh",
   csrfToken: "kfit_csrf",
+  device: "kfit_device",
 } as const;
+
+/** SEC-02 E2: the browser cap (400 days); the device cookie outlives sessions and logout. */
+export const DEVICE_COOKIE_MAX_AGE_SECONDS = 400 * 24 * 60 * 60;
 
 export type AuthCookieMode = "development" | "production";
 

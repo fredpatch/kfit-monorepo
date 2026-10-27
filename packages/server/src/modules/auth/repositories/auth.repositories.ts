@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { db as appDb } from "../../../db/client.js";
 import { authSessions, otpChallenges, trustedDevices, users } from "../../../db/schema/auth.js";
@@ -11,6 +11,7 @@ import type { SessionLookupRepository } from "../services/access-token-session.r
 import type { AuthUserRecord, AuthUserRepository } from "../services/auth-route.service.js";
 import type { BootstrapRepository } from "../services/bootstrap.service.js";
 import type { PasswordRecoveryRepository } from "../services/password-recovery.service.js";
+import type { TrustedDeviceRecord, TrustedDeviceRepository } from "../services/device-login.service.js";
 import type {
   CreateOtpChallengeRecordInput,
   OtpChallengeLookup,
@@ -155,10 +156,16 @@ export class DrizzleOtpChallengeRepository implements OtpChallengeRepository {
         eq(otpChallenges.purpose, input.purpose),
         nullableUuidCondition(otpChallenges.userId, input.userId),
         nullableUuidCondition(otpChallenges.sessionId, input.sessionId),
+        input.challengeId ? eq(otpChallenges.id, input.challengeId) : undefined,
       ))
       .orderBy(desc(otpChallenges.createdAt))
       .limit(1);
 
+    return challenge ? mapOtpChallenge(challenge) : null;
+  }
+
+  async findById(challengeId: string): Promise<OtpChallengeRecord | null> {
+    const [challenge] = await this.database.select().from(otpChallenges).where(eq(otpChallenges.id, challengeId)).limit(1);
     return challenge ? mapOtpChallenge(challenge) : null;
   }
 
@@ -236,7 +243,7 @@ export class DrizzlePasswordRecoveryRepository implements PasswordRecoveryReposi
     verifiedAt: string;
     passwordHash: string;
     completedAt: Date;
-  }): Promise<boolean> {
+  }): Promise<false | { revokedDeviceIds: string[] }> {
     return this.database.transaction(async (tx) => {
       const [challenge] = await tx
         .select()
@@ -281,13 +288,86 @@ export class DrizzlePasswordRecoveryRepository implements PasswordRecoveryReposi
         .set({ revokedAt: input.completedAt })
         .where(and(eq(authSessions.userId, input.userId), isNull(authSessions.revokedAt)));
 
-      await tx
+      const revokedDevices = await tx
         .update(trustedDevices)
         .set({ revokedAt: input.completedAt, updatedAt: input.completedAt })
-        .where(and(eq(trustedDevices.userId, input.userId), isNull(trustedDevices.revokedAt)));
+        .where(and(eq(trustedDevices.userId, input.userId), isNull(trustedDevices.revokedAt)))
+        .returning({ id: trustedDevices.id });
 
-      return true;
+      return { revokedDeviceIds: revokedDevices.map((device) => device.id) };
     });
+  }
+}
+
+function mapTrustedDevice(row: typeof trustedDevices.$inferSelect): TrustedDeviceRecord {
+  return {
+    id: row.id,
+    userId: row.userId,
+    deviceHash: row.deviceFingerprintHash,
+    label: row.label,
+    trustedUntil: row.trustedUntil,
+    lastUsedAt: row.lastUsedAt,
+  };
+}
+
+/** SEC-02 E4–E6: one row per (user, device hash); trusting again reactivates and relabels it. */
+export class DrizzleTrustedDeviceRepository implements TrustedDeviceRepository {
+  constructor(private readonly database: AuthDb) {}
+
+  async findActive(input: { userId: string; deviceHash: string; now: Date }): Promise<TrustedDeviceRecord | null> {
+    const [row] = await this.database.select().from(trustedDevices)
+      .where(and(
+        eq(trustedDevices.userId, input.userId),
+        eq(trustedDevices.deviceFingerprintHash, input.deviceHash),
+        isNull(trustedDevices.revokedAt),
+        gt(trustedDevices.trustedUntil, input.now),
+      ))
+      .limit(1);
+    return row ? mapTrustedDevice(row) : null;
+  }
+
+  async markUsed(input: { deviceId: string; usedAt: Date }): Promise<void> {
+    await this.database.update(trustedDevices)
+      .set({ lastUsedAt: input.usedAt, updatedAt: input.usedAt })
+      .where(eq(trustedDevices.id, input.deviceId));
+  }
+
+  async trust(input: { userId: string; deviceHash: string; label: string; trustedUntil: Date; now: Date }): Promise<TrustedDeviceRecord> {
+    const [row] = await this.database.insert(trustedDevices)
+      .values({
+        userId: input.userId,
+        deviceFingerprintHash: input.deviceHash,
+        label: input.label,
+        trustedUntil: input.trustedUntil,
+        lastUsedAt: input.now,
+        createdAt: input.now,
+        updatedAt: input.now,
+      })
+      .onConflictDoUpdate({
+        target: [trustedDevices.userId, trustedDevices.deviceFingerprintHash],
+        set: { label: input.label, trustedUntil: input.trustedUntil, lastUsedAt: input.now, revokedAt: null, updatedAt: input.now },
+      })
+      .returning();
+    return mapTrustedDevice(requireRow(row, "Trusted device upsert did not return a row"));
+  }
+
+  async listActive(input: { userId: string; now: Date }): Promise<TrustedDeviceRecord[]> {
+    const rows = await this.database.select().from(trustedDevices)
+      .where(and(eq(trustedDevices.userId, input.userId), isNull(trustedDevices.revokedAt), gt(trustedDevices.trustedUntil, input.now)))
+      .orderBy(desc(trustedDevices.lastUsedAt));
+    return rows.map(mapTrustedDevice);
+  }
+
+  async revoke(input: { userId: string; deviceId?: string; revokedAt: Date }): Promise<string[]> {
+    const rows = await this.database.update(trustedDevices)
+      .set({ revokedAt: input.revokedAt, updatedAt: input.revokedAt })
+      .where(and(
+        eq(trustedDevices.userId, input.userId),
+        isNull(trustedDevices.revokedAt),
+        input.deviceId ? eq(trustedDevices.id, input.deviceId) : undefined,
+      ))
+      .returning({ id: trustedDevices.id });
+    return rows.map((row) => row.id);
   }
 }
 

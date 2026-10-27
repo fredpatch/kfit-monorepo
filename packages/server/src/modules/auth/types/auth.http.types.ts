@@ -16,6 +16,8 @@ export type AuthHttpRequestContext = {
   ipAddress?: string | null;
   userAgent?: string | null;
   session?: AuthenticatedSessionContext | null;
+  /** Route parameters (e.g. `:id` of DELETE /auth/devices/:id). */
+  params?: Record<string, string | undefined>;
 };
 
 export type HttpJsonResponse<TBody = unknown> = {

@@ -34,6 +34,8 @@ export type OtpChallengeLookup = {
   userId?: string | null;
   sessionId?: string | null;
   purpose: OtpPurpose;
+  /** SEC-02 E3: pins verification to one challenge row (ignored when superseding). */
+  challengeId?: string;
 };
 
 export type OtpChallengeRepository = {
@@ -126,6 +128,7 @@ export class OtpChallengeService {
       userId: input.userId ?? null,
       sessionId: input.sessionId ?? null,
       purpose: input.purpose,
+      ...(input.challengeId ? { challengeId: input.challengeId } : {}),
     });
 
     const rejected = async (reason: OtpRejectReason, result: "failure" | "blocked", challengeForAudit: OtpChallengeRecord | null = challenge): Promise<VerifyOtpResult> => {

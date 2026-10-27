@@ -11,10 +11,13 @@ import {
 } from "../services/session.service.js";
 
 const pepper = "a-secure-test-refresh-pepper-that-is-longer-than-32-characters";
-const auditHashPepper = "a-secure-test-audit-pepper-that-is-longer-than-32-characters";
+const auditHashPepper =
+  "a-secure-test-audit-pepper-that-is-longer-than-32-characters";
 const baseNow = new Date("2026-08-25T08:00:00Z");
 
-function makeSession(input: Partial<AuthSessionRecord> = {}): AuthSessionRecord {
+function makeSession(
+  input: Partial<AuthSessionRecord> = {},
+): AuthSessionRecord {
   return {
     id: "00000000-0000-0000-0000-000000000001",
     userId: "11111111-1111-1111-1111-111111111111",
@@ -58,7 +61,12 @@ test("SessionService creates sessions with hash-only refresh tokens and expiry c
   const repository: SessionRepository = {
     async create(input) {
       createdInputs.push(input);
-      return makeSession({ ...input, id: "00000000-0000-0000-0000-000000000001", revokedAt: null, compromisedAt: null });
+      return makeSession({
+        ...input,
+        id: "00000000-0000-0000-0000-000000000001",
+        revokedAt: null,
+        compromisedAt: null,
+      });
     },
     async findByRefreshTokenHash() {
       return null;
@@ -96,14 +104,20 @@ test("SessionService creates sessions with hash-only refresh tokens and expiry c
   assert.notEqual(created.refreshTokenHash, result.refreshToken);
   assert.equal(created.rotationCounter, 0);
   assert.equal(created.expiresAt.toISOString(), "2026-08-25T08:01:00.000Z");
-  assert.equal(created.absoluteExpiresAt.toISOString(), "2026-08-25T08:02:00.000Z");
+  assert.equal(
+    created.absoluteExpiresAt.toISOString(),
+    "2026-08-25T08:02:00.000Z",
+  );
   assert.notEqual(created.ipHash, "192.0.2.10");
   assert.equal(audit.events[0]?.eventType, "auth.session.created");
 });
 
 test("SessionService rotates a valid refresh token and increments the rotation counter", async () => {
   const session = makeSession();
-  const rotatedInputs: Array<{ refreshTokenHash: string; rotationCounter: number }> = [];
+  const rotatedInputs: Array<{
+    refreshTokenHash: string;
+    rotationCounter: number;
+  }> = [];
   const repository: SessionRepository = {
     async create() {
       throw new Error("not used");
@@ -136,7 +150,9 @@ test("SessionService rotates a valid refresh token and increments the rotation c
     inactivityTimeoutMs: 10 * 60_000,
   });
 
-  const result = await service.rotateRefreshToken("current-refresh-token", { now: baseNow });
+  const result = await service.rotateRefreshToken("current-refresh-token", {
+    now: baseNow,
+  });
 
   assert.equal(result.status, "rotated");
   const rotatedInput = rotatedInputs[0];
@@ -173,7 +189,9 @@ test("SessionService blocks invalid sessions before rotation", async () => {
     inactivityTimeoutMs: 30_000,
   });
 
-  const result = await service.rotateRefreshToken("current-refresh-token", { now: baseNow });
+  const result = await service.rotateRefreshToken("current-refresh-token", {
+    now: baseNow,
+  });
 
   assert.deepEqual(result, { status: "invalid", reason: "inactive" });
   assert.equal(audit.events[0]?.eventType, "auth.session.refresh_blocked");
@@ -215,9 +233,11 @@ test("SessionService can mark a token family compromised for reuse detection", a
   });
 
   assert.equal(result.affectedSessions, 2);
-  assert.equal(audit.events[0]?.eventType, "auth.session.token_family_compromised");
+  assert.equal(
+    audit.events[0]?.eventType,
+    "auth.session.token_family_compromised",
+  );
 });
-
 
 test("SessionService revokes a session and records logout audit evidence", async () => {
   const repository: SessionRepository = {

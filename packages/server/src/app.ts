@@ -18,7 +18,10 @@ import { createExpressAppointmentsRouter } from "./modules/appointments/routes/e
 import type { SubscriptionsController } from "./modules/subscriptions/controllers/subscriptions.controller.js";
 import { createExpressSubscriptionsRouter } from "./modules/subscriptions/routes/express-subscriptions.router.js";
 import type { AuthController } from "./modules/auth/controllers/auth.controller.js";
-import { createExpressAuthRouter, type ExpressAuthSessionResolver } from "./modules/auth/routes/express-auth.router.js";
+import {
+  createExpressAuthRouter,
+  type ExpressAuthSessionResolver,
+} from "./modules/auth/routes/express-auth.router.js";
 import type { CatalogueController } from "./modules/catalogue/controllers/catalogue.controller.js";
 import { createExpressCatalogueRouter } from "./modules/catalogue/routes/express-catalogue.router.js";
 import type { AdminRequestsController } from "./modules/requests/controllers/admin-requests.controller.js";
@@ -47,8 +50,15 @@ import type { DevToolsController } from "./modules/dev-tools/controllers/dev-too
 import { createExpressDevToolsRouter } from "./modules/dev-tools/routes/express-dev-tools.router.js";
 import type { QuestionnaireController } from "./modules/questionnaires/controllers/questionnaire.controller.js";
 import { createExpressQuestionnaireRouter } from "./modules/questionnaires/routes/express-questionnaire.router.js";
-import { REQUEST_ENCODING_UNSUPPORTED, rejectEncodedRequestBodies } from "./security/reject-encoded-request-bodies.js";
-import { rateLimitedCode, type RateLimitScope, type SecurityEventRecorder } from "./security/security-event-counters.js";
+import {
+  REQUEST_ENCODING_UNSUPPORTED,
+  rejectEncodedRequestBodies,
+} from "./security/reject-encoded-request-bodies.js";
+import {
+  rateLimitedCode,
+  type RateLimitScope,
+  type SecurityEventRecorder,
+} from "./security/security-event-counters.js";
 import { requestIdMiddleware } from "./http/request-id.middleware.js";
 
 export type ServerAppDeps = {
@@ -87,68 +97,207 @@ export type ServerAppDeps = {
 
 export function createServerApp(deps: ServerAppDeps): Express {
   const app = express();
-  const rateLimited = (scope: RateLimitScope) => () => deps.recordSecurityEvent?.(rateLimitedCode(scope));
+  const rateLimited = (scope: RateLimitScope) => () =>
+    deps.recordSecurityEvent?.(rateLimitedCode(scope));
 
   app.disable("x-powered-by");
   // S7.4 D4: first, so the logger, the encoding guard and every router see the same canonical request id.
   app.use(requestIdMiddleware);
   if (deps.requestLogger) app.use(deps.requestLogger);
   // SEC-01 D4 (CVE-2026-111497): before every body parser, including the routers' raw() uploads.
-  app.use(rejectEncodedRequestBodies(() => deps.recordSecurityEvent?.(REQUEST_ENCODING_UNSUPPORTED)));
+  app.use(
+    rejectEncodedRequestBodies(() =>
+      deps.recordSecurityEvent?.(REQUEST_ENCODING_UNSUPPORTED),
+    ),
+  );
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/health", (_request, response) => {
     response.status(200).json({ status: "ok" });
   });
 
-  app.use(createExpressAuthRouter({
-    controller: deps.authController,
-    resolveSession: deps.resolveAuthSession,
-  }));
+  app.use(
+    createExpressAuthRouter({
+      controller: deps.authController,
+      resolveSession: deps.resolveAuthSession,
+    }),
+  );
 
   if (deps.catalogueController) {
-    app.use(createExpressCatalogueRouter({
-      controller: deps.catalogueController,
-      resolveSession: deps.resolveAuthSession,
-    }));
+    app.use(
+      createExpressCatalogueRouter({
+        controller: deps.catalogueController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
   }
 
   if (deps.requestsController) {
-    app.use(createExpressRequestsRouter({
-      controller: deps.requestsController,
-      rateLimiter: new IpRateLimiter({ windowMs: 60_000, maxPerWindow: 5, onRefused: rateLimited("requests") }),
-    }));
+    app.use(
+      createExpressRequestsRouter({
+        controller: deps.requestsController,
+        rateLimiter: new IpRateLimiter({
+          windowMs: 60_000,
+          maxPerWindow: 5,
+          onRefused: rateLimited("requests"),
+        }),
+      }),
+    );
   }
 
   if (deps.adminRequestsController) {
-    app.use(createExpressAdminRequestsRouter({
-      controller: deps.adminRequestsController,
-      resolveSession: deps.resolveAuthSession,
-      ...(deps.requestConversionController ? { conversionController: deps.requestConversionController } : {}),
-    }));
+    app.use(
+      createExpressAdminRequestsRouter({
+        controller: deps.adminRequestsController,
+        resolveSession: deps.resolveAuthSession,
+        ...(deps.requestConversionController
+          ? { conversionController: deps.requestConversionController }
+          : {}),
+      }),
+    );
   }
 
   if (deps.customersController) {
-    app.use(createExpressCustomersRouter({ controller: deps.customersController, resolveSession: deps.resolveAuthSession }));
+    app.use(
+      createExpressCustomersRouter({
+        controller: deps.customersController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
   }
-  if (deps.onboardingController) app.use(createExpressOnboardingRouter({ controller: deps.onboardingController, resolveSession: deps.resolveAuthSession }));
-  if (deps.consentController) app.use(createExpressConsentRouter({ controller: deps.consentController, resolveSession: deps.resolveAuthSession, onRateLimited: rateLimited("consents") }));
-  if (deps.questionnaireController) app.use(createExpressQuestionnaireRouter({ controller: deps.questionnaireController, resolveSession: deps.resolveAuthSession, onRateLimited: rateLimited("questionnaires") }));
-  if (deps.subscriptionsController) app.use(createExpressSubscriptionsRouter({ controller: deps.subscriptionsController, resolveSession: deps.resolveAuthSession }));
+  if (deps.onboardingController)
+    app.use(
+      createExpressOnboardingRouter({
+        controller: deps.onboardingController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
+  if (deps.consentController)
+    app.use(
+      createExpressConsentRouter({
+        controller: deps.consentController,
+        resolveSession: deps.resolveAuthSession,
+        onRateLimited: rateLimited("consents"),
+      }),
+    );
+  if (deps.questionnaireController)
+    app.use(
+      createExpressQuestionnaireRouter({
+        controller: deps.questionnaireController,
+        resolveSession: deps.resolveAuthSession,
+        onRateLimited: rateLimited("questionnaires"),
+      }),
+    );
+  if (deps.subscriptionsController)
+    app.use(
+      createExpressSubscriptionsRouter({
+        controller: deps.subscriptionsController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
   // Registered before the appointments router so GET /admin/appointments (agenda) is matched explicitly.
-  if (deps.todayController) app.use(createExpressTodayRouter({ controller: deps.todayController, resolveSession: deps.resolveAuthSession }));
-  if (deps.dashboardAnalyticsController) app.use(createExpressDashboardAnalyticsRouter({ controller: deps.dashboardAnalyticsController, resolveSession: deps.resolveAuthSession }));
-  if (deps.notificationsController) app.use(createExpressNotificationsRouter({ controller: deps.notificationsController, resolveSession: deps.resolveAuthSession }));
-  if (deps.privacyController) app.use(createExpressPrivacyRouter({ controller: deps.privacyController, resolveSession: deps.resolveAuthSession }));
-  if (deps.supervisionController) app.use(createExpressSupervisionRouter({ controller: deps.supervisionController, resolveSession: deps.resolveAuthSession }));
-  if (deps.devToolsController) app.use(createExpressDevToolsRouter({ controller: deps.devToolsController, resolveSession: deps.resolveAuthSession }));
-  if (deps.appointmentsController) app.use(createExpressAppointmentsRouter({ controller: deps.appointmentsController, resolveSession: deps.resolveAuthSession, onRateLimited: rateLimited("appointments") }));
-  if (deps.followUpsController) app.use(createExpressFollowUpsRouter({ controller: deps.followUpsController, resolveSession: deps.resolveAuthSession }));
-  if (deps.progressController) app.use(createExpressProgressRouter({ controller: deps.progressController, resolveSession: deps.resolveAuthSession }));
-  if (deps.documentsController) app.use(createExpressDocumentsRouter({ controller: deps.documentsController, resolveSession: deps.resolveAuthSession, onRateLimited: rateLimited("documents") }));
-  if (deps.financeController) app.use(createExpressFinanceRouter({ controller: deps.financeController, resolveSession: deps.resolveAuthSession }));
-  if (deps.quotesController) app.use(createExpressQuotesRouter({ controller: deps.quotesController, resolveSession: deps.resolveAuthSession, onRateLimited: rateLimited("quotes") }));
-  if (deps.paymentProofsController) app.use(createExpressPaymentProofsRouter({ controller: deps.paymentProofsController, resolveSession: deps.resolveAuthSession, onRateLimited: rateLimited("payment-proofs") }));
-  if (deps.receiptsController) app.use(createExpressReceiptsRouter({ controller: deps.receiptsController, resolveSession: deps.resolveAuthSession, onRateLimited: rateLimited("receipts") }));
+  if (deps.todayController)
+    app.use(
+      createExpressTodayRouter({
+        controller: deps.todayController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
+  if (deps.dashboardAnalyticsController)
+    app.use(
+      createExpressDashboardAnalyticsRouter({
+        controller: deps.dashboardAnalyticsController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
+  if (deps.notificationsController)
+    app.use(
+      createExpressNotificationsRouter({
+        controller: deps.notificationsController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
+  if (deps.privacyController)
+    app.use(
+      createExpressPrivacyRouter({
+        controller: deps.privacyController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
+  if (deps.supervisionController)
+    app.use(
+      createExpressSupervisionRouter({
+        controller: deps.supervisionController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
+  if (deps.devToolsController)
+    app.use(
+      createExpressDevToolsRouter({
+        controller: deps.devToolsController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
+  if (deps.appointmentsController)
+    app.use(
+      createExpressAppointmentsRouter({
+        controller: deps.appointmentsController,
+        resolveSession: deps.resolveAuthSession,
+        onRateLimited: rateLimited("appointments"),
+      }),
+    );
+  if (deps.followUpsController)
+    app.use(
+      createExpressFollowUpsRouter({
+        controller: deps.followUpsController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
+  if (deps.progressController)
+    app.use(
+      createExpressProgressRouter({
+        controller: deps.progressController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
+  if (deps.documentsController)
+    app.use(
+      createExpressDocumentsRouter({
+        controller: deps.documentsController,
+        resolveSession: deps.resolveAuthSession,
+        onRateLimited: rateLimited("documents"),
+      }),
+    );
+  if (deps.financeController)
+    app.use(
+      createExpressFinanceRouter({
+        controller: deps.financeController,
+        resolveSession: deps.resolveAuthSession,
+      }),
+    );
+  if (deps.quotesController)
+    app.use(
+      createExpressQuotesRouter({
+        controller: deps.quotesController,
+        resolveSession: deps.resolveAuthSession,
+        onRateLimited: rateLimited("quotes"),
+      }),
+    );
+  if (deps.paymentProofsController)
+    app.use(
+      createExpressPaymentProofsRouter({
+        controller: deps.paymentProofsController,
+        resolveSession: deps.resolveAuthSession,
+        onRateLimited: rateLimited("payment-proofs"),
+      }),
+    );
+  if (deps.receiptsController)
+    app.use(
+      createExpressReceiptsRouter({
+        controller: deps.receiptsController,
+        resolveSession: deps.resolveAuthSession,
+        onRateLimited: rateLimited("receipts"),
+      }),
+    );
   return app;
 }

@@ -5,10 +5,19 @@
  * coordinate across replicas; revisit with a shared store before horizontal scaling.
  */
 export class IpRateLimiter {
-  private readonly hits = new Map<string, { count: number; windowStartedAt: number }>();
+  private readonly hits = new Map<
+    string,
+    { count: number; windowStartedAt: number }
+  >();
 
   /** `onRefused` counts each refusal (S7.4b B9); it must not throw. */
-  constructor(private readonly options: { windowMs: number; maxPerWindow: number; onRefused?: (() => void) | undefined }) {}
+  constructor(
+    private readonly options: {
+      windowMs: number;
+      maxPerWindow: number;
+      onRefused?: (() => void) | undefined;
+    },
+  ) {}
 
   allow(ip: string, now: number = Date.now()): boolean {
     const key = ip || "unknown";

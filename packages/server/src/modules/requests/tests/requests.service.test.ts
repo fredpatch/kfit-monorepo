@@ -7,7 +7,10 @@ import {
   type RequestsRepository,
   type ServiceAvailabilityRecord,
 } from "../services/requests.service.js";
-import type { AuditService, RecordAuditEventInput } from "../../auth/services/audit.service.js";
+import type {
+  AuditService,
+  RecordAuditEventInput,
+} from "../../auth/services/audit.service.js";
 
 const openService: ServiceAvailabilityRecord = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -39,14 +42,20 @@ class FakeRequestsRepository implements RequestsRepository {
     return this.variantOwners.get(variantId) ?? null;
   }
 
-  async createServiceRequest(input: CreateServiceRequestInput): Promise<CreateServiceRequestResult> {
+  async createServiceRequest(
+    input: CreateServiceRequestInput,
+  ): Promise<CreateServiceRequestResult> {
     const existing = this.byToken.get(input.submissionToken);
     if (existing) return { outcome: "replayed", request: existing.request };
 
     this.created.push(input);
     const result: CreateServiceRequestResult = {
       outcome: "created",
-      request: { id: `request-${this.created.length}`, reference: `REQ-${this.created.length}`, submittedAt: new Date("2026-09-17T08:00:00Z") },
+      request: {
+        id: `request-${this.created.length}`,
+        reference: `REQ-${this.created.length}`,
+        submittedAt: new Date("2026-09-17T08:00:00Z"),
+      },
     };
     this.byToken.set(input.submissionToken, result);
     return result;
@@ -101,7 +110,10 @@ test("RequestsService rejects invalid input without touching the repository", as
   const repository = new FakeRequestsRepository();
   const service = new RequestsService(repository, new FakeAudit());
 
-  const result = await service.submit({ ...validInput(), fullName: "" }, context());
+  const result = await service.submit(
+    { ...validInput(), fullName: "" },
+    context(),
+  );
 
   assert.deepEqual(result, { status: "invalid", reason: "full_name_invalid" });
   assert.equal(repository.created.length, 0);
@@ -121,7 +133,10 @@ test("RequestsService rejects archived services and audits a blocked event", asy
 
 test("RequestsService rejects temporarily closed services", async () => {
   const repository = new FakeRequestsRepository();
-  repository.service = { ...openService, availabilityStatus: "temporarily_closed" };
+  repository.service = {
+    ...openService,
+    availabilityStatus: "temporarily_closed",
+  };
   const service = new RequestsService(repository, new FakeAudit());
 
   const result = await service.submit(validInput(), context());
@@ -168,7 +183,10 @@ test("RequestsService accepts a requested variant that belongs to the selected s
   const repository = new FakeRequestsRepository();
   const service = new RequestsService(repository, new FakeAudit());
 
-  const result = await service.submit({ ...validInput(), requestedVariantId: ownVariantId }, context());
+  const result = await service.submit(
+    { ...validInput(), requestedVariantId: ownVariantId },
+    context(),
+  );
 
   assert.equal(result.status, "ok");
   assert.equal(repository.created[0]?.requestedVariantId, ownVariantId);
@@ -179,7 +197,13 @@ test("RequestsService rejects a nonexistent requested variant without creating a
   const audit = new FakeAudit();
   const service = new RequestsService(repository, audit);
 
-  const result = await service.submit({ ...validInput(), requestedVariantId: "44444444-4444-4444-4444-444444444444" }, context());
+  const result = await service.submit(
+    {
+      ...validInput(),
+      requestedVariantId: "44444444-4444-4444-4444-444444444444",
+    },
+    context(),
+  );
 
   assert.deepEqual(result, { status: "variant_invalid" });
   assert.equal(repository.created.length, 0);
@@ -190,7 +214,10 @@ test("RequestsService rejects a requested variant that belongs to another servic
   const repository = new FakeRequestsRepository();
   const service = new RequestsService(repository, new FakeAudit());
 
-  const result = await service.submit({ ...validInput(), requestedVariantId: foreignVariantId }, context());
+  const result = await service.submit(
+    { ...validInput(), requestedVariantId: foreignVariantId },
+    context(),
+  );
 
   assert.deepEqual(result, { status: "variant_invalid" });
   assert.equal(repository.created.length, 0);
@@ -211,12 +238,18 @@ test("RequestsService blocks honeypot submissions with a neutral reason and no r
   const audit = new FakeAudit();
   const service = new RequestsService(repository, audit);
 
-  const result = await service.submit({ ...validInput(), website: "http://spam.example" }, context());
+  const result = await service.submit(
+    { ...validInput(), website: "http://spam.example" },
+    context(),
+  );
 
   assert.deepEqual(result, { status: "invalid", reason: "submission_invalid" });
   assert.equal(repository.created.length, 0);
   assert.equal(audit.events.at(-1)?.eventType, "request.submission_blocked");
-  assert.equal((audit.events.at(-1)?.metadata as { signal?: string } | null)?.signal, "honeypot");
+  assert.equal(
+    (audit.events.at(-1)?.metadata as { signal?: string } | null)?.signal,
+    "honeypot",
+  );
 });
 
 test("RequestsService blocks submissions completed faster than the minimum fill time", async () => {

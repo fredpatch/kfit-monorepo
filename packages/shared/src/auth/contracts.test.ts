@@ -79,11 +79,17 @@ test("auth shared contracts expose stable API routes, cookies, CSRF header, erro
 });
 
 test("auth shared contracts type-check core request and response shapes", () => {
-  const bootstrap: BootstrapRequest = { email: "coach@kfit.local", password: "CorrectHorse9" };
+  const bootstrap: BootstrapRequest = {
+    email: "coach@kfit.local",
+    password: "CorrectHorse9",
+  };
   const login: LoginRequest = { email: "coach@kfit.local", password: "secret" };
   const request: SensitiveActionOtpVerifyRequest = { code: "123456" };
   const recovery: PasswordRecoveryRequest = { email: "coach@kfit.local" };
-  const reset: PasswordRecoveryResetRequest = { resetToken: "signed-token", password: "CorrectHorse10" };
+  const reset: PasswordRecoveryResetRequest = {
+    resetToken: "signed-token",
+    password: "CorrectHorse10",
+  };
   const response: CurrentSessionResponse = {
     user: { id: "11111111-1111-1111-1111-111111111111", role: "coach" },
     session: { id: "22222222-2222-2222-2222-222222222222", freshOtp: true },
@@ -102,7 +108,11 @@ test("SEC-02 E1: the login response tells a session (200) from an OTP challenge 
     user: { id: "11111111-1111-1111-1111-111111111111", role: "admin" },
     session: { id: "22222222-2222-2222-2222-222222222222", freshOtp: false },
   };
-  const challenge: LoginResponse = { status: "otp_required", challengeId: "opaque", expiresAt: "2026-10-27T08:05:00.000Z" };
+  const challenge: LoginResponse = {
+    status: "otp_required",
+    challengeId: "opaque",
+    expiresAt: "2026-10-27T08:05:00.000Z",
+  };
 
   assert.equal(isLoginOtpRequired(session), false);
   assert.equal(isLoginOtpRequired(challenge), true);

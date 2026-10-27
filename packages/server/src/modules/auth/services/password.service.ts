@@ -1,6 +1,16 @@
-import { randomBytes, scrypt as scryptCallback, timingSafeEqual, type ScryptOptions } from "node:crypto";
+import {
+  randomBytes,
+  scrypt as scryptCallback,
+  timingSafeEqual,
+  type ScryptOptions,
+} from "node:crypto";
 
-function scrypt(password: string, salt: Buffer, keyLength: number, options: ScryptOptions): Promise<Buffer> {
+function scrypt(
+  password: string,
+  salt: Buffer,
+  keyLength: number,
+  options: ScryptOptions,
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     scryptCallback(password, salt, keyLength, options, (error, derivedKey) => {
       if (error) reject(error);
@@ -31,9 +41,14 @@ export type PasswordStrengthResult =
   | { ok: true }
   | { ok: false; reason: "too_short" | "missing_letter" | "missing_number" };
 
-export function validatePasswordStrength(password: string, options: Pick<PasswordHashOptions, "minLength"> = defaultPasswordHashOptions): PasswordStrengthResult {
-  if (password.length < options.minLength) return { ok: false, reason: "too_short" };
-  if (!/[A-Za-z]/.test(password)) return { ok: false, reason: "missing_letter" };
+export function validatePasswordStrength(
+  password: string,
+  options: Pick<PasswordHashOptions, "minLength"> = defaultPasswordHashOptions,
+): PasswordStrengthResult {
+  if (password.length < options.minLength)
+    return { ok: false, reason: "too_short" };
+  if (!/[A-Za-z]/.test(password))
+    return { ok: false, reason: "missing_letter" };
   if (!/\d/.test(password)) return { ok: false, reason: "missing_number" };
   return { ok: true };
 }
@@ -59,8 +74,26 @@ function encodeHash(input: {
 }
 
 function parseHash(hash: string) {
-  const [algorithm, version, cost, blockSize, parallelization, keyLength, salt, digest] = hash.split("$");
-  if (algorithm !== "kfit-scrypt" || version !== "v=1" || !cost || !blockSize || !parallelization || !keyLength || !salt || !digest) {
+  const [
+    algorithm,
+    version,
+    cost,
+    blockSize,
+    parallelization,
+    keyLength,
+    salt,
+    digest,
+  ] = hash.split("$");
+  if (
+    algorithm !== "kfit-scrypt" ||
+    version !== "v=1" ||
+    !cost ||
+    !blockSize ||
+    !parallelization ||
+    !keyLength ||
+    !salt ||
+    !digest
+  ) {
     return null;
   }
 
@@ -90,7 +123,9 @@ function parseHash(hash: string) {
 }
 
 export class PasswordService {
-  constructor(private readonly options: PasswordHashOptions = defaultPasswordHashOptions) {}
+  constructor(
+    private readonly options: PasswordHashOptions = defaultPasswordHashOptions,
+  ) {}
 
   validate(password: string): PasswordStrengthResult {
     return validatePasswordStrength(password, this.options);
@@ -103,11 +138,11 @@ export class PasswordService {
     }
 
     const salt = randomBytes(this.options.saltBytes);
-    const digest = await scrypt(password, salt, this.options.keyLength, {
+    const digest = (await scrypt(password, salt, this.options.keyLength, {
       N: this.options.cost,
       r: this.options.blockSize,
       p: this.options.parallelization,
-    }) as Buffer;
+    })) as Buffer;
 
     return encodeHash({
       cost: this.options.cost,
@@ -123,12 +158,15 @@ export class PasswordService {
     const parsed = parseHash(passwordHash);
     if (!parsed) return false;
 
-    const candidate = await scrypt(password, parsed.salt, parsed.keyLength, {
+    const candidate = (await scrypt(password, parsed.salt, parsed.keyLength, {
       N: parsed.cost,
       r: parsed.blockSize,
       p: parsed.parallelization,
-    }) as Buffer;
+    })) as Buffer;
 
-    return candidate.length === parsed.digest.length && timingSafeEqual(candidate, parsed.digest);
+    return (
+      candidate.length === parsed.digest.length &&
+      timingSafeEqual(candidate, parsed.digest)
+    );
   }
 }

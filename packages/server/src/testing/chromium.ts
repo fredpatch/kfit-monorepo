@@ -7,7 +7,9 @@ import puppeteer from "puppeteer";
  */
 export function chromiumUnavailable(): string | false {
   try {
-    return existsSync(puppeteer.executablePath()) ? false : "Puppeteer Chrome not installed (PUPPETEER_SKIP_DOWNLOAD)";
+    return existsSync(puppeteer.executablePath())
+      ? false
+      : "Puppeteer Chrome not installed (PUPPETEER_SKIP_DOWNLOAD)";
   } catch {
     return "Puppeteer Chrome not resolvable";
   }

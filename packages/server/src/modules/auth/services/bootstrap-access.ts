@@ -9,11 +9,22 @@ export const BOOTSTRAP_RATE_WINDOW_MS = 15 * 60_000;
 export const BOOTSTRAP_RATE_LIMIT_SCOPE: RateLimitScope = "auth_bootstrap";
 
 /** BOOT-01 B1: development is unchanged; production always asks for the token and is closed without one. */
-export function bootstrapTokenPolicy(mode: "development" | "production", env: NodeJS.ProcessEnv): BootstrapTokenPolicy {
-  return mode === "production" ? { required: true, token: readBootstrapToken(env) } : { required: false };
+export function bootstrapTokenPolicy(
+  mode: "development" | "production",
+  env: NodeJS.ProcessEnv,
+): BootstrapTokenPolicy {
+  return mode === "production"
+    ? { required: true, token: readBootstrapToken(env) }
+    : { required: false };
 }
 
-export function createBootstrapRateLimiter(onRefused: () => void): (ipAddress: string, now: number) => boolean {
-  const limiter = new IpRateLimiter({ windowMs: BOOTSTRAP_RATE_WINDOW_MS, maxPerWindow: BOOTSTRAP_ATTEMPTS_PER_IP, onRefused });
+export function createBootstrapRateLimiter(
+  onRefused: () => void,
+): (ipAddress: string, now: number) => boolean {
+  const limiter = new IpRateLimiter({
+    windowMs: BOOTSTRAP_RATE_WINDOW_MS,
+    maxPerWindow: BOOTSTRAP_ATTEMPTS_PER_IP,
+    onRefused,
+  });
   return (ipAddress, now) => limiter.allow(ipAddress, now);
 }

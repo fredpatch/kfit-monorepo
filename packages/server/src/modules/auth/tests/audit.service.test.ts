@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { auditEvents } from "../../../db/schema/auth.js";
-import { AuditService, hashAuditContext, type RecordAuditEventInput } from "../services/audit.service.js";
+import {
+  AuditService,
+  hashAuditContext,
+  type RecordAuditEventInput,
+} from "../services/audit.service.js";
 
-const auditHashPepper = "a-secure-test-audit-pepper-that-is-longer-than-32-characters";
+const auditHashPepper =
+  "a-secure-test-audit-pepper-that-is-longer-than-32-characters";
 
 test("audit context hashing is deterministic and never stores raw request context", () => {
   const rawIp = "192.0.2.10";
@@ -25,7 +30,12 @@ test("AuditService writes normalized audit events with hashed request metadata",
         values(value: unknown) {
           insertedValues.push(value);
           return {
-            returning: async () => [{ id: "00000000-0000-0000-0000-000000000001", ...(value as object) }],
+            returning: async () => [
+              {
+                id: "00000000-0000-0000-0000-000000000001",
+                ...(value as object),
+              },
+            ],
           };
         },
       };

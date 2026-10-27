@@ -1,0 +1,9 @@
+# PRETTY-01: generated or third-party files are never formatted by hand or by Prettier.
+package-lock.json
+dist/
+coverage/
+node_modules/
+packages/server/src/db/migrations/
+docs/reference/codes-erreur.md
+docs/reference/variables-environnement.md
+docs/reference/scripts-npm.md

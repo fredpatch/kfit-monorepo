@@ -7,7 +7,15 @@ import { loadSmtpAuthMailConfig } from "../modules/auth/services/auth-mail.deliv
 const TIMEOUT_MS = 3_000;
 
 function withTimeout<T>(work: Promise<T>): Promise<T> {
-  return Promise.race([work, new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`timed out after ${TIMEOUT_MS} ms`)), TIMEOUT_MS))]);
+  return Promise.race([
+    work,
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`timed out after ${TIMEOUT_MS} ms`)),
+        TIMEOUT_MS,
+      ),
+    ),
+  ]);
 }
 
 function reason(error: unknown): string {
@@ -30,8 +38,14 @@ function pingClamav(host: string, port: number): Promise<void> {
     let reply = "";
     socket.once("error", reject);
     socket.on("connect", () => socket.write("zPING\0"));
-    socket.on("data", (chunk) => { reply += chunk.toString(); });
-    socket.on("end", () => (reply.includes("PONG") ? resolve() : reject(new Error(`unexpected reply "${reply.trim()}"`))));
+    socket.on("data", (chunk) => {
+      reply += chunk.toString();
+    });
+    socket.on("end", () =>
+      reply.includes("PONG")
+        ? resolve()
+        : reject(new Error(`unexpected reply "${reply.trim()}"`)),
+    );
   });
 }
 
@@ -39,7 +53,10 @@ function pingClamav(host: string, port: number): Promise<void> {
  * Dev startup report, one line per external service. Only the database is required (returns false when it is down);
  * SMTP and ClamAV each disable one feature, so they warn and the API still starts.
  */
-export async function runStartupChecks(pool: Pool, env: NodeJS.ProcessEnv = process.env): Promise<boolean> {
+export async function runStartupChecks(
+  pool: Pool,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<boolean> {
   const database = databaseTarget(env.DATABASE_URL);
   let databaseReady = true;
   try {
@@ -51,20 +68,32 @@ export async function runStartupChecks(pool: Pool, env: NodeJS.ProcessEnv = proc
   }
 
   if (!env.SMTP_HOST) {
-    logger.warn("⚠ SMTP not configured: password recovery and sensitive-action codes are disabled");
+    logger.warn(
+      "⚠ SMTP not configured: password recovery and sensitive-action codes are disabled",
+    );
   } else {
     const smtp = loadSmtpAuthMailConfig(env);
     try {
-      await withTimeout(nodemailer.createTransport({
-        host: smtp.host,
-        port: smtp.port,
-        secure: smtp.secure,
-        auth: smtp.user ? { user: smtp.user, pass: smtp.pass ?? "" } : undefined,
-      }).verify());
-      const inbox = env.MAILPIT_UI_PORT ? `, inbox http://localhost:${env.MAILPIT_UI_PORT}` : "";
+      await withTimeout(
+        nodemailer
+          .createTransport({
+            host: smtp.host,
+            port: smtp.port,
+            secure: smtp.secure,
+            auth: smtp.user
+              ? { user: smtp.user, pass: smtp.pass ?? "" }
+              : undefined,
+          })
+          .verify(),
+      );
+      const inbox = env.MAILPIT_UI_PORT
+        ? `, inbox http://localhost:${env.MAILPIT_UI_PORT}`
+        : "";
       logger.info(`✔ SMTP ready (${smtp.host}:${smtp.port}${inbox})`);
     } catch (error) {
-      logger.warn(`⚠ SMTP unreachable (${smtp.host}:${smtp.port}): e-mailed codes will fail. ${reason(error)}`);
+      logger.warn(
+        `⚠ SMTP unreachable (${smtp.host}:${smtp.port}): e-mailed codes will fail. ${reason(error)}`,
+      );
     }
   }
 
@@ -74,7 +103,9 @@ export async function runStartupChecks(pool: Pool, env: NodeJS.ProcessEnv = proc
     await withTimeout(pingClamav(clamavHost, clamavPort));
     logger.info(`✔ ClamAV ready (${clamavHost}:${clamavPort})`);
   } catch (error) {
-    logger.warn(`⚠ ClamAV unreachable (${clamavHost}:${clamavPort}): document uploads will fail their scan. ${reason(error)}`);
+    logger.warn(
+      `⚠ ClamAV unreachable (${clamavHost}:${clamavPort}): document uploads will fail their scan. ${reason(error)}`,
+    );
   }
 
   return databaseReady;

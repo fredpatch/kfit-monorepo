@@ -8,7 +8,9 @@ import type { AuthSessionRecord } from "../services/session.service.js";
 const secret = "a-secure-access-token-secret-that-is-longer-than-32-characters";
 const now = new Date("2026-08-25T08:00:00Z");
 
-function makeSession(input: Partial<AuthSessionRecord> = {}): AuthSessionRecord {
+function makeSession(
+  input: Partial<AuthSessionRecord> = {},
+): AuthSessionRecord {
   return {
     id: "22222222-2222-2222-2222-222222222222",
     userId: "11111111-1111-1111-1111-111111111111",
@@ -47,7 +49,10 @@ test("AccessTokenSessionResolver resolves valid access JWT cookies through sessi
     { accessTokenSecret: secret, inactivityTimeoutMs: 30 * 60_000 },
   );
 
-  const session = await resolver.resolveFromCookies({ [authCookieNames.accessToken]: token }, now);
+  const session = await resolver.resolveFromCookies(
+    { [authCookieNames.accessToken]: token },
+    now,
+  );
   assert.deepEqual(session, {
     userId: "11111111-1111-1111-1111-111111111111",
     sessionId: "22222222-2222-2222-2222-222222222222",
@@ -75,7 +80,13 @@ test("AccessTokenSessionResolver rejects expired tokens and invalid server-side 
     { accessTokenSecret: secret, inactivityTimeoutMs: 30 * 60_000 },
   );
 
-  assert.equal(await resolver.resolveFromCookies({ [authCookieNames.accessToken]: expiredToken }, new Date("2026-08-25T08:00:02Z")), null);
+  assert.equal(
+    await resolver.resolveFromCookies(
+      { [authCookieNames.accessToken]: expiredToken },
+      new Date("2026-08-25T08:00:02Z"),
+    ),
+    null,
+  );
 
   const validToken = signAccessToken({
     userId: "11111111-1111-1111-1111-111111111111",
@@ -85,5 +96,11 @@ test("AccessTokenSessionResolver rejects expired tokens and invalid server-side 
     ttlMs: 15 * 60_000,
     now,
   });
-  assert.equal(await resolver.resolveFromCookies({ [authCookieNames.accessToken]: validToken }, now), null);
+  assert.equal(
+    await resolver.resolveFromCookies(
+      { [authCookieNames.accessToken]: validToken },
+      now,
+    ),
+    null,
+  );
 });

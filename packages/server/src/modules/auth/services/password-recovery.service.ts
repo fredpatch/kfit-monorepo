@@ -1,9 +1,18 @@
 import type { AuthUserRecord } from "./auth-route.service.js";
 import type { RecordAuditEventInput } from "./audit.service.js";
 import type { AuthMailDelivery } from "./auth-mail.delivery.js";
-import type { OtpChallengeService, OtpRejectReason } from "./otp-challenge.service.js";
-import type { PasswordService, PasswordStrengthResult } from "./password.service.js";
-import { signPasswordRecoveryGrant, verifyPasswordRecoveryGrant } from "./crypto/recovery-token.crypto.js";
+import type {
+  OtpChallengeService,
+  OtpRejectReason,
+} from "./otp-challenge.service.js";
+import type {
+  PasswordService,
+  PasswordStrengthResult,
+} from "./password.service.js";
+import {
+  signPasswordRecoveryGrant,
+  verifyPasswordRecoveryGrant,
+} from "./crypto/recovery-token.crypto.js";
 
 export type PasswordRecoveryAudit = {
   record(input: RecordAuditEventInput): Promise<unknown>;
@@ -36,12 +45,14 @@ type RateBucket = { count: number; resetsAt: number };
 export class InMemoryRecoveryRateLimiter implements RecoveryRateLimiter {
   private readonly buckets = new Map<string, RateBucket>();
 
-  constructor(private readonly options: {
-    windowMs: number;
-    requestMax: number;
-    verifyMax: number;
-    resetMax: number;
-  }) {}
+  constructor(
+    private readonly options: {
+      windowMs: number;
+      requestMax: number;
+      verifyMax: number;
+      resetMax: number;
+    },
+  ) {}
 
   consume(input: {
     action: RecoveryRateLimitAction;
@@ -49,17 +60,21 @@ export class InMemoryRecoveryRateLimiter implements RecoveryRateLimiter {
     ipAddress?: string | null;
     now: Date;
   }): boolean {
-    const limit = input.action === "request"
-      ? this.options.requestMax
-      : input.action === "verify"
-        ? this.options.verifyMax
-        : this.options.resetMax;
+    const limit =
+      input.action === "request"
+        ? this.options.requestMax
+        : input.action === "verify"
+          ? this.options.verifyMax
+          : this.options.resetMax;
     const key = `${input.action}:${input.ipAddress ?? "unknown"}:${input.identity}`;
     const nowMs = input.now.getTime();
     const current = this.buckets.get(key);
 
     if (!current || current.resetsAt <= nowMs) {
-      this.buckets.set(key, { count: 1, resetsAt: nowMs + this.options.windowMs });
+      this.buckets.set(key, {
+        count: 1,
+        resetsAt: nowMs + this.options.windowMs,
+      });
       return true;
     }
     if (current.count >= limit) return false;
@@ -95,7 +110,12 @@ export class PasswordRecoveryService {
     private readonly options: PasswordRecoveryServiceOptions,
   ) {}
 
-  private allowed(action: RecoveryRateLimitAction, identity: string, context: RecoveryContext, now: Date): boolean {
+  private allowed(
+    action: RecoveryRateLimitAction,
+    identity: string,
+    context: RecoveryContext,
+    now: Date,
+  ): boolean {
     return this.rateLimiter.consume({
       action,
       identity,
@@ -129,17 +149,30 @@ export class PasswordRecoveryService {
     });
   }
 
-  async request(emailInput: string, context: RecoveryContext = {}): Promise<{ status: "accepted" | "rate_limited" }> {
+  async request(
+    emailInput: string,
+    context: RecoveryContext = {},
+  ): Promise<{ status: "accepted" | "rate_limited" }> {
     const now = context.now ?? new Date();
     const email = canonicalEmail(emailInput);
     if (!this.allowed("request", email, context, now)) {
-      await this.auditEvent({ eventType: "auth.password_recovery.rate_limited", result: "blocked", reason: "request", context });
+      await this.auditEvent({
+        eventType: "auth.password_recovery.rate_limited",
+        result: "blocked",
+        reason: "request",
+        context,
+      });
       return { status: "rate_limited" };
     }
 
     const user = await this.repository.findByEmail(email);
     if (!user || user.status !== "active") {
-      await this.auditEvent({ eventType: "auth.password_recovery.requested", result: "success", reason: "neutral_unknown_or_unavailable", context });
+      await this.auditEvent({
+        eventType: "auth.password_recovery.requested",
+        result: "success",
+        reason: "neutral_unknown_or_unavailable",
+        context,
+      });
       return { status: "accepted" };
     }
 
@@ -180,7 +213,11 @@ export class PasswordRecoveryService {
     return { status: "accepted" };
   }
 
-  async verify(emailInput: string, code: string, context: RecoveryContext = {}): Promise<
+  async verify(
+    emailInput: string,
+    code: string,
+    context: RecoveryContext = {},
+  ): Promise<
     | { status: "verified"; resetToken: string; expiresAt: Date }
     | { status: "rejected"; reason: OtpRejectReason | "account_unavailable" }
     | { status: "rate_limited" }
@@ -188,13 +225,23 @@ export class PasswordRecoveryService {
     const now = context.now ?? new Date();
     const email = canonicalEmail(emailInput);
     if (!this.allowed("verify", email, context, now)) {
-      await this.auditEvent({ eventType: "auth.password_recovery.rate_limited", result: "blocked", reason: "verify", context });
+      await this.auditEvent({
+        eventType: "auth.password_recovery.rate_limited",
+        result: "blocked",
+        reason: "verify",
+        context,
+      });
       return { status: "rate_limited" };
     }
 
     const user = await this.repository.findByEmail(email);
     if (!user || user.status !== "active") {
-      await this.auditEvent({ eventType: "auth.password_recovery.verify_rejected", result: "failure", reason: "account_unavailable", context });
+      await this.auditEvent({
+        eventType: "auth.password_recovery.verify_rejected",
+        result: "failure",
+        reason: "account_unavailable",
+        context,
+      });
       return { status: "rejected", reason: "account_unavailable" };
     }
 
@@ -208,7 +255,10 @@ export class PasswordRecoveryService {
       now,
     });
     if (verified.status !== "verified" || !verified.challenge.consumedAt) {
-      return { status: "rejected", reason: verified.status === "rejected" ? verified.reason : "invalid" };
+      return {
+        status: "rejected",
+        reason: verified.status === "rejected" ? verified.reason : "invalid",
+      };
     }
 
     const grant = signPasswordRecoveryGrant({
@@ -226,27 +276,53 @@ export class PasswordRecoveryService {
       challengeId: verified.challenge.id,
       context,
     });
-    return { status: "verified", resetToken: grant.token, expiresAt: grant.expiresAt };
+    return {
+      status: "verified",
+      resetToken: grant.token,
+      expiresAt: grant.expiresAt,
+    };
   }
 
-  async reset(resetToken: string, password: string, context: RecoveryContext = {}): Promise<
+  async reset(
+    resetToken: string,
+    password: string,
+    context: RecoveryContext = {},
+  ): Promise<
     | { status: "reset" }
     | { status: "invalid_grant" }
-    | { status: "invalid_password"; reason: Exclude<PasswordStrengthResult, { ok: true }>["reason"] }
+    | {
+        status: "invalid_password";
+        reason: Exclude<PasswordStrengthResult, { ok: true }>["reason"];
+      }
     | { status: "rate_limited" }
   > {
     const now = context.now ?? new Date();
     if (!this.allowed("reset", resetToken.slice(0, 24), context, now)) {
-      await this.auditEvent({ eventType: "auth.password_recovery.rate_limited", result: "blocked", reason: "reset", context });
+      await this.auditEvent({
+        eventType: "auth.password_recovery.rate_limited",
+        result: "blocked",
+        reason: "reset",
+        context,
+      });
       return { status: "rate_limited" };
     }
 
     const strength = this.passwords.validate(password);
-    if (!strength.ok) return { status: "invalid_password", reason: strength.reason };
+    if (!strength.ok)
+      return { status: "invalid_password", reason: strength.reason };
 
-    const claims = verifyPasswordRecoveryGrant(resetToken, this.options.recoveryTokenSecret, now);
+    const claims = verifyPasswordRecoveryGrant(
+      resetToken,
+      this.options.recoveryTokenSecret,
+      now,
+    );
     if (!claims) {
-      await this.auditEvent({ eventType: "auth.password_recovery.reset_rejected", result: "failure", reason: "invalid_grant", context });
+      await this.auditEvent({
+        eventType: "auth.password_recovery.reset_rejected",
+        result: "failure",
+        reason: "invalid_grant",
+        context,
+      });
       return { status: "invalid_grant" };
     }
 

@@ -116,7 +116,7 @@ General invariants:
 - [x] Withdrawal updates request/waitlist history atomically.
 - [x] No automatic promotion occurs in V1.
 
-## 6. Customer and atomic conversion - Sprint 4.1–4.2
+## 6. Customer and atomic conversion - Sprint 4.1-4.2
 
 ### CUST-01 Customer identity
 
@@ -134,7 +134,7 @@ General invariants:
 - [x] Initial subscription history and reciprocal request/subscription links are written atomically.
 - [x] Concurrent/repeated conversion cannot create a second subscription.
 
-## 7. Onboarding / capacity / consent - Sprint 4.3–4.4
+## 7. Onboarding / capacity / consent - Sprint 4.3-4.4
 
 ### ONB-01 Checklist/readiness
 

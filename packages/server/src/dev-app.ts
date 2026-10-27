@@ -14,6 +14,12 @@ export function createDevelopmentRuntime() {
     mode: "development",
     env: process.env,
     devToolsController: ({ auditHashPepper, removePrivateFile, warn }) =>
-      new DevToolsController(new TestDataService(new DrizzleTestDataRepository(db, { auditHashPepper }), removePrivateFile, warn)),
+      new DevToolsController(
+        new TestDataService(
+          new DrizzleTestDataRepository(db, { auditHashPepper }),
+          removePrivateFile,
+          warn,
+        ),
+      ),
   });
 }

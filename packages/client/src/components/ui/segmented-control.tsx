@@ -2,7 +2,11 @@ import * as React from "react";
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
 import { cn } from "../../lib/utils.js";
 
-export type SegmentedOption<V extends string> = { value: V; label: React.ReactNode; disabled?: boolean };
+export type SegmentedOption<V extends string> = {
+  value: V;
+  label: React.ReactNode;
+  disabled?: boolean;
+};
 
 type SegmentedControlProps<V extends string> = {
   value: V;
@@ -14,7 +18,14 @@ type SegmentedControlProps<V extends string> = {
 };
 
 /** Single-choice pill group (availability, period, channel). Always keeps one value selected. */
-export function SegmentedControl<V extends string>({ value, onValueChange, options, size = "default", className, ...aria }: SegmentedControlProps<V>) {
+export function SegmentedControl<V extends string>({
+  value,
+  onValueChange,
+  options,
+  size = "default",
+  className,
+  ...aria
+}: SegmentedControlProps<V>) {
   return (
     <ToggleGroup.Root
       type="single"
@@ -23,7 +34,10 @@ export function SegmentedControl<V extends string>({ value, onValueChange, optio
         if (next) onValueChange(next as V);
       }}
       aria-label={aria["aria-label"]}
-      className={cn("inline-flex max-w-full gap-1 overflow-x-auto rounded-lg bg-muted p-1", className)}
+      className={cn(
+        "inline-flex max-w-full gap-1 overflow-x-auto rounded-lg bg-muted p-1",
+        className,
+      )}
     >
       {options.map((option) => (
         <ToggleGroup.Item

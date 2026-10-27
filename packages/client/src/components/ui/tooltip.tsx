@@ -19,7 +19,9 @@ export function Tooltip({ content, children, side = "top" }: TooltipProps) {
         <TooltipPrimitive.Content
           side={side}
           sideOffset={6}
-          className={cn("z-50 max-w-64 rounded-md bg-foreground px-2.5 py-1.5 text-xs font-medium text-background shadow-lg data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0")}
+          className={cn(
+            "z-50 max-w-64 rounded-md bg-foreground px-2.5 py-1.5 text-xs font-medium text-background shadow-lg data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0",
+          )}
         >
           {content}
         </TooltipPrimitive.Content>

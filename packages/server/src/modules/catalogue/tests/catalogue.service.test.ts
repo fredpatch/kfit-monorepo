@@ -107,7 +107,9 @@ const snapshot: CatalogueSnapshot = {
   ],
 };
 
-function adminRecord(input: Partial<CatalogueAdminServiceRecord> = {}): CatalogueAdminServiceRecord {
+function adminRecord(
+  input: Partial<CatalogueAdminServiceRecord> = {},
+): CatalogueAdminServiceRecord {
   return {
     id: "service-admin",
     name: "Bilan individuel",
@@ -145,10 +147,26 @@ class FakeCatalogueRepository implements CatalogueRepository {
     return this.services;
   }
 
-  claims: Array<{ serviceId: string; variantId: string | null; onboarding: boolean; count: number }> = [];
-  waitlist: Array<{ serviceId: string; active: number; oldestEnteredAt: Date | null }> = [];
+  claims: Array<{
+    serviceId: string;
+    variantId: string | null;
+    onboarding: boolean;
+    count: number;
+  }> = [];
+  waitlist: Array<{
+    serviceId: string;
+    active: number;
+    oldestEnteredAt: Date | null;
+  }> = [];
   async getAdminOverviewSnapshot() {
-    return { services: this.services, variants: snapshot.variants, components: snapshot.components, policies: snapshot.policies, claims: this.claims, waitlist: this.waitlist };
+    return {
+      services: this.services,
+      variants: snapshot.variants,
+      components: snapshot.components,
+      policies: snapshot.policies,
+      claims: this.claims,
+      waitlist: this.waitlist,
+    };
   }
 
   async getAdminService(serviceId: string) {
@@ -172,14 +190,17 @@ class FakeCatalogueRepository implements CatalogueRepository {
     this.updatedInput = input;
     const existing = this.services.find((service) => service.id === serviceId);
     if (!existing) return "not_found";
-    Object.assign(existing, input, { updatedAt: new Date("2026-08-25T08:10:00Z") });
+    Object.assign(existing, input, {
+      updatedAt: new Date("2026-08-25T08:10:00Z"),
+    });
     return existing;
   }
 
   async publishService(serviceId: string, now: Date) {
     const existing = this.services.find((service) => service.id === serviceId);
     if (!existing) return "not_found";
-    if (existing.archivedAt || existing.availabilityStatus === "archived") return "archived";
+    if (existing.archivedAt || existing.availabilityStatus === "archived")
+      return "archived";
     existing.isPublic = true;
     existing.publishedAt = existing.publishedAt ?? now;
     existing.updatedAt = now;
@@ -196,10 +217,14 @@ class FakeCatalogueRepository implements CatalogueRepository {
     return existing;
   }
 
-  async reorderServices(items: Array<{ serviceId: string; sortOrder: number }>) {
+  async reorderServices(
+    items: Array<{ serviceId: string; sortOrder: number }>,
+  ) {
     this.reorderedItems = items;
     for (const item of items) {
-      const existing = this.services.find((service) => service.id === item.serviceId);
+      const existing = this.services.find(
+        (service) => service.id === item.serviceId,
+      );
       if (!existing) return "not_found";
       existing.sortOrder = item.sortOrder;
     }
@@ -216,7 +241,14 @@ test("CatalogueService returns public services with variants, components and pol
       return [];
     },
     async getAdminOverviewSnapshot() {
-      return { services: [], variants: [], components: [], policies: [], claims: [], waitlist: [] };
+      return {
+        services: [],
+        variants: [],
+        components: [],
+        policies: [],
+        claims: [],
+        waitlist: [],
+      };
     },
     async getAdminService() {
       return null;
@@ -245,8 +277,14 @@ test("CatalogueService returns public services with variants, components and pol
   assert.equal(result.services[0]?.publishedAt, "2026-08-25T08:00:00.000Z");
   assert.equal(result.services[0]?.components[0]?.label, "Suivi WhatsApp");
   assert.equal(result.services[0]?.policy?.followUpFrequencyDays, 7);
-  assert.deepEqual(result.services[0]?.variants.map((variant) => variant.slug), ["standard", "premium"]);
-  assert.equal(result.services[0]?.variants[1]?.components[0]?.label, "Session individuelle");
+  assert.deepEqual(
+    result.services[0]?.variants.map((variant) => variant.slug),
+    ["standard", "premium"],
+  );
+  assert.equal(
+    result.services[0]?.variants[1]?.components[0]?.label,
+    "Session individuelle",
+  );
 });
 
 test("CatalogueService lists admin services with draft and publication metadata", async () => {
@@ -265,7 +303,10 @@ test("CatalogueService validates and creates admin service drafts", async () => 
   const repository = new FakeCatalogueRepository();
   const service = new CatalogueService(repository);
 
-  const invalid = await service.createAdminService({ name: "", slug: "bad slug" });
+  const invalid = await service.createAdminService({
+    name: "",
+    slug: "bad slug",
+  });
   assert.equal(invalid.status, "invalid");
 
   const invalidWaitlistDraft = await service.createAdminService({
@@ -278,7 +319,10 @@ test("CatalogueService validates and creates admin service drafts", async () => 
     capacityLimit: 3,
     waitlistEnabled: false,
   });
-  assert.deepEqual(invalidWaitlistDraft, { status: "invalid", reason: "waitlist_required" });
+  assert.deepEqual(invalidWaitlistDraft, {
+    status: "invalid",
+    reason: "waitlist_required",
+  });
 
   const created = await service.createAdminService({
     name: "Suivi express",
@@ -292,27 +336,48 @@ test("CatalogueService validates and creates admin service drafts", async () => 
 
   assert.equal(created.status, "ok");
   assert.equal(repository.createdInput?.isPublic, false);
-  assert.equal(repository.createdInput?.availabilityStatus, "temporarily_closed");
-  assert.equal(created.status === "ok" ? created.response.service.slug : null, "suivi-express");
+  assert.equal(
+    repository.createdInput?.availabilityStatus,
+    "temporarily_closed",
+  );
+  assert.equal(
+    created.status === "ok" ? created.response.service.slug : null,
+    "suivi-express",
+  );
 });
 
 test("CatalogueService updates, publishes, archives and reorders admin services", async () => {
   const repository = new FakeCatalogueRepository();
   const service = new CatalogueService(repository);
 
-  const updated = await service.updateAdminService("service-admin", { name: "Bilan complet", sortOrder: 1 });
-  assert.equal(updated.status, "ok");
-  assert.deepEqual(repository.updatedInput, { name: "Bilan complet", sortOrder: 1 });
-
-  const incompleteCapacityPatch = await service.updateAdminService("service-admin", { availabilityStatus: "waitlist_only" });
-  assert.deepEqual(incompleteCapacityPatch, { status: "invalid", reason: "capacity_mode_invalid" });
-
-  const genericCapacityPatch = await service.updateAdminService("service-admin", {
-    availabilityStatus: "open",
-    capacityMode: "unlimited",
-    capacityLimit: null,
-    waitlistEnabled: false,
+  const updated = await service.updateAdminService("service-admin", {
+    name: "Bilan complet",
+    sortOrder: 1,
   });
+  assert.equal(updated.status, "ok");
+  assert.deepEqual(repository.updatedInput, {
+    name: "Bilan complet",
+    sortOrder: 1,
+  });
+
+  const incompleteCapacityPatch = await service.updateAdminService(
+    "service-admin",
+    { availabilityStatus: "waitlist_only" },
+  );
+  assert.deepEqual(incompleteCapacityPatch, {
+    status: "invalid",
+    reason: "capacity_mode_invalid",
+  });
+
+  const genericCapacityPatch = await service.updateAdminService(
+    "service-admin",
+    {
+      availabilityStatus: "open",
+      capacityMode: "unlimited",
+      capacityLimit: null,
+      waitlistEnabled: false,
+    },
+  );
   assert.equal(genericCapacityPatch.status, "ok");
   assert.deepEqual(repository.updatedInput, {
     availabilityStatus: "open",
@@ -321,17 +386,29 @@ test("CatalogueService updates, publishes, archives and reorders admin services"
     waitlistEnabled: false,
   });
 
-  const published = await service.publishAdminService("service-admin", new Date("2026-08-25T09:00:00Z"));
+  const published = await service.publishAdminService(
+    "service-admin",
+    new Date("2026-08-25T09:00:00Z"),
+  );
   assert.equal(published.status, "ok");
-  assert.equal(published.status === "ok" ? published.response.service.isPublic : null, true);
+  assert.equal(
+    published.status === "ok" ? published.response.service.isPublic : null,
+    true,
+  );
 
-  const invalidCapacity = await service.updateAdminServiceCapacity("service-admin", {
-    availabilityStatus: "waitlist_only",
-    capacityMode: "limited",
-    capacityLimit: 6,
-    waitlistEnabled: false,
+  const invalidCapacity = await service.updateAdminServiceCapacity(
+    "service-admin",
+    {
+      availabilityStatus: "waitlist_only",
+      capacityMode: "limited",
+      capacityLimit: 6,
+      waitlistEnabled: false,
+    },
+  );
+  assert.deepEqual(invalidCapacity, {
+    status: "invalid",
+    reason: "waitlist_required",
   });
-  assert.deepEqual(invalidCapacity, { status: "invalid", reason: "waitlist_required" });
 
   const capacity = await service.updateAdminServiceCapacity("service-admin", {
     availabilityStatus: "waitlist_only",
@@ -347,44 +424,99 @@ test("CatalogueService updates, publishes, archives and reorders admin services"
     waitlistEnabled: true,
   });
 
-  const unlimitedCapacity = await service.updateAdminServiceCapacity("service-admin", {
-    availabilityStatus: "open",
-    capacityMode: "unlimited",
-    capacityLimit: 6,
-    waitlistEnabled: false,
+  const unlimitedCapacity = await service.updateAdminServiceCapacity(
+    "service-admin",
+    {
+      availabilityStatus: "open",
+      capacityMode: "unlimited",
+      capacityLimit: 6,
+      waitlistEnabled: false,
+    },
+  );
+  assert.deepEqual(unlimitedCapacity, {
+    status: "invalid",
+    reason: "capacity_limit_must_be_null",
   });
-  assert.deepEqual(unlimitedCapacity, { status: "invalid", reason: "capacity_limit_must_be_null" });
 
-  const reordered = await service.reorderAdminServices({ items: [{ serviceId: "service-admin", sortOrder: 5 }] });
+  const reordered = await service.reorderAdminServices({
+    items: [{ serviceId: "service-admin", sortOrder: 5 }],
+  });
   assert.equal(reordered.status, "ok");
-  assert.deepEqual(repository.reorderedItems, [{ serviceId: "service-admin", sortOrder: 5 }]);
+  assert.deepEqual(repository.reorderedItems, [
+    { serviceId: "service-admin", sortOrder: 5 },
+  ]);
 
-  const archived = await service.archiveAdminService("service-admin", new Date("2026-08-25T10:00:00Z"));
+  const archived = await service.archiveAdminService(
+    "service-admin",
+    new Date("2026-08-25T10:00:00Z"),
+  );
   assert.equal(archived.status, "ok");
-  assert.equal(archived.status === "ok" ? archived.response.service.availabilityStatus : null, "archived");
-  assert.equal(archived.status === "ok" ? archived.response.service.isPublic : null, false);
+  assert.equal(
+    archived.status === "ok"
+      ? archived.response.service.availabilityStatus
+      : null,
+    "archived",
+  );
+  assert.equal(
+    archived.status === "ok" ? archived.response.service.isPublic : null,
+    false,
+  );
 });
 
 test("CatalogueService admin overview sums S4 claims per service and variant, waitlist and lowest price", async () => {
   const repository = new FakeCatalogueRepository();
-  repository.services = [adminRecord({ id: "service-1", basePriceXaf: 75000 }), adminRecord({ id: "service-2", slug: "other", basePriceXaf: null })];
+  repository.services = [
+    adminRecord({ id: "service-1", basePriceXaf: 75000 }),
+    adminRecord({ id: "service-2", slug: "other", basePriceXaf: null }),
+  ];
   repository.claims = [
-    { serviceId: "service-1", variantId: "variant-premium", onboarding: false, count: 2 },
-    { serviceId: "service-1", variantId: "variant-premium", onboarding: true, count: 1 },
+    {
+      serviceId: "service-1",
+      variantId: "variant-premium",
+      onboarding: false,
+      count: 2,
+    },
+    {
+      serviceId: "service-1",
+      variantId: "variant-premium",
+      onboarding: true,
+      count: 1,
+    },
     { serviceId: "service-1", variantId: null, onboarding: false, count: 1 },
   ];
-  repository.waitlist = [{ serviceId: "service-1", active: 2, oldestEnteredAt: new Date("2026-10-13T08:00:00Z") }];
-  const result = await new CatalogueService(repository).listAdminOverview(new Date("2026-10-22T08:00:00Z"));
+  repository.waitlist = [
+    {
+      serviceId: "service-1",
+      active: 2,
+      oldestEnteredAt: new Date("2026-10-13T08:00:00Z"),
+    },
+  ];
+  const result = await new CatalogueService(repository).listAdminOverview(
+    new Date("2026-10-22T08:00:00Z"),
+  );
   const one = result.services.find((s) => s.id === "service-1");
   assert.ok(one);
   assert.equal(one.occupancy.occupied, 4);
   assert.equal(one.occupancy.reservedOnboarding, 1);
-  assert.deepEqual(one.occupancy.byVariant.find((v) => v.variantId === "variant-premium"), { variantId: "variant-premium", occupied: 3, reservedOnboarding: 1 });
-  assert.deepEqual(one.waitlist, { active: 2, oldestEnteredAt: "2026-10-13T08:00:00.000Z" });
+  assert.deepEqual(
+    one.occupancy.byVariant.find((v) => v.variantId === "variant-premium"),
+    { variantId: "variant-premium", occupied: 3, reservedOnboarding: 1 },
+  );
+  assert.deepEqual(one.waitlist, {
+    active: 2,
+    oldestEnteredAt: "2026-10-13T08:00:00.000Z",
+  });
   assert.equal(one.minPriceXaf, 75000);
-  assert.deepEqual(one.variants.map((v) => v.id).sort(), ["variant-premium", "variant-standard"]);
+  assert.deepEqual(one.variants.map((v) => v.id).sort(), [
+    "variant-premium",
+    "variant-standard",
+  ]);
   const two = result.services.find((s) => s.id === "service-2");
-  assert.deepEqual(two?.occupancy, { occupied: 0, reservedOnboarding: 0, byVariant: [] });
+  assert.deepEqual(two?.occupancy, {
+    occupied: 0,
+    reservedOnboarding: 0,
+    byVariant: [],
+  });
   assert.deepEqual(two?.waitlist, { active: 0, oldestEnteredAt: null });
   assert.equal(two?.minPriceXaf, null);
   assert.equal(result.asOf, "2026-10-22T08:00:00.000Z");

@@ -23,13 +23,18 @@ test("catalogue shared contracts expose stable public and admin routes", () => {
     adminServicesOverview: "/admin/catalogue/services/overview",
     adminVariants: "/admin/catalogue/services/:serviceId/variants",
     adminVariant: "/admin/catalogue/services/:serviceId/variants/:variantId",
-    adminVariantArchive: "/admin/catalogue/services/:serviceId/variants/:variantId/archive",
+    adminVariantArchive:
+      "/admin/catalogue/services/:serviceId/variants/:variantId/archive",
     adminComponents: "/admin/catalogue/services/:serviceId/components",
-    adminComponent: "/admin/catalogue/services/:serviceId/components/:componentId",
-    adminComponentArchive: "/admin/catalogue/services/:serviceId/components/:componentId/archive",
+    adminComponent:
+      "/admin/catalogue/services/:serviceId/components/:componentId",
+    adminComponentArchive:
+      "/admin/catalogue/services/:serviceId/components/:componentId/archive",
     adminServiceRules: "/admin/catalogue/services/:serviceId/rules",
-    adminVariantRules: "/admin/catalogue/services/:serviceId/variants/:variantId/rules",
-    adminServiceDeliverability: "/admin/catalogue/services/:serviceId/deliverability",
+    adminVariantRules:
+      "/admin/catalogue/services/:serviceId/variants/:variantId/rules",
+    adminServiceDeliverability:
+      "/admin/catalogue/services/:serviceId/deliverability",
   });
 
   assert.deepEqual(catalogueErrorCodes, [
@@ -52,10 +57,21 @@ test("catalogue shared contracts expose stable public and admin routes", () => {
 });
 
 test("CAT-03 closed vocabularies match Fred's decisions (D2, D3, D4)", () => {
-  assert.deepEqual(catalogueComponentTypes, ["appointment", "follow_up", "program"]);
+  assert.deepEqual(catalogueComponentTypes, [
+    "appointment",
+    "follow_up",
+    "program",
+  ]);
   assert.deepEqual(catalogueConsumptionPolicies, ["manual"]);
-  assert.deepEqual(catalogueMedicalClearancePolicies, ["not_required", "required_if_risk_flag", "required"]);
-  assert.deepEqual(catalogueRuleLimits, { followUpFrequencyDays: { min: 1, max: 90 }, lateCancelNoticeHours: { min: 1, max: 168 } });
+  assert.deepEqual(catalogueMedicalClearancePolicies, [
+    "not_required",
+    "required_if_risk_flag",
+    "required",
+  ]);
+  assert.deepEqual(catalogueRuleLimits, {
+    followUpFrequencyDays: { min: 1, max: 90 },
+    lateCancelNoticeHours: { min: 1, max: 168 },
+  });
 });
 
 test("catalogue shared contracts type-check public service response shape", () => {

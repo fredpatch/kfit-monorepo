@@ -4,7 +4,10 @@ import { Router as createRouter } from "express";
 import { catalogueApiRoutes } from "@kfit/shared";
 import type { ExpressAuthSessionResolver } from "../../auth/routes/express-auth.router.js";
 import { parseCookieHeader } from "../../auth/middleware/auth.cookies.js";
-import { requireCsrf, requireSameOrigin } from "../../auth/middleware/auth.middleware.js";
+import {
+  requireCsrf,
+  requireSameOrigin,
+} from "../../auth/middleware/auth.middleware.js";
 import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js";
 import type { CatalogueController } from "../controllers/catalogue.controller.js";
 import type { CatalogueContentAction } from "../services/catalogue-content.service.js";
@@ -20,7 +23,10 @@ function firstHeader(value: string | string[] | undefined): string | undefined {
   return value;
 }
 
-async function toAuthContext(request: Request, resolveSession?: ExpressAuthSessionResolver): Promise<AuthHttpRequestContext> {
+async function toAuthContext(
+  request: Request,
+  resolveSession?: ExpressAuthSessionResolver,
+): Promise<AuthHttpRequestContext> {
   const headers: Record<string, string | undefined> = {};
   for (const [key, value] of Object.entries(request.headers)) {
     headers[key.toLowerCase()] = firstHeader(value);
@@ -42,7 +48,9 @@ function applyJsonResponse(response: Response, result: HttpJsonResponse): void {
   response.status(result.status).json(result.body);
 }
 
-function mutationGuard(context: AuthHttpRequestContext): HttpJsonResponse<{ error: string }> | null {
+function mutationGuard(
+  context: AuthHttpRequestContext,
+): HttpJsonResponse<{ error: string }> | null {
   const originFailure = requireSameOrigin(context);
   if (originFailure) return originFailure;
   return requireCsrf(context);
@@ -53,134 +61,259 @@ function routeParam(value: string | string[] | undefined): string | null {
   return null;
 }
 
-export function createExpressCatalogueRouter(deps: ExpressCatalogueRouterDeps): Router {
+export function createExpressCatalogueRouter(
+  deps: ExpressCatalogueRouterDeps,
+): Router {
   const router = createRouter();
 
-  router.get(catalogueApiRoutes.publicServices, async (_request: Request, response: Response) => {
-    try {
-      applyJsonResponse(response, await deps.controller.listPublicServices());
-    } catch {
-      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
+  router.get(
+    catalogueApiRoutes.publicServices,
+    async (_request: Request, response: Response) => {
+      try {
+        applyJsonResponse(response, await deps.controller.listPublicServices());
+      } catch {
+        response
+          .status(500)
+          .json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
 
-  router.get(catalogueApiRoutes.adminServices, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      applyJsonResponse(response, await deps.controller.listAdminServices(context));
-    } catch {
-      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
+  router.get(
+    catalogueApiRoutes.adminServices,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        applyJsonResponse(
+          response,
+          await deps.controller.listAdminServices(context),
+        );
+      } catch {
+        response
+          .status(500)
+          .json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
 
-  router.get(catalogueApiRoutes.adminServicesOverview, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      applyJsonResponse(response, await deps.controller.listAdminOverview(context));
-    } catch {
-      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
+  router.get(
+    catalogueApiRoutes.adminServicesOverview,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        applyJsonResponse(
+          response,
+          await deps.controller.listAdminOverview(context),
+        );
+      } catch {
+        response
+          .status(500)
+          .json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
 
-  router.post(catalogueApiRoutes.adminServices, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const guard = mutationGuard(context);
-      if (guard) return applyJsonResponse(response, guard);
-      applyJsonResponse(response, await deps.controller.createAdminService(context, request.body ?? {}));
-    } catch {
-      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
-
-  router.patch(catalogueApiRoutes.adminServiceOrder, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const guard = mutationGuard(context);
-      if (guard) return applyJsonResponse(response, guard);
-      applyJsonResponse(response, await deps.controller.reorderAdminServices(context, request.body ?? {}));
-    } catch {
-      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
-
-  router.patch(catalogueApiRoutes.adminServiceCapacity, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const guard = mutationGuard(context);
-      if (guard) return applyJsonResponse(response, guard);
-      const serviceId = routeParam(request.params.serviceId);
-      if (!serviceId) return applyJsonResponse(response, { status: 404, body: { error: "CATALOGUE_SERVICE_NOT_FOUND" } });
-      applyJsonResponse(response, await deps.controller.updateAdminServiceCapacity(context, serviceId, request.body ?? {}));
-    } catch {
-      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
-
-  router.patch(catalogueApiRoutes.adminService, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const guard = mutationGuard(context);
-      if (guard) return applyJsonResponse(response, guard);
-      const serviceId = routeParam(request.params.serviceId);
-      if (!serviceId) return applyJsonResponse(response, { status: 404, body: { error: "CATALOGUE_SERVICE_NOT_FOUND" } });
-      applyJsonResponse(response, await deps.controller.updateAdminService(context, serviceId, request.body ?? {}));
-    } catch {
-      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
-
-  router.post(catalogueApiRoutes.adminServicePublish, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const guard = mutationGuard(context);
-      if (guard) return applyJsonResponse(response, guard);
-      const serviceId = routeParam(request.params.serviceId);
-      if (!serviceId) return applyJsonResponse(response, { status: 404, body: { error: "CATALOGUE_SERVICE_NOT_FOUND" } });
-      applyJsonResponse(response, await deps.controller.publishAdminService(context, serviceId));
-    } catch {
-      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
-
-  router.post(catalogueApiRoutes.adminServiceArchive, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const guard = mutationGuard(context);
-      if (guard) return applyJsonResponse(response, guard);
-      const serviceId = routeParam(request.params.serviceId);
-      if (!serviceId) return applyJsonResponse(response, { status: 404, body: { error: "CATALOGUE_SERVICE_NOT_FOUND" } });
-      applyJsonResponse(response, await deps.controller.archiveAdminService(context, serviceId));
-    } catch {
-      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
-
-  /* CAT-03a content routes: one handler, same guards (same origin + CSRF on every mutation). */
-  const content = (action: CatalogueContentAction) => async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      if (request.method !== "GET") {
+  router.post(
+    catalogueApiRoutes.adminServices,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
         const guard = mutationGuard(context);
         if (guard) return applyJsonResponse(response, guard);
+        applyJsonResponse(
+          response,
+          await deps.controller.createAdminService(context, request.body ?? {}),
+        );
+      } catch {
+        response
+          .status(500)
+          .json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
       }
-      const variantId = routeParam(request.params.variantId), componentId = routeParam(request.params.componentId);
-      const params = { serviceId: routeParam(request.params.serviceId) ?? "", ...(variantId ? { variantId } : {}), ...(componentId ? { componentId } : {}) };
-      applyJsonResponse(response, await deps.controller.content(context, action, params, request.body));
-    } catch {
-      response.status(500).json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  };
+    },
+  );
+
+  router.patch(
+    catalogueApiRoutes.adminServiceOrder,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        const guard = mutationGuard(context);
+        if (guard) return applyJsonResponse(response, guard);
+        applyJsonResponse(
+          response,
+          await deps.controller.reorderAdminServices(
+            context,
+            request.body ?? {},
+          ),
+        );
+      } catch {
+        response
+          .status(500)
+          .json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
+
+  router.patch(
+    catalogueApiRoutes.adminServiceCapacity,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        const guard = mutationGuard(context);
+        if (guard) return applyJsonResponse(response, guard);
+        const serviceId = routeParam(request.params.serviceId);
+        if (!serviceId)
+          return applyJsonResponse(response, {
+            status: 404,
+            body: { error: "CATALOGUE_SERVICE_NOT_FOUND" },
+          });
+        applyJsonResponse(
+          response,
+          await deps.controller.updateAdminServiceCapacity(
+            context,
+            serviceId,
+            request.body ?? {},
+          ),
+        );
+      } catch {
+        response
+          .status(500)
+          .json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
+
+  router.patch(
+    catalogueApiRoutes.adminService,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        const guard = mutationGuard(context);
+        if (guard) return applyJsonResponse(response, guard);
+        const serviceId = routeParam(request.params.serviceId);
+        if (!serviceId)
+          return applyJsonResponse(response, {
+            status: 404,
+            body: { error: "CATALOGUE_SERVICE_NOT_FOUND" },
+          });
+        applyJsonResponse(
+          response,
+          await deps.controller.updateAdminService(
+            context,
+            serviceId,
+            request.body ?? {},
+          ),
+        );
+      } catch {
+        response
+          .status(500)
+          .json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
+
+  router.post(
+    catalogueApiRoutes.adminServicePublish,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        const guard = mutationGuard(context);
+        if (guard) return applyJsonResponse(response, guard);
+        const serviceId = routeParam(request.params.serviceId);
+        if (!serviceId)
+          return applyJsonResponse(response, {
+            status: 404,
+            body: { error: "CATALOGUE_SERVICE_NOT_FOUND" },
+          });
+        applyJsonResponse(
+          response,
+          await deps.controller.publishAdminService(context, serviceId),
+        );
+      } catch {
+        response
+          .status(500)
+          .json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
+
+  router.post(
+    catalogueApiRoutes.adminServiceArchive,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        const guard = mutationGuard(context);
+        if (guard) return applyJsonResponse(response, guard);
+        const serviceId = routeParam(request.params.serviceId);
+        if (!serviceId)
+          return applyJsonResponse(response, {
+            status: 404,
+            body: { error: "CATALOGUE_SERVICE_NOT_FOUND" },
+          });
+        applyJsonResponse(
+          response,
+          await deps.controller.archiveAdminService(context, serviceId),
+        );
+      } catch {
+        response
+          .status(500)
+          .json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
+
+  /* CAT-03a content routes: one handler, same guards (same origin + CSRF on every mutation). */
+  const content =
+    (action: CatalogueContentAction) =>
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        if (request.method !== "GET") {
+          const guard = mutationGuard(context);
+          if (guard) return applyJsonResponse(response, guard);
+        }
+        const variantId = routeParam(request.params.variantId),
+          componentId = routeParam(request.params.componentId);
+        const params = {
+          serviceId: routeParam(request.params.serviceId) ?? "",
+          ...(variantId ? { variantId } : {}),
+          ...(componentId ? { componentId } : {}),
+        };
+        applyJsonResponse(
+          response,
+          await deps.controller.content(context, action, params, request.body),
+        );
+      } catch {
+        response
+          .status(500)
+          .json({ error: "CATALOGUE_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    };
   router.post(catalogueApiRoutes.adminVariants, content("variant_create"));
   router.patch(catalogueApiRoutes.adminVariant, content("variant_update"));
-  router.post(catalogueApiRoutes.adminVariantArchive, content("variant_archive"));
+  router.post(
+    catalogueApiRoutes.adminVariantArchive,
+    content("variant_archive"),
+  );
   router.post(catalogueApiRoutes.adminComponents, content("component_create"));
   router.patch(catalogueApiRoutes.adminComponent, content("component_update"));
-  router.post(catalogueApiRoutes.adminComponentArchive, content("component_archive"));
+  router.post(
+    catalogueApiRoutes.adminComponentArchive,
+    content("component_archive"),
+  );
   router.put(catalogueApiRoutes.adminServiceRules, content("rules_put"));
-  router.put(catalogueApiRoutes.adminVariantRules, content("variant_rules_put"));
-  router.delete(catalogueApiRoutes.adminVariantRules, content("variant_rules_delete"));
-  router.get(catalogueApiRoutes.adminServiceDeliverability, content("deliverability"));
+  router.put(
+    catalogueApiRoutes.adminVariantRules,
+    content("variant_rules_put"),
+  );
+  router.delete(
+    catalogueApiRoutes.adminVariantRules,
+    content("variant_rules_delete"),
+  );
+  router.get(
+    catalogueApiRoutes.adminServiceDeliverability,
+    content("deliverability"),
+  );
 
   return router;
 }

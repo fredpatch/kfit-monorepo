@@ -4,9 +4,17 @@ import { after, before, test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db, pool } from "../../../db/client.js";
-import { authSessions, otpChallenges, trustedDevices, users } from "../../../db/schema/auth.js";
+import {
+  authSessions,
+  otpChallenges,
+  trustedDevices,
+  users,
+} from "../../../db/schema/auth.js";
 import { DrizzlePasswordRecoveryRepository } from "../repositories/auth.repositories.js";
-import { assertLocalTestDatabase, cleanupInOrder } from "../../../testing/integration-fixtures.js";
+import {
+  assertLocalTestDatabase,
+  cleanupInOrder,
+} from "../../../testing/integration-fixtures.js";
 
 const userId = randomUUID();
 const sessionId = randomUUID();
@@ -16,16 +24,31 @@ const verifiedAt = new Date("2026-08-25T14:00:00.000Z");
 const completedAt = new Date("2026-08-25T14:02:00.000Z");
 let safe = false;
 
-before(() => { assertLocalTestDatabase(); safe = true; });
+before(() => {
+  assertLocalTestDatabase();
+  safe = true;
+});
 
 after(async () => {
   try {
-    if (safe) await cleanupInOrder([
-      ["otp challenges", () => db.delete(otpChallenges).where(eq(otpChallenges.userId, userId))],
-      ["sessions", () => db.delete(authSessions).where(eq(authSessions.userId, userId))],
-      ["trusted devices", () => db.delete(trustedDevices).where(eq(trustedDevices.userId, userId))],
-      ["user", () => db.delete(users).where(eq(users.id, userId))],
-    ]);
+    if (safe)
+      await cleanupInOrder([
+        [
+          "otp challenges",
+          () =>
+            db.delete(otpChallenges).where(eq(otpChallenges.userId, userId)),
+        ],
+        [
+          "sessions",
+          () => db.delete(authSessions).where(eq(authSessions.userId, userId)),
+        ],
+        [
+          "trusted devices",
+          () =>
+            db.delete(trustedDevices).where(eq(trustedDevices.userId, userId)),
+        ],
+        ["user", () => db.delete(users).where(eq(users.id, userId))],
+      ]);
   } finally {
     await pool.end();
   }
@@ -74,29 +97,60 @@ test("password recovery hard commit updates password and revokes sessions/device
   });
 
   const repository = new DrizzlePasswordRecoveryRepository(db);
-  assert.deepEqual(await repository.completeReset({
-    userId,
-    challengeId,
-    verifiedAt: verifiedAt.toISOString(),
-    passwordHash: "new-password-hash",
-    completedAt,
-  }), { revokedDeviceIds: [deviceId] });
+  assert.deepEqual(
+    await repository.completeReset({
+      userId,
+      challengeId,
+      verifiedAt: verifiedAt.toISOString(),
+      passwordHash: "new-password-hash",
+      completedAt,
+    }),
+    { revokedDeviceIds: [deviceId] },
+  );
 
-  const [changedUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  const [revokedSession] = await db.select().from(authSessions).where(eq(authSessions.id, sessionId)).limit(1);
-  const [revokedDevice] = await db.select().from(trustedDevices).where(eq(trustedDevices.id, deviceId)).limit(1);
-  const [redeemedChallenge] = await db.select().from(otpChallenges).where(eq(otpChallenges.id, challengeId)).limit(1);
+  const [changedUser] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  const [revokedSession] = await db
+    .select()
+    .from(authSessions)
+    .where(eq(authSessions.id, sessionId))
+    .limit(1);
+  const [revokedDevice] = await db
+    .select()
+    .from(trustedDevices)
+    .where(eq(trustedDevices.id, deviceId))
+    .limit(1);
+  const [redeemedChallenge] = await db
+    .select()
+    .from(otpChallenges)
+    .where(eq(otpChallenges.id, challengeId))
+    .limit(1);
 
   assert.equal(changedUser?.passwordHash, "new-password-hash");
-  assert.equal(revokedSession?.revokedAt?.toISOString(), completedAt.toISOString());
-  assert.equal(revokedDevice?.revokedAt?.toISOString(), completedAt.toISOString());
-  assert.equal(redeemedChallenge?.updatedAt.toISOString(), completedAt.toISOString());
+  assert.equal(
+    revokedSession?.revokedAt?.toISOString(),
+    completedAt.toISOString(),
+  );
+  assert.equal(
+    revokedDevice?.revokedAt?.toISOString(),
+    completedAt.toISOString(),
+  );
+  assert.equal(
+    redeemedChallenge?.updatedAt.toISOString(),
+    completedAt.toISOString(),
+  );
 
-  assert.equal(await repository.completeReset({
-    userId,
-    challengeId,
-    verifiedAt: verifiedAt.toISOString(),
-    passwordHash: "replayed-password-hash",
-    completedAt: new Date("2026-08-25T14:03:00.000Z"),
-  }), false);
+  assert.equal(
+    await repository.completeReset({
+      userId,
+      challengeId,
+      verifiedAt: verifiedAt.toISOString(),
+      passwordHash: "replayed-password-hash",
+      completedAt: new Date("2026-08-25T14:03:00.000Z"),
+    }),
+    false,
+  );
 });

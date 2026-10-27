@@ -1510,7 +1510,7 @@ S5.5 validation evidence:
 - DBeaver/private-storage inspection validated document/version/token/photo/audit persistence, opaque storage names and stored hashes without raw bearer/verification secrets;
 - corrective UI commit `0f39eb2` exposed the Documents profile tab, version-specific sharing and corrected sensitive public download UX.
 
-Sprint 5 acceptance is complete across S5.1–S5.5.
+Sprint 5 acceptance is complete across S5.1-S5.5.
 
 Production blockers remain:
 

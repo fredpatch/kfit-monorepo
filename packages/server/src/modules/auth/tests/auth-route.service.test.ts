@@ -1,15 +1,25 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { authCookieNames } from "../middleware/auth.cookies.js";
-import { AuthRouteService, type AuthUserRecord, type LoginDeviceGate } from "../services/auth-route.service.js";
+import {
+  AuthRouteService,
+  type AuthUserRecord,
+  type LoginDeviceGate,
+} from "../services/auth-route.service.js";
 import { generateDeviceToken } from "../services/crypto/device-token.crypto.js";
 import { type RecordAuditEventInput } from "../services/audit.service.js";
-import { digestRefreshToken, type AuthSessionRecord, type SessionService } from "../services/session.service.js";
+import {
+  digestRefreshToken,
+  type AuthSessionRecord,
+  type SessionService,
+} from "../services/session.service.js";
 import { verifyAccessToken } from "../services/crypto/jwt.crypto.js";
 
 const now = new Date("2026-08-25T08:00:00Z");
-const accessTokenSecret = "a-secure-access-token-secret-that-is-longer-than-32-characters";
-const refreshPepper = "a-secure-refresh-pepper-that-is-longer-than-32-characters";
+const accessTokenSecret =
+  "a-secure-access-token-secret-that-is-longer-than-32-characters";
+const refreshPepper =
+  "a-secure-refresh-pepper-that-is-longer-than-32-characters";
 
 const user: AuthUserRecord = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -19,7 +29,9 @@ const user: AuthUserRecord = {
   role: "coach",
 };
 
-function makeSession(input: Partial<AuthSessionRecord> = {}): AuthSessionRecord {
+function makeSession(
+  input: Partial<AuthSessionRecord> = {},
+): AuthSessionRecord {
   return {
     id: "22222222-2222-2222-2222-222222222222",
     userId: user.id,
@@ -39,19 +51,32 @@ function makeSession(input: Partial<AuthSessionRecord> = {}): AuthSessionRecord 
   };
 }
 
-function makeDeviceGate(input: { trusted?: boolean; allowLogin?: boolean } = {}) {
+function makeDeviceGate(
+  input: { trusted?: boolean; allowLogin?: boolean } = {},
+) {
   const issuedFor: string[] = [];
   const gate: LoginDeviceGate = {
     allowLoginAttempt: () => input.allowLogin ?? true,
     allowVerifyAttempt: () => true,
     async useTrustedDevice(userId, deviceToken) {
       return (input.trusted ?? true) && deviceToken
-        ? { id: "55555555-5555-5555-5555-555555555555", userId, deviceHash: "hash", label: null, trustedUntil: now, lastUsedAt: now }
+        ? {
+            id: "55555555-5555-5555-5555-555555555555",
+            userId,
+            deviceHash: "hash",
+            label: null,
+            trustedUntil: now,
+            lastUsedAt: now,
+          }
         : null;
     },
     async issueChallenge(_user, deviceToken) {
       issuedFor.push(deviceToken);
-      return { status: "otp_required", challengeId: "opaque-challenge", expiresAt: new Date("2026-08-25T08:05:00Z") };
+      return {
+        status: "otp_required",
+        challengeId: "opaque-challenge",
+        expiresAt: new Date("2026-08-25T08:05:00Z"),
+      };
     },
     async verifyChallenge() {
       return { status: "rejected", reason: "invalid" };
@@ -68,19 +93,32 @@ function makeDeviceGate(input: { trusted?: boolean; allowLogin?: boolean } = {})
 
 const knownDevice = generateDeviceToken();
 
-function makeService(input: { foundUser?: AuthUserRecord | null; passwordMatches?: boolean; gate?: LoginDeviceGate } = {}) {
+function makeService(
+  input: {
+    foundUser?: AuthUserRecord | null;
+    passwordMatches?: boolean;
+    gate?: LoginDeviceGate;
+  } = {},
+) {
   const auditEvents: RecordAuditEventInput[] = [];
   const sessions = {
     async createSession() {
       return { session: makeSession(), refreshToken: "refresh-token" };
     },
     async rotateRefreshToken() {
-      return { status: "rotated" as const, session: makeSession({ rotationCounter: 1 }), refreshToken: "next-refresh-token" };
+      return {
+        status: "rotated" as const,
+        session: makeSession({ rotationCounter: 1 }),
+        refreshToken: "next-refresh-token",
+      };
     },
     async revokeSession() {
       return makeSession({ revokedAt: now });
     },
-  } satisfies Pick<SessionService, "createSession" | "rotateRefreshToken" | "revokeSession">;
+  } satisfies Pick<
+    SessionService,
+    "createSession" | "rotateRefreshToken" | "revokeSession"
+  >;
 
   return {
     auditEvents,
@@ -130,45 +168,103 @@ test("AuthRouteService login creates JWT, refresh and CSRF cookies without expos
   });
 
   const cookies = result.status === "authenticated" ? result.cookies : [];
-  const accessToken = cookies.find((cookie) => cookie.name === authCookieNames.accessToken)?.value;
+  const accessToken = cookies.find(
+    (cookie) => cookie.name === authCookieNames.accessToken,
+  )?.value;
   assert.ok(accessToken);
-  assert.equal(verifyAccessToken(accessToken, accessTokenSecret, now)?.sid, "22222222-2222-2222-2222-222222222222");
-  assert.ok(cookies.some((cookie) => cookie.name === authCookieNames.refreshToken && cookie.value === "refresh-token"));
-  assert.ok(cookies.some((cookie) => cookie.name === authCookieNames.csrfToken && cookie.options.httpOnly === false));
+  assert.equal(
+    verifyAccessToken(accessToken, accessTokenSecret, now)?.sid,
+    "22222222-2222-2222-2222-222222222222",
+  );
+  assert.ok(
+    cookies.some(
+      (cookie) =>
+        cookie.name === authCookieNames.refreshToken &&
+        cookie.value === "refresh-token",
+    ),
+  );
+  assert.ok(
+    cookies.some(
+      (cookie) =>
+        cookie.name === authCookieNames.csrfToken &&
+        cookie.options.httpOnly === false,
+    ),
+  );
   assert.equal(JSON.stringify(result).includes("correct-password"), false);
-  assert.equal(auditEvents.some((event) => event.eventType === "auth.login.succeeded"), true);
+  assert.equal(
+    auditEvents.some((event) => event.eventType === "auth.login.succeeded"),
+    true,
+  );
 });
 
 test("AuthRouteService login rejects invalid credentials with stable non-enumerating result", async () => {
   const { service, auditEvents } = makeService({ passwordMatches: false });
-  const result = await service.login({ email: "coach@kfit.local", password: "wrong", now });
+  const result = await service.login({
+    email: "coach@kfit.local",
+    password: "wrong",
+    now,
+  });
 
-  assert.deepEqual(result, { status: "rejected", reason: "invalid_credentials" });
+  assert.deepEqual(result, {
+    status: "rejected",
+    reason: "invalid_credentials",
+  });
   assert.equal(auditEvents[0]?.actorType, "anonymous");
-  assert.equal((auditEvents[0]?.metadata as { reason?: string } | undefined)?.reason, "invalid_credentials");
+  assert.equal(
+    (auditEvents[0]?.metadata as { reason?: string } | undefined)?.reason,
+    "invalid_credentials",
+  );
 });
 
 test("SEC-02 E1/E2: an untrusted device gets a challenge, the kfit_device cookie and no auth cookie", async () => {
   const { gate, issuedFor } = makeDeviceGate({ trusted: false });
   const { service } = makeService({ gate });
 
-  const fresh = await service.login({ email: "coach@kfit.local", password: "correct-password", deviceCookie: "malformed", now });
+  const fresh = await service.login({
+    email: "coach@kfit.local",
+    password: "correct-password",
+    deviceCookie: "malformed",
+    now,
+  });
   assert.equal(fresh.status, "otp_required");
   const cookies = fresh.status === "otp_required" ? fresh.cookies : [];
-  assert.deepEqual(cookies.map((cookie) => cookie.name), [authCookieNames.device]);
+  assert.deepEqual(
+    cookies.map((cookie) => cookie.name),
+    [authCookieNames.device],
+  );
   assert.equal(cookies[0]?.options.httpOnly, true);
   assert.equal(cookies[0]?.options.maxAgeSeconds, 400 * 24 * 60 * 60);
-  assert.equal(issuedFor[0], cookies[0]?.value, "the challenge is bound to the cookie just issued");
+  assert.equal(
+    issuedFor[0],
+    cookies[0]?.value,
+    "the challenge is bound to the cookie just issued",
+  );
 
-  const known = await service.login({ email: "coach@kfit.local", password: "correct-password", deviceCookie: knownDevice, now });
-  assert.deepEqual(known.status === "otp_required" ? known.cookies : null, [], "a valid cookie is kept, not reissued");
+  const known = await service.login({
+    email: "coach@kfit.local",
+    password: "correct-password",
+    deviceCookie: knownDevice,
+    now,
+  });
+  assert.deepEqual(
+    known.status === "otp_required" ? known.cookies : null,
+    [],
+    "a valid cookie is kept, not reissued",
+  );
   assert.equal(issuedFor[1], knownDevice);
 });
 
 test("SEC-02 E3: the per-IP login limit refuses before the password is checked", async () => {
   const { gate, issuedFor } = makeDeviceGate({ allowLogin: false });
   const { service, auditEvents } = makeService({ gate, foundUser: null });
-  assert.deepEqual(await service.login({ email: "coach@kfit.local", password: "correct-password", now }), { status: "rate_limited" });
+  assert.deepEqual(
+    await service.login({
+      email: "coach@kfit.local",
+      password: "correct-password",
+      now,
+    }),
+    { status: "rate_limited" },
+  );
   assert.equal(auditEvents.length, 0);
   assert.equal(issuedFor.length, 0);
 });
@@ -179,15 +275,34 @@ test("AuthRouteService refresh rotates the refresh token and returns a new acces
 
   assert.equal(result.status, "authenticated");
   const cookies = result.status === "authenticated" ? result.cookies : [];
-  assert.ok(cookies.some((cookie) => cookie.name === authCookieNames.refreshToken && cookie.value === "next-refresh-token"));
-  const accessToken = cookies.find((cookie) => cookie.name === authCookieNames.accessToken)?.value;
-  assert.equal(verifyAccessToken(accessToken, accessTokenSecret, now)?.sub, user.id);
+  assert.ok(
+    cookies.some(
+      (cookie) =>
+        cookie.name === authCookieNames.refreshToken &&
+        cookie.value === "next-refresh-token",
+    ),
+  );
+  const accessToken = cookies.find(
+    (cookie) => cookie.name === authCookieNames.accessToken,
+  )?.value;
+  assert.equal(
+    verifyAccessToken(accessToken, accessTokenSecret, now)?.sub,
+    user.id,
+  );
 });
 
 test("AuthRouteService logout revokes the session when known and clears auth cookies", async () => {
   const { service } = makeService();
-  const result = await service.logout({ sessionId: "22222222-2222-2222-2222-222222222222", now });
+  const result = await service.logout({
+    sessionId: "22222222-2222-2222-2222-222222222222",
+    now,
+  });
 
   assert.equal(result.status, "logged_out");
-  assert.equal(result.cookies.every((cookie) => cookie.value === "" && cookie.options.maxAgeSeconds === 0), true);
+  assert.equal(
+    result.cookies.every(
+      (cookie) => cookie.value === "" && cookie.options.maxAgeSeconds === 0,
+    ),
+    true,
+  );
 });

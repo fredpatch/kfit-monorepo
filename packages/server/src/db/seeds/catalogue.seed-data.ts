@@ -4,7 +4,8 @@ export const kfitInitialCatalogueSeed = {
       id: "21000000-0000-4000-8000-000000000001",
       name: "Coaching nutrition personnalisé",
       slug: "coaching-nutrition-personnalise",
-      description: "Accompagnement nutrition adapté aux objectifs, habitudes et contraintes du client.",
+      description:
+        "Accompagnement nutrition adapté aux objectifs, habitudes et contraintes du client.",
       pricingMode: "fixed",
       basePriceXaf: 75000,
       deliveryType: "time_based",
@@ -22,7 +23,8 @@ export const kfitInitialCatalogueSeed = {
       id: "21000000-0000-4000-8000-000000000002",
       name: "Programme sportif 12 semaines",
       slug: "programme-sportif-12-semaines",
-      description: "Programme progressif avec suivi WhatsApp pour structurer l'entraînement sur trois mois.",
+      description:
+        "Programme progressif avec suivi WhatsApp pour structurer l'entraînement sur trois mois.",
       pricingMode: "fixed",
       basePriceXaf: 180000,
       deliveryType: "time_based",
@@ -40,7 +42,8 @@ export const kfitInitialCatalogueSeed = {
       id: "21000000-0000-4000-8000-000000000003",
       name: "Bilan individuel",
       slug: "bilan-individuel",
-      description: "Session ponctuelle pour clarifier les objectifs et proposer une orientation de coaching.",
+      description:
+        "Session ponctuelle pour clarifier les objectifs et proposer une orientation de coaching.",
       pricingMode: "quote",
       basePriceXaf: null,
       deliveryType: "one_time",

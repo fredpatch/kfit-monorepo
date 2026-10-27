@@ -1,8 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { loadAuthConfig } from "../config/auth.config.js";
-import { digestOtp, generateOtp, verifyOtpDigest } from "../services/crypto/otp.crypto.js";
-import { isFreshOtp, sessionInvalidReason } from "../services/policies/session.policy.js";
+import {
+  digestOtp,
+  generateOtp,
+  verifyOtpDigest,
+} from "../services/crypto/otp.crypto.js";
+import {
+  isFreshOtp,
+  sessionInvalidReason,
+} from "../services/policies/session.policy.js";
 
 const pepper = "a-secure-test-pepper-that-is-longer-than-32-characters";
 
@@ -25,21 +32,55 @@ test("session policy enforces inactivity and absolute expiry independently", () 
     compromisedAt: null,
   };
   assert.equal(sessionInvalidReason(base, now, 30 * 60_000), null);
-  assert.equal(sessionInvalidReason({ ...base, lastSeenAt: new Date("2026-08-25T07:30:00Z") }, now, 30 * 60_000), "inactive");
-  assert.equal(sessionInvalidReason({ ...base, absoluteExpiresAt: now }, now, 30 * 60_000), "absolute_expired");
+  assert.equal(
+    sessionInvalidReason(
+      { ...base, lastSeenAt: new Date("2026-08-25T07:30:00Z") },
+      now,
+      30 * 60_000,
+    ),
+    "inactive",
+  );
+  assert.equal(
+    sessionInvalidReason({ ...base, absoluteExpiresAt: now }, now, 30 * 60_000),
+    "absolute_expired",
+  );
 });
 
 test("fresh OTP cannot be future-dated or older than its configured window", () => {
   const now = new Date("2026-08-25T08:00:00Z");
-  assert.equal(isFreshOtp(new Date("2026-08-25T07:55:00Z"), now, 10 * 60_000), true);
-  assert.equal(isFreshOtp(new Date("2026-08-25T07:49:59Z"), now, 10 * 60_000), false);
-  assert.equal(isFreshOtp(new Date("2026-08-25T08:00:01Z"), now, 10 * 60_000), false);
+  assert.equal(
+    isFreshOtp(new Date("2026-08-25T07:55:00Z"), now, 10 * 60_000),
+    true,
+  );
+  assert.equal(
+    isFreshOtp(new Date("2026-08-25T07:49:59Z"), now, 10 * 60_000),
+    false,
+  );
+  assert.equal(
+    isFreshOtp(new Date("2026-08-25T08:00:01Z"), now, 10 * 60_000),
+    false,
+  );
 });
 
 test("typed auth configuration rejects missing secrets and invalid lifetime ordering", () => {
   assert.throws(() => loadAuthConfig({}), /AUTH_OTP_PEPPER/);
-  assert.throws(() => loadAuthConfig({ AUTH_OTP_PEPPER: pepper, AUTH_ACCESS_TOKEN_SECRET: "short" }), /AUTH_ACCESS_TOKEN_SECRET/);
-  assert.throws(() => loadAuthConfig({ AUTH_OTP_PEPPER: pepper, AUTH_ACCESS_TOKEN_TTL_MS: "100", AUTH_REFRESH_TOKEN_TTL_MS: "50" }), /shorter/);
+  assert.throws(
+    () =>
+      loadAuthConfig({
+        AUTH_OTP_PEPPER: pepper,
+        AUTH_ACCESS_TOKEN_SECRET: "short",
+      }),
+    /AUTH_ACCESS_TOKEN_SECRET/,
+  );
+  assert.throws(
+    () =>
+      loadAuthConfig({
+        AUTH_OTP_PEPPER: pepper,
+        AUTH_ACCESS_TOKEN_TTL_MS: "100",
+        AUTH_REFRESH_TOKEN_TTL_MS: "50",
+      }),
+    /shorter/,
+  );
   const config = loadAuthConfig({ AUTH_OTP_PEPPER: pepper });
   assert.equal(config.otpMaxAttempts, 5);
   assert.equal(config.auditHashPepper, pepper);

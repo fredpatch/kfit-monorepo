@@ -20,11 +20,11 @@ Short map of the system as implemented. Detailed design lives in `exploration-ca
 
 npm workspaces monorepo:
 
-| Package | Role |
-| --- | --- |
+| Package                            | Role                                                                                                                              |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/shared` (`@kfit/shared`) | Contracts shared by client and server: routes, DTO types, error code lists, business-time helpers, pure rules used on both sides. |
-| `packages/server` (`@kfit/server`) | Express 5 API on Node.js, TypeScript (NodeNext), Drizzle ORM on PostgreSQL 16, scheduled jobs (`node-cron`), ops scripts. |
-| `packages/client` | React + Vite single-page app: the coach back office and the public token pages. |
+| `packages/server` (`@kfit/server`) | Express 5 API on Node.js, TypeScript (NodeNext), Drizzle ORM on PostgreSQL 16, scheduled jobs (`node-cron`), ops scripts.         |
+| `packages/client`                  | React + Vite single-page app: the coach back office and the public token pages.                                                   |
 
 Runtime: Node at the version in `.nvmrc`, at or above the runtime security floor. PostgreSQL runs in Docker. ClamAV scans uploaded files. SMTP sends codes and notification e-mails.
 
@@ -50,28 +50,28 @@ Composition happens once, in `packages/server/src/runtime.ts` (`createRuntime({ 
 
 ## 3. Module map (`packages/server/src/modules`)
 
-| Module | Responsibility |
-| --- | --- |
-| `appointments` | Coaching appointments and their events; public appointment pages. |
-| `auth` | Admin login, OTP challenges, sessions (access + refresh), password recovery, CSRF/origin checks, audit service. |
-| `catalogue` | Services, variants, components, policies, and their publication. |
-| `consents` | Consent texts (versioned definitions) and consent records, public consent pages. |
-| `customers` | Customer records and the customer overview. |
-| `dashboard` | « Aujourd'hui » page, alerts and analytics. |
-| `dev-tools` | Development-only test-data cleanup (never mounted in production). |
-| `documents` | Private documents and versions, storage on disk, ClamAV scan, secure public download links. |
-| `finance` | Payment plans, installments, payment events and allocations. |
-| `follow-ups` | Follow-ups, their queue and cadence. |
-| `notifications` | Coach notifications, e-mail outbox, settings registry, scheduled-job runner. |
-| `onboarding` | Onboarding checklist items and medical clearance. |
-| `payment-proofs` | Payment proofs uploaded by customers through public links. |
-| `privacy` | Archive / unarchive, anonymization, retention holds, file purge job, privacy journal and replay. |
-| `progress` | Goals, measurements, progress photos and summaries. |
-| `questionnaires` | Questionnaire templates, submissions and answers. |
-| `quotes` | Quotes and their versions, public quote pages. |
-| `receipts` | Receipts, PDF rendering, public receipt links. |
-| `requests` | Public service requests, prospects, contact attempts, qualification, conversion. |
-| `subscriptions` | Subscriptions, status history, pauses, components. |
+| Module           | Responsibility                                                                                                  |
+| ---------------- | --------------------------------------------------------------------------------------------------------------- |
+| `appointments`   | Coaching appointments and their events; public appointment pages.                                               |
+| `auth`           | Admin login, OTP challenges, sessions (access + refresh), password recovery, CSRF/origin checks, audit service. |
+| `catalogue`      | Services, variants, components, policies, and their publication.                                                |
+| `consents`       | Consent texts (versioned definitions) and consent records, public consent pages.                                |
+| `customers`      | Customer records and the customer overview.                                                                     |
+| `dashboard`      | « Aujourd'hui » page, alerts and analytics.                                                                     |
+| `dev-tools`      | Development-only test-data cleanup (never mounted in production).                                               |
+| `documents`      | Private documents and versions, storage on disk, ClamAV scan, secure public download links.                     |
+| `finance`        | Payment plans, installments, payment events and allocations.                                                    |
+| `follow-ups`     | Follow-ups, their queue and cadence.                                                                            |
+| `notifications`  | Coach notifications, e-mail outbox, settings registry, scheduled-job runner.                                    |
+| `onboarding`     | Onboarding checklist items and medical clearance.                                                               |
+| `payment-proofs` | Payment proofs uploaded by customers through public links.                                                      |
+| `privacy`        | Archive / unarchive, anonymization, retention holds, file purge job, privacy journal and replay.                |
+| `progress`       | Goals, measurements, progress photos and summaries.                                                             |
+| `questionnaires` | Questionnaire templates, submissions and answers.                                                               |
+| `quotes`         | Quotes and their versions, public quote pages.                                                                  |
+| `receipts`       | Receipts, PDF rendering, public receipt links.                                                                  |
+| `requests`       | Public service requests, prospects, contact attempts, qualification, conversion.                                |
+| `subscriptions`  | Subscriptions, status history, pauses, components.                                                              |
 
 Cross-cutting: `src/security/` (security floor, encoding guard, security event counters), `src/runtime/production-guards.ts` (refuse-to-start checks), `src/ops/` (backup, restore, drill), `src/http/` (request id), `src/logging/`.
 
@@ -104,7 +104,7 @@ Cross-cutting: `src/security/` (security floor, encoding guard, security event c
 - **Lifecycle of a subject** (customer or prospect), in order:
   1. **archive**: only when nothing is in progress; writes are then frozen;
   2. **anonymize**: requires the confirmation name; one declarative plan (`ANONYMIZATION_PLAN`) replaces identity with a pseudonym (« Client anonymisé · XXXX »), wipes free text, health answers and notes, and keeps finance records unchanged;
-  3. **purge**: the subject's private files are deleted after `privacy.purge.delay_days` (default 30, 1–365, set in Réglages).
+  3. **purge**: the subject's private files are deleted after `privacy.purge.delay_days` (default 30, 1-365, set in Réglages).
 - **Retention holds** (legal, dispute, accounting) block both anonymization and purge.
 - Each anonymization is written to the database (`anonymization_events`) and appended to an off-database **privacy journal** (`KFIT_PRIVACY_JOURNAL_DIR`, ids only). After a restore, **replay** re-applies every executed anonymization from journal ∪ database, so a restore from an older backup never resurrects anonymized data.
 - **Backups** (S7.4b): encrypted bundle (database, private files, journal) with a signed manifest; restore merges the journal instead of overwriting it ([runbook](../runbooks/sauvegarde-restauration.md)).

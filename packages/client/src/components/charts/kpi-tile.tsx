@@ -31,42 +31,107 @@ type KpiTileProps = {
   note?: string;
   noteTone?: StatusTone;
   /** Change vs previous period; direction drives the arrow, not the colour. */
-  delta?: { text: string; direction: "up" | "down" | "flat"; tone?: StatusTone };
+  delta?: {
+    text: string;
+    direction: "up" | "down" | "flat";
+    tone?: StatusTone;
+  };
   trend?: Array<number | null>;
   trendLabel?: string;
   className?: string;
 };
 
 /** KPI tile with optional sparkline (boards 01b, 02). Charts are added only when the trend matters. */
-export function KpiTile({ label, value, unit, icon: Icon, tone = "neutral", note, noteTone = "neutral", delta, trend, trendLabel, className }: KpiTileProps) {
+export function KpiTile({
+  label,
+  value,
+  unit,
+  icon: Icon,
+  tone = "neutral",
+  note,
+  noteTone = "neutral",
+  delta,
+  trend,
+  trendLabel,
+  className,
+}: KpiTileProps) {
   return (
-    <div className={cn("flex min-w-0 flex-col gap-2.5 rounded-xl border border-border bg-card p-5", className)}>
+    <div
+      className={cn(
+        "flex min-w-0 flex-col gap-2.5 rounded-xl border border-border bg-card p-5",
+        className,
+      )}
+    >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[13px] font-semibold text-muted-foreground">{label}</span>
+        <span className="text-[13px] font-semibold text-muted-foreground">
+          {label}
+        </span>
         {Icon ? (
-          <span className={cn("flex size-8 items-center justify-center rounded-[10px]", toneIcon[tone])}>
+          <span
+            className={cn(
+              "flex size-8 items-center justify-center rounded-[10px]",
+              toneIcon[tone],
+            )}
+          >
             <Icon className="size-4" aria-hidden="true" />
           </span>
         ) : delta ? (
-          <span className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-bold", toneIcon[delta.tone ?? "neutral"])}>
-            {delta.direction === "up" ? <ArrowUp className="size-3" aria-hidden="true" /> : delta.direction === "down" ? <ArrowDown className="size-3" aria-hidden="true" /> : null}
+          <span
+            className={cn(
+              "inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-bold",
+              toneIcon[delta.tone ?? "neutral"],
+            )}
+          >
+            {delta.direction === "up" ? (
+              <ArrowUp className="size-3" aria-hidden="true" />
+            ) : delta.direction === "down" ? (
+              <ArrowDown className="size-3" aria-hidden="true" />
+            ) : null}
             {delta.text}
           </span>
         ) : null}
       </div>
       <div className="flex items-end justify-between gap-3">
         <span className="flex items-baseline gap-1.5">
-          <span className="text-[32px] font-extrabold leading-none tracking-tight tabular-nums">{value}</span>
-          {unit ? <span className="text-[13px] text-muted-foreground">{unit}</span> : null}
+          <span className="text-[32px] font-extrabold leading-none tracking-tight tabular-nums">
+            {value}
+          </span>
+          {unit ? (
+            <span className="text-[13px] text-muted-foreground">{unit}</span>
+          ) : null}
         </span>
-        {trend && trend.length > 1 ? <Sparkline values={trend} label={trendLabel ?? `${label} : évolution`} /> : null}
+        {trend && trend.length > 1 ? (
+          <Sparkline
+            values={trend}
+            label={trendLabel ?? `${label} : évolution`}
+          />
+        ) : null}
       </div>
-      {Icon && delta ? <span className={cn("inline-flex items-center gap-1 text-xs font-semibold", toneText[delta.tone ?? "neutral"])}>
-        {delta.direction === "up" ? <ArrowUp className="size-3" aria-hidden="true" /> : delta.direction === "down" ? <ArrowDown className="size-3" aria-hidden="true" /> : null}
-        {delta.text}
-      </span> : null}
-      {note ? <span className={cn("text-xs font-semibold", toneText[noteTone])}>{note}</span> : null}
-      {trend?.includes(null) ? <span className="text-xs text-muted-foreground">Historique indisponible pour certaines semaines</span> : null}
+      {Icon && delta ? (
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 text-xs font-semibold",
+            toneText[delta.tone ?? "neutral"],
+          )}
+        >
+          {delta.direction === "up" ? (
+            <ArrowUp className="size-3" aria-hidden="true" />
+          ) : delta.direction === "down" ? (
+            <ArrowDown className="size-3" aria-hidden="true" />
+          ) : null}
+          {delta.text}
+        </span>
+      ) : null}
+      {note ? (
+        <span className={cn("text-xs font-semibold", toneText[noteTone])}>
+          {note}
+        </span>
+      ) : null}
+      {trend?.includes(null) ? (
+        <span className="text-xs text-muted-foreground">
+          Historique indisponible pour certaines semaines
+        </span>
+      ) : null}
     </div>
   );
 }

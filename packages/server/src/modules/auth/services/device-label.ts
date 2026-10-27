@@ -19,7 +19,8 @@ const SYSTEMS: ReadonlyArray<readonly [label: string, pattern: RegExp]> = [
 
 const OTHER = "Autre";
 
-const match = (table: typeof BROWSERS, userAgent: string) => table.find(([, pattern]) => pattern.test(userAgent))?.[0] ?? OTHER;
+const match = (table: typeof BROWSERS, userAgent: string) =>
+  table.find(([, pattern]) => pattern.test(userAgent))?.[0] ?? OTHER;
 
 export function deviceLabel(userAgent: string | null | undefined): string {
   const value = userAgent ?? "";

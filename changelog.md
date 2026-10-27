@@ -43,7 +43,7 @@
 
 ## 2026-10-23 - Sprint 6 closed
 
-- Sprint 6 is locally validated and closed across S6.1–S6.4.
+- Sprint 6 is locally validated and closed across S6.1-S6.4.
 - Delivered the V1 Core finance chain: payment plans/installments, confirmed payment events and FIFO allocations, versioned quotes and secure acceptance, customer payment-proof evidence/review, and sequential payment receipts with secure sharing.
 - Financial state remains independent from subscription lifecycle throughout the sprint.
 - Historical financial/documents evidence is append-only or immutable at the appropriate business point; corrections never rewrite source payment or receipt history.
@@ -94,7 +94,7 @@
 
 ## 2026-10-22 - Sprint 5 closed
 
-- Sprint 5 is locally validated and closed across S5.1–S5.5.
+- Sprint 5 is locally validated and closed across S5.1-S5.5.
 - The sprint now delivers the authoritative post-onboarding coaching lifecycle: subscription state, appointments/component consumption, follow-up cadence, progress/goals and personalized documents.
 - Production blockers remain unchanged: applicable Gabon legal review, a true encrypted off-server backup destination, and the device-OTP/trusted-device login contract before production.
 - Next dependency-ordered sprint is Sprint 6 - finance. First task: financial ledger for charges, installments, transactions and allocations; implementation remains gated by Sprint 6 planning/Gate 1.
@@ -218,7 +218,7 @@
 
 ## 2026-10-21 - Sprint 4 closed
 
-- Sprint 4 acceptance criteria are satisfied across S4.1–S4.5.
+- Sprint 4 acceptance criteria are satisfied across S4.1-S4.5.
 - Customer identity/search/manual creation, atomic request conversion, onboarding readiness/capacity, versioned consent/terms acceptance and versioned assessment/health questionnaires are locally validated.
 - Production blockers remain unchanged: applicable Gabon legal review and a true encrypted off-server backup destination.
 

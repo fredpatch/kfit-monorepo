@@ -7,7 +7,11 @@ const tones = [
   "bg-warning-soft text-warning",
 ] as const;
 
-const sizes = { sm: "size-8 text-xs", default: "size-10 text-sm", lg: "size-16 text-[22px]" } as const;
+const sizes = {
+  sm: "size-8 text-xs",
+  default: "size-10 text-sm",
+  lg: "size-16 text-[22px]",
+} as const;
 
 /** Stable tone per name so the same client keeps the same colour everywhere. */
 function toneFor(name: string): string {
@@ -16,11 +20,23 @@ function toneFor(name: string): string {
   return tones[hash % tones.length] ?? tones[0];
 }
 
-type AvatarProps = { name: string; size?: keyof typeof sizes; className?: string };
+type AvatarProps = {
+  name: string;
+  size?: keyof typeof sizes;
+  className?: string;
+};
 
 export function Avatar({ name, size = "default", className }: AvatarProps) {
   return (
-    <span aria-hidden="true" className={cn("inline-flex shrink-0 items-center justify-center rounded-full font-bold", sizes[size], toneFor(name), className)}>
+    <span
+      aria-hidden="true"
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center rounded-full font-bold",
+        sizes[size],
+        toneFor(name),
+        className,
+      )}
+    >
       {initialsOf(name)}
     </span>
   );

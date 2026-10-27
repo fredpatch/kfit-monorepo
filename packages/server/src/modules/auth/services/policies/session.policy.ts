@@ -22,11 +22,16 @@ export function sessionInvalidReason(
   if (session.compromisedAt) return "compromised";
   if (now >= session.expiresAt) return "refresh_expired";
   if (now >= session.absoluteExpiresAt) return "absolute_expired";
-  if (now.getTime() - session.lastSeenAt.getTime() >= inactivityTimeoutMs) return "inactive";
+  if (now.getTime() - session.lastSeenAt.getTime() >= inactivityTimeoutMs)
+    return "inactive";
   return null;
 }
 
-export function isFreshOtp(consumedAt: Date | null, now: Date, freshWindowMs: number): boolean {
+export function isFreshOtp(
+  consumedAt: Date | null,
+  now: Date,
+  freshWindowMs: number,
+): boolean {
   if (!consumedAt || consumedAt > now) return false;
   return now.getTime() - consumedAt.getTime() <= freshWindowMs;
 }

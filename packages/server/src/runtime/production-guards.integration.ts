@@ -34,19 +34,17 @@ async function insert(
   const id = randomUUID();
   created.push(id);
   const now = new Date();
-  await db
-    .insert(consentDefinitions)
-    .values({
-      id,
-      consentType: syntheticType,
-      version: `v-${id.slice(0, 8)}`,
-      title,
-      content: "Synthetic",
-      contentHash: "0".repeat(64),
-      status,
-      publishedAt: status === "draft" ? null : now,
-      retiredAt: status === "retired" ? now : null,
-    });
+  await db.insert(consentDefinitions).values({
+    id,
+    consentType: syntheticType,
+    version: `v-${id.slice(0, 8)}`,
+    title,
+    content: "Synthetic",
+    contentHash: "0".repeat(64),
+    status,
+    publishedAt: status === "draft" ? null : now,
+    retiredAt: status === "retired" ? now : null,
+  });
   return id;
 }
 const syntheticCount = async () => {

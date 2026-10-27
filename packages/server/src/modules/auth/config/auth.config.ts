@@ -21,7 +21,11 @@ export type AuthConfig = {
   recoveryResetMax: number;
 };
 
-function positiveInteger(env: NodeJS.ProcessEnv, key: string, fallback: number) {
+function positiveInteger(
+  env: NodeJS.ProcessEnv,
+  key: string,
+  fallback: number,
+) {
   const value = env[key];
   if (value === undefined || value === "") return fallback;
   const parsed = Number(value);
@@ -45,34 +49,74 @@ export function loadAuthConfig(env: NodeJS.ProcessEnv): AuthConfig {
     accessTokenSecret: env.AUTH_ACCESS_TOKEN_SECRET || otpPepper,
     otpTtlMs: positiveInteger(env, "AUTH_OTP_TTL_MS", 5 * 60_000),
     otpMaxAttempts: positiveInteger(env, "AUTH_OTP_MAX_ATTEMPTS", 5),
-    freshOtpWindowMs: positiveInteger(env, "AUTH_FRESH_OTP_WINDOW_MS", 10 * 60_000),
-    accessTokenTtlMs: positiveInteger(env, "AUTH_ACCESS_TOKEN_TTL_MS", 15 * 60_000),
-    refreshTokenTtlMs: positiveInteger(env, "AUTH_REFRESH_TOKEN_TTL_MS", 7 * 24 * 60 * 60_000),
-    inactivityTimeoutMs: positiveInteger(env, "AUTH_INACTIVITY_TIMEOUT_MS", 30 * 60_000),
-    absoluteSessionTtlMs: positiveInteger(env, "AUTH_ABSOLUTE_SESSION_TTL_MS", 12 * 60 * 60_000),
-    trustedDeviceTtlMs: positiveInteger(env, "AUTH_TRUSTED_DEVICE_TTL_MS", 30 * 24 * 60 * 60_000),
+    freshOtpWindowMs: positiveInteger(
+      env,
+      "AUTH_FRESH_OTP_WINDOW_MS",
+      10 * 60_000,
+    ),
+    accessTokenTtlMs: positiveInteger(
+      env,
+      "AUTH_ACCESS_TOKEN_TTL_MS",
+      15 * 60_000,
+    ),
+    refreshTokenTtlMs: positiveInteger(
+      env,
+      "AUTH_REFRESH_TOKEN_TTL_MS",
+      7 * 24 * 60 * 60_000,
+    ),
+    inactivityTimeoutMs: positiveInteger(
+      env,
+      "AUTH_INACTIVITY_TIMEOUT_MS",
+      30 * 60_000,
+    ),
+    absoluteSessionTtlMs: positiveInteger(
+      env,
+      "AUTH_ABSOLUTE_SESSION_TTL_MS",
+      12 * 60 * 60_000,
+    ),
+    trustedDeviceTtlMs: positiveInteger(
+      env,
+      "AUTH_TRUSTED_DEVICE_TTL_MS",
+      30 * 24 * 60 * 60_000,
+    ),
     recoveryTokenSecret: env.AUTH_RECOVERY_TOKEN_SECRET || otpPepper,
-    recoveryGrantTtlMs: positiveInteger(env, "AUTH_RECOVERY_GRANT_TTL_MS", 10 * 60_000),
-    recoveryRateLimitWindowMs: positiveInteger(env, "AUTH_RECOVERY_RATE_LIMIT_WINDOW_MS", 15 * 60_000),
+    recoveryGrantTtlMs: positiveInteger(
+      env,
+      "AUTH_RECOVERY_GRANT_TTL_MS",
+      10 * 60_000,
+    ),
+    recoveryRateLimitWindowMs: positiveInteger(
+      env,
+      "AUTH_RECOVERY_RATE_LIMIT_WINDOW_MS",
+      15 * 60_000,
+    ),
     recoveryRequestMax: positiveInteger(env, "AUTH_RECOVERY_REQUEST_MAX", 5),
     recoveryVerifyMax: positiveInteger(env, "AUTH_RECOVERY_VERIFY_MAX", 10),
     recoveryResetMax: positiveInteger(env, "AUTH_RECOVERY_RESET_MAX", 5),
   };
 
   if (config.accessTokenSecret.length < 32) {
-    throw new Error("AUTH_ACCESS_TOKEN_SECRET must contain at least 32 characters");
+    throw new Error(
+      "AUTH_ACCESS_TOKEN_SECRET must contain at least 32 characters",
+    );
   }
   if (config.devicePepper.length < 32) {
     throw new Error("AUTH_DEVICE_PEPPER must contain at least 32 characters");
   }
   if (config.recoveryTokenSecret.length < 32) {
-    throw new Error("AUTH_RECOVERY_TOKEN_SECRET must contain at least 32 characters");
+    throw new Error(
+      "AUTH_RECOVERY_TOKEN_SECRET must contain at least 32 characters",
+    );
   }
   if (config.accessTokenTtlMs >= config.refreshTokenTtlMs) {
-    throw new Error("AUTH_ACCESS_TOKEN_TTL_MS must be shorter than AUTH_REFRESH_TOKEN_TTL_MS");
+    throw new Error(
+      "AUTH_ACCESS_TOKEN_TTL_MS must be shorter than AUTH_REFRESH_TOKEN_TTL_MS",
+    );
   }
   if (config.inactivityTimeoutMs >= config.absoluteSessionTtlMs) {
-    throw new Error("AUTH_INACTIVITY_TIMEOUT_MS must be shorter than AUTH_ABSOLUTE_SESSION_TTL_MS");
+    throw new Error(
+      "AUTH_INACTIVITY_TIMEOUT_MS must be shorter than AUTH_ABSOLUTE_SESSION_TTL_MS",
+    );
   }
   return config;
 }

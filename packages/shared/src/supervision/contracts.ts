@@ -36,10 +36,20 @@ export const supervisionAlertCodes = [
 ] as const;
 export type SupervisionAlertCode = (typeof supervisionAlertCodes)[number];
 export type SupervisionAlertSeverity = "critical" | "warning";
-export type SupervisionAlert = { code: SupervisionAlertCode; severity: SupervisionAlertSeverity; jobKey?: string; message: string };
+export type SupervisionAlert = {
+  code: SupervisionAlertCode;
+  severity: SupervisionAlertSeverity;
+  jobKey?: string;
+  message: string;
+};
 
 export type SupervisionMode = "development" | "production";
-export type SupervisionJobState = "ok" | "late" | "failing" | "never_run" | "running";
+export type SupervisionJobState =
+  | "ok"
+  | "late"
+  | "failing"
+  | "never_run"
+  | "running";
 export type SupervisionManualAction = "run" | "simulate" | null;
 
 export type SupervisionJob = {
@@ -49,7 +59,13 @@ export type SupervisionJob = {
   timezone: string | null;
   manual: SupervisionManualAction;
   state: SupervisionJobState;
-  lastRun: { status: "running" | "succeeded" | "failed"; startedAt: string; durationMs: number | null; attempt: number; errorCode: string | null } | null;
+  lastRun: {
+    status: "running" | "succeeded" | "failed";
+    startedAt: string;
+    durationMs: number | null;
+    attempt: number;
+    errorCode: string | null;
+  } | null;
   lastSucceededAt: string | null;
   nextRunAt: string | null;
   /** Failed runs / runs over 30 days; null without runs. */
@@ -78,7 +94,11 @@ export type SupervisionRestoreCheck = {
 
 export type SupervisionPrivacy = {
   journal: { configured: boolean; writable: boolean };
-  lastPurge: { at: string; status: "running" | "succeeded" | "failed"; filesDeleted: number | null } | null;
+  lastPurge: {
+    at: string;
+    status: "running" | "succeeded" | "failed";
+    filesDeleted: number | null;
+  } | null;
   lastReplay: { at: string; events: number | null } | null;
   activeHolds: number;
   purgesDue7d: number;
@@ -104,10 +124,14 @@ export type SupervisionOverviewResponse = {
 };
 
 /** O9: for the menu dot, from the admin's own open supervision notifications (cheap). */
-export type SupervisionStatusResponse = { level: "ok" | "warning" | "critical"; alertCount: number };
+export type SupervisionStatusResponse = {
+  level: "ok" | "warning" | "critical";
+  alertCount: number;
+};
 
 export const supervisionSecurityPeriods = [7, 30] as const;
-export type SupervisionSecurityPeriod = (typeof supervisionSecurityPeriods)[number];
+export type SupervisionSecurityPeriod =
+  (typeof supervisionSecurityPeriods)[number];
 export type SupervisionSecuritySeries = {
   loginRejected: number;
   otpFailed: number;
@@ -117,7 +141,20 @@ export type SupervisionSecuritySeries = {
   encodingRejected: number;
   publicLinkInvalid: number;
 };
-export type SupervisionSecurityResponse = { days: Array<{ date: string; series: SupervisionSecuritySeries }> };
+export type SupervisionSecurityResponse = {
+  days: Array<{ date: string; series: SupervisionSecuritySeries }>;
+};
 
-export type SupervisionJobRunResponse = { jobKey: string; outcome: "succeeded" | "failed"; durationMs: number; result: Record<string, number> | null; errorCode: string | null };
-export type SupervisionPurgeSimulationResponse = { subjectsDue: number; filesDue: number; bytesDue: number; heldBack: number };
+export type SupervisionJobRunResponse = {
+  jobKey: string;
+  outcome: "succeeded" | "failed";
+  durationMs: number;
+  result: Record<string, number> | null;
+  errorCode: string | null;
+};
+export type SupervisionPurgeSimulationResponse = {
+  subjectsDue: number;
+  filesDue: number;
+  bytesDue: number;
+  heldBack: number;
+};

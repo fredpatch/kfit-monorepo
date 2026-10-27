@@ -5,7 +5,10 @@ import { Router as createRouter } from "express";
 import { adminRequestsApiRoutes } from "@kfit/shared";
 import type { ExpressAuthSessionResolver } from "../../auth/routes/express-auth.router.js";
 import { parseCookieHeader } from "../../auth/middleware/auth.cookies.js";
-import { requireCsrf, requireSameOrigin } from "../../auth/middleware/auth.middleware.js";
+import {
+  requireCsrf,
+  requireSameOrigin,
+} from "../../auth/middleware/auth.middleware.js";
 import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js";
 import type { AdminRequestsController } from "../controllers/admin-requests.controller.js";
 import type { RequestConversionController } from "../controllers/request-conversion.controller.js";
@@ -22,7 +25,10 @@ function firstHeader(value: string | string[] | undefined): string | undefined {
   return value;
 }
 
-async function toAuthContext(request: Request, resolveSession?: ExpressAuthSessionResolver): Promise<AuthHttpRequestContext> {
+async function toAuthContext(
+  request: Request,
+  resolveSession?: ExpressAuthSessionResolver,
+): Promise<AuthHttpRequestContext> {
   const headers: Record<string, string | undefined> = {};
   for (const [key, value] of Object.entries(request.headers)) {
     headers[key.toLowerCase()] = firstHeader(value);
@@ -44,7 +50,9 @@ function applyJsonResponse(response: Response, result: HttpJsonResponse): void {
   response.status(result.status).json(result.body);
 }
 
-function mutationGuard(context: AuthHttpRequestContext): HttpJsonResponse<{ error: string }> | null {
+function mutationGuard(
+  context: AuthHttpRequestContext,
+): HttpJsonResponse<{ error: string }> | null {
   const originFailure = requireSameOrigin(context);
   if (originFailure) return originFailure;
   return requireCsrf(context);
@@ -55,118 +63,230 @@ function routeParam(value: string | string[] | undefined): string | null {
   return null;
 }
 
-export function createExpressAdminRequestsRouter(deps: ExpressAdminRequestsRouterDeps): Router {
+export function createExpressAdminRequestsRouter(
+  deps: ExpressAdminRequestsRouterDeps,
+): Router {
   const router = createRouter();
 
   if (deps.conversionController) {
     const controller = deps.conversionController;
-    router.post(adminRequestsApiRoutes.convert, async (request: Request, response: Response) => {
+    router.post(
+      adminRequestsApiRoutes.convert,
+      async (request: Request, response: Response) => {
+        try {
+          const context = await toAuthContext(request, deps.resolveSession);
+          const guard = mutationGuard(context);
+          if (guard) return applyJsonResponse(response, guard);
+          const requestId = routeParam(request.params.requestId);
+          if (!requestId)
+            return applyJsonResponse(response, {
+              status: 404,
+              body: { error: "REQUEST_NOT_FOUND" },
+            });
+          applyJsonResponse(
+            response,
+            await controller.convert(context, requestId, request.body ?? {}),
+          );
+        } catch (error) {
+          if (respondIfSubjectArchived(response, error)) return;
+          response
+            .status(500)
+            .json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
+        }
+      },
+    );
+  }
+
+  router.get(
+    adminRequestsApiRoutes.queue,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        const status =
+          routeParam(request.query.status as string | string[] | undefined) ??
+          undefined;
+        applyJsonResponse(
+          response,
+          await deps.controller.listQueue(context, status),
+        );
+      } catch (error) {
+        if (respondIfSubjectArchived(response, error)) return;
+        response
+          .status(500)
+          .json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
+
+  router.get(
+    adminRequestsApiRoutes.detail,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        const requestId = routeParam(request.params.requestId);
+        if (!requestId)
+          return applyJsonResponse(response, {
+            status: 404,
+            body: { error: "REQUEST_NOT_FOUND" },
+          });
+        applyJsonResponse(
+          response,
+          await deps.controller.getDetail(context, requestId),
+        );
+      } catch (error) {
+        if (respondIfSubjectArchived(response, error)) return;
+        response
+          .status(500)
+          .json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
+
+  router.post(
+    adminRequestsApiRoutes.contactAttempts,
+    async (request: Request, response: Response) => {
       try {
         const context = await toAuthContext(request, deps.resolveSession);
         const guard = mutationGuard(context);
         if (guard) return applyJsonResponse(response, guard);
         const requestId = routeParam(request.params.requestId);
-        if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
-        applyJsonResponse(response, await controller.convert(context, requestId, request.body ?? {}));
+        if (!requestId)
+          return applyJsonResponse(response, {
+            status: 404,
+            body: { error: "REQUEST_NOT_FOUND" },
+          });
+        applyJsonResponse(
+          response,
+          await deps.controller.logContactAttempt(
+            context,
+            requestId,
+            request.body ?? {},
+          ),
+        );
       } catch (error) {
         if (respondIfSubjectArchived(response, error)) return;
-        response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
+        response
+          .status(500)
+          .json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
       }
-    });
-  }
+    },
+  );
 
-  router.get(adminRequestsApiRoutes.queue, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const status = routeParam(request.query.status as string | string[] | undefined) ?? undefined;
-      applyJsonResponse(response, await deps.controller.listQueue(context, status));
-    } catch (error) {
-      if (respondIfSubjectArchived(response, error)) return;
-      response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
+  router.post(
+    adminRequestsApiRoutes.status,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        const guard = mutationGuard(context);
+        if (guard) return applyJsonResponse(response, guard);
+        const requestId = routeParam(request.params.requestId);
+        if (!requestId)
+          return applyJsonResponse(response, {
+            status: 404,
+            body: { error: "REQUEST_NOT_FOUND" },
+          });
+        applyJsonResponse(
+          response,
+          await deps.controller.transitionStatus(
+            context,
+            requestId,
+            request.body ?? {},
+          ),
+        );
+      } catch (error) {
+        if (respondIfSubjectArchived(response, error)) return;
+        response
+          .status(500)
+          .json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
 
-  router.get(adminRequestsApiRoutes.detail, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const requestId = routeParam(request.params.requestId);
-      if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
-      applyJsonResponse(response, await deps.controller.getDetail(context, requestId));
-    } catch (error) {
-      if (respondIfSubjectArchived(response, error)) return;
-      response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
+  router.post(
+    adminRequestsApiRoutes.qualificationReview,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        const guard = mutationGuard(context);
+        if (guard) return applyJsonResponse(response, guard);
+        const requestId = routeParam(request.params.requestId);
+        if (!requestId)
+          return applyJsonResponse(response, {
+            status: 404,
+            body: { error: "REQUEST_NOT_FOUND" },
+          });
+        applyJsonResponse(
+          response,
+          await deps.controller.recordQualificationReview(
+            context,
+            requestId,
+            request.body ?? {},
+          ),
+        );
+      } catch (error) {
+        if (respondIfSubjectArchived(response, error)) return;
+        response
+          .status(500)
+          .json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
 
-  router.post(adminRequestsApiRoutes.contactAttempts, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const guard = mutationGuard(context);
-      if (guard) return applyJsonResponse(response, guard);
-      const requestId = routeParam(request.params.requestId);
-      if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
-      applyJsonResponse(response, await deps.controller.logContactAttempt(context, requestId, request.body ?? {}));
-    } catch (error) {
-      if (respondIfSubjectArchived(response, error)) return;
-      response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
+  router.post(
+    adminRequestsApiRoutes.waitlistEntry,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        const guard = mutationGuard(context);
+        if (guard) return applyJsonResponse(response, guard);
+        const requestId = routeParam(request.params.requestId);
+        if (!requestId)
+          return applyJsonResponse(response, {
+            status: 404,
+            body: { error: "REQUEST_NOT_FOUND" },
+          });
+        applyJsonResponse(
+          response,
+          await deps.controller.createWaitlistEntry(
+            context,
+            requestId,
+            request.body ?? {},
+          ),
+        );
+      } catch (error) {
+        if (respondIfSubjectArchived(response, error)) return;
+        response
+          .status(500)
+          .json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
 
-  router.post(adminRequestsApiRoutes.status, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const guard = mutationGuard(context);
-      if (guard) return applyJsonResponse(response, guard);
-      const requestId = routeParam(request.params.requestId);
-      if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
-      applyJsonResponse(response, await deps.controller.transitionStatus(context, requestId, request.body ?? {}));
-    } catch (error) {
-      if (respondIfSubjectArchived(response, error)) return;
-      response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
-
-  router.post(adminRequestsApiRoutes.qualificationReview, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const guard = mutationGuard(context);
-      if (guard) return applyJsonResponse(response, guard);
-      const requestId = routeParam(request.params.requestId);
-      if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
-      applyJsonResponse(response, await deps.controller.recordQualificationReview(context, requestId, request.body ?? {}));
-    } catch (error) {
-      if (respondIfSubjectArchived(response, error)) return;
-      response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
-
-  router.post(adminRequestsApiRoutes.waitlistEntry, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const guard = mutationGuard(context);
-      if (guard) return applyJsonResponse(response, guard);
-      const requestId = routeParam(request.params.requestId);
-      if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
-      applyJsonResponse(response, await deps.controller.createWaitlistEntry(context, requestId, request.body ?? {}));
-    } catch (error) {
-      if (respondIfSubjectArchived(response, error)) return;
-      response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
-
-  router.post(adminRequestsApiRoutes.waitlistEntryWithdraw, async (request: Request, response: Response) => {
-    try {
-      const context = await toAuthContext(request, deps.resolveSession);
-      const guard = mutationGuard(context);
-      if (guard) return applyJsonResponse(response, guard);
-      const requestId = routeParam(request.params.requestId);
-      if (!requestId) return applyJsonResponse(response, { status: 404, body: { error: "REQUEST_NOT_FOUND" } });
-      applyJsonResponse(response, await deps.controller.withdrawWaitlistEntry(context, requestId));
-    } catch (error) {
-      if (respondIfSubjectArchived(response, error)) return;
-      response.status(500).json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
-    }
-  });
+  router.post(
+    adminRequestsApiRoutes.waitlistEntryWithdraw,
+    async (request: Request, response: Response) => {
+      try {
+        const context = await toAuthContext(request, deps.resolveSession);
+        const guard = mutationGuard(context);
+        if (guard) return applyJsonResponse(response, guard);
+        const requestId = routeParam(request.params.requestId);
+        if (!requestId)
+          return applyJsonResponse(response, {
+            status: 404,
+            body: { error: "REQUEST_NOT_FOUND" },
+          });
+        applyJsonResponse(
+          response,
+          await deps.controller.withdrawWaitlistEntry(context, requestId),
+        );
+      } catch (error) {
+        if (respondIfSubjectArchived(response, error)) return;
+        response
+          .status(500)
+          .json({ error: "REQUEST_ROUTE_UNEXPECTED_FAILURE" });
+      }
+    },
+  );
 
   return router;
 }

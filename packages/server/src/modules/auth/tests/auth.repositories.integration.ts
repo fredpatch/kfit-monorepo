@@ -4,12 +4,23 @@ import { after, before, test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db, pool } from "../../../db/client.js";
-import { auditEvents, authSessions, otpChallenges, users } from "../../../db/schema/auth.js";
+import {
+  auditEvents,
+  authSessions,
+  otpChallenges,
+  users,
+} from "../../../db/schema/auth.js";
 import { AuditService } from "../services/audit.service.js";
 import { OtpChallengeService } from "../services/otp-challenge.service.js";
 import { SessionService } from "../services/session.service.js";
-import { DrizzleOtpChallengeRepository, DrizzleSessionRepository } from "../repositories/auth.repositories.js";
-import { assertLocalTestDatabase, cleanupInOrder } from "../../../testing/integration-fixtures.js";
+import {
+  DrizzleOtpChallengeRepository,
+  DrizzleSessionRepository,
+} from "../repositories/auth.repositories.js";
+import {
+  assertLocalTestDatabase,
+  cleanupInOrder,
+} from "../../../testing/integration-fixtures.js";
 
 const pepper = "a-secure-integration-pepper-that-is-longer-than-32-characters";
 const now = new Date("2026-08-25T08:00:00Z");
@@ -17,16 +28,31 @@ const userId = randomUUID();
 const requestId = randomUUID();
 let safe = false;
 
-before(() => { assertLocalTestDatabase(); safe = true; });
+before(() => {
+  assertLocalTestDatabase();
+  safe = true;
+});
 
 after(async () => {
   try {
-    if (safe) await cleanupInOrder([
-      ["audit events", () => db.delete(auditEvents).where(eq(auditEvents.requestId, requestId))],
-      ["otp challenges", () => db.delete(otpChallenges).where(eq(otpChallenges.userId, userId))],
-      ["sessions", () => db.delete(authSessions).where(eq(authSessions.userId, userId))],
-      ["user", () => db.delete(users).where(eq(users.id, userId))],
-    ]);
+    if (safe)
+      await cleanupInOrder([
+        [
+          "audit events",
+          () =>
+            db.delete(auditEvents).where(eq(auditEvents.requestId, requestId)),
+        ],
+        [
+          "otp challenges",
+          () =>
+            db.delete(otpChallenges).where(eq(otpChallenges.userId, userId)),
+        ],
+        [
+          "sessions",
+          () => db.delete(authSessions).where(eq(authSessions.userId, userId)),
+        ],
+        ["user", () => db.delete(users).where(eq(users.id, userId))],
+      ]);
   } finally {
     await pool.end();
   }
@@ -42,13 +68,17 @@ test("Drizzle auth repositories persist session, OTP and audit lifecycle data", 
   });
 
   const audit = new AuditService(db, { auditHashPepper: pepper });
-  const sessionService = new SessionService(new DrizzleSessionRepository(db), audit, {
-    refreshTokenPepper: pepper,
-    auditHashPepper: pepper,
-    refreshTokenTtlMs: 60_000,
-    absoluteSessionTtlMs: 10 * 60_000,
-    inactivityTimeoutMs: 5 * 60_000,
-  });
+  const sessionService = new SessionService(
+    new DrizzleSessionRepository(db),
+    audit,
+    {
+      refreshTokenPepper: pepper,
+      auditHashPepper: pepper,
+      refreshTokenTtlMs: 60_000,
+      absoluteSessionTtlMs: 10 * 60_000,
+      inactivityTimeoutMs: 5 * 60_000,
+    },
+  );
 
   const created = await sessionService.createSession({
     userId,
@@ -61,15 +91,21 @@ test("Drizzle auth repositories persist session, OTP and audit lifecycle data", 
   assert.notEqual(created.session.refreshTokenHash, created.refreshToken);
   assert.equal(created.session.rotationCounter, 0);
 
-  const rotated = await sessionService.rotateRefreshToken(created.refreshToken, {
-    requestId,
-    ipAddress: "192.0.2.10",
-    userAgent: "KFIT integration",
-    now: new Date("2026-08-25T08:00:30Z"),
-  });
+  const rotated = await sessionService.rotateRefreshToken(
+    created.refreshToken,
+    {
+      requestId,
+      ipAddress: "192.0.2.10",
+      userAgent: "KFIT integration",
+      now: new Date("2026-08-25T08:00:30Z"),
+    },
+  );
 
   assert.equal(rotated.status, "rotated");
-  assert.equal(rotated.status === "rotated" ? rotated.session.rotationCounter : null, 1);
+  assert.equal(
+    rotated.status === "rotated" ? rotated.session.rotationCounter : null,
+    1,
+  );
 
   const revoked = await sessionService.revokeSession({
     sessionId: created.session.id,
@@ -78,11 +114,15 @@ test("Drizzle auth repositories persist session, OTP and audit lifecycle data", 
   });
   assert.equal(revoked?.revokedAt?.toISOString(), "2026-08-25T08:00:45.000Z");
 
-  const otpService = new OtpChallengeService(new DrizzleOtpChallengeRepository(db), audit, {
-    otpPepper: pepper,
-    otpTtlMs: 5 * 60_000,
-    otpMaxAttempts: 5,
-  });
+  const otpService = new OtpChallengeService(
+    new DrizzleOtpChallengeRepository(db),
+    audit,
+    {
+      otpPepper: pepper,
+      otpTtlMs: 5 * 60_000,
+      otpMaxAttempts: 5,
+    },
+  );
 
   const issued = await otpService.issue({
     userId,

@@ -2,13 +2,18 @@ import type { AuthRole } from "@kfit/shared";
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { RecordAuditEventInput } from "./audit.service.js";
 import type { AuthUserRecord } from "./auth-route.service.js";
-import type { PasswordService, PasswordStrengthResult } from "./password.service.js";
+import type {
+  PasswordService,
+  PasswordStrengthResult,
+} from "./password.service.js";
 
 /**
  * BOOT-01 B1: development needs no token; production needs KFIT_BOOTSTRAP_TOKEN, and without it the route is closed.
  * `token` is null when the variable is absent, too short or a placeholder.
  */
-export type BootstrapTokenPolicy = { required: false } | { required: true; token: string | null };
+export type BootstrapTokenPolicy =
+  | { required: false }
+  | { required: true; token: string | null };
 
 /** BOOT-01 B1: SHA-256 first, so the comparison is constant-time whatever the candidate's length. */
 function sameToken(candidate: string, expected: string): boolean {
@@ -46,12 +51,18 @@ export type BootstrapStatus = {
 };
 
 export type BootstrapCreateResult =
-  | { status: "created"; user: Pick<AuthUserRecord, "id" | "email" | "role" | "status"> }
+  | {
+      status: "created";
+      user: Pick<AuthUserRecord, "id" | "email" | "role" | "status">;
+    }
   | { status: "already_completed" }
   | { status: "rate_limited" }
   | { status: "disabled" }
   | { status: "token_invalid" }
-  | { status: "invalid_password"; reason: Exclude<PasswordStrengthResult, { ok: true }>["reason"] };
+  | {
+      status: "invalid_password";
+      reason: Exclude<PasswordStrengthResult, { ok: true }>["reason"];
+    };
 
 function canonicalEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -62,13 +73,15 @@ export class BootstrapService {
     private readonly repository: BootstrapRepository,
     private readonly passwords: Pick<PasswordService, "hash" | "validate">,
     private readonly audit: BootstrapAuditRecorder,
-    private readonly options: BootstrapServiceOptions = { defaultRole: "coach" },
+    private readonly options: BootstrapServiceOptions = {
+      defaultRole: "coach",
+    },
   ) {}
 
   async status(): Promise<BootstrapStatus> {
     const policy = this.options.tokenPolicy ?? { required: false };
     return {
-      required: await this.repository.countUsers() === 0,
+      required: (await this.repository.countUsers()) === 0,
       tokenRequired: policy.required,
       enabled: !policy.required || policy.token !== null,
     };
@@ -83,9 +96,13 @@ export class BootstrapService {
     ipAddress?: string | null;
     userAgent?: string | null;
   }): Promise<BootstrapCreateResult> {
-    if (this.options.allowAttempt && !this.options.allowAttempt(input.ipAddress ?? "", Date.now())) return { status: "rate_limited" };
+    if (
+      this.options.allowAttempt &&
+      !this.options.allowAttempt(input.ipAddress ?? "", Date.now())
+    )
+      return { status: "rate_limited" };
 
-    if (await this.repository.countUsers() > 0) {
+    if ((await this.repository.countUsers()) > 0) {
       await this.audit.record({
         actorType: "anonymous",
         actorUserId: null,
@@ -102,17 +119,18 @@ export class BootstrapService {
 
     const policy = this.options.tokenPolicy ?? { required: false };
     if (policy.required) {
-      const rejected = async (reason: "disabled" | "token_invalid") => this.audit.record({
-        actorType: "anonymous",
-        actorUserId: null,
-        eventType: "auth.bootstrap.rejected",
-        entityType: "user",
-        result: "blocked",
-        requestId: input.requestId ?? null,
-        ipAddress: input.ipAddress ?? null,
-        userAgent: input.userAgent ?? null,
-        metadata: { reason },
-      });
+      const rejected = async (reason: "disabled" | "token_invalid") =>
+        this.audit.record({
+          actorType: "anonymous",
+          actorUserId: null,
+          eventType: "auth.bootstrap.rejected",
+          entityType: "user",
+          result: "blocked",
+          requestId: input.requestId ?? null,
+          ipAddress: input.ipAddress ?? null,
+          userAgent: input.userAgent ?? null,
+          metadata: { reason },
+        });
       if (policy.token === null) {
         await rejected("disabled");
         return { status: "disabled" };

@@ -8,7 +8,10 @@ export const logger = winston.createLogger({
   format: combine(
     colorize(),
     timestamp({ format: "HH:mm:ss" }),
-    printf(({ timestamp: time, level, message }) => `${String(time)} ${level} ${String(message)}`),
+    printf(
+      ({ timestamp: time, level, message }) =>
+        `${String(time)} ${level} ${String(message)}`,
+    ),
   ),
   transports: [new winston.transports.Console()],
 });

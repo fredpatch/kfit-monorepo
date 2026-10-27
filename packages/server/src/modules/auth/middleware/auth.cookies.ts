@@ -13,7 +13,10 @@ export const DEVICE_COOKIE_MAX_AGE_SECONDS = 400 * 24 * 60 * 60;
 
 export type AuthCookieMode = "development" | "production";
 
-export function authCookieOptions(mode: AuthCookieMode, maxAgeSeconds?: number): AuthCookieOptions {
+export function authCookieOptions(
+  mode: AuthCookieMode,
+  maxAgeSeconds?: number,
+): AuthCookieOptions {
   return {
     httpOnly: true,
     secure: mode === "production",
@@ -36,14 +39,19 @@ export function generateCsrfToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
-export function verifyDoubleSubmitCsrf(cookieToken: string | undefined, headerToken: string | undefined): boolean {
+export function verifyDoubleSubmitCsrf(
+  cookieToken: string | undefined,
+  headerToken: string | undefined,
+): boolean {
   if (!cookieToken || !headerToken) return false;
   const cookie = Buffer.from(cookieToken);
   const header = Buffer.from(headerToken);
   return cookie.length === header.length && timingSafeEqual(cookie, header);
 }
 
-export function parseCookieHeader(cookieHeader: string | undefined): Record<string, string | undefined> {
+export function parseCookieHeader(
+  cookieHeader: string | undefined,
+): Record<string, string | undefined> {
   if (!cookieHeader) return {};
   return Object.fromEntries(
     cookieHeader
@@ -53,7 +61,10 @@ export function parseCookieHeader(cookieHeader: string | undefined): Record<stri
       .map((part) => {
         const separator = part.indexOf("=");
         if (separator === -1) return [part, ""];
-        return [part.slice(0, separator), decodeURIComponent(part.slice(separator + 1))];
+        return [
+          part.slice(0, separator),
+          decodeURIComponent(part.slice(separator + 1)),
+        ];
       }),
   );
 }

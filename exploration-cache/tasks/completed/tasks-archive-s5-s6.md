@@ -87,7 +87,7 @@ Build the authoritative subscription/coaching delivery lifecycle after the valid
 4. S5.4 - Progress measurements, structured goals and coach-confirmed status suggestions - CLOSED, Fred validated 2026-10-21.
 5. S5.5 - Personalized document versioning and secure temporary delivery links - CLOSED, Fred validated 2026-10-22.
 
-S5.1–S5.5 are locally validated and Sprint 5 is closed. S6.1 is closed; S6.2 is active under its approved scope.
+S5.1-S5.5 are locally validated and Sprint 5 is closed. S6.1 is closed; S6.2 is active under its approved scope.
 
 ## From « Blockers »
 

@@ -5,16 +5,26 @@ import pg from "pg";
 let pool;
 try {
   if (process.env.DATABASE_URL) throw new Error("Inherited database target");
-  const env = config({ path: fileURLToPath(new URL("../../../../.env", import.meta.url)) });
+  const env = config({
+    path: fileURLToPath(new URL("../../../../.env", import.meta.url)),
+  });
   if (env.error) throw new Error("Missing local environment");
   const target = new URL(process.env.DATABASE_URL ?? "");
-  if (!["localhost", "127.0.0.1"].includes(target.hostname) || target.port !== "5433" || target.pathname !== "/kfit_dev" || target.search) throw new Error("Unsafe database target");
+  if (
+    !["localhost", "127.0.0.1"].includes(target.hostname) ||
+    target.port !== "5433" ||
+    target.pathname !== "/kfit_dev" ||
+    target.search
+  )
+    throw new Error("Unsafe database target");
   pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   const client = await pool.connect();
   let counts;
   try {
     await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
-    const { rows: [row] } = await client.query(`SELECT
+    const {
+      rows: [row],
+    } = await client.query(`SELECT
       (SELECT count(*)::int FROM payment_plans) AS plans,
       (SELECT count(*)::int FROM installments) AS installments,
       (SELECT count(*)::int FROM payment_events) AS events,
@@ -28,14 +38,37 @@ try {
       (SELECT count(*)::int FROM (SELECT payment_event_id FROM payment_allocations GROUP BY payment_event_id HAVING count(DISTINCT subscription_id)>1) q) AS multiple_subscription_events`);
     counts = row;
     await client.query("COMMIT");
-  } finally { client.release(); }
-  console.log(JSON.stringify({ envFile: "root .env", localTargetVerified: true, readOnly: true, ...counts }));
-  if (Object.values(counts).some(value => value !== 0)) {
-    console.error("Existing financial history or incompatible references require a reviewed migration/backfill plan. No rows changed.");
+  } finally {
+    client.release();
+  }
+  console.log(
+    JSON.stringify({
+      envFile: "root .env",
+      localTargetVerified: true,
+      readOnly: true,
+      ...counts,
+    }),
+  );
+  if (Object.values(counts).some((value) => value !== 0)) {
+    console.error(
+      "Existing financial history or incompatible references require a reviewed migration/backfill plan. No rows changed.",
+    );
     process.exitCode = 1;
-  } else console.log("No finance history; additive self-FKs, active-plan index and nullable unique command identity need no backfill. No rows changed.");
+  } else
+    console.log(
+      "No finance history; additive self-FKs, active-plan index and nullable unique command identity need no backfill. No rows changed.",
+    );
 } catch (error) {
-  const code = error && typeof error === "object" && "code" in error && typeof error.code === "string" && /^[A-Z0-9_]+$/.test(error.code) ? error.code : "UNAVAILABLE";
+  const code =
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof error.code === "string" &&
+    /^[A-Z0-9_]+$/.test(error.code)
+      ? error.code
+      : "UNAVAILABLE";
   console.error(`Finance preflight failed (${code}); no rows changed.`);
   process.exitCode = 1;
-} finally { if (pool) await pool.end(); }
+} finally {
+  if (pool) await pool.end();
+}

@@ -8,8 +8,13 @@ export const INTEGRATION_TEST_DATABASE_NAME = "kfit_test";
 export function localDatabaseName(url: string | undefined): string | null {
   try {
     const target = new URL(url ?? "");
-    if (!["postgres:", "postgresql:"].includes(target.protocol) || !LOCAL_DATABASE_HOSTS.some((host) => host === target.hostname)) return null;
-    if (target.port !== LOCAL_DATABASE_PORT || target.search || target.hash) return null;
+    if (
+      !["postgres:", "postgresql:"].includes(target.protocol) ||
+      !LOCAL_DATABASE_HOSTS.some((host) => host === target.hostname)
+    )
+      return null;
+    if (target.port !== LOCAL_DATABASE_PORT || target.search || target.hash)
+      return null;
     return decodeURIComponent(target.pathname.slice(1)) || null;
   } catch {
     return null;
@@ -19,7 +24,10 @@ export function localDatabaseName(url: string | undefined): string | null {
 /** TEST-01 D1: true when the URL names kfit_test on any host, so the dev API refuses it even when remote or on 5432. */
 export function namesIntegrationTestDatabase(url: string | undefined): boolean {
   try {
-    return decodeURIComponent(new URL(url ?? "").pathname.slice(1)) === INTEGRATION_TEST_DATABASE_NAME;
+    return (
+      decodeURIComponent(new URL(url ?? "").pathname.slice(1)) ===
+      INTEGRATION_TEST_DATABASE_NAME
+    );
   } catch {
     return false;
   }

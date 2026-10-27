@@ -402,7 +402,7 @@ export function QuestionnairesPage() {
                       )}
                     >
                       <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold tabular-nums">
-                        {row.change === "removed" ? "–" : i + 1}
+                        {row.change === "removed" ? "-" : i + 1}
                       </span>
                       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                         <span

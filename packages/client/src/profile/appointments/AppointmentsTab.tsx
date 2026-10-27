@@ -79,7 +79,7 @@ const day = (iso: string) => {
   return { dow: get("weekday"), day: get("day"), mon: get("month") };
 };
 const slotLabel = (a: AppointmentDetail) =>
-  `${timeFr(a.scheduledStart)} – ${timeFr(a.scheduledEnd)}`;
+  `${timeFr(a.scheduledStart)} - ${timeFr(a.scheduledEnd)}`;
 const linkFor = (token: string) =>
   `${window.location.origin}/appointment#${token}`;
 
@@ -174,13 +174,11 @@ export function AppointmentsTab({
   ).length;
 
   const tiles = [
-    ...data.components
-      .slice(0, 2)
-      .map((c) => ({
-        label: c.labelSnapshot,
-        value: `${c.quantityConsumed} sur ${c.quantityEntitled}`,
-        note: `séances consommées · ${Math.max(0, c.quantityEntitled - c.quantityConsumed)} restante${c.quantityEntitled - c.quantityConsumed > 1 ? "s" : ""}`,
-      })),
+    ...data.components.slice(0, 2).map((c) => ({
+      label: c.labelSnapshot,
+      value: `${c.quantityConsumed} sur ${c.quantityEntitled}`,
+      note: `séances consommées · ${Math.max(0, c.quantityEntitled - c.quantityConsumed)} restante${c.quantityEntitled - c.quantityConsumed > 1 ? "s" : ""}`,
+    })),
     {
       label: "Prochain rendez-vous",
       value: next
@@ -407,7 +405,7 @@ export function AppointmentsTab({
               >
                 <div className="flex min-w-0 flex-1 basis-56 flex-col gap-0.5">
                   <p className="text-sm font-bold">
-                    {dateTimeFr(a.scheduledStart)} – {timeFr(a.scheduledEnd)}
+                    {dateTimeFr(a.scheduledStart)} - {timeFr(a.scheduledEnd)}
                   </p>
                   <p className="text-[13px] text-muted-foreground">
                     {[
@@ -723,7 +721,7 @@ function ActionDialog({ mode, onClose, onDone, restoreFocus }: DialogProps) {
       : action === "reschedule"
         ? "Proposer un nouveau créneau"
         : actionLabels[action];
-  const description = `${dateTimeFr(a.scheduledStart)} – ${timeFr(a.scheduledEnd)}${a.component ? ` · ${a.component.labelSnapshot}` : ""}`;
+  const description = `${dateTimeFr(a.scheduledStart)} - ${timeFr(a.scheduledEnd)}${a.component ? ` · ${a.component.labelSnapshot}` : ""}`;
   const policy = a.policy;
   const destructive = action === "cancel" || action === "missed";
 

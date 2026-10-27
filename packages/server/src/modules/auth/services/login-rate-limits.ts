@@ -25,9 +25,15 @@ export type LoginRateLimits = {
 };
 
 /** In memory, per API process (one process in V1, as for the other IpRateLimiter users). `onRefused` must not throw. */
-export function createLoginRateLimits(onRefused: (scope: LoginRateLimitScope) => void = () => {}): LoginRateLimits {
+export function createLoginRateLimits(
+  onRefused: (scope: LoginRateLimitScope) => void = () => {},
+): LoginRateLimits {
   const limiter = (maxPerWindow: number, scope: LoginRateLimitScope) =>
-    new IpRateLimiter({ windowMs: LOGIN_RATE_WINDOW_MS, maxPerWindow, onRefused: () => onRefused(scope) });
+    new IpRateLimiter({
+      windowMs: LOGIN_RATE_WINDOW_MS,
+      maxPerWindow,
+      onRefused: () => onRefused(scope),
+    });
   const login = limiter(LOGIN_ATTEMPTS_PER_IP, "auth_login");
   const issue = limiter(LOGIN_OTP_ISSUES_PER_ACCOUNT, "auth_login");
   const verify = limiter(LOGIN_VERIFY_ATTEMPTS_PER_IP, "auth_verify");

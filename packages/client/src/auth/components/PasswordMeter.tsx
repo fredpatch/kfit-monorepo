@@ -23,7 +23,7 @@ export function PasswordMeter({
   const checks = checkAuthPasswordRules(password);
   const strength = authPasswordStrength(password);
   const level = levels[strength];
-  // Bars filled: one red bar while rules fail, then 1–3 by advisory strength.
+  // Bars filled: one red bar while rules fail, then 1-3 by advisory strength.
   const filled = password ? Math.max(strength, 1) : 0;
 
   return (

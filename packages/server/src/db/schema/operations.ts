@@ -1,60 +1,124 @@
 import { sql } from "drizzle-orm";
-import { check, date, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  check,
+  date,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { idColumn } from "./_helpers.js";
 import { users } from "./auth.js";
 
-export const scheduledJobRuns = pgTable("scheduled_job_runs", {
-  id: idColumn(),
-  jobKey: text("job_key").notNull(),
-  runKey: text("run_key").notNull(),
-  status: text("status").notNull(),
-  startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
-  finishedAt: timestamp("finished_at", { withTimezone: true }),
-  attempt: integer("attempt").notNull().default(1),
-  resultJson: jsonb("result_json"),
-  errorCode: text("error_code"),
-}, (t) => [uniqueIndex("scheduled_job_runs_run_uq").on(t.jobKey, t.runKey), index("scheduled_job_runs_status_idx").on(t.jobKey, t.status, t.startedAt)]);
+export const scheduledJobRuns = pgTable(
+  "scheduled_job_runs",
+  {
+    id: idColumn(),
+    jobKey: text("job_key").notNull(),
+    runKey: text("run_key").notNull(),
+    status: text("status").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    attempt: integer("attempt").notNull().default(1),
+    resultJson: jsonb("result_json"),
+    errorCode: text("error_code"),
+  },
+  (t) => [
+    uniqueIndex("scheduled_job_runs_run_uq").on(t.jobKey, t.runKey),
+    index("scheduled_job_runs_status_idx").on(t.jobKey, t.status, t.startedAt),
+  ],
+);
 
 /** S7.4 D12 / S7.4b B9: 415 and 429 refusals counted per Africa/Libreville day and code (no IP, no path). Read by OPS-01. */
-export const securityEventCounters = pgTable("security_event_counters", {
-  day: date("day").notNull(),
-  code: text("code").notNull(),
-  count: integer("count").notNull().default(0),
-}, (t) => [primaryKey({ columns: [t.day, t.code] })]);
+export const securityEventCounters = pgTable(
+  "security_event_counters",
+  {
+    day: date("day").notNull(),
+    code: text("code").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.code] })],
+);
 
-export const retentionHolds = pgTable("retention_holds", {
-  id: idColumn(),
-  scopeType: text("scope_type").notNull(),
-  scopeId: uuid("scope_id").notNull(),
-  holdType: text("hold_type").notNull(),
-  reason: text("reason").notNull(),
-  status: text("status").notNull().default("active"),
-  startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
-  releasedAt: timestamp("released_at", { withTimezone: true }),
-  createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
-  releasedByUserId: uuid("released_by_user_id").references(() => users.id, { onDelete: "set null" }),
-}, (t) => [
-  index("retention_holds_scope_idx").on(t.scopeType, t.scopeId, t.status),
-  // S7.3 (D7): closed vocabularies.
-  check("retention_holds_status_valid", sql`${t.status} in ('active', 'released')`),
-  check("retention_holds_scope_type_valid", sql`${t.scopeType} in ('customer', 'prospect', 'document')`),
-  check("retention_holds_hold_type_valid", sql`${t.holdType} in ('legal', 'dispute', 'accounting')`),
-]);
+export const retentionHolds = pgTable(
+  "retention_holds",
+  {
+    id: idColumn(),
+    scopeType: text("scope_type").notNull(),
+    scopeId: uuid("scope_id").notNull(),
+    holdType: text("hold_type").notNull(),
+    reason: text("reason").notNull(),
+    status: text("status").notNull().default("active"),
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    releasedAt: timestamp("released_at", { withTimezone: true }),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    releasedByUserId: uuid("released_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+  },
+  (t) => [
+    index("retention_holds_scope_idx").on(t.scopeType, t.scopeId, t.status),
+    // S7.3 (D7): closed vocabularies.
+    check(
+      "retention_holds_status_valid",
+      sql`${t.status} in ('active', 'released')`,
+    ),
+    check(
+      "retention_holds_scope_type_valid",
+      sql`${t.scopeType} in ('customer', 'prospect', 'document')`,
+    ),
+    check(
+      "retention_holds_hold_type_valid",
+      sql`${t.holdType} in ('legal', 'dispute', 'accounting')`,
+    ),
+  ],
+);
 
-export const anonymizationEvents = pgTable("anonymization_events", {
-  id: idColumn(),
-  subjectType: text("subject_type").notNull(),
-  subjectId: uuid("subject_id").notNull(),
-  reason: text("reason").notNull(),
-  status: text("status").notNull(),
-  requestedAt: timestamp("requested_at", { withTimezone: true }).defaultNow().notNull(),
-  executedAt: timestamp("executed_at", { withTimezone: true }),
-  executedByUserId: uuid("executed_by_user_id").references(() => users.id, { onDelete: "set null" }),
-  metadataJson: jsonb("metadata_json"),
-}, (t) => [
-  index("anonymization_events_subject_idx").on(t.subjectType, t.subjectId, t.requestedAt),
-  // S7.3: one executed anonymization per subject (D10 idempotency, replay key).
-  uniqueIndex("anonymization_events_subject_executed_uq").on(t.subjectType, t.subjectId).where(sql`${t.status} = 'executed'`),
-  check("anonymization_events_status_valid", sql`${t.status} in ('executed')`),
-  check("anonymization_events_subject_type_valid", sql`${t.subjectType} in ('customer', 'prospect')`),
-]);
+export const anonymizationEvents = pgTable(
+  "anonymization_events",
+  {
+    id: idColumn(),
+    subjectType: text("subject_type").notNull(),
+    subjectId: uuid("subject_id").notNull(),
+    reason: text("reason").notNull(),
+    status: text("status").notNull(),
+    requestedAt: timestamp("requested_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    executedAt: timestamp("executed_at", { withTimezone: true }),
+    executedByUserId: uuid("executed_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    metadataJson: jsonb("metadata_json"),
+  },
+  (t) => [
+    index("anonymization_events_subject_idx").on(
+      t.subjectType,
+      t.subjectId,
+      t.requestedAt,
+    ),
+    // S7.3: one executed anonymization per subject (D10 idempotency, replay key).
+    uniqueIndex("anonymization_events_subject_executed_uq")
+      .on(t.subjectType, t.subjectId)
+      .where(sql`${t.status} = 'executed'`),
+    check(
+      "anonymization_events_status_valid",
+      sql`${t.status} in ('executed')`,
+    ),
+    check(
+      "anonymization_events_subject_type_valid",
+      sql`${t.subjectType} in ('customer', 'prospect')`,
+    ),
+  ],
+);

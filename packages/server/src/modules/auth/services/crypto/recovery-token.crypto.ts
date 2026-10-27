@@ -51,7 +51,10 @@ export function signPasswordRecoveryGrant(input: {
     exp: Math.floor(expiresAt.getTime() / 1000),
   } satisfies PasswordRecoveryGrantClaims);
   const unsigned = `${header}.${payload}`;
-  return { token: `${unsigned}.${signature(unsigned, input.secret)}`, expiresAt };
+  return {
+    token: `${unsigned}.${signature(unsigned, input.secret)}`,
+    expiresAt,
+  };
 }
 
 export function verifyPasswordRecoveryGrant(
@@ -67,7 +70,8 @@ export function verifyPasswordRecoveryGrant(
 
   const parsedHeader = decode<{ alg?: string; typ?: string }>(header);
   if (parsedHeader?.alg !== "HS256" || parsedHeader.typ !== "JWT") return null;
-  if (!safeEqual(presentedSignature, signature(`${header}.${payload}`, secret))) return null;
+  if (!safeEqual(presentedSignature, signature(`${header}.${payload}`, secret)))
+    return null;
 
   const claims = decode<PasswordRecoveryGrantClaims>(payload);
   if (
@@ -79,7 +83,8 @@ export function verifyPasswordRecoveryGrant(
     !Number.isSafeInteger(claims.iat) ||
     !Number.isSafeInteger(claims.exp) ||
     claims.exp * 1000 <= now.getTime()
-  ) return null;
+  )
+    return null;
 
   return claims;
 }

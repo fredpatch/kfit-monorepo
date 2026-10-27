@@ -49,26 +49,22 @@ let safe = false;
 before(async () => {
   assertLocalTestDatabase();
   safe = true;
-  await db
-    .insert(users)
-    .values({
-      id: userId,
-      email,
-      passwordHash: await new PasswordService().hash(password),
-      role: "admin",
-      status: "active",
-    });
-  await db
-    .insert(trustedDevices)
-    .values({
-      userId,
-      deviceFingerprintHash: digestDeviceToken(
-        deviceToken,
-        env.AUTH_DEVICE_PEPPER!,
-      ),
-      label: "Autre · Autre",
-      trustedUntil: new Date(Date.now() + 24 * 60 * 60_000),
-    });
+  await db.insert(users).values({
+    id: userId,
+    email,
+    passwordHash: await new PasswordService().hash(password),
+    role: "admin",
+    status: "active",
+  });
+  await db.insert(trustedDevices).values({
+    userId,
+    deviceFingerprintHash: digestDeviceToken(
+      deviceToken,
+      env.AUTH_DEVICE_PEPPER!,
+    ),
+    label: "Autre · Autre",
+    trustedUntil: new Date(Date.now() + 24 * 60 * 60_000),
+  });
 });
 after(async () => {
   try {

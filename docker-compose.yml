@@ -14,7 +14,11 @@ services:
     volumes:
       - kfit_postgres_dev_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kfit} -d ${POSTGRES_DB:-kfit_dev}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-kfit} -d ${POSTGRES_DB:-kfit_dev}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10

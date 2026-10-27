@@ -1,6 +1,22 @@
-import { and, asc, count, eq, inArray, isNotNull, isNull, min, ne, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  min,
+  ne,
+  sql,
+} from "drizzle-orm";
 import type { db as appDb } from "../../../db/client.js";
-import { serviceComponents, servicePolicies, services, serviceVariants } from "../../../db/schema/catalogue.js";
+import {
+  serviceComponents,
+  servicePolicies,
+  services,
+  serviceVariants,
+} from "../../../db/schema/catalogue.js";
 import { subscriptions } from "../../../db/schema/customers.js";
 import { waitlistEntries } from "../../../db/schema/prospects.js";
 import { capacityClaimCondition } from "../../onboarding/repositories/capacity-claims.js";
@@ -34,8 +50,10 @@ function mapService(row: typeof services.$inferSelect): CatalogueServiceRecord {
     basePriceXaf: row.basePriceXaf,
     deliveryType: row.deliveryType as CatalogueServiceRecord["deliveryType"],
     defaultDurationValue: row.defaultDurationValue,
-    defaultDurationUnit: row.defaultDurationUnit as CatalogueServiceRecord["defaultDurationUnit"],
-    availabilityStatus: row.availabilityStatus as CatalogueServiceRecord["availabilityStatus"],
+    defaultDurationUnit:
+      row.defaultDurationUnit as CatalogueServiceRecord["defaultDurationUnit"],
+    availabilityStatus:
+      row.availabilityStatus as CatalogueServiceRecord["availabilityStatus"],
     capacityMode: row.capacityMode as CatalogueServiceRecord["capacityMode"],
     capacityLimit: row.capacityLimit,
     waitlistEnabled: row.waitlistEnabled,
@@ -44,7 +62,9 @@ function mapService(row: typeof services.$inferSelect): CatalogueServiceRecord {
   };
 }
 
-function mapAdminService(row: typeof services.$inferSelect): CatalogueAdminServiceRecord {
+function mapAdminService(
+  row: typeof services.$inferSelect,
+): CatalogueAdminServiceRecord {
   return {
     id: row.id,
     name: row.name,
@@ -52,11 +72,15 @@ function mapAdminService(row: typeof services.$inferSelect): CatalogueAdminServi
     description: row.description,
     pricingMode: row.pricingMode as CatalogueAdminServiceRecord["pricingMode"],
     basePriceXaf: row.basePriceXaf,
-    deliveryType: row.deliveryType as CatalogueAdminServiceRecord["deliveryType"],
+    deliveryType:
+      row.deliveryType as CatalogueAdminServiceRecord["deliveryType"],
     defaultDurationValue: row.defaultDurationValue,
-    defaultDurationUnit: row.defaultDurationUnit as CatalogueAdminServiceRecord["defaultDurationUnit"],
-    availabilityStatus: row.availabilityStatus as CatalogueAdminServiceRecord["availabilityStatus"],
-    capacityMode: row.capacityMode as CatalogueAdminServiceRecord["capacityMode"],
+    defaultDurationUnit:
+      row.defaultDurationUnit as CatalogueAdminServiceRecord["defaultDurationUnit"],
+    availabilityStatus:
+      row.availabilityStatus as CatalogueAdminServiceRecord["availabilityStatus"],
+    capacityMode:
+      row.capacityMode as CatalogueAdminServiceRecord["capacityMode"],
     capacityLimit: row.capacityLimit,
     waitlistEnabled: row.waitlistEnabled,
     isPublic: row.isPublic,
@@ -67,7 +91,9 @@ function mapAdminService(row: typeof services.$inferSelect): CatalogueAdminServi
   };
 }
 
-function mapVariant(row: typeof serviceVariants.$inferSelect): CatalogueServiceVariantRecord {
+function mapVariant(
+  row: typeof serviceVariants.$inferSelect,
+): CatalogueServiceVariantRecord {
   return {
     id: row.id,
     serviceId: row.serviceId,
@@ -75,14 +101,18 @@ function mapVariant(row: typeof serviceVariants.$inferSelect): CatalogueServiceV
     slug: row.slug,
     priceXaf: row.priceXaf,
     durationValue: row.durationValue,
-    durationUnit: row.durationUnit as CatalogueServiceVariantRecord["durationUnit"],
+    durationUnit:
+      row.durationUnit as CatalogueServiceVariantRecord["durationUnit"],
     capacityLimit: row.capacityLimit,
-    availabilityStatus: row.availabilityStatus as CatalogueServiceVariantRecord["availabilityStatus"],
+    availabilityStatus:
+      row.availabilityStatus as CatalogueServiceVariantRecord["availabilityStatus"],
     sortOrder: row.sortOrder,
   };
 }
 
-function mapComponent(row: typeof serviceComponents.$inferSelect): CatalogueServiceComponentRecord {
+function mapComponent(
+  row: typeof serviceComponents.$inferSelect,
+): CatalogueServiceComponentRecord {
   return {
     id: row.id,
     serviceId: row.serviceId,
@@ -95,7 +125,9 @@ function mapComponent(row: typeof serviceComponents.$inferSelect): CatalogueServ
   };
 }
 
-function mapPolicy(row: typeof servicePolicies.$inferSelect): CatalogueServicePolicyRecord {
+function mapPolicy(
+  row: typeof servicePolicies.$inferSelect,
+): CatalogueServicePolicyRecord {
   return {
     serviceId: row.serviceId,
     variantId: row.variantId,
@@ -133,7 +165,6 @@ function toPatch(input: CatalogueServicePatchInput, now: Date) {
   };
 }
 
-
 export class DrizzleCatalogueRepository implements CatalogueRepository {
   constructor(private readonly database: CatalogueDb) {}
 
@@ -141,12 +172,14 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
     const serviceRows = await this.database
       .select()
       .from(services)
-      .where(and(
-        eq(services.isPublic, true),
-        isNotNull(services.publishedAt),
-        isNull(services.archivedAt),
-        ne(services.availabilityStatus, "archived"),
-      ))
+      .where(
+        and(
+          eq(services.isPublic, true),
+          isNotNull(services.publishedAt),
+          isNull(services.archivedAt),
+          ne(services.availabilityStatus, "archived"),
+        ),
+      )
       .orderBy(asc(services.sortOrder), asc(services.name));
 
     const serviceIds = serviceRows.map((service) => service.id);
@@ -163,16 +196,23 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
       this.database
         .select()
         .from(serviceVariants)
-        .where(and(
-          inArray(serviceVariants.serviceId, serviceIds),
-          isNull(serviceVariants.archivedAt),
-          ne(serviceVariants.availabilityStatus, "archived"),
-        ))
+        .where(
+          and(
+            inArray(serviceVariants.serviceId, serviceIds),
+            isNull(serviceVariants.archivedAt),
+            ne(serviceVariants.availabilityStatus, "archived"),
+          ),
+        )
         .orderBy(asc(serviceVariants.sortOrder), asc(serviceVariants.name)),
       this.database
         .select()
         .from(serviceComponents)
-        .where(and(inArray(serviceComponents.serviceId, serviceIds), isNull(serviceComponents.archivedAt))),
+        .where(
+          and(
+            inArray(serviceComponents.serviceId, serviceIds),
+            isNull(serviceComponents.archivedAt),
+          ),
+        ),
       this.database
         .select()
         .from(servicePolicies)
@@ -189,34 +229,104 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
 
   /** Read-only snapshot for the admin overview (UX-7). One read-only transaction so counts and services agree. */
   async getAdminOverviewSnapshot(now: Date) {
-    return this.database.transaction(async (tx) => {
-      const serviceRows = await tx.select().from(services).orderBy(asc(services.sortOrder), asc(services.name));
-      const serviceIds = serviceRows.map((service) => service.id);
-      if (serviceIds.length === 0) return { services: [], variants: [], components: [], policies: [], claims: [], waitlist: [] };
-      const onboarding = sql<boolean>`${subscriptions.status} = 'onboarding'`;
-      // A transaction owns one pg connection, which runs one query at a time: await each read in turn.
-      const variantRows = await tx.select().from(serviceVariants)
-        .where(and(inArray(serviceVariants.serviceId, serviceIds), isNull(serviceVariants.archivedAt), ne(serviceVariants.availabilityStatus, "archived")))
-        .orderBy(asc(serviceVariants.sortOrder), asc(serviceVariants.name));
-      const componentRows = await tx.select().from(serviceComponents).where(and(inArray(serviceComponents.serviceId, serviceIds), isNull(serviceComponents.archivedAt)));
-      const policyRows = await tx.select().from(servicePolicies).where(inArray(servicePolicies.serviceId, serviceIds));
-      const claimRows = await tx.select({ serviceId: subscriptions.serviceId, variantId: subscriptions.variantId, onboarding, count: count() })
-        .from(subscriptions)
-        .where(and(inArray(subscriptions.serviceId, serviceIds), capacityClaimCondition(now)))
-        .groupBy(subscriptions.serviceId, subscriptions.variantId, onboarding);
-      const waitlistRows = await tx.select({ serviceId: waitlistEntries.serviceId, active: count(), oldestEnteredAt: min(waitlistEntries.enteredAt) })
-        .from(waitlistEntries)
-        .where(and(inArray(waitlistEntries.serviceId, serviceIds), eq(waitlistEntries.status, "active"), isNull(waitlistEntries.leftAt)))
-        .groupBy(waitlistEntries.serviceId);
-      return {
-        services: serviceRows.map(mapAdminService),
-        variants: variantRows.map(mapVariant),
-        components: componentRows.map(mapComponent),
-        policies: policyRows.map(mapPolicy),
-        claims: claimRows.map((row) => ({ serviceId: row.serviceId, variantId: row.variantId, onboarding: Boolean(row.onboarding), count: Number(row.count) })),
-        waitlist: waitlistRows.map((row) => ({ serviceId: row.serviceId, active: Number(row.active), oldestEnteredAt: row.oldestEnteredAt ? new Date(row.oldestEnteredAt) : null })),
-      };
-    }, { isolationLevel: "repeatable read", accessMode: "read only" });
+    return this.database.transaction(
+      async (tx) => {
+        const serviceRows = await tx
+          .select()
+          .from(services)
+          .orderBy(asc(services.sortOrder), asc(services.name));
+        const serviceIds = serviceRows.map((service) => service.id);
+        if (serviceIds.length === 0)
+          return {
+            services: [],
+            variants: [],
+            components: [],
+            policies: [],
+            claims: [],
+            waitlist: [],
+          };
+        const onboarding = sql<boolean>`${subscriptions.status} = 'onboarding'`;
+        // A transaction owns one pg connection, which runs one query at a time: await each read in turn.
+        const variantRows = await tx
+          .select()
+          .from(serviceVariants)
+          .where(
+            and(
+              inArray(serviceVariants.serviceId, serviceIds),
+              isNull(serviceVariants.archivedAt),
+              ne(serviceVariants.availabilityStatus, "archived"),
+            ),
+          )
+          .orderBy(asc(serviceVariants.sortOrder), asc(serviceVariants.name));
+        const componentRows = await tx
+          .select()
+          .from(serviceComponents)
+          .where(
+            and(
+              inArray(serviceComponents.serviceId, serviceIds),
+              isNull(serviceComponents.archivedAt),
+            ),
+          );
+        const policyRows = await tx
+          .select()
+          .from(servicePolicies)
+          .where(inArray(servicePolicies.serviceId, serviceIds));
+        const claimRows = await tx
+          .select({
+            serviceId: subscriptions.serviceId,
+            variantId: subscriptions.variantId,
+            onboarding,
+            count: count(),
+          })
+          .from(subscriptions)
+          .where(
+            and(
+              inArray(subscriptions.serviceId, serviceIds),
+              capacityClaimCondition(now),
+            ),
+          )
+          .groupBy(
+            subscriptions.serviceId,
+            subscriptions.variantId,
+            onboarding,
+          );
+        const waitlistRows = await tx
+          .select({
+            serviceId: waitlistEntries.serviceId,
+            active: count(),
+            oldestEnteredAt: min(waitlistEntries.enteredAt),
+          })
+          .from(waitlistEntries)
+          .where(
+            and(
+              inArray(waitlistEntries.serviceId, serviceIds),
+              eq(waitlistEntries.status, "active"),
+              isNull(waitlistEntries.leftAt),
+            ),
+          )
+          .groupBy(waitlistEntries.serviceId);
+        return {
+          services: serviceRows.map(mapAdminService),
+          variants: variantRows.map(mapVariant),
+          components: componentRows.map(mapComponent),
+          policies: policyRows.map(mapPolicy),
+          claims: claimRows.map((row) => ({
+            serviceId: row.serviceId,
+            variantId: row.variantId,
+            onboarding: Boolean(row.onboarding),
+            count: Number(row.count),
+          })),
+          waitlist: waitlistRows.map((row) => ({
+            serviceId: row.serviceId,
+            active: Number(row.active),
+            oldestEnteredAt: row.oldestEnteredAt
+              ? new Date(row.oldestEnteredAt)
+              : null,
+          })),
+        };
+      },
+      { isolationLevel: "repeatable read", accessMode: "read only" },
+    );
   }
 
   async listAdminServices() {
@@ -255,7 +365,13 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
       const [updated] = await this.database
         .update(services)
         .set(toPatch(input, new Date()))
-        .where(and(eq(services.id, serviceId), isNull(services.archivedAt), ne(services.availabilityStatus, "archived")))
+        .where(
+          and(
+            eq(services.id, serviceId),
+            isNull(services.archivedAt),
+            ne(services.availabilityStatus, "archived"),
+          ),
+        )
         .returning();
       if (!updated) return "not_found";
       return mapAdminService(updated);
@@ -274,8 +390,11 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
         .where(eq(services.id, serviceId))
         .for("update");
       if (!existing) return "not_found" as const;
-      if (existing.archivedAt || existing.availabilityStatus === "archived") return "archived" as const;
-      const failures = evaluateDeliverability(await loadDeliverabilityInput(tx, existing));
+      if (existing.archivedAt || existing.availabilityStatus === "archived")
+        return "archived" as const;
+      const failures = evaluateDeliverability(
+        await loadDeliverabilityInput(tx, existing),
+      );
       if (failures.length) return { notDeliverable: failures };
 
       const [updated] = await tx
@@ -307,7 +426,9 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
     return mapAdminService(updated);
   }
 
-  async reorderServices(items: Array<{ serviceId: string; sortOrder: number }>) {
+  async reorderServices(
+    items: Array<{ serviceId: string; sortOrder: number }>,
+  ) {
     const ids = items.map((item) => item.serviceId);
     const existing = await this.database
       .select({ id: services.id })

@@ -5,7 +5,13 @@ import { auditEvents } from "../../../db/schema/auth.js";
 export type AuditActorType = "user" | "system" | "anonymous";
 export type AuditResult = "success" | "failure" | "blocked";
 
-export type AuditMetadataValue = string | number | boolean | null | AuditMetadata | AuditMetadataValue[];
+export type AuditMetadataValue =
+  | string
+  | number
+  | boolean
+  | null
+  | AuditMetadata
+  | AuditMetadataValue[];
 export interface AuditMetadata {
   [key: string]: AuditMetadataValue;
 }
@@ -26,7 +32,10 @@ export type RecordAuditEventInput = {
 type AppDb = typeof appDb;
 type AuditDb = Pick<AppDb, "insert">;
 
-export function hashAuditContext(value: string | null | undefined, pepper: string): string | null {
+export function hashAuditContext(
+  value: string | null | undefined,
+  pepper: string,
+): string | null {
   if (!value) return null;
   return createHmac("sha256", pepper).update(value).digest("hex");
 }
@@ -49,7 +58,10 @@ export class AuditService {
         result: input.result,
         requestId: input.requestId ?? null,
         ipHash: hashAuditContext(input.ipAddress, this.options.auditHashPepper),
-        userAgentHash: hashAuditContext(input.userAgent, this.options.auditHashPepper),
+        userAgentHash: hashAuditContext(
+          input.userAgent,
+          this.options.auditHashPepper,
+        ),
         metadataJson: input.metadata ?? null,
       })
       .returning();

@@ -8,7 +8,10 @@ export function useContentAction() {
   const client = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  async function run(work: () => Promise<unknown>, success: string): Promise<boolean> {
+  async function run(
+    work: () => Promise<unknown>,
+    success: string,
+  ): Promise<boolean> {
     if (busy) return false;
     setBusy(true);
     setError(null);
@@ -28,5 +31,12 @@ export function useContentAction() {
 }
 
 export function ActionError({ message }: { message: string | null }) {
-  return message ? <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger">{message}</p> : null;
+  return message ? (
+    <p
+      role="alert"
+      className="rounded-md bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger"
+    >
+      {message}
+    </p>
+  ) : null;
 }

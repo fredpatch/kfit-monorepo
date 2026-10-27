@@ -94,22 +94,18 @@ async function healthDefinition() {
 before(async () => {
   assertLocalTestDatabase();
   safe = true;
-  await db
-    .insert(users)
-    .values({
-      id: userId,
-      email: `questionnaire-${userId}@example.invalid`,
-      passwordHash: "synthetic",
-      role: "admin",
-      status: "active",
-    });
-  await db
-    .insert(customers)
-    .values({
-      id: customerId,
-      fullName: "Synthetic Questionnaire Customer",
-      whatsapp: `+241${String(BigInt("0x" + customerId.replaceAll("-", "").slice(0, 12)) % 1000000000000n).padStart(12, "0")}`,
-    });
+  await db.insert(users).values({
+    id: userId,
+    email: `questionnaire-${userId}@example.invalid`,
+    passwordHash: "synthetic",
+    role: "admin",
+    status: "active",
+  });
+  await db.insert(customers).values({
+    id: customerId,
+    fullName: "Synthetic Questionnaire Customer",
+    whatsapp: `+241${String(BigInt("0x" + customerId.replaceAll("-", "").slice(0, 12)) % 1000000000000n).padStart(12, "0")}`,
+  });
   await healthDefinition();
 });
 after(async () => {
@@ -270,16 +266,14 @@ async function setup(
       : config.assigned;
   const serviceId = randomUUID();
   serviceIds.push(serviceId);
-  await db
-    .insert(services)
-    .values({
-      id: serviceId,
-      name: "Synthetic Questionnaire Service",
-      slug: `questionnaire-${serviceId}`,
-      pricingMode: "quote",
-      deliveryType: "time_based",
-      capacityMode: "unlimited",
-    });
+  await db.insert(services).values({
+    id: serviceId,
+    name: "Synthetic Questionnaire Service",
+    slug: `questionnaire-${serviceId}`,
+    pricingMode: "quote",
+    deliveryType: "time_based",
+    capacityMode: "unlimited",
+  });
   const [policy] = await db
     .insert(servicePolicies)
     .values({
@@ -290,19 +284,17 @@ async function setup(
     .returning();
   const id = randomUUID();
   subscriptionIds.push(id);
-  await db
-    .insert(subscriptions)
-    .values({
-      id,
-      reference: `SUB-QUESTIONNAIRE-${id}`,
-      customerId,
-      serviceId,
-      status: "onboarding",
-      agreedPriceXaf: 45000,
-      currency: "XAF",
-      plannedStartDate: new Date(Date.now() + 86400000),
-      createdByUserId: userId,
-    });
+  await db.insert(subscriptions).values({
+    id,
+    reference: `SUB-QUESTIONNAIRE-${id}`,
+    customerId,
+    serviceId,
+    status: "onboarding",
+    agreedPriceXaf: 45000,
+    currency: "XAF",
+    plannedStartDate: new Date(Date.now() + 86400000),
+    createdByUserId: userId,
+  });
   assert.equal(
     (await onboarding.execute(id, { action: "initialize" }, actor)).status,
     "ok",
@@ -1067,22 +1059,18 @@ test("PostgreSQL variant policy overrides service assignment and medical policy 
   const owner = await setup({ questions: [riskQuestion()] });
   const other = await template("assessment", [riskQuestion()]);
   const variantId = randomUUID();
-  await db
-    .insert(serviceVariants)
-    .values({
-      id: variantId,
-      serviceId: owner.serviceId,
-      name: "Synthetic option",
-      slug: `synthetic-${variantId}`,
-    });
-  await db
-    .insert(servicePolicies)
-    .values({
-      serviceId: owner.serviceId,
-      variantId,
-      questionnaireTemplateId: other.id,
-      medicalClearancePolicy: "not_required",
-    });
+  await db.insert(serviceVariants).values({
+    id: variantId,
+    serviceId: owner.serviceId,
+    name: "Synthetic option",
+    slug: `synthetic-${variantId}`,
+  });
+  await db.insert(servicePolicies).values({
+    serviceId: owner.serviceId,
+    variantId,
+    questionnaireTemplateId: other.id,
+    medicalClearancePolicy: "not_required",
+  });
   await db
     .update(subscriptions)
     .set({ variantId })

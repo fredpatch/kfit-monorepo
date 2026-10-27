@@ -1,5 +1,9 @@
 import axios, { type AxiosInstance } from "axios";
-import { requestsApiRoutes, type RequestSubmissionInput, type RequestSubmissionResponse } from "@kfit/shared";
+import {
+  requestsApiRoutes,
+  type RequestSubmissionInput,
+  type RequestSubmissionResponse,
+} from "@kfit/shared";
 
 export type RequestsApiClientOptions = {
   baseUrl?: string;
@@ -21,12 +25,17 @@ function createDefaultHttpClient(baseUrl: string | undefined): AxiosInstance {
   });
 }
 
-export function createRequestsApiClient(options: RequestsApiClientOptions = {}): RequestsApiClient {
+export function createRequestsApiClient(
+  options: RequestsApiClientOptions = {},
+): RequestsApiClient {
   const http = options.http ?? createDefaultHttpClient(options.baseUrl);
 
   return {
     async submit(input) {
-      const response = await http.post<RequestSubmissionResponse>(requestsApiRoutes.publicSubmit, input);
+      const response = await http.post<RequestSubmissionResponse>(
+        requestsApiRoutes.publicSubmit,
+        input,
+      );
       return response.data;
     },
   };

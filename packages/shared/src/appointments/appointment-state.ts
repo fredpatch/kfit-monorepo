@@ -3,6 +3,13 @@
  * Display only; the server's completion rules are unchanged. A requested reschedule stays « Report demandé ».
  */
 export const appointmentStatusesToClose = ["scheduled", "confirmed"] as const;
-export function isAppointmentToClose(appointment: { status: string; scheduledEnd: string }, now: Date): boolean {
-  return appointmentStatusesToClose.some((status) => status === appointment.status) && new Date(appointment.scheduledEnd).getTime() <= now.getTime();
+export function isAppointmentToClose(
+  appointment: { status: string; scheduledEnd: string },
+  now: Date,
+): boolean {
+  return (
+    appointmentStatusesToClose.some(
+      (status) => status === appointment.status,
+    ) && new Date(appointment.scheduledEnd).getTime() <= now.getTime()
+  );
 }

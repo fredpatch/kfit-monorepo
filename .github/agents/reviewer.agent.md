@@ -46,6 +46,7 @@ When the approved plan references a reusable pattern or blueprint:
    - **Tests** - assert behavior, cover failure paths, no skips or bypasses, no real external calls.
    - **UI** - language per `PROJECT.md §Language`; loading/empty/error/disabled states; no client-only authorization.
    - **Docs** - the `Docs impact` line matches the diff and `npm run docs:check` passes (WORKFLOW §16 Documentation (DOC-01)).
+   - **Format** - `npm run format:check` and `npm run lint:dashes` pass (WORKFLOW §17 Format et typographie (PRETTY-01)).
 
 ## Result
 

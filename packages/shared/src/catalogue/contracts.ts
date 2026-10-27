@@ -11,16 +11,22 @@ export const catalogueApiRoutes = {
   /* CAT-03 (REG-F2): offer content editing. Archive only, never delete. */
   adminVariants: "/admin/catalogue/services/:serviceId/variants",
   adminVariant: "/admin/catalogue/services/:serviceId/variants/:variantId",
-  adminVariantArchive: "/admin/catalogue/services/:serviceId/variants/:variantId/archive",
+  adminVariantArchive:
+    "/admin/catalogue/services/:serviceId/variants/:variantId/archive",
   adminComponents: "/admin/catalogue/services/:serviceId/components",
-  adminComponent: "/admin/catalogue/services/:serviceId/components/:componentId",
-  adminComponentArchive: "/admin/catalogue/services/:serviceId/components/:componentId/archive",
+  adminComponent:
+    "/admin/catalogue/services/:serviceId/components/:componentId",
+  adminComponentArchive:
+    "/admin/catalogue/services/:serviceId/components/:componentId/archive",
   adminServiceRules: "/admin/catalogue/services/:serviceId/rules",
-  adminVariantRules: "/admin/catalogue/services/:serviceId/variants/:variantId/rules",
-  adminServiceDeliverability: "/admin/catalogue/services/:serviceId/deliverability",
+  adminVariantRules:
+    "/admin/catalogue/services/:serviceId/variants/:variantId/rules",
+  adminServiceDeliverability:
+    "/admin/catalogue/services/:serviceId/deliverability",
 } as const;
 
-export type CatalogueApiRoute = (typeof catalogueApiRoutes)[keyof typeof catalogueApiRoutes];
+export type CatalogueApiRoute =
+  (typeof catalogueApiRoutes)[keyof typeof catalogueApiRoutes];
 
 export const catalogueErrorCodes = [
   "CATALOGUE_ROUTE_UNEXPECTED_FAILURE",
@@ -43,14 +49,27 @@ export const catalogueErrorCodes = [
 export type CatalogueErrorCode = (typeof catalogueErrorCodes)[number];
 
 /* CAT-03 closed vocabularies (Fred 2026-10-25). */
-export const catalogueComponentTypes = ["appointment", "follow_up", "program"] as const;
+export const catalogueComponentTypes = [
+  "appointment",
+  "follow_up",
+  "program",
+] as const;
 export type CatalogueComponentType = (typeof catalogueComponentTypes)[number];
 export const catalogueConsumptionPolicies = ["manual"] as const;
-export type CatalogueConsumptionPolicy = (typeof catalogueConsumptionPolicies)[number];
-export const catalogueMedicalClearancePolicies = ["not_required", "required_if_risk_flag", "required"] as const;
-export type CatalogueMedicalClearancePolicy = (typeof catalogueMedicalClearancePolicies)[number];
+export type CatalogueConsumptionPolicy =
+  (typeof catalogueConsumptionPolicies)[number];
+export const catalogueMedicalClearancePolicies = [
+  "not_required",
+  "required_if_risk_flag",
+  "required",
+] as const;
+export type CatalogueMedicalClearancePolicy =
+  (typeof catalogueMedicalClearancePolicies)[number];
 /** D3 bounds. At service level a null cadence means « no follow-up cadence »; on a variant override null means « same as the offer ». */
-export const catalogueRuleLimits = { followUpFrequencyDays: { min: 1, max: 90 }, lateCancelNoticeHours: { min: 1, max: 168 } } as const;
+export const catalogueRuleLimits = {
+  followUpFrequencyDays: { min: 1, max: 90 },
+  lateCancelNoticeHours: { min: 1, max: 168 },
+} as const;
 /** D6 rule keys reported by the deliverability check and the publish guard. */
 export const catalogueDeliverabilityRules = [
   "service_component_missing",
@@ -60,9 +79,17 @@ export const catalogueDeliverabilityRules = [
   "price_missing",
   "duration_missing",
 ] as const;
-export type CatalogueDeliverabilityRule = (typeof catalogueDeliverabilityRules)[number];
-export type CatalogueDeliverabilityFailure = { rule: CatalogueDeliverabilityRule; variantId: string | null };
-export type CatalogueDeliverabilityResponse = { serviceId: string; deliverable: boolean; failures: CatalogueDeliverabilityFailure[] };
+export type CatalogueDeliverabilityRule =
+  (typeof catalogueDeliverabilityRules)[number];
+export type CatalogueDeliverabilityFailure = {
+  rule: CatalogueDeliverabilityRule;
+  variantId: string | null;
+};
+export type CatalogueDeliverabilityResponse = {
+  serviceId: string;
+  deliverable: boolean;
+  failures: CatalogueDeliverabilityFailure[];
+};
 
 export type CatalogueAdminVariant = {
   id: string;
@@ -78,8 +105,14 @@ export type CatalogueAdminVariant = {
   archivedAt: string | null;
 };
 export type CatalogueVariantInput = {
-  name?: unknown; slug?: unknown; priceXaf?: unknown; durationValue?: unknown; durationUnit?: unknown;
-  capacityLimit?: unknown; availabilityStatus?: unknown; sortOrder?: unknown;
+  name?: unknown;
+  slug?: unknown;
+  priceXaf?: unknown;
+  durationValue?: unknown;
+  durationUnit?: unknown;
+  capacityLimit?: unknown;
+  availabilityStatus?: unknown;
+  sortOrder?: unknown;
 };
 export type CatalogueAdminVariantResponse = { variant: CatalogueAdminVariant };
 
@@ -94,12 +127,24 @@ export type CatalogueAdminComponent = {
   consumptionPolicy: CatalogueConsumptionPolicy;
   archivedAt: string | null;
 };
-export type CatalogueComponentInput = { variantId?: unknown; componentType?: unknown; label?: unknown; quantity?: unknown; isMandatory?: unknown; consumptionPolicy?: unknown };
-export type CatalogueAdminComponentResponse = { component: CatalogueAdminComponent };
+export type CatalogueComponentInput = {
+  variantId?: unknown;
+  componentType?: unknown;
+  label?: unknown;
+  quantity?: unknown;
+  isMandatory?: unknown;
+  consumptionPolicy?: unknown;
+};
+export type CatalogueAdminComponentResponse = {
+  component: CatalogueAdminComponent;
+};
 
 export type CatalogueRulesInput = {
-  followUpFrequencyDays?: unknown; lateCancelNoticeHours?: unknown; lateCancelConsumesComponent?: unknown;
-  missedConsumesComponent?: unknown; medicalClearancePolicy?: unknown;
+  followUpFrequencyDays?: unknown;
+  lateCancelNoticeHours?: unknown;
+  lateCancelConsumesComponent?: unknown;
+  missedConsumesComponent?: unknown;
+  medicalClearancePolicy?: unknown;
 };
 export type CatalogueAdminRules = {
   serviceId: string;
@@ -111,8 +156,14 @@ export type CatalogueAdminRules = {
   medicalClearancePolicy: CatalogueMedicalClearancePolicy | null;
 };
 /** D5: onboarding subscriptions whose live medical requirement was re-derived by this write. */
-export type CatalogueAdminRulesResponse = { rules: CatalogueAdminRules; onboardingSubscriptionsAffected: number };
-export type CatalogueRulesOverrideRemovedResponse = { removed: true; onboardingSubscriptionsAffected: number };
+export type CatalogueAdminRulesResponse = {
+  rules: CatalogueAdminRules;
+  onboardingSubscriptionsAffected: number;
+};
+export type CatalogueRulesOverrideRemovedResponse = {
+  removed: true;
+  onboardingSubscriptionsAffected: number;
+};
 
 export type CatalogueAvailabilityStatus =
   | "open"
@@ -262,7 +313,9 @@ export type CatalogueOccupancy = {
 };
 
 export type CatalogueAdminServiceOverview = CatalogueAdminService & {
-  occupancy: CatalogueOccupancy & { byVariant: Array<CatalogueOccupancy & { variantId: string }> };
+  occupancy: CatalogueOccupancy & {
+    byVariant: Array<CatalogueOccupancy & { variantId: string }>;
+  };
   waitlist: { active: number; oldestEnteredAt: string | null };
   /** Lowest price among the service base price and non-archived variants; null when none. */
   minPriceXaf: number | null;
@@ -270,4 +323,7 @@ export type CatalogueAdminServiceOverview = CatalogueAdminService & {
   policy: CatalogueServicePolicy | null;
   variants: CatalogueServiceVariant[];
 };
-export type CatalogueAdminServicesOverviewResponse = { asOf: string; services: CatalogueAdminServiceOverview[] };
+export type CatalogueAdminServicesOverviewResponse = {
+  asOf: string;
+  services: CatalogueAdminServiceOverview[];
+};

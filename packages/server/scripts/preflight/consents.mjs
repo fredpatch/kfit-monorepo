@@ -5,10 +5,20 @@ import pg from "pg";
 const envFile = fileURLToPath(new URL("../../../../.env", import.meta.url));
 loadEnv({ path: envFile });
 let target;
-try { target = new URL(process.env.DATABASE_URL ?? ""); }
-catch { throw new Error("Consent preflight requires a valid local database URL."); }
-if (!["localhost", "127.0.0.1"].includes(target.hostname) || target.port !== "5433" || target.pathname !== "/kfit_dev" || target.search) {
-  throw new Error("Consent preflight requires the disposable local development database on port 5433.");
+try {
+  target = new URL(process.env.DATABASE_URL ?? "");
+} catch {
+  throw new Error("Consent preflight requires a valid local database URL.");
+}
+if (
+  !["localhost", "127.0.0.1"].includes(target.hostname) ||
+  target.port !== "5433" ||
+  target.pathname !== "/kfit_dev" ||
+  target.search
+) {
+  throw new Error(
+    "Consent preflight requires the disposable local development database on port 5433.",
+  );
 }
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 try {
@@ -19,12 +29,24 @@ try {
     (SELECT count(*)::int FROM secure_access_tokens) AS existing_tokens,
     (SELECT count(*)::int FROM external_access_events) AS existing_access_events`);
   const counts = result.rows[0];
-  console.log(JSON.stringify({ localTargetVerified: true, envFile: "root .env", ...counts }));
+  console.log(
+    JSON.stringify({
+      localTargetVerified: true,
+      envFile: "root .env",
+      ...counts,
+    }),
+  );
   if (counts.definitions !== 0 || counts.records !== 0) {
-    console.error("Existing consent history requires an approved legacy-content/provenance migration plan. No rows changed.");
+    console.error(
+      "Existing consent history requires an approved legacy-content/provenance migration plan. No rows changed.",
+    );
     process.exitCode = 1;
   }
 } catch {
-  console.error("Consent preflight failed. Check the local database and migration state.");
+  console.error(
+    "Consent preflight failed. Check the local database and migration state.",
+  );
   process.exitCode = 1;
-} finally { await pool.end(); }
+} finally {
+  await pool.end();
+}

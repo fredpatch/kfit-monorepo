@@ -7,7 +7,12 @@ import { Button } from "../../components/ui/button.js";
 import { Field } from "../../components/ui/field.js";
 import { Input } from "../../components/ui/input.js";
 import { authApiClient, type AuthApiClient } from "../api/auth-api.js";
-import { authFailureOf, authMessages, commonAuthMessage, passwordPolicyMessage } from "../api/auth-errors.js";
+import {
+  authFailureOf,
+  authMessages,
+  commonAuthMessage,
+  passwordPolicyMessage,
+} from "../api/auth-errors.js";
 import { AuthAlert, AuthHeading } from "./AuthShell.js";
 import { OtpCodeInput } from "./OtpCodeInput.js";
 import { PasswordInput } from "./PasswordInput.js";
@@ -22,7 +27,17 @@ type Step = "email" | "code" | "password";
  * Mot de passe oublié (board 09, existing Sprint 1 endpoints /auth/recovery/*):
  * e-mail → 6-digit code (5 min, 5 attempts) → new password → back to Connexion (no auto-login).
  */
-export function RecoveryFlow({ initialEmail, onDone, onCancel, api = authApiClient }: { initialEmail: string; onDone(): void; onCancel(): void; api?: AuthApiClient }) {
+export function RecoveryFlow({
+  initialEmail,
+  onDone,
+  onCancel,
+  api = authApiClient,
+}: {
+  initialEmail: string;
+  onDone(): void;
+  onCancel(): void;
+  api?: AuthApiClient;
+}) {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState(initialEmail);
   const [resetToken, setResetToken] = useState<string | null>(null);
@@ -41,8 +56,15 @@ export function RecoveryFlow({ initialEmail, onDone, onCancel, api = authApiClie
 
   return (
     <>
-      <Button type="button" variant="ghost" size="sm" className="-ml-2 self-start" onClick={step === "email" ? onCancel : restart}>
-        <ArrowLeft aria-hidden="true" /> {step === "email" ? "Retour à la connexion" : "Changer d'e-mail"}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="-ml-2 self-start"
+        onClick={step === "email" ? onCancel : restart}
+      >
+        <ArrowLeft aria-hidden="true" />{" "}
+        {step === "email" ? "Retour à la connexion" : "Changer d'e-mail"}
       </Button>
       {step === "email" ? (
         <EmailStep
@@ -66,15 +88,30 @@ export function RecoveryFlow({ initialEmail, onDone, onCancel, api = authApiClie
           }}
         />
       ) : (
-        <PasswordStep resetToken={resetToken ?? ""} api={api} onDone={onDone} onRestart={restart} />
+        <PasswordStep
+          resetToken={resetToken ?? ""}
+          api={api}
+          onDone={onDone}
+          onRestart={restart}
+        />
       )}
     </>
   );
 }
 
-function EmailStep({ initialEmail, api, onSent }: { initialEmail: string; api: AuthApiClient; onSent(email: string): void }) {
+function EmailStep({
+  initialEmail,
+  api,
+  onSent,
+}: {
+  initialEmail: string;
+  api: AuthApiClient;
+  onSent(email: string): void;
+}) {
   const [formError, setFormError] = useState<string | null>(null);
-  const { register, handleSubmit, formState } = useForm<{ email: string }>({ defaultValues: { email: initialEmail } });
+  const { register, handleSubmit, formState } = useForm<{ email: string }>({
+    defaultValues: { email: initialEmail },
+  });
 
   const submit = handleSubmit(async ({ email }) => {
     setFormError(null);
@@ -88,10 +125,22 @@ function EmailStep({ initialEmail, api, onSent }: { initialEmail: string; api: A
 
   return (
     <>
-      <AuthHeading title="Mot de passe oublié" description="Saisis l'e-mail de ton compte. Tu recevras un code à 6 chiffres." />
+      <AuthHeading
+        title="Mot de passe oublié"
+        description="Saisis l'e-mail de ton compte. Tu recevras un code à 6 chiffres."
+      />
       <form noValidate onSubmit={submit} className="flex flex-col gap-4">
         <Field label="E-mail" error={formState.errors.email?.message}>
-          {(control) => <Input {...control} type="email" autoComplete="username" className="h-11" autoFocus {...register("email", { required: "Saisis ton e-mail." })} />}
+          {(control) => (
+            <Input
+              {...control}
+              type="email"
+              autoComplete="username"
+              className="h-11"
+              autoFocus
+              {...register("email", { required: "Saisis ton e-mail." })}
+            />
+          )}
         </Field>
         <AuthAlert message={formError} />
         <Button type="submit" size="lg" disabled={formState.isSubmitting}>
@@ -102,7 +151,19 @@ function EmailStep({ initialEmail, api, onSent }: { initialEmail: string; api: A
   );
 }
 
-function CodeStep({ email, api, cooldown, onResent, onVerified }: { email: string; api: AuthApiClient; cooldown: number; onResent(): void; onVerified(token: string): void }) {
+function CodeStep({
+  email,
+  api,
+  cooldown,
+  onResent,
+  onVerified,
+}: {
+  email: string;
+  api: AuthApiClient;
+  cooldown: number;
+  onResent(): void;
+  onVerified(token: string): void;
+}) {
   const [code, setCode] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -121,7 +182,12 @@ function CodeStep({ email, api, cooldown, onResent, onVerified }: { email: strin
       onVerified(result.resetToken);
     } catch (error) {
       const failure = authFailureOf(error);
-      setFormError(failure.code === "AUTH_RECOVERY_CODE_INVALID" || failure.code === "AUTH_RECOVERY_INVALID_FORMAT" ? authMessages.codeInvalid : commonAuthMessage(failure));
+      setFormError(
+        failure.code === "AUTH_RECOVERY_CODE_INVALID" ||
+          failure.code === "AUTH_RECOVERY_INVALID_FORMAT"
+          ? authMessages.codeInvalid
+          : commonAuthMessage(failure),
+      );
       setCode("");
     } finally {
       setSubmitting(false);
@@ -144,13 +210,29 @@ function CodeStep({ email, api, cooldown, onResent, onVerified }: { email: strin
 
   return (
     <>
-      <span aria-hidden="true" className="flex size-[52px] items-center justify-center rounded-2xl bg-success-soft text-success">
+      <span
+        aria-hidden="true"
+        className="flex size-[52px] items-center justify-center rounded-2xl bg-success-soft text-success"
+      >
         <MailCheck className="size-6" />
       </span>
-      <AuthHeading title="Vérifie ta boîte mail" description={<>{authMessages.recoverySent} Le code expire dans 5 minutes.</>} />
+      <AuthHeading
+        title="Vérifie ta boîte mail"
+        description={
+          <>{authMessages.recoverySent} Le code expire dans 5 minutes.</>
+        }
+      />
       <form noValidate onSubmit={verify} className="flex flex-col gap-4">
         <Field label="Code de vérification" error={undefined}>
-          {(control) => <OtpCodeInput {...control} aria-invalid={formError === authMessages.codeInvalid || undefined} autoFocus value={code} onValueChange={setCode} />}
+          {(control) => (
+            <OtpCodeInput
+              {...control}
+              aria-invalid={formError === authMessages.codeInvalid || undefined}
+              autoFocus
+              value={code}
+              onValueChange={setCode}
+            />
+          )}
         </Field>
         <AuthAlert message={formError} />
         <Button type="submit" size="lg" disabled={submitting}>
@@ -159,8 +241,16 @@ function CodeStep({ email, api, cooldown, onResent, onVerified }: { email: strin
       </form>
       <p className="text-center text-[13px] text-muted-foreground">
         Code non reçu ?{" "}
-        <Button type="button" variant="link" className="text-[13px]" disabled={cooldown > 0 || resending} onClick={() => void resend()}>
-          {cooldown > 0 ? `Renvoyer dans 0:${String(cooldown).padStart(2, "0")}` : "Renvoyer le code"}
+        <Button
+          type="button"
+          variant="link"
+          className="text-[13px]"
+          disabled={cooldown > 0 || resending}
+          onClick={() => void resend()}
+        >
+          {cooldown > 0
+            ? `Renvoyer dans 0:${String(cooldown).padStart(2, "0")}`
+            : "Renvoyer le code"}
         </Button>
       </p>
     </>
@@ -169,10 +259,22 @@ function CodeStep({ email, api, cooldown, onResent, onVerified }: { email: strin
 
 type PasswordValues = { password: string; confirm: string };
 
-function PasswordStep({ resetToken, api, onDone, onRestart }: { resetToken: string; api: AuthApiClient; onDone(): void; onRestart(): void }) {
+function PasswordStep({
+  resetToken,
+  api,
+  onDone,
+  onRestart,
+}: {
+  resetToken: string;
+  api: AuthApiClient;
+  onDone(): void;
+  onRestart(): void;
+}) {
   const [formError, setFormError] = useState<string | null>(null);
   const [grantExpired, setGrantExpired] = useState(false);
-  const { register, handleSubmit, watch, formState } = useForm<PasswordValues>({ defaultValues: { password: "", confirm: "" } });
+  const { register, handleSubmit, watch, formState } = useForm<PasswordValues>({
+    defaultValues: { password: "", confirm: "" },
+  });
   const password = watch("password");
 
   const submit = handleSubmit(async ({ password }) => {
@@ -188,27 +290,53 @@ function PasswordStep({ resetToken, api, onDone, onRestart }: { resetToken: stri
         setFormError(authMessages.grantExpired);
         return;
       }
-      setFormError(passwordPolicyMessage(failure) ?? commonAuthMessage(failure));
+      setFormError(
+        passwordPolicyMessage(failure) ?? commonAuthMessage(failure),
+      );
     }
   });
 
   return (
     <>
-      <AuthHeading title="Nouveau mot de passe" description="Choisis un mot de passe que tu n'utilises nulle part ailleurs." />
+      <AuthHeading
+        title="Nouveau mot de passe"
+        description="Choisis un mot de passe que tu n'utilises nulle part ailleurs."
+      />
       <form noValidate onSubmit={submit} className="flex flex-col gap-4">
-        <Field label="Nouveau mot de passe" error={formState.errors.password?.message}>
+        <Field
+          label="Nouveau mot de passe"
+          error={formState.errors.password?.message}
+        >
           {(control) => (
             <PasswordInput
               {...control}
               autoComplete="new-password"
               autoFocus
-              {...register("password", { validate: (value) => (firstFailedAuthPasswordRule(value) === null ? true : "Le mot de passe ne respecte pas les règles ci-dessous.") })}
+              {...register("password", {
+                validate: (value) =>
+                  firstFailedAuthPasswordRule(value) === null
+                    ? true
+                    : "Le mot de passe ne respecte pas les règles ci-dessous.",
+              })}
             />
           )}
         </Field>
         <PasswordMeter password={password} />
-        <Field label="Confirme le mot de passe" error={formState.errors.confirm?.message}>
-          {(control) => <PasswordInput {...control} autoComplete="new-password" {...register("confirm", { validate: (value, values) => value === values.password || "Les mots de passe ne correspondent pas." })} />}
+        <Field
+          label="Confirme le mot de passe"
+          error={formState.errors.confirm?.message}
+        >
+          {(control) => (
+            <PasswordInput
+              {...control}
+              autoComplete="new-password"
+              {...register("confirm", {
+                validate: (value, values) =>
+                  value === values.password ||
+                  "Les mots de passe ne correspondent pas.",
+              })}
+            />
+          )}
         </Field>
         <AuthAlert message={formError} />
         {grantExpired ? (
@@ -217,7 +345,9 @@ function PasswordStep({ resetToken, api, onDone, onRestart }: { resetToken: stri
           </Button>
         ) : (
           <Button type="submit" size="lg" disabled={formState.isSubmitting}>
-            {formState.isSubmitting ? "Enregistrement…" : "Enregistrer le mot de passe"}
+            {formState.isSubmitting
+              ? "Enregistrement…"
+              : "Enregistrer le mot de passe"}
           </Button>
         )}
       </form>

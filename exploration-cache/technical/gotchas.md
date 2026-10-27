@@ -19,6 +19,7 @@ Actual catalogue-seed-versus-override/activation races were code-inspected but n
 K'FIT can coexist with a native PostgreSQL installation, but they must not share the same host endpoint.
 
 Validated convention:
+
 - native PostgreSQL: `localhost:5432`
 - K'FIT Docker PostgreSQL: `localhost:5433`
 - Docker-internal PostgreSQL: `postgres:5432`
@@ -61,22 +62,20 @@ Never restore a backup directly over the active database as the first recovery t
 
 `BACKUP_ENCRYPTION_KEY` must never be committed. Production backup keys must be stored separately from the encrypted backup payloads and must not reuse Sprint 0/dev test keys.
 
-
 ## Staging-style auth proxy is transport validation
 
 The Sprint 1 staging auth proxy uses a local smoke server behind Nginx to validate cookie and CSRF transport behavior before full app containers exist. This proves proxy/cookie/CSRF/session mechanics, not real database persistence. The real staging deployment must replace the smoke server with the concrete application container.
 
-
 ## Docker Compose service-specific validation and env files
 
 Compose can still parse service-level `env_file` declarations for unrelated services when running commands against a single service. The Sprint 1 auth proxy harness therefore treats `.env.staging` as optional in `docker-compose.staging.yml` so Nginx-only auth validation does not require staging DB secrets.
-
 
 ## Integration concurrency test flakiness
 
 One unchanged Sprint 3 PostgreSQL concurrency test may fail intermittently and pass on immediate approved retry. During S4.2 validation it failed once, then the full integration suite passed 35/35 on retry.
 
 Handling:
+
 - do not treat the first failure as automatically acceptable;
 - inspect that the failure is the known unchanged Sprint 3 concurrency case;
 - rerun the integration suite once;
@@ -86,6 +85,7 @@ Handling:
 ## Tests: integration database isolation (TEST-01)
 
 Category: Tests.
+
 - POL-01 incident (2026-10-25): integration tests and the dev API shared kfit_dev. The dev jobs (notifications reconcile, delivery, privacy purge) wrote rows on live test fixtures, so cleanups failed on FKs.
 - Result: 58 leaked subscriptions and a published synthetic consent text stayed in kfit_dev until a manual, id-scoped delete.
 - Rule: integration = kfit_test only (localhost:5433/kfit_test, root `.env.test`, `npm run db:test:prepare`). The single guard is `assertLocalTestDatabase` in src/testing/integration-fixtures.ts; the dev API refuses to start on kfit_test.
@@ -93,6 +93,7 @@ Category: Tests.
 ## Security: runtime floor (SEC-01)
 
 Category: Security.
+
 - CVE-2026-111497 (published 2026-10-22): Node's Brotli decoder has an out-of-bounds write; patched in 22.23.4, 24.22.1, 26.12.1.
 - Express 5 / body-parser 2.x decode `Content-Encoding: br` (and gzip/deflate) request bodies by default; the API now answers 415 REQUEST_ENCODING_UNSUPPORTED to any request body encoding other than identity, before every parser.
 - The runtime floor is enforced by the security-floor registry (packages/server/src/security/security-floor.ts): startup refuses production below it, CI and `npm run security:check` fail below it. A new runtime advisory = one registry entry.

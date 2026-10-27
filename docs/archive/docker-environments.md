@@ -1,5 +1,5 @@
 ---
-titre: Environnements Docker (Sprint 0–1)
+titre: Environnements Docker (Sprint 0-1)
 public: développeur
 statut: à revoir
 vérifié-sur: d2fc5df

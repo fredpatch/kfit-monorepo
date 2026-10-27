@@ -8,7 +8,11 @@ export function digestOtp(code: string, pepper: string): string {
   return createHmac("sha256", pepper).update(code).digest("hex");
 }
 
-export function verifyOtpDigest(candidate: string, expectedDigest: string, pepper: string): boolean {
+export function verifyOtpDigest(
+  candidate: string,
+  expectedDigest: string,
+  pepper: string,
+): boolean {
   const actual = Buffer.from(digestOtp(candidate, pepper), "hex");
   const expected = Buffer.from(expectedDigest, "hex");
   return actual.length === expected.length && timingSafeEqual(actual, expected);

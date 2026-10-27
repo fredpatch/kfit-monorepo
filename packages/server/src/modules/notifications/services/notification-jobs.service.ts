@@ -37,9 +37,7 @@ export class NotificationJobsService {
   }
 
   /** notifications.email-delivery - SMTP happens outside any transaction; an SMTP failure never touches notifications or business data. */
-  async deliver(
-    batch = 20,
-  ): Promise<{
+  async deliver(batch = 20): Promise<{
     claimed: number;
     sent: number;
     failed: number;

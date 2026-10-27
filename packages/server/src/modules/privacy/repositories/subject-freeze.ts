@@ -15,11 +15,16 @@ export class SubjectArchivedError extends Error {
 }
 
 /** FIX-02 D3: a public access event records the freeze code (CUSTOMER_ARCHIVED / PROSPECT_ARCHIVED), not an unexpected failure. */
-export function accessFailureResult(error: unknown, unexpected: string): string {
+export function accessFailureResult(
+  error: unknown,
+  unexpected: string,
+): string {
   return error instanceof SubjectArchivedError ? error.code : unexpected;
 }
 
-export type CustomerWriteScope = { customerId: string } | { subscriptionId: string };
+export type CustomerWriteScope =
+  | { customerId: string }
+  | { subscriptionId: string };
 export type ProspectWriteScope = { prospectId: string } | { requestId: string };
 
 /**
@@ -27,22 +32,49 @@ export type ProspectWriteScope = { prospectId: string } | { requestId: string };
  * then the customer row is taken FOR SHARE: callers make this their first row lock, so archive/anonymize (FOR UPDATE
  * on the same row) serialize with writers. An unknown scope is left to the writer's own not-found answer.
  */
-export async function assertCustomerWritable(tx: Reader, scope: CustomerWriteScope | null): Promise<void> {
+export async function assertCustomerWritable(
+  tx: Reader,
+  scope: CustomerWriteScope | null,
+): Promise<void> {
   if (!scope) return;
-  const customerId = "customerId" in scope ? scope.customerId
-    : (await tx.select({ customerId: subscriptions.customerId }).from(subscriptions).where(eq(subscriptions.id, scope.subscriptionId)))[0]?.customerId;
+  const customerId =
+    "customerId" in scope
+      ? scope.customerId
+      : (
+          await tx
+            .select({ customerId: subscriptions.customerId })
+            .from(subscriptions)
+            .where(eq(subscriptions.id, scope.subscriptionId))
+        )[0]?.customerId;
   if (!customerId) return;
-  const [row] = await tx.select({ archivedAt: customers.archivedAt }).from(customers).where(eq(customers.id, customerId)).for("share");
+  const [row] = await tx
+    .select({ archivedAt: customers.archivedAt })
+    .from(customers)
+    .where(eq(customers.id, customerId))
+    .for("share");
   if (row?.archivedAt) throw new SubjectArchivedError("CUSTOMER_ARCHIVED");
 }
 
 /** ARCH-01 D1/D2: same rule for a prospect and its requests. */
-export async function assertProspectWritable(tx: Reader, scope: ProspectWriteScope | null): Promise<void> {
+export async function assertProspectWritable(
+  tx: Reader,
+  scope: ProspectWriteScope | null,
+): Promise<void> {
   if (!scope) return;
-  const prospectId = "prospectId" in scope ? scope.prospectId
-    : (await tx.select({ prospectId: serviceRequests.prospectId }).from(serviceRequests).where(eq(serviceRequests.id, scope.requestId)))[0]?.prospectId;
+  const prospectId =
+    "prospectId" in scope
+      ? scope.prospectId
+      : (
+          await tx
+            .select({ prospectId: serviceRequests.prospectId })
+            .from(serviceRequests)
+            .where(eq(serviceRequests.id, scope.requestId))
+        )[0]?.prospectId;
   if (!prospectId) return;
-  const [row] = await tx.select({ archivedAt: prospects.archivedAt }).from(prospects).where(eq(prospects.id, prospectId)).for("share");
+  const [row] = await tx
+    .select({ archivedAt: prospects.archivedAt })
+    .from(prospects)
+    .where(eq(prospects.id, prospectId))
+    .for("share");
   if (row?.archivedAt) throw new SubjectArchivedError("PROSPECT_ARCHIVED");
 }
-

@@ -2,11 +2,17 @@ import axios from "axios";
 import { authPasswordRuleLabels, type AuthPasswordRule } from "@kfit/shared";
 
 /** What the auth screens need from a failed call: HTTP status (0 = unreachable), API code, policy reason. */
-export type AuthFailure = { status: number; code: string | null; reason: string | null };
+export type AuthFailure = {
+  status: number;
+  code: string | null;
+  reason: string | null;
+};
 
 export function authFailureOf(error: unknown): AuthFailure {
   if (axios.isAxiosError(error)) {
-    const body = error.response?.data as { error?: unknown; reason?: unknown } | undefined;
+    const body = error.response?.data as
+      | { error?: unknown; reason?: unknown }
+      | undefined;
     return {
       status: error.response?.status ?? 0,
       code: typeof body?.error === "string" ? body.error : null,
@@ -28,11 +34,14 @@ export const authMessages = {
   recoveryUnavailable: "Récupération indisponible. Contacte l'administrateur.",
   recoverySent: "Si un compte existe pour cet e-mail, un code a été envoyé.",
   codeInvalid: "Code invalide ou expiré.",
-  grantExpired: "Le délai pour choisir un nouveau mot de passe a expiré. Recommence la récupération.",
+  grantExpired:
+    "Le délai pour choisir un nouveau mot de passe a expiré. Recommence la récupération.",
   resetDone: "Mot de passe modifié. Tu peux te connecter.",
   bootstrapDone: "Compte initial créé. Tu peux te connecter.",
-  otpDeliveryUnavailable: "Envoi du code indisponible. Contacte l'administrateur.",
-  otpDeliveryFailed: "Le code n'a pas pu être envoyé. Réessaie dans un instant.",
+  otpDeliveryUnavailable:
+    "Envoi du code indisponible. Contacte l'administrateur.",
+  otpDeliveryFailed:
+    "Le code n'a pas pu être envoyé. Réessaie dans un instant.",
 } as const;
 
 /** Sensitive-action code request (UX-14c): no mail transport (501) or the e-mail failed (503). */
@@ -45,16 +54,22 @@ export function sensitiveOtpRequestMessage(failure: AuthFailure): string {
 /** Shared tail: rate limit, unreachable server, recovery not bound (501), anything else. */
 export function commonAuthMessage(failure: AuthFailure): string {
   if (failure.status === 0) return authMessages.unreachable;
-  if (failure.status === 429 || failure.code === "AUTH_RATE_LIMITED") return authMessages.rateLimited;
+  if (failure.status === 429 || failure.code === "AUTH_RATE_LIMITED")
+    return authMessages.rateLimited;
   if (failure.status === 501) return authMessages.recoveryUnavailable;
   return authMessages.generic;
 }
 
 export function loginErrorMessage(failure: AuthFailure): string {
-  if (failure.code === "AUTH_INVALID_CREDENTIALS" || failure.code === "AUTH_ACCOUNT_UNAVAILABLE" || failure.code === "AUTH_LOGIN_INVALID_FORMAT") {
+  if (
+    failure.code === "AUTH_INVALID_CREDENTIALS" ||
+    failure.code === "AUTH_ACCOUNT_UNAVAILABLE" ||
+    failure.code === "AUTH_LOGIN_INVALID_FORMAT"
+  ) {
     return authMessages.loginRejected;
   }
-  if (failure.code === "AUTH_OTP_DELIVERY_FAILED") return loginOtpMessages.deliveryFailed;
+  if (failure.code === "AUTH_OTP_DELIVERY_FAILED")
+    return loginOtpMessages.deliveryFailed;
   return commonAuthMessage(failure);
 }
 
@@ -64,22 +79,32 @@ export const loginOtpMessages = {
   expired: "Ce code a expiré. Demande un nouveau code.",
   locked: "Trop d'essais. Recommence la connexion.",
   stale: "Ce code n'est plus valable. Recommence la connexion.",
-  deliveryFailed: "Le code n'a pas pu être envoyé. Réessaie dans un instant ou contacte l'administrateur.",
+  deliveryFailed:
+    "Le code n'a pas pu être envoyé. Réessaie dans un instant ou contacte l'administrateur.",
   format: "Le code contient 6 chiffres.",
   maxResends: "Nombre maximum de renvois atteint. Recommence la connexion.",
 } as const;
 
 /** What the « Nouvel appareil » step shows, and whether the challenge is dead (back to « Connexion »). */
-export function loginOtpFailure(failure: AuthFailure): { message: string; restart: boolean } {
+export function loginOtpFailure(failure: AuthFailure): {
+  message: string;
+  restart: boolean;
+} {
   if (failure.code === "AUTH_OTP_REJECTED") {
-    if (failure.reason === "invalid") return { message: loginOtpMessages.invalid, restart: false };
-    if (failure.reason === "expired") return { message: loginOtpMessages.expired, restart: false };
-    if (failure.reason === "locked") return { message: loginOtpMessages.locked, restart: true };
+    if (failure.reason === "invalid")
+      return { message: loginOtpMessages.invalid, restart: false };
+    if (failure.reason === "expired")
+      return { message: loginOtpMessages.expired, restart: false };
+    if (failure.reason === "locked")
+      return { message: loginOtpMessages.locked, restart: true };
     return { message: loginOtpMessages.stale, restart: true };
   }
-  if (failure.code === "AUTH_OTP_CODE_INVALID_FORMAT") return { message: loginOtpMessages.format, restart: false };
-  if (failure.code === "AUTH_OTP_DELIVERY_FAILED" || failure.status === 503) return { message: loginOtpMessages.deliveryFailed, restart: false };
-  if (failure.code === "AUTH_ACCOUNT_UNAVAILABLE") return { message: authMessages.loginRejected, restart: true };
+  if (failure.code === "AUTH_OTP_CODE_INVALID_FORMAT")
+    return { message: loginOtpMessages.format, restart: false };
+  if (failure.code === "AUTH_OTP_DELIVERY_FAILED" || failure.status === 503)
+    return { message: loginOtpMessages.deliveryFailed, restart: false };
+  if (failure.code === "AUTH_ACCOUNT_UNAVAILABLE")
+    return { message: authMessages.loginRejected, restart: true };
   return { message: commonAuthMessage(failure), restart: false };
 }
 
@@ -87,5 +112,7 @@ export function loginOtpFailure(failure: AuthFailure): { message: string; restar
 export function passwordPolicyMessage(failure: AuthFailure): string | null {
   if (failure.code !== "AUTH_PASSWORD_POLICY_FAILED") return null;
   const label = authPasswordRuleLabels[failure.reason as AuthPasswordRule];
-  return label ? `Mot de passe refusé : ${label.toLowerCase()}.` : "Mot de passe refusé par la politique de sécurité.";
+  return label
+    ? `Mot de passe refusé : ${label.toLowerCase()}.`
+    : "Mot de passe refusé par la politique de sécurité.";
 }

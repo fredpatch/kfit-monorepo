@@ -110,34 +110,28 @@ const DAY = 86_400_000;
 before(async () => {
   assertLocalTestDatabase();
   safe = true;
-  await db
-    .insert(users)
-    .values({
-      id: userId,
-      email: `privacy-${userId}@example.invalid`,
-      passwordHash: "synthetic",
-      role: "admin",
-      status: "active",
-    });
-  await db
-    .insert(services)
-    .values({
-      id: serviceId,
-      name: "Synthetic Privacy Service",
-      slug: `privacy-${serviceId}`,
-      pricingMode: "quote",
-      deliveryType: "time_based",
-      capacityMode: "unlimited",
-    });
-  await db
-    .insert(questionnaireTemplates)
-    .values({
-      id: templateId,
-      templateKey: `privacy-${templateId}`,
-      name: "Synthetic",
-      category: "health",
-      version: 1,
-    });
+  await db.insert(users).values({
+    id: userId,
+    email: `privacy-${userId}@example.invalid`,
+    passwordHash: "synthetic",
+    role: "admin",
+    status: "active",
+  });
+  await db.insert(services).values({
+    id: serviceId,
+    name: "Synthetic Privacy Service",
+    slug: `privacy-${serviceId}`,
+    pricingMode: "quote",
+    deliveryType: "time_based",
+    capacityMode: "unlimited",
+  });
+  await db.insert(questionnaireTemplates).values({
+    id: templateId,
+    templateKey: `privacy-${templateId}`,
+    name: "Synthetic",
+    category: "health",
+    version: 1,
+  });
   await db.insert(questionnaireQuestions).values([
     {
       id: questionId,
@@ -154,16 +148,14 @@ before(async () => {
       questionType: "multi_choice",
     },
   ]);
-  await db
-    .insert(consentDefinitions)
-    .values({
-      id: consentDefinitionId,
-      consentType: `privacy-${consentDefinitionId}`,
-      version: "1",
-      title: "Synthetic",
-      content: "Synthetic",
-      contentHash: consentDefinitionId,
-    });
+  await db.insert(consentDefinitions).values({
+    id: consentDefinitionId,
+    consentType: `privacy-${consentDefinitionId}`,
+    version: "1",
+    title: "Synthetic",
+    content: "Synthetic",
+    contentHash: consentDefinitionId,
+  });
 });
 
 after(async () => {
@@ -332,75 +324,63 @@ async function seed(
     email = `privacy-${tag}@example.invalid`;
   created.prospects.push(prospectId);
   created.customers.push(customerId);
-  await db
-    .insert(prospects)
-    .values({
-      id: prospectId,
-      fullName: name,
-      whatsapp,
-      email,
-      city: "Libreville",
-      archivedAt: null,
-    });
-  await db
-    .insert(serviceRequests)
-    .values({
-      id: requestId,
-      reference: `REQ-PRIV-${tag}`,
-      prospectId,
-      serviceId,
-      submissionToken: randomUUID(),
-      status: input.requestStatus ?? "converted",
-      objective: `objective of ${name}`,
-      message: `message ${whatsapp}`,
-    });
-  await db
-    .insert(contactAttempts)
-    .values({
-      prospectId,
-      requestId,
-      channel: "whatsapp",
-      direction: "outbound",
-      outcome: "reached",
-      occurredAt: new Date(),
-      note: `called ${name}`,
-    });
-  await db
-    .insert(qualificationReviews)
-    .values({
-      requestId,
-      version: 1,
-      outcome: "qualified",
-      suitabilityNote: `asthma ${name}`,
-      conditionsJson: ["no running"],
-      blockersJson: { knee: true },
-    });
+  await db.insert(prospects).values({
+    id: prospectId,
+    fullName: name,
+    whatsapp,
+    email,
+    city: "Libreville",
+    archivedAt: null,
+  });
+  await db.insert(serviceRequests).values({
+    id: requestId,
+    reference: `REQ-PRIV-${tag}`,
+    prospectId,
+    serviceId,
+    submissionToken: randomUUID(),
+    status: input.requestStatus ?? "converted",
+    objective: `objective of ${name}`,
+    message: `message ${whatsapp}`,
+  });
+  await db.insert(contactAttempts).values({
+    prospectId,
+    requestId,
+    channel: "whatsapp",
+    direction: "outbound",
+    outcome: "reached",
+    occurredAt: new Date(),
+    note: `called ${name}`,
+  });
+  await db.insert(qualificationReviews).values({
+    requestId,
+    version: 1,
+    outcome: "qualified",
+    suitabilityNote: `asthma ${name}`,
+    conditionsJson: ["no running"],
+    blockersJson: { knee: true },
+  });
   await db
     .insert(waitlistEntries)
     .values({ requestId, serviceId, priorityNote: `priority ${name}` });
-  await db
-    .insert(customers)
-    .values({
-      id: customerId,
-      prospectId,
-      fullName: name,
-      whatsapp,
-      email,
-      city: "Libreville",
-      country: "GA",
-      archivedAt: input.archived === false ? null : new Date(),
-    });
-  await db
-    .insert(subscriptions)
-    .values({
-      id: subscriptionId,
-      reference: `SUB-PRIV-${tag}`,
-      customerId,
-      serviceId,
-      status: input.subscriptionStatus ?? "completed",
-      agreedPriceXaf: 50000,
-      createdByUserId: userId,
-    });
+  await db.insert(customers).values({
+    id: customerId,
+    prospectId,
+    fullName: name,
+    whatsapp,
+    email,
+    city: "Libreville",
+    country: "GA",
+    archivedAt: input.archived === false ? null : new Date(),
+  });
+  await db.insert(subscriptions).values({
+    id: subscriptionId,
+    reference: `SUB-PRIV-${tag}`,
+    customerId,
+    serviceId,
+    status: input.subscriptionStatus ?? "completed",
+    agreedPriceXaf: 50000,
+    createdByUserId: userId,
+  });
   const [submission] = await db
     .insert(questionnaireSubmissions)
     .values({
@@ -424,72 +404,58 @@ async function seed(
       answerJson: ["insulin", name],
     },
   ]);
-  await db
-    .insert(consentRecords)
-    .values({
-      customerId,
-      subscriptionId,
-      consentDefinitionId,
-      decision: "accepted",
-      capturedVia: "admin",
-      verificationMetadataJson: { typedName: name },
-    });
-  await db
-    .insert(medicalClearanceRecords)
-    .values({
-      subscriptionId,
-      status: "required",
-      triggerSource: "synthetic",
-      note: `cardiology ${name}`,
-    });
-  await db
-    .insert(progressMeasurements)
-    .values({
-      subscriptionId,
-      measuredAt: new Date(),
-      weightKg: "71.5",
-      waistCm: "80",
-      hipsCm: "95",
-      chestCm: "90",
-      bodyFatEstimate: "22",
-      feelingNote: `tired ${name}`,
-    });
-  await db
-    .insert(followUps)
-    .values({
-      subscriptionId,
-      followUpType: "check_in",
-      occurredAt: new Date(),
-      note: `follow-up ${name}`,
-      nextAction: `call ${whatsapp}`,
-    });
-  await db
-    .insert(appointments)
-    .values({
-      subscriptionId,
-      scheduledStart: new Date(Date.now() - 2 * DAY),
-      scheduledEnd: new Date(Date.now() - 2 * DAY + 3_600_000),
-      rescheduleNote: `moved for ${name}`,
-      locationOrChannel: `home of ${name}`,
-    });
-  await db
-    .insert(subscriptionPauses)
-    .values({
-      subscriptionId,
-      startedAt: new Date(),
-      reason: `hospital ${name}`,
-    });
+  await db.insert(consentRecords).values({
+    customerId,
+    subscriptionId,
+    consentDefinitionId,
+    decision: "accepted",
+    capturedVia: "admin",
+    verificationMetadataJson: { typedName: name },
+  });
+  await db.insert(medicalClearanceRecords).values({
+    subscriptionId,
+    status: "required",
+    triggerSource: "synthetic",
+    note: `cardiology ${name}`,
+  });
+  await db.insert(progressMeasurements).values({
+    subscriptionId,
+    measuredAt: new Date(),
+    weightKg: "71.5",
+    waistCm: "80",
+    hipsCm: "95",
+    chestCm: "90",
+    bodyFatEstimate: "22",
+    feelingNote: `tired ${name}`,
+  });
+  await db.insert(followUps).values({
+    subscriptionId,
+    followUpType: "check_in",
+    occurredAt: new Date(),
+    note: `follow-up ${name}`,
+    nextAction: `call ${whatsapp}`,
+  });
+  await db.insert(appointments).values({
+    subscriptionId,
+    scheduledStart: new Date(Date.now() - 2 * DAY),
+    scheduledEnd: new Date(Date.now() - 2 * DAY + 3_600_000),
+    rescheduleNote: `moved for ${name}`,
+    locationOrChannel: `home of ${name}`,
+  });
+  await db.insert(subscriptionPauses).values({
+    subscriptionId,
+    startedAt: new Date(),
+    reason: `hospital ${name}`,
+  });
   await db
     .insert(subscriptionStatusHistory)
     .values({ subscriptionId, toStatus: "completed", reason: `done ${name}` });
-  await db
-    .insert(onboardingItems)
-    .values({
-      subscriptionId,
-      itemType: "waiver",
-      label: "Synthetic",
-      waiverReason: `waived for ${name}`,
-    });
+  await db.insert(onboardingItems).values({
+    subscriptionId,
+    itemType: "waiver",
+    label: "Synthetic",
+    waiverReason: `waived for ${name}`,
+  });
   const [component] = await db
     .insert(subscriptionComponents)
     .values({
@@ -499,14 +465,12 @@ async function seed(
       quantityEntitled: 4,
     })
     .returning();
-  await db
-    .insert(componentEvents)
-    .values({
-      subscriptionComponentId: component!.id,
-      eventType: "consumed",
-      quantity: 1,
-      reason: `extra for ${name}`,
-    });
+  await db.insert(componentEvents).values({
+    subscriptionComponentId: component!.id,
+    eventType: "consumed",
+    quantity: 1,
+    reason: `extra for ${name}`,
+  });
   const [plan] = await db
     .insert(paymentPlans)
     .values({ subscriptionId, totalExpectedXaf: 50000, status: "active" })
@@ -533,14 +497,12 @@ async function seed(
       metadataJson: { channel: "momo" },
     })
     .returning();
-  await db
-    .insert(paymentAllocations)
-    .values({
-      paymentEventId: payment!.id,
-      subscriptionId,
-      installmentId: installment!.id,
-      amountXaf: 50000,
-    });
+  await db.insert(paymentAllocations).values({
+    paymentEventId: payment!.id,
+    subscriptionId,
+    installmentId: installment!.id,
+    amountXaf: 50000,
+  });
   const [privateDoc] = await db
     .insert(documents)
     .values({
@@ -581,20 +543,18 @@ async function seed(
       status: "available",
     })
     .returning();
-  await db
-    .insert(paymentProofs)
-    .values({
-      id: proofProofId,
-      customerId,
-      subscriptionId,
-      documentId: proofDoc!.id,
-      submittedVia: "public_link",
-      claimedAmountXaf: 50000,
-      claimedPaymentMethod: "mobile_money",
-      claimedOccurredAt: new Date(),
-      customerMessage: `from ${name}`,
-      reviewNote: `ok ${whatsapp}`,
-    });
+  await db.insert(paymentProofs).values({
+    id: proofProofId,
+    customerId,
+    subscriptionId,
+    documentId: proofDoc!.id,
+    submittedVia: "public_link",
+    claimedAmountXaf: 50000,
+    claimedPaymentMethod: "mobile_money",
+    claimedOccurredAt: new Date(),
+    customerMessage: `from ${name}`,
+    reviewNote: `ok ${whatsapp}`,
+  });
   const [token] = await db
     .insert(secureAccessTokens)
     .values({

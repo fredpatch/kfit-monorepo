@@ -27,14 +27,22 @@ export type OpsErrorCode = (typeof opsErrorCodes)[number];
 
 /** `detail` is printed: key names, counts and part names only, never a path, host, credential or subject id. */
 export class OpsError extends Error {
-  constructor(readonly code: OpsErrorCode, readonly detail: string, options?: { cause?: unknown }) {
+  constructor(
+    readonly code: OpsErrorCode,
+    readonly detail: string,
+    options?: { cause?: unknown },
+  ) {
     super(`${code} (${detail})`, options);
     this.name = "OpsError";
   }
 }
 
 /** Runs `work`, turning any non-OpsError into `code` so every failure carries a listed code. */
-export async function failAs<T>(code: OpsErrorCode, detail: string, work: () => Promise<T>): Promise<T> {
+export async function failAs<T>(
+  code: OpsErrorCode,
+  detail: string,
+  work: () => Promise<T>,
+): Promise<T> {
   try {
     return await work();
   } catch (error) {

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, 'sprint-*']
+    branches: [main, "sprint-*"]
   pull_request:
   workflow_dispatch:
 
@@ -34,7 +34,7 @@ jobs:
     env:
       # CI-only disposable database. Never a real environment.
       DATABASE_URL: postgresql://kfit:kfit@localhost:5433/kfit_test
-      PUPPETEER_SKIP_DOWNLOAD: 'true'
+      PUPPETEER_SKIP_DOWNLOAD: "true"
 
     steps:
       - name: Checkout
@@ -55,6 +55,12 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Format (PRETTY-01)
+        run: npm run format:check
+
+      - name: No long dashes (PRETTY-01)
+        run: npm run lint:dashes
 
       - name: Documentation references and links (DOC-01)
         run: npm run docs:check

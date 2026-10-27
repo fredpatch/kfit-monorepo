@@ -13,7 +13,9 @@ import {
 const otpPepper = "a-secure-test-otp-pepper-that-is-longer-than-32-characters";
 const now = new Date("2026-08-25T08:00:00Z");
 
-function makeChallenge(input: Partial<OtpChallengeRecord> = {}): OtpChallengeRecord {
+function makeChallenge(
+  input: Partial<OtpChallengeRecord> = {},
+): OtpChallengeRecord {
   return {
     id: "00000000-0000-0000-0000-000000000001",
     userId: "11111111-1111-1111-1111-111111111111",
@@ -42,7 +44,8 @@ function makeAuditRecorder(events: RecordAuditEventInput[] = []) {
 }
 
 test("OtpChallengeService issues hash-only challenges and supersedes previous active challenges", async () => {
-  const supersedeInputs: Array<OtpChallengeLookup & { supersededAt: Date }> = [];
+  const supersedeInputs: Array<OtpChallengeLookup & { supersededAt: Date }> =
+    [];
   const createInputs: CreateOtpChallengeRecordInput[] = [];
   const repository: OtpChallengeRepository = {
     async supersedeActive(input) {
@@ -51,7 +54,12 @@ test("OtpChallengeService issues hash-only challenges and supersedes previous ac
     },
     async create(input) {
       createInputs.push(input);
-      return makeChallenge({ ...input, attemptCount: 0, consumedAt: null, supersededAt: null });
+      return makeChallenge({
+        ...input,
+        attemptCount: 0,
+        consumedAt: null,
+        supersededAt: null,
+      });
     },
     async findLatest() {
       return null;
@@ -102,7 +110,10 @@ test("OtpChallengeService consumes a valid OTP exactly once", async () => {
     },
     async consume(input) {
       consumedInputs.push(input);
-      return makeChallenge({ consumedAt: input.consumedAt, updatedAt: input.updatedAt });
+      return makeChallenge({
+        consumedAt: input.consumedAt,
+        updatedAt: input.updatedAt,
+      });
     },
   };
   const audit = makeAuditRecorder();
@@ -112,15 +123,23 @@ test("OtpChallengeService consumes a valid OTP exactly once", async () => {
     otpMaxAttempts: 5,
   });
 
-  const result = await service.verify("123456", { userId: "11111111-1111-1111-1111-111111111111", purpose: "password_recovery", now });
+  const result = await service.verify("123456", {
+    userId: "11111111-1111-1111-1111-111111111111",
+    purpose: "password_recovery",
+    now,
+  });
 
   assert.equal(result.status, "verified");
-  assert.equal(consumedInputs[0]?.challengeId, "00000000-0000-0000-0000-000000000001");
+  assert.equal(
+    consumedInputs[0]?.challengeId,
+    "00000000-0000-0000-0000-000000000001",
+  );
   assert.equal(audit.events[0]?.eventType, "auth.otp.verified");
 });
 
 test("OtpChallengeService increments attempts and locks on repeated wrong OTPs", async () => {
-  const incrementInputs: Array<{ challengeId: string; attemptCount: number }> = [];
+  const incrementInputs: Array<{ challengeId: string; attemptCount: number }> =
+    [];
   const repository: OtpChallengeRepository = {
     async supersedeActive() {
       return 0;
@@ -133,7 +152,10 @@ test("OtpChallengeService increments attempts and locks on repeated wrong OTPs",
     },
     async incrementAttempt(input) {
       incrementInputs.push(input);
-      return makeChallenge({ attemptCount: input.attemptCount, maxAttempts: 5 });
+      return makeChallenge({
+        attemptCount: input.attemptCount,
+        maxAttempts: 5,
+      });
     },
     async consume() {
       throw new Error("consume should not be called");
@@ -146,9 +168,19 @@ test("OtpChallengeService increments attempts and locks on repeated wrong OTPs",
     otpMaxAttempts: 5,
   });
 
-  const result = await service.verify("999999", { userId: "11111111-1111-1111-1111-111111111111", purpose: "password_recovery", now });
+  const result = await service.verify("999999", {
+    userId: "11111111-1111-1111-1111-111111111111",
+    purpose: "password_recovery",
+    now,
+  });
 
-  assert.deepEqual({ status: result.status, reason: result.status === "rejected" ? result.reason : null }, { status: "rejected", reason: "locked" });
+  assert.deepEqual(
+    {
+      status: result.status,
+      reason: result.status === "rejected" ? result.reason : null,
+    },
+    { status: "rejected", reason: "locked" },
+  );
   assert.equal(incrementInputs[0]?.attemptCount, 5);
   assert.equal(audit.events[0]?.result, "blocked");
 });
@@ -158,7 +190,10 @@ test("OtpChallengeService rejects expired consumed superseded and already locked
     { challenge: makeChallenge({ expiresAt: now }), reason: "expired" },
     { challenge: makeChallenge({ consumedAt: now }), reason: "consumed" },
     { challenge: makeChallenge({ supersededAt: now }), reason: "superseded" },
-    { challenge: makeChallenge({ attemptCount: 5, maxAttempts: 5 }), reason: "locked" },
+    {
+      challenge: makeChallenge({ attemptCount: 5, maxAttempts: 5 }),
+      reason: "locked",
+    },
   ];
 
   for (const item of cases) {
@@ -185,8 +220,18 @@ test("OtpChallengeService rejects expired consumed superseded and already locked
       otpMaxAttempts: 5,
     });
 
-    const result = await service.verify("123456", { userId: item.challenge.userId, purpose: item.challenge.purpose, now });
-    assert.deepEqual({ status: result.status, reason: result.status === "rejected" ? result.reason : null }, { status: "rejected", reason: item.reason });
+    const result = await service.verify("123456", {
+      userId: item.challenge.userId,
+      purpose: item.challenge.purpose,
+      now,
+    });
+    assert.deepEqual(
+      {
+        status: result.status,
+        reason: result.status === "rejected" ? result.reason : null,
+      },
+      { status: "rejected", reason: item.reason },
+    );
   }
 });
 
@@ -233,5 +278,8 @@ test("OtpChallengeService keeps sensitive-action OTPs bound to the session looku
 
   assert.equal(result.status, "verified");
   assert.equal(lookups[0]?.sessionId, "22222222-2222-2222-2222-222222222222");
-  assert.deepEqual(audit.events[0]?.metadata, { purpose: "sensitive_action", sessionBound: true });
+  assert.deepEqual(audit.events[0]?.metadata, {
+    purpose: "sensitive_action",
+    sessionBound: true,
+  });
 });

@@ -29,59 +29,102 @@ function csrfCookieOptions() {
 
 function authCookies() {
   return [
-    { name: authCookieNames.accessToken, value: "staging-smoke-access", options: cookieOptions(900) },
-    { name: authCookieNames.refreshToken, value: "staging-smoke-refresh", options: cookieOptions(604800) },
-    { name: authCookieNames.csrfToken, value: "staging-smoke-csrf", options: csrfCookieOptions() },
+    {
+      name: authCookieNames.accessToken,
+      value: "staging-smoke-access",
+      options: cookieOptions(900),
+    },
+    {
+      name: authCookieNames.refreshToken,
+      value: "staging-smoke-refresh",
+      options: cookieOptions(604800),
+    },
+    {
+      name: authCookieNames.csrfToken,
+      value: "staging-smoke-csrf",
+      options: csrfCookieOptions(),
+    },
   ];
 }
 
 function resolveSession(request) {
   const cookieHeader = request.headers.cookie || "";
-  return cookieHeader.includes(`${authCookieNames.accessToken}=`) ? session : null;
+  return cookieHeader.includes(`${authCookieNames.accessToken}=`)
+    ? session
+    : null;
 }
 
 const controller = new AuthController({
   bootstrapService: {
-    async status() { return { required: false }; },
-    async create() { return { status: "already_completed" }; },
+    async status() {
+      return { required: false };
+    },
+    async create() {
+      return { status: "already_completed" };
+    },
   },
   authRouteService: {
     async login() {
       return {
         status: "authenticated",
-        body: { user: { id: session.userId, role: session.role }, session: { id: session.sessionId, freshOtp: false } },
+        body: {
+          user: { id: session.userId, role: session.role },
+          session: { id: session.sessionId, freshOtp: false },
+        },
         cookies: authCookies(),
       };
     },
     async refresh() {
       return {
         status: "authenticated",
-        body: { user: { id: session.userId, role: session.role }, session: { id: session.sessionId, freshOtp: false } },
+        body: {
+          user: { id: session.userId, role: session.role },
+          session: { id: session.sessionId, freshOtp: false },
+        },
         cookies: authCookies(),
       };
     },
-    async logout() { return { status: "logged_out", cookies: clearAuthCookies("production") }; },
+    async logout() {
+      return { status: "logged_out", cookies: clearAuthCookies("production") };
+    },
   },
   otpChallengeService: {
     async issue() {
       return {
         code: "123456",
-        challenge: { id: "00000000-0000-0000-0000-000000000001", deliveryChannel: "email", expiresAt: new Date(Date.now() + 300000) },
+        challenge: {
+          id: "00000000-0000-0000-0000-000000000001",
+          deliveryChannel: "email",
+          expiresAt: new Date(Date.now() + 300000),
+        },
       };
     },
     async verify() {
-      return { status: "verified", challenge: { id: "00000000-0000-0000-0000-000000000001", consumedAt: new Date() } };
+      return {
+        status: "verified",
+        challenge: {
+          id: "00000000-0000-0000-0000-000000000001",
+          consumedAt: new Date(),
+        },
+      };
     },
   },
 });
 
-const app = createServerApp({ authController: controller, resolveAuthSession: resolveSession });
+const app = createServerApp({
+  authController: controller,
+  resolveAuthSession: resolveSession,
+});
 const server = createServer(app);
 
 server.listen(port, "0.0.0.0", () => {
-  console.log(`K'FIT auth staging smoke server listening on http://127.0.0.1:${port}`);
+  console.log(
+    `K'FIT auth staging smoke server listening on http://127.0.0.1:${port}`,
+  );
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
-  process.on(signal, () => { server.close(() => process.exit(0)); });
+  process.on(signal, () => {
+    server.close(() => process.exit(0));
+  });
 }

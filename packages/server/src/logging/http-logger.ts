@@ -8,10 +8,15 @@ export function redactRequestPath(url: string): string {
   return path.replace(/^(\/public\/[^/]+\/)[^/]+/, "$1:token");
 }
 
-morgan.token<Request, Response>("safe-url", (request) => redactRequestPath(request.originalUrl));
+morgan.token<Request, Response>("safe-url", (request) =>
+  redactRequestPath(request.originalUrl),
+);
 
 export function createHttpLogger(): RequestHandler {
-  return morgan<Request, Response>(":method :safe-url :status :response-time ms - :res[content-length]", {
-    stream: { write: (line) => logger.http(line.trim()) },
-  });
+  return morgan<Request, Response>(
+    ":method :safe-url :status :response-time ms - :res[content-length]",
+    {
+      stream: { write: (line) => logger.http(line.trim()) },
+    },
+  );
 }

@@ -1,8 +1,19 @@
-import type { FinanceInstallmentStatus, FinancePaymentMethod, FinancePlanStatus, FinancialStatus, PaymentProofStatus, QuoteStatus } from "@kfit/shared";
+import type {
+  FinanceInstallmentStatus,
+  FinancePaymentMethod,
+  FinancePlanStatus,
+  FinancialStatus,
+  PaymentProofStatus,
+  QuoteStatus,
+} from "@kfit/shared";
 import type { StatusDescriptor } from "../../lib/status-map.js";
 
-/** Wording and tones of the « Paiements » tab (boards 15a–15c). Amounts stay in XAF in the admin. */
-export const paymentMethods: Record<FinancePaymentMethod, string> = { cash: "Espèces", bank_transfer: "Virement bancaire", mobile_money: "Mobile Money" };
+/** Wording and tones of the « Paiements » tab (boards 15a-15c). Amounts stay in XAF in the admin. */
+export const paymentMethods: Record<FinancePaymentMethod, string> = {
+  cash: "Espèces",
+  bank_transfer: "Virement bancaire",
+  mobile_money: "Mobile Money",
+};
 
 export const planStatus: Record<FinancePlanStatus, StatusDescriptor> = {
   draft: { label: "Brouillon", tone: "neutral" },
@@ -12,7 +23,10 @@ export const planStatus: Record<FinancePlanStatus, StatusDescriptor> = {
   cancelled: { label: "Annulé", tone: "neutral" },
 };
 
-export const installmentStatus: Record<FinanceInstallmentStatus, StatusDescriptor> = {
+export const installmentStatus: Record<
+  FinanceInstallmentStatus,
+  StatusDescriptor
+> = {
   upcoming: { label: "À venir", tone: "info" },
   due: { label: "À échéance", tone: "warning" },
   partially_paid: { label: "Partiellement payée", tone: "warning" },
@@ -20,7 +34,11 @@ export const installmentStatus: Record<FinanceInstallmentStatus, StatusDescripto
   overdue: { label: "En retard", tone: "danger" },
 };
 
-export const settlementLabel: Record<FinancialStatus, string> = { unpaid: "Non payé", partially_paid: "Partiellement payé", paid: "Payé" };
+export const settlementLabel: Record<FinancialStatus, string> = {
+  unpaid: "Non payé",
+  partially_paid: "Partiellement payé",
+  paid: "Payé",
+};
 
 export const proofStatus: Record<PaymentProofStatus, StatusDescriptor> = {
   pending_review: { label: "À vérifier", tone: "waitlist" },
@@ -42,9 +60,18 @@ export const quoteStatus: Record<QuoteStatus, StatusDescriptor> = {
 };
 
 export const fileKind = (mime: string) =>
-  mime === "application/pdf" ? "PDF" : mime === "image/png" ? "Image PNG" : mime === "image/webp" ? "Image WebP" : mime === "image/jpeg" ? "Image JPEG" : "Fichier";
+  mime === "application/pdf"
+    ? "PDF"
+    : mime === "image/png"
+      ? "Image PNG"
+      : mime === "image/webp"
+        ? "Image WebP"
+        : mime === "image/jpeg"
+          ? "Image JPEG"
+          : "Fichier";
 
-export const sizeKo = (bytes: number) => `${Math.max(1, Math.round(bytes / 1024)).toLocaleString("fr-FR")} Ko`;
+export const sizeKo = (bytes: number) =>
+  `${Math.max(1, Math.round(bytes / 1024)).toLocaleString("fr-FR")} Ko`;
 
 /** « échéance 2 », « échéances 2 et 3 », « échéances 1, 2 et 3 ». */
 export function installmentsLabel(numbers: number[]): string {

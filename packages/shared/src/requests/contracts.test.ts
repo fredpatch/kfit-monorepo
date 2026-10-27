@@ -91,18 +91,41 @@ test("admin request allowed-transition map only exposes the S3.3-approved subset
   });
 
   // S3.4/S3.5-owned outcomes must never appear as a reachable target in S3.3.
-  const forbiddenTargets = ["qualified", "qualified_with_conditions", "rejected", "waitlisted", "converted", "closed_duplicate"];
+  const forbiddenTargets = [
+    "qualified",
+    "qualified_with_conditions",
+    "rejected",
+    "waitlisted",
+    "converted",
+    "closed_duplicate",
+  ];
   for (const targets of Object.values(adminRequestAllowedTransitions)) {
     for (const target of targets) {
-      assert.ok(!forbiddenTargets.includes(target), `${target} must not be reachable from S3.3`);
+      assert.ok(
+        !forbiddenTargets.includes(target),
+        `${target} must not be reachable from S3.3`,
+      );
     }
   }
 });
 
 test("contact attempt vocabularies use the approved naming", () => {
-  assert.deepEqual(contactAttemptChannels, ["whatsapp", "phone_call", "sms", "email", "other"]);
+  assert.deepEqual(contactAttemptChannels, [
+    "whatsapp",
+    "phone_call",
+    "sms",
+    "email",
+    "other",
+  ]);
   assert.deepEqual(contactAttemptDirections, ["outbound", "inbound"]);
-  assert.deepEqual(contactAttemptOutcomes, ["reached", "no_answer", "invalid_contact", "callback_requested", "not_interested", "other"]);
+  assert.deepEqual(contactAttemptOutcomes, [
+    "reached",
+    "no_answer",
+    "invalid_contact",
+    "callback_requested",
+    "not_interested",
+    "other",
+  ]);
 });
 
 test("requests shared contracts type-check submission response shape", () => {
@@ -124,7 +147,12 @@ test("admin requests shared contracts type-check queue, detail, contact-attempt 
     reference: "REQ-ABC123",
     status: "contacting" as const,
     submittedAt: "2026-09-17T08:00:00.000Z",
-    prospect: { id: "22222222-2222-2222-2222-222222222222", fullName: "Ada Lovelace", whatsapp: "+24100000001", email: null },
+    prospect: {
+      id: "22222222-2222-2222-2222-222222222222",
+      fullName: "Ada Lovelace",
+      whatsapp: "+24100000001",
+      email: null,
+    },
     service: { id: "33333333-3333-3333-3333-333333333333", name: "Coaching" },
     requestedVariant: null,
     lastContactAttemptAt: null,
@@ -137,12 +165,17 @@ test("admin requests shared contracts type-check queue, detail, contact-attempt 
   const detailResponse: AdminRequestDetailResponse = {
     request: {
       ...summary,
-      prospect: { ...summary.prospect, privacy: { archivedAt: null, anonymizedAt: null, archivable: false } },
+      prospect: {
+        ...summary.prospect,
+        privacy: { archivedAt: null, anonymizedAt: null, archivable: false },
+      },
       objective: null,
       preferredStartDate: null,
       message: null,
       duplicateOfRequestId: null,
-      qualificationAvailableVariants: [{ id: "55555555-5555-5555-5555-555555555555", name: "Starter" }],
+      qualificationAvailableVariants: [
+        { id: "55555555-5555-5555-5555-555555555555", name: "Starter" },
+      ],
       convertedSubscriptionId: null,
       contactAttempts: [
         {
@@ -171,7 +204,10 @@ test("admin requests shared contracts type-check queue, detail, contact-attempt 
       ],
     },
   };
-  assert.equal(detailResponse.request.contactAttempts[0]?.outcome, "callback_requested");
+  assert.equal(
+    detailResponse.request.contactAttempts[0]?.outcome,
+    "callback_requested",
+  );
   assert.equal(detailResponse.request.waitlistEntries[0]?.status, "active");
 
   const contactAttemptResponse: CreateContactAttemptResponse = {
@@ -180,7 +216,9 @@ test("admin requests shared contracts type-check queue, detail, contact-attempt 
   };
   assert.equal(contactAttemptResponse.contactAttempt.channel, "phone_call");
 
-  const statusResponse: RequestStatusTransitionResponse = { request: { ...summary, status: "qualification_in_progress" } };
+  const statusResponse: RequestStatusTransitionResponse = {
+    request: { ...summary, status: "qualification_in_progress" },
+  };
   assert.equal(statusResponse.request.status, "qualification_in_progress");
 
   const qualificationReviewResponse: CreateQualificationReviewResponse = {
@@ -209,7 +247,11 @@ test("admin requests shared contracts type-check queue, detail, contact-attempt 
   assert.equal(waitlistResponse.request.status, "waitlisted");
 
   const withdrawResponse: WithdrawWaitlistEntryResponse = {
-    waitlistEntry: { ...detailResponse.request.waitlistEntries[0]!, status: "withdrawn", leftAt: "2026-09-17T11:00:00.000Z" },
+    waitlistEntry: {
+      ...detailResponse.request.waitlistEntries[0]!,
+      status: "withdrawn",
+      leftAt: "2026-09-17T11:00:00.000Z",
+    },
     request: { ...summary, status: "abandoned" },
   };
   assert.equal(withdrawResponse.waitlistEntry.status, "withdrawn");

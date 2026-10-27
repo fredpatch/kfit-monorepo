@@ -1,4 +1,9 @@
-import { deriveClientStatusKey, pickDefaultSubscription, type AdminCustomerSubscriptionSummary, type ClientStatusKey } from "@kfit/shared";
+import {
+  deriveClientStatusKey,
+  pickDefaultSubscription,
+  type AdminCustomerSubscriptionSummary,
+  type ClientStatusKey,
+} from "@kfit/shared";
 import type { StatusDescriptor } from "./status-map.js";
 
 /**
@@ -11,17 +16,24 @@ export const clientStatus: Record<ClientStatusKey, StatusDescriptor> = {
   paused: { label: "En pause", tone: "warning" },
   ready_to_start: { label: "Prête à démarrer", tone: "waitlist" },
   awaiting_payment: { label: "En attente de paiement", tone: "warning" },
-  medical_clearance_required: { label: "Validation médicale requise", tone: "warning" },
+  medical_clearance_required: {
+    label: "Validation médicale requise",
+    tone: "warning",
+  },
   onboarding: { label: "En préparation", tone: "info" },
   former: { label: "Ancienne cliente", tone: "neutral" },
   none: { label: "Prospect converti", tone: "info" },
 };
 
-export function deriveClientStatus(subscriptions: Pick<AdminCustomerSubscriptionSummary, "status">[]): StatusDescriptor {
+export function deriveClientStatus(
+  subscriptions: Pick<AdminCustomerSubscriptionSummary, "status">[],
+): StatusDescriptor {
   return clientStatus[deriveClientStatusKey(subscriptions)];
 }
 
 /** Default subscription shown on the profile: the most advanced open one, else the newest. */
-export function defaultSubscription<T extends Pick<AdminCustomerSubscriptionSummary, "status">>(subscriptions: T[]): T | undefined {
+export function defaultSubscription<
+  T extends Pick<AdminCustomerSubscriptionSummary, "status">,
+>(subscriptions: T[]): T | undefined {
   return pickDefaultSubscription(subscriptions);
 }

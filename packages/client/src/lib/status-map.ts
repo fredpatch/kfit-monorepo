@@ -1,11 +1,23 @@
-import type { CadenceState, CatalogueAvailabilityStatus, GoalStatus, ServiceRequestStatus, WaitlistEntryStatus } from "@kfit/shared";
+import type {
+  CadenceState,
+  CatalogueAvailabilityStatus,
+  GoalStatus,
+  ServiceRequestStatus,
+  WaitlistEntryStatus,
+} from "@kfit/shared";
 
 /**
  * Single source of truth for status wording and colour (board 01).
  * Rule: one status = one French label + one tone, on every screen.
  * Tones are reserved for statuses and never reused as chart series colours.
  */
-export type StatusTone = "success" | "info" | "warning" | "danger" | "neutral" | "waitlist";
+export type StatusTone =
+  | "success"
+  | "info"
+  | "warning"
+  | "danger"
+  | "neutral"
+  | "waitlist";
 
 export type StatusDescriptor = { label: string; tone: StatusTone };
 
@@ -20,16 +32,35 @@ export type SubscriptionStatus =
   | "completion_due"
   | "completed"
   | "cancelled";
-export type AppointmentStatus = "scheduled" | "confirmed" | "reschedule_requested" | "rescheduled" | "completed" | "cancelled" | "missed";
-export type CustomerAppointmentResponse = "pending" | "confirmed" | "declined" | "reschedule_requested";
-export type FollowUpEffectiveStatus = "open" | "due" | "overdue" | "done" | "cancelled";
+export type AppointmentStatus =
+  | "scheduled"
+  | "confirmed"
+  | "reschedule_requested"
+  | "rescheduled"
+  | "completed"
+  | "cancelled"
+  | "missed";
+export type CustomerAppointmentResponse =
+  | "pending"
+  | "confirmed"
+  | "declined"
+  | "reschedule_requested";
+export type FollowUpEffectiveStatus =
+  | "open"
+  | "due"
+  | "overdue"
+  | "done"
+  | "cancelled";
 
 export const requestStatus: Record<ServiceRequestStatus, StatusDescriptor> = {
   submitted: { label: "Nouvelle", tone: "info" },
   contacting: { label: "Contact en cours", tone: "warning" },
   qualification_in_progress: { label: "Qualification", tone: "waitlist" },
   qualified: { label: "Qualifiée", tone: "success" },
-  qualified_with_conditions: { label: "Qualifiée avec conditions", tone: "success" },
+  qualified_with_conditions: {
+    label: "Qualifiée avec conditions",
+    tone: "success",
+  },
   waitlisted: { label: "Liste d'attente", tone: "waitlist" },
   rejected: { label: "Rejetée", tone: "danger" },
   abandoned: { label: "Abandonnée", tone: "neutral" },
@@ -37,17 +68,21 @@ export const requestStatus: Record<ServiceRequestStatus, StatusDescriptor> = {
   closed_duplicate: { label: "Doublon clôturé", tone: "neutral" },
 };
 
-export const subscriptionStatus: Record<SubscriptionStatus, StatusDescriptor> = {
-  onboarding: { label: "En préparation", tone: "info" },
-  awaiting_payment: { label: "En attente de paiement", tone: "warning" },
-  medical_clearance_required: { label: "Validation médicale requise", tone: "warning" },
-  ready_to_start: { label: "Prêt à démarrer", tone: "waitlist" },
-  active: { label: "Actif", tone: "success" },
-  paused: { label: "En pause", tone: "warning" },
-  completion_due: { label: "Revue de fin", tone: "warning" },
-  completed: { label: "Terminé", tone: "neutral" },
-  cancelled: { label: "Annulé", tone: "danger" },
-};
+export const subscriptionStatus: Record<SubscriptionStatus, StatusDescriptor> =
+  {
+    onboarding: { label: "En préparation", tone: "info" },
+    awaiting_payment: { label: "En attente de paiement", tone: "warning" },
+    medical_clearance_required: {
+      label: "Validation médicale requise",
+      tone: "warning",
+    },
+    ready_to_start: { label: "Prêt à démarrer", tone: "waitlist" },
+    active: { label: "Actif", tone: "success" },
+    paused: { label: "En pause", tone: "warning" },
+    completion_due: { label: "Revue de fin", tone: "warning" },
+    completed: { label: "Terminé", tone: "neutral" },
+    cancelled: { label: "Annulé", tone: "danger" },
+  };
 
 export const appointmentStatus: Record<AppointmentStatus, StatusDescriptor> = {
   scheduled: { label: "Planifié", tone: "info" },
@@ -59,7 +94,10 @@ export const appointmentStatus: Record<AppointmentStatus, StatusDescriptor> = {
   missed: { label: "Absent", tone: "danger" },
 };
 
-export const customerAppointmentResponse: Record<CustomerAppointmentResponse, StatusDescriptor> = {
+export const customerAppointmentResponse: Record<
+  CustomerAppointmentResponse,
+  StatusDescriptor
+> = {
   pending: { label: "Réponse en attente", tone: "neutral" },
   confirmed: { label: "Confirmé par la cliente", tone: "success" },
   declined: { label: "Décliné", tone: "danger" },
@@ -72,13 +110,14 @@ export const cadenceState: Record<CadenceState, StatusDescriptor> = {
   overdue: { label: "En retard", tone: "danger" },
 };
 
-export const followUpStatus: Record<FollowUpEffectiveStatus, StatusDescriptor> = {
-  open: { label: "Ouvert", tone: "info" },
-  due: { label: "À faire", tone: "warning" },
-  overdue: { label: "En retard", tone: "danger" },
-  done: { label: "Fait", tone: "success" },
-  cancelled: { label: "Annulé", tone: "neutral" },
-};
+export const followUpStatus: Record<FollowUpEffectiveStatus, StatusDescriptor> =
+  {
+    open: { label: "Ouvert", tone: "info" },
+    due: { label: "À faire", tone: "warning" },
+    overdue: { label: "En retard", tone: "danger" },
+    done: { label: "Fait", tone: "success" },
+    cancelled: { label: "Annulé", tone: "neutral" },
+  };
 
 export const goalStatus: Record<GoalStatus, StatusDescriptor> = {
   active: { label: "Actif", tone: "info" },
@@ -89,7 +128,10 @@ export const goalStatus: Record<GoalStatus, StatusDescriptor> = {
   cancelled: { label: "Annulé", tone: "neutral" },
 };
 
-export const waitlistEntryStatus: Record<WaitlistEntryStatus, StatusDescriptor> = {
+export const waitlistEntryStatus: Record<
+  WaitlistEntryStatus,
+  StatusDescriptor
+> = {
   active: { label: "En attente", tone: "waitlist" },
   contacted: { label: "Contactée", tone: "info" },
   promoted: { label: "Place attribuée", tone: "success" },
@@ -97,15 +139,25 @@ export const waitlistEntryStatus: Record<WaitlistEntryStatus, StatusDescriptor> 
   expired: { label: "Expirée", tone: "neutral" },
 };
 
-const unknownStatus: StatusDescriptor = { label: "État à vérifier", tone: "neutral" };
+const unknownStatus: StatusDescriptor = {
+  label: "État à vérifier",
+  tone: "neutral",
+};
 
 /** Safe lookup for API values typed as plain strings. */
-export function describeStatus<K extends string>(map: Record<K, StatusDescriptor>, value: string | null | undefined): StatusDescriptor {
-  if (value && Object.prototype.hasOwnProperty.call(map, value)) return map[value as K];
+export function describeStatus<K extends string>(
+  map: Record<K, StatusDescriptor>,
+  value: string | null | undefined,
+): StatusDescriptor {
+  if (value && Object.prototype.hasOwnProperty.call(map, value))
+    return map[value as K];
   return unknownStatus;
 }
 
-export const availabilityStatus: Record<CatalogueAvailabilityStatus, StatusDescriptor> = {
+export const availabilityStatus: Record<
+  CatalogueAvailabilityStatus,
+  StatusDescriptor
+> = {
   open: { label: "Ouverte", tone: "success" },
   waitlist_only: { label: "Liste d'attente", tone: "waitlist" },
   temporarily_closed: { label: "Fermée", tone: "neutral" },
@@ -114,5 +166,7 @@ export const availabilityStatus: Record<CatalogueAvailabilityStatus, StatusDescr
 
 /** "En retard · 4 j" style label for overdue cadence. */
 export function overdueLabel(days: number | null | undefined): string {
-  return days && days > 0 ? `En retard · ${days} j` : cadenceState.overdue.label;
+  return days && days > 0
+    ? `En retard · ${days} j`
+    : cadenceState.overdue.label;
 }

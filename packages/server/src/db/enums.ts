@@ -65,8 +65,16 @@ export const onboardingItemStatuses = [
   "not_applicable",
 ] as const;
 
-export const questionnaireTemplateStatuses = ["draft", "published", "retired"] as const;
-export const questionnaireSubmissionStatuses = ["draft", "submitted", "superseded"] as const;
+export const questionnaireTemplateStatuses = [
+  "draft",
+  "published",
+  "retired",
+] as const;
+export const questionnaireSubmissionStatuses = [
+  "draft",
+  "submitted",
+  "superseded",
+] as const;
 
 export const medicalClearanceStatuses = [
   "required",
@@ -102,7 +110,12 @@ export const customerAppointmentResponses = [
   "reschedule_requested",
 ] as const;
 
-export const followUpStatuses = ["open", "done", "overdue", "cancelled"] as const;
+export const followUpStatuses = [
+  "open",
+  "done",
+  "overdue",
+  "cancelled",
+] as const;
 export const goalStatuses = [
   "active",
   "achieved",
@@ -120,7 +133,12 @@ export const documentStatuses = [
   "pending_purge",
   "purged",
 ] as const;
-export const malwareScanStatuses = ["pending", "clean", "infected", "scan_failed"] as const;
+export const malwareScanStatuses = [
+  "pending",
+  "clean",
+  "infected",
+  "scan_failed",
+] as const;
 
 export const paymentProofStatuses = [
   "pending_review",
@@ -132,7 +150,13 @@ export const paymentProofStatuses = [
   "superseded",
 ] as const;
 
-export const paymentPlanStatuses = ["draft", "active", "superseded", "settled", "cancelled"] as const;
+export const paymentPlanStatuses = [
+  "draft",
+  "active",
+  "superseded",
+  "settled",
+  "cancelled",
+] as const;
 export const installmentStatuses = [
   "upcoming",
   "due",
@@ -154,7 +178,12 @@ export const quoteStatuses = [
   "cancelled",
 ] as const;
 
-export const scheduledJobStatuses = ["running", "succeeded", "failed", "skipped"] as const;
+export const scheduledJobStatuses = [
+  "running",
+  "succeeded",
+  "failed",
+  "skipped",
+] as const;
 export const retentionHoldStatuses = ["active", "released"] as const;
 
 export const currencyCodes = ["XAF"] as const;

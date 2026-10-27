@@ -19,7 +19,9 @@ const TARGETS = {
 
 const [job, ...rest] = process.argv.slice(2);
 if (!Object.hasOwn(TARGETS, job ?? "")) {
-  console.error(`✖ usage: node scripts/ops/run.mjs <${Object.keys(TARGETS).join("|")}> [args…]`);
+  console.error(
+    `✖ usage: node scripts/ops/run.mjs <${Object.keys(TARGETS).join("|")}> [args…]`,
+  );
   process.exit(1);
 }
 const testMode = process.env.NODE_ENV === "test";
@@ -32,7 +34,11 @@ const args = skipBuild ? rest.slice(1) : rest;
 
 if (!skipBuild) {
   // A fixed command string: no user input reaches the shell (npm is a .cmd script on Windows).
-  const build = spawnSync("npm run build", { cwd: fileURLToPath(new URL("../../", import.meta.url)), stdio: "inherit", shell: true });
+  const build = spawnSync("npm run build", {
+    cwd: fileURLToPath(new URL("../../", import.meta.url)),
+    stdio: "inherit",
+    shell: true,
+  });
   if (build.status !== 0) {
     console.error("✖ build failed; nothing was run.");
     process.exit(build.status ?? 1);
@@ -40,6 +46,8 @@ if (!skipBuild) {
 }
 
 const override = testMode ? process.env.KFIT_OPS_RUNNER_TARGET : undefined;
-const target = override ? pathToFileURL(override) : new URL(TARGETS[job], import.meta.url);
+const target = override
+  ? pathToFileURL(override)
+  : new URL(TARGETS[job], import.meta.url);
 process.argv = [process.argv[0], fileURLToPath(target), ...args];
 await import(target.href);

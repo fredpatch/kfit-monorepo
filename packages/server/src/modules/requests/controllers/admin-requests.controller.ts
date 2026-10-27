@@ -20,7 +20,9 @@ import type { HttpJsonResponse } from "../types/requests.http.types.js";
 
 type ErrorBody = { error: string; reason?: string };
 
-function requireAdminSession(context: AuthHttpRequestContext): HttpJsonResponse<ErrorBody> | null {
+function requireAdminSession(
+  context: AuthHttpRequestContext,
+): HttpJsonResponse<ErrorBody> | null {
   const auth = requireAuthenticatedSession(context);
   if (!auth.ok) return auth.response;
   if (!hasRole(auth.session, "admin")) {
@@ -33,23 +35,43 @@ export class AdminRequestsController {
   constructor(
     private readonly service: Pick<
       AdminRequestsService,
-      "listQueue" | "getDetail" | "logContactAttempt" | "transitionStatus" | "recordQualificationReview" | "createWaitlistEntry" | "withdrawWaitlistEntry"
+      | "listQueue"
+      | "getDetail"
+      | "logContactAttempt"
+      | "transitionStatus"
+      | "recordQualificationReview"
+      | "createWaitlistEntry"
+      | "withdrawWaitlistEntry"
     >,
   ) {}
 
-  async listQueue(context: AuthHttpRequestContext, status: string | undefined): Promise<HttpJsonResponse<AdminRequestsQueueResponse | ErrorBody>> {
+  async listQueue(
+    context: AuthHttpRequestContext,
+    status: string | undefined,
+  ): Promise<HttpJsonResponse<AdminRequestsQueueResponse | ErrorBody>> {
     const forbidden = requireAdminSession(context);
     if (forbidden) return forbidden;
 
-    if (status !== undefined && !serviceRequestStatuses.includes(status as ServiceRequestStatus)) {
-      return { status: 400, body: { error: "REQUEST_INVALID_INPUT", reason: "status_invalid" } };
+    if (
+      status !== undefined &&
+      !serviceRequestStatuses.includes(status as ServiceRequestStatus)
+    ) {
+      return {
+        status: 400,
+        body: { error: "REQUEST_INVALID_INPUT", reason: "status_invalid" },
+      };
     }
 
-    const requests = await this.service.listQueue(status ? { status: status as ServiceRequestStatus } : {});
+    const requests = await this.service.listQueue(
+      status ? { status: status as ServiceRequestStatus } : {},
+    );
     return { status: 200, body: { requests } };
   }
 
-  async getDetail(context: AuthHttpRequestContext, requestId: string): Promise<HttpJsonResponse<AdminRequestDetailResponse | ErrorBody>> {
+  async getDetail(
+    context: AuthHttpRequestContext,
+    requestId: string,
+  ): Promise<HttpJsonResponse<AdminRequestDetailResponse | ErrorBody>> {
     const forbidden = requireAdminSession(context);
     if (forbidden) return forbidden;
 
@@ -79,16 +101,31 @@ export class AdminRequestsController {
       requestId,
       body,
       { userId: auth.session.userId },
-      { ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null },
+      {
+        ipAddress: context.ipAddress ?? null,
+        userAgent: context.userAgent ?? null,
+      },
       new Date(),
     );
     switch (result.status) {
       case "ok":
-        return { status: 201, body: { contactAttempt: result.contactAttempt, request: result.request } };
+        return {
+          status: 201,
+          body: {
+            contactAttempt: result.contactAttempt,
+            request: result.request,
+          },
+        };
       case "not_found":
         return { status: 404, body: { error: "REQUEST_NOT_FOUND" } };
       case "invalid":
-        return { status: 400, body: { error: "REQUEST_CONTACT_ATTEMPT_INVALID_INPUT", reason: result.reason } };
+        return {
+          status: 400,
+          body: {
+            error: "REQUEST_CONTACT_ATTEMPT_INVALID_INPUT",
+            reason: result.reason,
+          },
+        };
     }
   }
 
@@ -107,7 +144,10 @@ export class AdminRequestsController {
       requestId,
       body.toStatus,
       { userId: auth.session.userId },
-      { ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null },
+      {
+        ipAddress: context.ipAddress ?? null,
+        userAgent: context.userAgent ?? null,
+      },
       new Date(),
     );
     switch (result.status) {
@@ -118,7 +158,13 @@ export class AdminRequestsController {
       case "invalid_transition":
         return { status: 409, body: { error: "REQUEST_INVALID_TRANSITION" } };
       case "invalid":
-        return { status: 400, body: { error: "REQUEST_STATUS_INVALID_INPUT", reason: result.reason } };
+        return {
+          status: 400,
+          body: {
+            error: "REQUEST_STATUS_INVALID_INPUT",
+            reason: result.reason,
+          },
+        };
     }
   }
 
@@ -137,21 +183,44 @@ export class AdminRequestsController {
       requestId,
       body,
       { userId: auth.session.userId },
-      { ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null },
+      {
+        ipAddress: context.ipAddress ?? null,
+        userAgent: context.userAgent ?? null,
+      },
       new Date(),
     );
     switch (result.status) {
       case "ok":
-        return { status: 201, body: { qualificationReview: result.qualificationReview, request: result.request } };
+        return {
+          status: 201,
+          body: {
+            qualificationReview: result.qualificationReview,
+            request: result.request,
+          },
+        };
       case "not_found":
         return { status: 404, body: { error: "REQUEST_NOT_FOUND" } };
       case "invalid_transition":
         return { status: 409, body: { error: "REQUEST_INVALID_TRANSITION" } };
       case "invalid":
         // REG-F1: the two catalogue-dependent option refusals get their own codes so the UI can say what to fix.
-        if (result.reason === "final_variant_required") return { status: 400, body: { error: "REQUEST_FINAL_VARIANT_REQUIRED" } };
-        if (result.reason === "final_variant_not_applicable") return { status: 400, body: { error: "REQUEST_FINAL_VARIANT_NOT_APPLICABLE" } };
-        return { status: 400, body: { error: "REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT", reason: result.reason } };
+        if (result.reason === "final_variant_required")
+          return {
+            status: 400,
+            body: { error: "REQUEST_FINAL_VARIANT_REQUIRED" },
+          };
+        if (result.reason === "final_variant_not_applicable")
+          return {
+            status: 400,
+            body: { error: "REQUEST_FINAL_VARIANT_NOT_APPLICABLE" },
+          };
+        return {
+          status: 400,
+          body: {
+            error: "REQUEST_QUALIFICATION_REVIEW_INVALID_INPUT",
+            reason: result.reason,
+          },
+        };
     }
   }
 
@@ -170,22 +239,43 @@ export class AdminRequestsController {
       requestId,
       body,
       { userId: auth.session.userId },
-      { ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null },
+      {
+        ipAddress: context.ipAddress ?? null,
+        userAgent: context.userAgent ?? null,
+      },
       new Date(),
     );
     switch (result.status) {
       case "ok":
-        return { status: 201, body: { waitlistEntry: result.waitlistEntry, request: result.request } };
+        return {
+          status: 201,
+          body: {
+            waitlistEntry: result.waitlistEntry,
+            request: result.request,
+          },
+        };
       case "not_found":
         return { status: 404, body: { error: "REQUEST_NOT_FOUND" } };
       case "invalid_transition":
         return { status: 409, body: { error: "REQUEST_INVALID_TRANSITION" } };
       case "not_eligible":
-        return { status: 409, body: { error: "REQUEST_WAITLIST_NOT_ELIGIBLE" } };
+        return {
+          status: 409,
+          body: { error: "REQUEST_WAITLIST_NOT_ELIGIBLE" },
+        };
       case "already_active":
-        return { status: 409, body: { error: "REQUEST_WAITLIST_ALREADY_ACTIVE" } };
+        return {
+          status: 409,
+          body: { error: "REQUEST_WAITLIST_ALREADY_ACTIVE" },
+        };
       case "invalid":
-        return { status: 400, body: { error: "REQUEST_WAITLIST_INVALID_INPUT", reason: result.reason } };
+        return {
+          status: 400,
+          body: {
+            error: "REQUEST_WAITLIST_INVALID_INPUT",
+            reason: result.reason,
+          },
+        };
     }
   }
 
@@ -202,18 +292,30 @@ export class AdminRequestsController {
     const result = await this.service.withdrawWaitlistEntry(
       requestId,
       { userId: auth.session.userId },
-      { ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null },
+      {
+        ipAddress: context.ipAddress ?? null,
+        userAgent: context.userAgent ?? null,
+      },
       new Date(),
     );
     switch (result.status) {
       case "ok":
-        return { status: 200, body: { waitlistEntry: result.waitlistEntry, request: result.request } };
+        return {
+          status: 200,
+          body: {
+            waitlistEntry: result.waitlistEntry,
+            request: result.request,
+          },
+        };
       case "not_found":
         return { status: 404, body: { error: "REQUEST_NOT_FOUND" } };
       case "invalid_transition":
         return { status: 409, body: { error: "REQUEST_INVALID_TRANSITION" } };
       case "entry_not_found":
-        return { status: 404, body: { error: "REQUEST_WAITLIST_ENTRY_NOT_FOUND" } };
+        return {
+          status: 404,
+          body: { error: "REQUEST_WAITLIST_ENTRY_NOT_FOUND" },
+        };
     }
   }
 }

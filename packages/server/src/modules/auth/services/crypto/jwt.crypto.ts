@@ -56,7 +56,11 @@ export function signAccessToken(input: SignAccessTokenInput): string {
   return `${unsigned}.${sign(unsigned, input.secret)}`;
 }
 
-export function verifyAccessToken(token: string | undefined, secret: string, now = new Date()): AccessTokenClaims | null {
+export function verifyAccessToken(
+  token: string | undefined,
+  secret: string,
+  now = new Date(),
+): AccessTokenClaims | null {
   if (!token) return null;
 
   const parts = token.split(".");
@@ -72,8 +76,10 @@ export function verifyAccessToken(token: string | undefined, secret: string, now
   if (!safeEqual(signature, expected)) return null;
 
   const claims = decodeJson<AccessTokenClaims>(payload);
-  if (!claims || !claims.sub || !claims.sid || !isAuthRole(claims.role)) return null;
-  if (!Number.isSafeInteger(claims.iat) || !Number.isSafeInteger(claims.exp)) return null;
+  if (!claims || !claims.sub || !claims.sid || !isAuthRole(claims.role))
+    return null;
+  if (!Number.isSafeInteger(claims.iat) || !Number.isSafeInteger(claims.exp))
+    return null;
   if (claims.exp * 1000 <= now.getTime()) return null;
 
   return claims;

@@ -211,6 +211,8 @@ Interrupted work: report the WORKFLOW §14 handoff block; write it to `TASKS.md`
 
 Every report ends with a `Docs impact` line (files touched or `aucun`) - see WORKFLOW §16 Documentation (DOC-01).
 
+Before reporting, run `npm run format` and keep text free of long dashes (« - » only) - see WORKFLOW §17 Format et typographie (PRETTY-01).
+
 ---
 
 ## 14. Principles

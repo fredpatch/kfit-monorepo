@@ -351,7 +351,7 @@ export class DrizzlePrivacyRepository {
     });
   }
 
-  /* --------------------------- Anonymize (rules 2–4) --------------------------- */
+  /* --------------------------- Anonymize (rules 2-4) --------------------------- */
 
   private async scopeOf(
     tx: Tx,
@@ -1209,9 +1209,7 @@ export class DrizzlePrivacyRepository {
    * OPS-01 O4: what purgeDue would do now - same eligibility (pending_purge, purge_after reached) and the same hold check -
    * in a READ ONLY transaction. Counts only; deletes nothing, writes no run row.
    */
-  async simulatePurge(
-    now: Date,
-  ): Promise<{
+  async simulatePurge(now: Date): Promise<{
     subjectsDue: number;
     filesDue: number;
     bytesDue: number;

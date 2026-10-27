@@ -372,18 +372,16 @@ test("delivery: SMTP failure retries on schedule, sends once, concurrent claims 
   );
 
   // A new row that keeps failing: +5m, +30m, +2h, +12h, then dead letter on the 5th attempt.
-  await db
-    .insert(notificationEmailOutbox)
-    .values({
-      recipientUserId: admin,
-      toEmail: `notif-admin-${run}@example.invalid`,
-      subject: "s",
-      bodyText: "b",
-      messageKind: "digest",
-      dedupeKey: `digest:${admin}:2031-06-01`,
-      status: "pending",
-      nextAttemptAt: at(10 * 24 * 60),
-    });
+  await db.insert(notificationEmailOutbox).values({
+    recipientUserId: admin,
+    toEmail: `notif-admin-${run}@example.invalid`,
+    subject: "s",
+    bodyText: "b",
+    messageKind: "digest",
+    dedupeKey: `digest:${admin}:2031-06-01`,
+    status: "pending",
+    nextAttemptAt: at(10 * 24 * 60),
+  });
   outage = true;
   let clock = at(10 * 24 * 60);
   for (let attempt = 1; attempt <= 5; attempt++) {

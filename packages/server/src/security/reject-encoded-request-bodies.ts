@@ -11,13 +11,21 @@ export const REQUEST_ENCODING_UNSUPPORTED = "REQUEST_ENCODING_UNSUPPORTED";
  * Mounted in createServerApp before every body parser; refuses without reading the body. Response compression is unaffected.
  * `onRefused` counts the refusal (S7.4b B9); it must not throw.
  */
-export function rejectEncodedRequestBodies(onRefused: () => void = () => undefined): RequestHandler {
+export function rejectEncodedRequestBodies(
+  onRefused: () => void = () => undefined,
+): RequestHandler {
   return (request, response, next) => {
     const encoding = request.headers["content-encoding"];
     if (encoding === undefined) return next();
     const value = encoding.trim().toLowerCase();
-    if ((ALLOWED_REQUEST_CONTENT_ENCODINGS as readonly string[]).includes(value)) return next();
+    if (
+      (ALLOWED_REQUEST_CONTENT_ENCODINGS as readonly string[]).includes(value)
+    )
+      return next();
     onRefused();
-    response.set("Connection", "close").status(415).json({ error: REQUEST_ENCODING_UNSUPPORTED });
+    response
+      .set("Connection", "close")
+      .status(415)
+      .json({ error: REQUEST_ENCODING_UNSUPPORTED });
   };
 }

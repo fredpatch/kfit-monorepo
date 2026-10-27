@@ -73,7 +73,6 @@ export const authApiRoutes = {
 
 export type AuthApiRoute = (typeof authApiRoutes)[keyof typeof authApiRoutes];
 
-
 export type AuthErrorResponse = {
   error: AuthErrorCode;
 };
@@ -134,9 +133,13 @@ export type LoginOtpRequiredResponse = {
 };
 
 /** SEC-02 E1: 200 keeps the session shape unchanged; 202 is told apart by its `status`. */
-export type LoginResponse = AuthenticatedSessionResponse | LoginOtpRequiredResponse;
+export type LoginResponse =
+  | AuthenticatedSessionResponse
+  | LoginOtpRequiredResponse;
 
-export function isLoginOtpRequired(response: LoginResponse): response is LoginOtpRequiredResponse {
+export function isLoginOtpRequired(
+  response: LoginResponse,
+): response is LoginOtpRequiredResponse {
   return "status" in response && response.status === "otp_required";
 }
 

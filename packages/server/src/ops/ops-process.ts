@@ -6,25 +6,56 @@ import type { PgAccess } from "./ops-config.js";
 /** Bounded stderr kept as the error cause for debugging; never printed (it may name hosts or databases). */
 const STDERR_TAIL_BYTES = 4096;
 
-export type Spawned = { stdin: Writable; stdout: Readable; done: Promise<void> };
+export type Spawned = {
+  stdin: Writable;
+  stdout: Readable;
+  done: Promise<void>;
+};
 
 /** Spawns without a shell. `done` rejects on a spawn error or a non-zero exit; the message names the tool and exit code only. */
-export function spawnTool(command: string, args: string[], options: { cwd?: string; env?: NodeJS.ProcessEnv; label: string }): Spawned {
-  const child = spawn(command, args, { cwd: options.cwd, env: options.env ?? process.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+export function spawnTool(
+  command: string,
+  args: string[],
+  options: { cwd?: string; env?: NodeJS.ProcessEnv; label: string },
+): Spawned {
+  const child = spawn(command, args, {
+    cwd: options.cwd,
+    env: options.env ?? process.env,
+    stdio: ["pipe", "pipe", "pipe"],
+    windowsHide: true,
+  });
   let stderr = "";
-  child.stderr.on("data", (chunk: Buffer) => { stderr = (stderr + chunk.toString("utf8")).slice(-STDERR_TAIL_BYTES); });
+  child.stderr.on("data", (chunk: Buffer) => {
+    stderr = (stderr + chunk.toString("utf8")).slice(-STDERR_TAIL_BYTES);
+  });
   const done = new Promise<void>((resolve, reject) => {
-    child.once("error", (error) => reject(new Error(`${options.label} could not start`, { cause: error })));
-    child.once("close", (code, signal) => code === 0 ? resolve() : reject(new Error(`${options.label} exited ${code ?? signal}`, { cause: new Error(stderr) })));
+    child.once("error", (error) =>
+      reject(new Error(`${options.label} could not start`, { cause: error })),
+    );
+    child.once("close", (code, signal) =>
+      code === 0
+        ? resolve()
+        : reject(
+            new Error(`${options.label} exited ${code ?? signal}`, {
+              cause: new Error(stderr),
+            }),
+          ),
+    );
   });
   return { stdin: child.stdin, stdout: child.stdout, done };
 }
 
-export async function captureTool(command: string, args: string[], options: { cwd?: string; env?: NodeJS.ProcessEnv; label: string }): Promise<string> {
+export async function captureTool(
+  command: string,
+  args: string[],
+  options: { cwd?: string; env?: NodeJS.ProcessEnv; label: string },
+): Promise<string> {
   const run = spawnTool(command, args, options);
   run.stdin.end();
   let out = "";
-  run.stdout.on("data", (chunk: Buffer) => { out += chunk.toString("utf8"); });
+  run.stdout.on("data", (chunk: Buffer) => {
+    out += chunk.toString("utf8");
+  });
   await run.done;
   return out.trim();
 }
@@ -38,12 +69,19 @@ export function pgClientMajor(versionLine: string): number | null {
 }
 
 /** libpq environment for native tools: credentials never go on the command line. */
-export function libpqEnv(databaseUrl: string, database: string): NodeJS.ProcessEnv {
+export function libpqEnv(
+  databaseUrl: string,
+  database: string,
+): NodeJS.ProcessEnv {
   const url = new URL(databaseUrl);
   const sslmode = url.searchParams.get("sslmode");
   return {
     ...process.env,
-    PGHOST: url.hostname, PGPORT: url.port || "5432", PGUSER: decodeURIComponent(url.username), PGPASSWORD: decodeURIComponent(url.password), PGDATABASE: database,
+    PGHOST: url.hostname,
+    PGPORT: url.port || "5432",
+    PGUSER: decodeURIComponent(url.username),
+    PGPASSWORD: decodeURIComponent(url.password),
+    PGDATABASE: database,
     ...(sslmode ? { PGSSLMODE: sslmode } : {}),
   };
 }
@@ -63,18 +101,59 @@ export type PgTools = {
 export function createPgTools(access: PgAccess, databaseUrl: string): PgTools {
   if (access.mode === "native") {
     return {
-      version: async (tool) => firstLine(await captureTool(tool, ["--version"], { label: tool })),
-      dump: (database, snapshot) => spawnTool("pg_dump", ["--format=custom", `--snapshot=${snapshot}`], { env: libpqEnv(databaseUrl, database), label: "pg_dump" }),
-      restore: (database, clean) => spawnTool("pg_restore", ["--no-owner", "--exit-on-error", ...(clean ? ["--clean", "--if-exists"] : []), `--dbname=${database}`], { env: libpqEnv(databaseUrl, database), label: "pg_restore" }),
+      version: async (tool) =>
+        firstLine(await captureTool(tool, ["--version"], { label: tool })),
+      dump: (database, snapshot) =>
+        spawnTool("pg_dump", ["--format=custom", `--snapshot=${snapshot}`], {
+          env: libpqEnv(databaseUrl, database),
+          label: "pg_dump",
+        }),
+      restore: (database, clean) =>
+        spawnTool(
+          "pg_restore",
+          [
+            "--no-owner",
+            "--exit-on-error",
+            ...(clean ? ["--clean", "--if-exists"] : []),
+            `--dbname=${database}`,
+          ],
+          { env: libpqEnv(databaseUrl, database), label: "pg_restore" },
+        ),
     };
   }
-  const compose = [...(access.composeFile ? ["-f", access.composeFile] : []), "exec", "-T", access.service];
+  const compose = [
+    ...(access.composeFile ? ["-f", access.composeFile] : []),
+    "exec",
+    "-T",
+    access.service,
+  ];
   const inContainer = (label: string, script: string, args: string[]) =>
-    spawnTool("docker", ["compose", ...compose, "sh", "-c", script, "sh", ...args], { cwd: access.composeDir, label });
+    spawnTool(
+      "docker",
+      ["compose", ...compose, "sh", "-c", script, "sh", ...args],
+      { cwd: access.composeDir, label },
+    );
   return {
-    version: async (tool) => firstLine(await captureTool("docker", ["compose", ...compose, tool, "--version"], { cwd: access.composeDir, label: tool })),
-    dump: (database, snapshot) => inContainer("pg_dump", 'exec pg_dump -U "$POSTGRES_USER" --format=custom --snapshot="$2" --dbname="$1"', [database, snapshot]),
-    restore: (database, clean) => inContainer("pg_restore", `exec pg_restore -U "$POSTGRES_USER" --no-owner --exit-on-error ${clean ? "--clean --if-exists " : ""}--dbname="$1"`, [database]),
+    version: async (tool) =>
+      firstLine(
+        await captureTool(
+          "docker",
+          ["compose", ...compose, tool, "--version"],
+          { cwd: access.composeDir, label: tool },
+        ),
+      ),
+    dump: (database, snapshot) =>
+      inContainer(
+        "pg_dump",
+        'exec pg_dump -U "$POSTGRES_USER" --format=custom --snapshot="$2" --dbname="$1"',
+        [database, snapshot],
+      ),
+    restore: (database, clean) =>
+      inContainer(
+        "pg_restore",
+        `exec pg_restore -U "$POSTGRES_USER" --no-owner --exit-on-error ${clean ? "--clean --if-exists " : ""}--dbname="$1"`,
+        [database],
+      ),
   };
 }
 
@@ -83,8 +162,13 @@ export function createPgTools(access: PgAccess, databaseUrl: string): PgTools {
  * (Git Bash) never reads a drive letter as a remote host. Archives hold paths relative to the root (`-C root .`).
  */
 export function tarCommand(): string {
-  return process.platform === "win32" ? path.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "tar.exe") : "tar";
+  return process.platform === "win32"
+    ? path.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "tar.exe")
+    : "tar";
 }
-export const tarVersion = async () => firstLine(await captureTool(tarCommand(), ["--version"], { label: "tar" }));
-export const tarCreate = (root: string) => spawnTool(tarCommand(), ["-cf", "-", "-C", root, "."], { label: "tar" });
-export const tarExtract = (destination: string) => spawnTool(tarCommand(), ["-xf", "-", "-C", destination], { label: "tar" });
+export const tarVersion = async () =>
+  firstLine(await captureTool(tarCommand(), ["--version"], { label: "tar" }));
+export const tarCreate = (root: string) =>
+  spawnTool(tarCommand(), ["-cf", "-", "-C", root, "."], { label: "tar" });
+export const tarExtract = (destination: string) =>
+  spawnTool(tarCommand(), ["-xf", "-", "-C", destination], { label: "tar" });

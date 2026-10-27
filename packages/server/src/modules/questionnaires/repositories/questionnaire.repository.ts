@@ -379,19 +379,17 @@ export class DrizzleQuestionnaireRepository implements QuestionnaireRepository {
     const prior = evidence.current.find(
       (record) => record.consentType === "health_data",
     );
-    await tx
-      .insert(consentRecords)
-      .values({
-        customerId: subscription.customerId,
-        subscriptionId: subscription.id,
-        consentDefinitionId: definition.id,
-        decision,
-        capturedVia: "public_link",
-        capturedByUserId: null,
-        secureAccessTokenId: tokenId,
-        supersedesConsentRecordId: prior?.id ?? null,
-        capturedAt: new Date(),
-      });
+    await tx.insert(consentRecords).values({
+      customerId: subscription.customerId,
+      subscriptionId: subscription.id,
+      consentDefinitionId: definition.id,
+      decision,
+      capturedVia: "public_link",
+      capturedByUserId: null,
+      secureAccessTokenId: tokenId,
+      supersedesConsentRecordId: prior?.id ?? null,
+      capturedAt: new Date(),
+    });
     await this.audit(tx, actor, subscription.id, "consent.decision_recorded", {
       consentType: "health_data",
       definitionId: definition.id,
@@ -518,16 +516,13 @@ export class DrizzleQuestionnaireRepository implements QuestionnaireRepository {
     if (!submission)
       throw new Error("Questionnaire submission insert did not return a row");
     if (answers.length)
-      await tx
-        .insert(questionnaireAnswers)
-        .values(
-          answers.map((answer) => ({
-            submissionId: submission.id,
-            questionId: answer.questionId,
-            answerJson:
-              answer.value === null ? sql`'null'::jsonb` : answer.value,
-          })),
-        );
+      await tx.insert(questionnaireAnswers).values(
+        answers.map((answer) => ({
+          submissionId: submission.id,
+          questionId: answer.questionId,
+          answerJson: answer.value === null ? sql`'null'::jsonb` : answer.value,
+        })),
+      );
     const [item] = await tx
       .select()
       .from(onboardingItems)
@@ -855,24 +850,19 @@ export class DrizzleQuestionnaireRepository implements QuestionnaireRepository {
       target: Pick<ConsentTransaction, "insert">,
       result: string,
     ) =>
-      target
-        .insert(externalAccessEvents)
-        .values({
-          secureAccessTokenId: tokenId,
-          eventType:
-            input || rejectedInput
-              ? "questionnaire.submit"
-              : "questionnaire.view",
-          result,
-          ipHash: hashAuditContext(
-            actor.ipAddress,
-            this.options.auditHashPepper,
-          ),
-          userAgentHash: hashAuditContext(
-            actor.userAgent,
-            this.options.auditHashPepper,
-          ),
-        });
+      target.insert(externalAccessEvents).values({
+        secureAccessTokenId: tokenId,
+        eventType:
+          input || rejectedInput
+            ? "questionnaire.submit"
+            : "questionnaire.view",
+        result,
+        ipHash: hashAuditContext(actor.ipAddress, this.options.auditHashPepper),
+        userAgentHash: hashAuditContext(
+          actor.userAgent,
+          this.options.auditHashPepper,
+        ),
+      });
     try {
       return await this.database.transaction(async (tx) => {
         const [initial] = /^[A-Za-z0-9_-]{43}$/.test(rawToken)

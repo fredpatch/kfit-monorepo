@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { BootstrapService, type BootstrapRepository } from "../services/bootstrap.service.js";
+import {
+  BootstrapService,
+  type BootstrapRepository,
+} from "../services/bootstrap.service.js";
 import { type AuthUserRecord } from "../services/auth-route.service.js";
 import { type RecordAuditEventInput } from "../services/audit.service.js";
 import { PasswordService } from "../services/password.service.js";
@@ -14,7 +17,11 @@ const user: AuthUserRecord = {
 };
 
 function makeService(existingUsers = 0) {
-  const created: Array<{ email: string; passwordHash: string; role: AuthUserRecord["role"] }> = [];
+  const created: Array<{
+    email: string;
+    passwordHash: string;
+    role: AuthUserRecord["role"];
+  }> = [];
   const auditEvents: RecordAuditEventInput[] = [];
 
   const repository: BootstrapRepository = {
@@ -23,7 +30,12 @@ function makeService(existingUsers = 0) {
     },
     async createFirstUser(input) {
       created.push(input);
-      return { ...user, email: input.email, passwordHash: input.passwordHash, role: input.role };
+      return {
+        ...user,
+        email: input.email,
+        passwordHash: input.passwordHash,
+        role: input.role,
+      };
     },
   };
 
@@ -53,8 +65,16 @@ function makeService(existingUsers = 0) {
 }
 
 test("BootstrapService reports whether first account creation is required", async () => {
-  assert.deepEqual(await makeService(0).service.status(), { required: true, tokenRequired: false, enabled: true });
-  assert.deepEqual(await makeService(1).service.status(), { required: false, tokenRequired: false, enabled: true });
+  assert.deepEqual(await makeService(0).service.status(), {
+    required: true,
+    tokenRequired: false,
+    enabled: true,
+  });
+  assert.deepEqual(await makeService(1).service.status(), {
+    required: false,
+    tokenRequired: false,
+    enabled: true,
+  });
 });
 
 test("BootstrapService creates the first user once with canonical email and hashed password", async () => {
@@ -67,19 +87,31 @@ test("BootstrapService creates the first user once with canonical email and hash
   });
 
   assert.equal(result.status, "created");
-  assert.equal(result.status === "created" ? result.user.email : null, "coach@kfit.local");
+  assert.equal(
+    result.status === "created" ? result.user.email : null,
+    "coach@kfit.local",
+  );
   assert.equal(created[0]?.email, "coach@kfit.local");
   assert.notEqual(created[0]?.passwordHash, "CorrectHorse9");
-  assert.equal(auditEvents.some((event) => event.eventType === "auth.bootstrap.created"), true);
+  assert.equal(
+    auditEvents.some((event) => event.eventType === "auth.bootstrap.created"),
+    true,
+  );
 
-  const second = await service.create({ email: "other@kfit.local", password: "CorrectHorse9" });
+  const second = await service.create({
+    email: "other@kfit.local",
+    password: "CorrectHorse9",
+  });
   assert.deepEqual(second, { status: "already_completed" });
 });
 
 test("BootstrapService rejects weak passwords without creating a user", async () => {
   const { service, created, auditEvents } = makeService();
 
-  const result = await service.create({ email: "coach@kfit.local", password: "weak" });
+  const result = await service.create({
+    email: "coach@kfit.local",
+    password: "weak",
+  });
 
   assert.deepEqual(result, { status: "invalid_password", reason: "too_short" });
   assert.equal(created.length, 0);

@@ -1,4 +1,7 @@
-import type { OtpChallengeService, OtpRejectReason } from "../services/otp-challenge.service.js";
+import type {
+  OtpChallengeService,
+  OtpRejectReason,
+} from "../services/otp-challenge.service.js";
 import { bootstrapTokenHeaderName } from "@kfit/shared";
 import { authCookieNames } from "../middleware/auth.cookies.js";
 import { parseDeviceToken } from "../services/crypto/device-token.crypto.js";
@@ -8,14 +11,23 @@ import type { BootstrapService } from "../services/bootstrap.service.js";
 import type { PasswordRecoveryService } from "../services/password-recovery.service.js";
 import type { SensitiveActionOtpService } from "../services/sensitive-action-otp.service.js";
 import { requireAuthenticatedSession } from "../middleware/auth.middleware.js";
-import type { AuthHttpRequestContext, HttpJsonResponse } from "../types/auth.http.types.js";
+import type {
+  AuthHttpRequestContext,
+  HttpJsonResponse,
+} from "../types/auth.http.types.js";
 
 export type AuthControllerDeps = {
   otpChallengeService: Pick<OtpChallengeService, "issue" | "verify">;
-  authRouteService?: Pick<AuthRouteService, "login" | "verifyLogin" | "resendLoginOtp" | "refresh" | "logout">;
+  authRouteService?: Pick<
+    AuthRouteService,
+    "login" | "verifyLogin" | "resendLoginOtp" | "refresh" | "logout"
+  >;
   trustedDeviceService?: Pick<DeviceLoginService, "list" | "revoke">;
   bootstrapService?: Pick<BootstrapService, "status" | "create">;
-  passwordRecoveryService?: Pick<PasswordRecoveryService, "request" | "verify" | "reset">;
+  passwordRecoveryService?: Pick<
+    PasswordRecoveryService,
+    "request" | "verify" | "reset"
+  >;
   sensitiveActionOtpService?: Pick<SensitiveActionOtpService, "request">;
 };
 
@@ -28,30 +40,51 @@ const otpRejectedStatus: Record<OtpRejectReason, number> = {
   locked: 423,
 };
 
-const otpRejected = (reason: OtpRejectReason): HttpJsonResponse => ({ status: otpRejectedStatus[reason], body: { error: "AUTH_OTP_REJECTED", reason } });
+const otpRejected = (reason: OtpRejectReason): HttpJsonResponse => ({
+  status: otpRejectedStatus[reason],
+  body: { error: "AUTH_OTP_REJECTED", reason },
+});
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** SEC-02 E3: the public challenge id is `<uuid>.<resends>.<mac>`, far below this bound. */
 const CHALLENGE_ID_MAX_LENGTH = 200;
-const isChallengeId = (value: unknown): value is string => typeof value === "string" && value !== "" && value.length <= CHALLENGE_ID_MAX_LENGTH;
+const isChallengeId = (value: unknown): value is string =>
+  typeof value === "string" &&
+  value !== "" &&
+  value.length <= CHALLENGE_ID_MAX_LENGTH;
 
 export class AuthController {
   constructor(private readonly deps: AuthControllerDeps) {}
 
   async bootstrapStatus(): Promise<HttpJsonResponse> {
     if (!this.deps.bootstrapService) {
-      return { status: 501, body: { error: "AUTH_BOOTSTRAP_SERVICE_NOT_BOUND" } };
+      return {
+        status: 501,
+        body: { error: "AUTH_BOOTSTRAP_SERVICE_NOT_BOUND" },
+      };
     }
 
     return { status: 200, body: await this.deps.bootstrapService.status() };
   }
 
-  async bootstrap(context: AuthHttpRequestContext, body: { email?: unknown; password?: unknown }): Promise<HttpJsonResponse> {
+  async bootstrap(
+    context: AuthHttpRequestContext,
+    body: { email?: unknown; password?: unknown },
+  ): Promise<HttpJsonResponse> {
     if (!this.deps.bootstrapService) {
-      return { status: 501, body: { error: "AUTH_BOOTSTRAP_SERVICE_NOT_BOUND" } };
+      return {
+        status: 501,
+        body: { error: "AUTH_BOOTSTRAP_SERVICE_NOT_BOUND" },
+      };
     }
 
-    if (typeof body.email !== "string" || typeof body.password !== "string" || body.email.trim() === "" || body.password === "") {
+    if (
+      typeof body.email !== "string" ||
+      typeof body.password !== "string" ||
+      body.email.trim() === "" ||
+      body.password === ""
+    ) {
       return { status: 400, body: { error: "AUTH_BOOTSTRAP_INVALID_FORMAT" } };
     }
 
@@ -67,12 +100,18 @@ export class AuthController {
     if (result.status === "already_completed") {
       return { status: 409, body: { error: "BOOTSTRAP_ALREADY_COMPLETED" } };
     }
-    if (result.status === "rate_limited") return { status: 429, body: { error: "AUTH_RATE_LIMITED" } };
-    if (result.status === "disabled") return { status: 403, body: { error: "BOOTSTRAP_DISABLED" } };
-    if (result.status === "token_invalid") return { status: 403, body: { error: "BOOTSTRAP_TOKEN_INVALID" } };
+    if (result.status === "rate_limited")
+      return { status: 429, body: { error: "AUTH_RATE_LIMITED" } };
+    if (result.status === "disabled")
+      return { status: 403, body: { error: "BOOTSTRAP_DISABLED" } };
+    if (result.status === "token_invalid")
+      return { status: 403, body: { error: "BOOTSTRAP_TOKEN_INVALID" } };
 
     if (result.status === "invalid_password") {
-      return { status: 400, body: { error: "AUTH_PASSWORD_POLICY_FAILED", reason: result.reason } };
+      return {
+        status: 400,
+        body: { error: "AUTH_PASSWORD_POLICY_FAILED", reason: result.reason },
+      };
     }
 
     return {
@@ -88,12 +127,20 @@ export class AuthController {
     };
   }
 
-  async login(context: AuthHttpRequestContext, body: { email?: unknown; password?: unknown }): Promise<HttpJsonResponse> {
+  async login(
+    context: AuthHttpRequestContext,
+    body: { email?: unknown; password?: unknown },
+  ): Promise<HttpJsonResponse> {
     if (!this.deps.authRouteService) {
       return { status: 501, body: { error: "AUTH_ROUTE_SERVICE_NOT_BOUND" } };
     }
 
-    if (typeof body.email !== "string" || typeof body.password !== "string" || body.email.trim() === "" || body.password === "") {
+    if (
+      typeof body.email !== "string" ||
+      typeof body.password !== "string" ||
+      body.email.trim() === "" ||
+      body.password === ""
+    ) {
       return { status: 400, body: { error: "AUTH_LOGIN_INVALID_FORMAT" } };
     }
 
@@ -110,7 +157,15 @@ export class AuthController {
       case "authenticated":
         return { status: 200, body: result.body, cookies: result.cookies };
       case "otp_required":
-        return { status: 202, body: { status: "otp_required", challengeId: result.challengeId, expiresAt: result.expiresAt.toISOString() }, cookies: result.cookies };
+        return {
+          status: 202,
+          body: {
+            status: "otp_required",
+            challengeId: result.challengeId,
+            expiresAt: result.expiresAt.toISOString(),
+          },
+          cookies: result.cookies,
+        };
       case "rate_limited":
         return { status: 429, body: { error: "AUTH_RATE_LIMITED" } };
       case "delivery_failed":
@@ -118,16 +173,27 @@ export class AuthController {
       case "rejected":
         return {
           status: result.reason === "account_unavailable" ? 403 : 401,
-          body: { error: result.reason === "account_unavailable" ? "AUTH_ACCOUNT_UNAVAILABLE" : "AUTH_INVALID_CREDENTIALS" },
+          body: {
+            error:
+              result.reason === "account_unavailable"
+                ? "AUTH_ACCOUNT_UNAVAILABLE"
+                : "AUTH_INVALID_CREDENTIALS",
+          },
         };
     }
   }
 
-  async verifyLogin(context: AuthHttpRequestContext, body: { challengeId?: unknown; code?: unknown; trustDevice?: unknown }): Promise<HttpJsonResponse> {
+  async verifyLogin(
+    context: AuthHttpRequestContext,
+    body: { challengeId?: unknown; code?: unknown; trustDevice?: unknown },
+  ): Promise<HttpJsonResponse> {
     if (!this.deps.authRouteService) {
       return { status: 501, body: { error: "AUTH_ROUTE_SERVICE_NOT_BOUND" } };
     }
-    if (!isChallengeId(body.challengeId) || typeof body.trustDevice !== "boolean") {
+    if (
+      !isChallengeId(body.challengeId) ||
+      typeof body.trustDevice !== "boolean"
+    ) {
       return { status: 400, body: { error: "AUTH_LOGIN_INVALID_FORMAT" } };
     }
     if (typeof body.code !== "string" || !/^\d{6}$/.test(body.code)) {
@@ -156,7 +222,10 @@ export class AuthController {
     }
   }
 
-  async resendLoginOtp(context: AuthHttpRequestContext, body: { challengeId?: unknown }): Promise<HttpJsonResponse> {
+  async resendLoginOtp(
+    context: AuthHttpRequestContext,
+    body: { challengeId?: unknown },
+  ): Promise<HttpJsonResponse> {
     if (!this.deps.authRouteService) {
       return { status: 501, body: { error: "AUTH_ROUTE_SERVICE_NOT_BOUND" } };
     }
@@ -174,7 +243,14 @@ export class AuthController {
 
     switch (result.status) {
       case "otp_required":
-        return { status: 202, body: { status: "otp_required", challengeId: result.challengeId, expiresAt: result.expiresAt.toISOString() } };
+        return {
+          status: 202,
+          body: {
+            status: "otp_required",
+            challengeId: result.challengeId,
+            expiresAt: result.expiresAt.toISOString(),
+          },
+        };
       case "otp_rejected":
         return otpRejected(result.reason);
       case "rate_limited":
@@ -184,12 +260,18 @@ export class AuthController {
     }
   }
 
-  async listTrustedDevices(context: AuthHttpRequestContext): Promise<HttpJsonResponse> {
+  async listTrustedDevices(
+    context: AuthHttpRequestContext,
+  ): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (!this.deps.trustedDeviceService) return { status: 501, body: { error: "AUTH_DEVICE_SERVICE_NOT_BOUND" } };
+    if (!this.deps.trustedDeviceService)
+      return { status: 501, body: { error: "AUTH_DEVICE_SERVICE_NOT_BOUND" } };
 
-    const devices = await this.deps.trustedDeviceService.list(auth.session.userId, parseDeviceToken(context.cookies[authCookieNames.device]));
+    const devices = await this.deps.trustedDeviceService.list(
+      auth.session.userId,
+      parseDeviceToken(context.cookies[authCookieNames.device]),
+    );
     return {
       status: 200,
       body: {
@@ -204,31 +286,50 @@ export class AuthController {
     };
   }
 
-  async revokeTrustedDevice(context: AuthHttpRequestContext): Promise<HttpJsonResponse> {
+  async revokeTrustedDevice(
+    context: AuthHttpRequestContext,
+  ): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (!this.deps.trustedDeviceService) return { status: 501, body: { error: "AUTH_DEVICE_SERVICE_NOT_BOUND" } };
+    if (!this.deps.trustedDeviceService)
+      return { status: 501, body: { error: "AUTH_DEVICE_SERVICE_NOT_BOUND" } };
 
     const deviceId = context.params?.id;
-    if (!deviceId || !UUID_PATTERN.test(deviceId)) return { status: 404, body: { error: "AUTH_DEVICE_NOT_FOUND" } };
-    const revoked = await this.deps.trustedDeviceService.revoke(auth.session.userId, deviceId, "user", {
-      requestId: context.requestId,
-      ipAddress: context.ipAddress ?? null,
-      userAgent: context.userAgent ?? null,
-    });
-    return revoked.length ? { status: 200, body: { revoked: true } } : { status: 404, body: { error: "AUTH_DEVICE_NOT_FOUND" } };
+    if (!deviceId || !UUID_PATTERN.test(deviceId))
+      return { status: 404, body: { error: "AUTH_DEVICE_NOT_FOUND" } };
+    const revoked = await this.deps.trustedDeviceService.revoke(
+      auth.session.userId,
+      deviceId,
+      "user",
+      {
+        requestId: context.requestId,
+        ipAddress: context.ipAddress ?? null,
+        userAgent: context.userAgent ?? null,
+      },
+    );
+    return revoked.length
+      ? { status: 200, body: { revoked: true } }
+      : { status: 404, body: { error: "AUTH_DEVICE_NOT_FOUND" } };
   }
 
-  async revokeAllTrustedDevices(context: AuthHttpRequestContext): Promise<HttpJsonResponse> {
+  async revokeAllTrustedDevices(
+    context: AuthHttpRequestContext,
+  ): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (!this.deps.trustedDeviceService) return { status: 501, body: { error: "AUTH_DEVICE_SERVICE_NOT_BOUND" } };
+    if (!this.deps.trustedDeviceService)
+      return { status: 501, body: { error: "AUTH_DEVICE_SERVICE_NOT_BOUND" } };
 
-    const revoked = await this.deps.trustedDeviceService.revoke(auth.session.userId, null, "user", {
-      requestId: context.requestId,
-      ipAddress: context.ipAddress ?? null,
-      userAgent: context.userAgent ?? null,
-    });
+    const revoked = await this.deps.trustedDeviceService.revoke(
+      auth.session.userId,
+      null,
+      "user",
+      {
+        requestId: context.requestId,
+        ipAddress: context.ipAddress ?? null,
+        userAgent: context.userAgent ?? null,
+      },
+    );
     return { status: 200, body: { revokedCount: revoked.length } };
   }
 
@@ -237,11 +338,14 @@ export class AuthController {
       return { status: 501, body: { error: "AUTH_ROUTE_SERVICE_NOT_BOUND" } };
     }
 
-    const result = await this.deps.authRouteService.refresh(context.cookies[authCookieNames.refreshToken], {
-      requestId: context.requestId,
-      ipAddress: context.ipAddress ?? null,
-      userAgent: context.userAgent ?? null,
-    });
+    const result = await this.deps.authRouteService.refresh(
+      context.cookies[authCookieNames.refreshToken],
+      {
+        requestId: context.requestId,
+        ipAddress: context.ipAddress ?? null,
+        userAgent: context.userAgent ?? null,
+      },
+    );
 
     if (result.status !== "authenticated") {
       return { status: 401, body: { error: "AUTH_REFRESH_INVALID" } };
@@ -284,9 +388,15 @@ export class AuthController {
     };
   }
 
-  async requestPasswordRecovery(context: AuthHttpRequestContext, body: { email?: unknown }): Promise<HttpJsonResponse> {
+  async requestPasswordRecovery(
+    context: AuthHttpRequestContext,
+    body: { email?: unknown },
+  ): Promise<HttpJsonResponse> {
     if (!this.deps.passwordRecoveryService) {
-      return { status: 501, body: { error: "AUTH_RECOVERY_SERVICE_NOT_BOUND" } };
+      return {
+        status: 501,
+        body: { error: "AUTH_RECOVERY_SERVICE_NOT_BOUND" },
+      };
     }
     if (typeof body.email !== "string" || body.email.trim() === "") {
       return { status: 400, body: { error: "AUTH_RECOVERY_INVALID_FORMAT" } };
@@ -303,9 +413,15 @@ export class AuthController {
     return { status: 202, body: { accepted: true } };
   }
 
-  async verifyPasswordRecovery(context: AuthHttpRequestContext, body: { email?: unknown; code?: unknown }): Promise<HttpJsonResponse> {
+  async verifyPasswordRecovery(
+    context: AuthHttpRequestContext,
+    body: { email?: unknown; code?: unknown },
+  ): Promise<HttpJsonResponse> {
     if (!this.deps.passwordRecoveryService) {
-      return { status: 501, body: { error: "AUTH_RECOVERY_SERVICE_NOT_BOUND" } };
+      return {
+        status: 501,
+        body: { error: "AUTH_RECOVERY_SERVICE_NOT_BOUND" },
+      };
     }
     if (
       typeof body.email !== "string" ||
@@ -316,11 +432,15 @@ export class AuthController {
       return { status: 400, body: { error: "AUTH_RECOVERY_INVALID_FORMAT" } };
     }
 
-    const result = await this.deps.passwordRecoveryService.verify(body.email, body.code, {
-      requestId: context.requestId,
-      ipAddress: context.ipAddress ?? null,
-      userAgent: context.userAgent ?? null,
-    });
+    const result = await this.deps.passwordRecoveryService.verify(
+      body.email,
+      body.code,
+      {
+        requestId: context.requestId,
+        ipAddress: context.ipAddress ?? null,
+        userAgent: context.userAgent ?? null,
+      },
+    );
     if (result.status === "rate_limited") {
       return { status: 429, body: { error: "AUTH_RATE_LIMITED" } };
     }
@@ -329,13 +449,22 @@ export class AuthController {
     }
     return {
       status: 200,
-      body: { resetToken: result.resetToken, expiresAt: result.expiresAt.toISOString() },
+      body: {
+        resetToken: result.resetToken,
+        expiresAt: result.expiresAt.toISOString(),
+      },
     };
   }
 
-  async resetPassword(context: AuthHttpRequestContext, body: { resetToken?: unknown; password?: unknown }): Promise<HttpJsonResponse> {
+  async resetPassword(
+    context: AuthHttpRequestContext,
+    body: { resetToken?: unknown; password?: unknown },
+  ): Promise<HttpJsonResponse> {
     if (!this.deps.passwordRecoveryService) {
-      return { status: 501, body: { error: "AUTH_RECOVERY_SERVICE_NOT_BOUND" } };
+      return {
+        status: 501,
+        body: { error: "AUTH_RECOVERY_SERVICE_NOT_BOUND" },
+      };
     }
     if (
       typeof body.resetToken !== "string" ||
@@ -346,16 +475,23 @@ export class AuthController {
       return { status: 400, body: { error: "AUTH_RECOVERY_INVALID_FORMAT" } };
     }
 
-    const result = await this.deps.passwordRecoveryService.reset(body.resetToken, body.password, {
-      requestId: context.requestId,
-      ipAddress: context.ipAddress ?? null,
-      userAgent: context.userAgent ?? null,
-    });
+    const result = await this.deps.passwordRecoveryService.reset(
+      body.resetToken,
+      body.password,
+      {
+        requestId: context.requestId,
+        ipAddress: context.ipAddress ?? null,
+        userAgent: context.userAgent ?? null,
+      },
+    );
     if (result.status === "rate_limited") {
       return { status: 429, body: { error: "AUTH_RATE_LIMITED" } };
     }
     if (result.status === "invalid_password") {
-      return { status: 400, body: { error: "AUTH_PASSWORD_POLICY_FAILED", reason: result.reason } };
+      return {
+        status: 400,
+        body: { error: "AUTH_PASSWORD_POLICY_FAILED", reason: result.reason },
+      };
     }
     if (result.status === "invalid_grant") {
       return { status: 400, body: { error: "AUTH_RECOVERY_GRANT_INVALID" } };
@@ -363,7 +499,9 @@ export class AuthController {
     return { status: 200, body: { reset: true } };
   }
 
-  async requestSensitiveActionOtp(context: AuthHttpRequestContext): Promise<HttpJsonResponse> {
+  async requestSensitiveActionOtp(
+    context: AuthHttpRequestContext,
+  ): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
 
@@ -392,7 +530,10 @@ export class AuthController {
     };
   }
 
-  async verifySensitiveActionOtp(context: AuthHttpRequestContext, body: { code?: unknown }): Promise<HttpJsonResponse> {
+  async verifySensitiveActionOtp(
+    context: AuthHttpRequestContext,
+    body: { code?: unknown },
+  ): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
 

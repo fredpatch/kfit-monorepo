@@ -50,7 +50,7 @@ export const goalEventLabels: Record<string, string> = {
   "goal.outcome_confirmed": "Résultat confirmé par la coach",
 };
 
-/** Share of the way from baseline to target (0–1), from the latest matching measurement. Display only. */
+/** Share of the way from baseline to target (0-1), from the latest matching measurement. Display only. */
 export function goalProgress(goal: CoachingGoal): number | null {
   const { baselineValue: base, targetValue: target } = goal;
   const latest = goal.latestMatchingMetric?.value;

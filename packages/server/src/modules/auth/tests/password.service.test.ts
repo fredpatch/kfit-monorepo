@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PasswordService, validatePasswordStrength } from "../services/password.service.js";
+import {
+  PasswordService,
+  validatePasswordStrength,
+} from "../services/password.service.js";
 
 test("PasswordService stores adaptive scrypt hashes and verifies without storing raw passwords", async () => {
   const service = new PasswordService({
@@ -22,8 +25,20 @@ test("PasswordService stores adaptive scrypt hashes and verifies without storing
 });
 
 test("password policy rejects weak bootstrap passwords", () => {
-  assert.deepEqual(validatePasswordStrength("short9", { minLength: 12 }), { ok: false, reason: "too_short" });
-  assert.deepEqual(validatePasswordStrength("123456789012", { minLength: 12 }), { ok: false, reason: "missing_letter" });
-  assert.deepEqual(validatePasswordStrength("CorrectHorse", { minLength: 12 }), { ok: false, reason: "missing_number" });
-  assert.deepEqual(validatePasswordStrength("CorrectHorse9", { minLength: 12 }), { ok: true });
+  assert.deepEqual(validatePasswordStrength("short9", { minLength: 12 }), {
+    ok: false,
+    reason: "too_short",
+  });
+  assert.deepEqual(
+    validatePasswordStrength("123456789012", { minLength: 12 }),
+    { ok: false, reason: "missing_letter" },
+  );
+  assert.deepEqual(
+    validatePasswordStrength("CorrectHorse", { minLength: 12 }),
+    { ok: false, reason: "missing_number" },
+  );
+  assert.deepEqual(
+    validatePasswordStrength("CorrectHorse9", { minLength: 12 }),
+    { ok: true },
+  );
 });

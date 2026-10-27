@@ -1,6 +1,18 @@
-import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { hashAuditContext, type RecordAuditEventInput } from "./audit.service.js";
-import { sessionInvalidReason, type SessionClock, type SessionInvalidReason } from "./policies/session.policy.js";
+import {
+  createHmac,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual,
+} from "node:crypto";
+import {
+  hashAuditContext,
+  type RecordAuditEventInput,
+} from "./audit.service.js";
+import {
+  sessionInvalidReason,
+  type SessionClock,
+  type SessionInvalidReason,
+} from "./policies/session.policy.js";
 
 export type AuthSessionRecord = SessionClock & {
   id: string;
@@ -30,7 +42,9 @@ export type CreateSessionRecordInput = {
 
 export type SessionRepository = {
   create(input: CreateSessionRecordInput): Promise<AuthSessionRecord>;
-  findByRefreshTokenHash(refreshTokenHash: string): Promise<AuthSessionRecord | null>;
+  findByRefreshTokenHash(
+    refreshTokenHash: string,
+  ): Promise<AuthSessionRecord | null>;
   rotateRefreshToken(input: {
     sessionId: string;
     refreshTokenHash: string;
@@ -82,7 +96,11 @@ export function digestRefreshToken(token: string, pepper: string): string {
   return createHmac("sha256", pepper).update(token).digest("hex");
 }
 
-export function verifyRefreshTokenDigest(candidate: string, expectedDigest: string, pepper: string): boolean {
+export function verifyRefreshTokenDigest(
+  candidate: string,
+  expectedDigest: string,
+  pepper: string,
+): boolean {
   const actual = Buffer.from(digestRefreshToken(candidate, pepper), "hex");
   const expected = Buffer.from(expectedDigest, "hex");
   return actual.length === expected.length && timingSafeEqual(actual, expected);
@@ -106,7 +124,10 @@ export class SessionService {
     const session = await this.repository.create({
       userId: input.userId,
       tokenFamilyId,
-      refreshTokenHash: digestRefreshToken(refreshToken, this.options.refreshTokenPepper),
+      refreshTokenHash: digestRefreshToken(
+        refreshToken,
+        this.options.refreshTokenPepper,
+      ),
       rotationCounter: 0,
       trustedDeviceId: input.trustedDeviceId ?? null,
       issuedAt: now,
@@ -114,7 +135,10 @@ export class SessionService {
       absoluteExpiresAt: addMs(now, this.options.absoluteSessionTtlMs),
       lastSeenAt: now,
       ipHash: hashAuditContext(input.ipAddress, this.options.auditHashPepper),
-      userAgentHash: hashAuditContext(input.userAgent, this.options.auditHashPepper),
+      userAgentHash: hashAuditContext(
+        input.userAgent,
+        this.options.auditHashPepper,
+      ),
     });
 
     await this.audit.record({
@@ -133,16 +157,32 @@ export class SessionService {
     return { session, refreshToken };
   }
 
-  async rotateRefreshToken(refreshToken: string, input: { requestId?: string | null; ipAddress?: string | null; userAgent?: string | null; now?: Date } = {}): Promise<RotateRefreshTokenResult> {
+  async rotateRefreshToken(
+    refreshToken: string,
+    input: {
+      requestId?: string | null;
+      ipAddress?: string | null;
+      userAgent?: string | null;
+      now?: Date;
+    } = {},
+  ): Promise<RotateRefreshTokenResult> {
     const now = input.now ?? new Date();
-    const refreshTokenHash = digestRefreshToken(refreshToken, this.options.refreshTokenPepper);
-    const session = await this.repository.findByRefreshTokenHash(refreshTokenHash);
+    const refreshTokenHash = digestRefreshToken(
+      refreshToken,
+      this.options.refreshTokenPepper,
+    );
+    const session =
+      await this.repository.findByRefreshTokenHash(refreshTokenHash);
 
     if (!session) {
       return { status: "invalid", reason: "not_found" };
     }
 
-    const invalidReason = sessionInvalidReason(session, now, this.options.inactivityTimeoutMs);
+    const invalidReason = sessionInvalidReason(
+      session,
+      now,
+      this.options.inactivityTimeoutMs,
+    );
     if (invalidReason) {
       await this.audit.record({
         actorType: "user",
@@ -162,7 +202,10 @@ export class SessionService {
     const nextRefreshToken = generateRefreshToken();
     const rotated = await this.repository.rotateRefreshToken({
       sessionId: session.id,
-      refreshTokenHash: digestRefreshToken(nextRefreshToken, this.options.refreshTokenPepper),
+      refreshTokenHash: digestRefreshToken(
+        nextRefreshToken,
+        this.options.refreshTokenPepper,
+      ),
       rotationCounter: session.rotationCounter + 1,
       lastSeenAt: now,
       expiresAt: addMs(now, this.options.refreshTokenTtlMs),
@@ -181,7 +224,11 @@ export class SessionService {
       metadata: { rotationCounter: rotated.rotationCounter },
     });
 
-    return { status: "rotated", session: rotated, refreshToken: nextRefreshToken };
+    return {
+      status: "rotated",
+      session: rotated,
+      refreshToken: nextRefreshToken,
+    };
   }
 
   async revokeSession(input: {
@@ -239,7 +286,11 @@ export class SessionService {
       requestId: input.requestId ?? null,
       ipAddress: input.ipAddress ?? null,
       userAgent: input.userAgent ?? null,
-      metadata: { tokenFamilyId: input.tokenFamilyId, reason: input.reason, affectedSessions },
+      metadata: {
+        tokenFamilyId: input.tokenFamilyId,
+        reason: input.reason,
+        affectedSessions,
+      },
     });
 
     return { affectedSessions, compromisedAt };

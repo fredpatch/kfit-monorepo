@@ -1,7 +1,14 @@
 import { ChevronDown, LogOut, ShieldCheck } from "lucide-react";
 import { authRoleLabels } from "@kfit/shared";
 import { useAuth } from "../../auth/state/auth-context.js";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu.js";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu.js";
 
 /** Replaces the former « Session active » block (board 02): session details live in the account menu. */
 export function UserMenu() {
@@ -15,18 +22,28 @@ export function UserMenu() {
         aria-label="Menu du compte"
         className="flex h-10 items-center gap-2 rounded-full border border-border bg-card py-0 pl-1 pr-2.5 text-sm font-semibold transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <span aria-hidden="true" className="flex size-8 items-center justify-center rounded-full bg-brand-950 text-[13px] font-bold text-lime">
+        <span
+          aria-hidden="true"
+          className="flex size-8 items-center justify-center rounded-full bg-brand-950 text-[13px] font-bold text-lime"
+        >
           K
         </span>
         <span className="hidden sm:inline">Mon compte</span>
-        <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden="true" />
+        <ChevronDown
+          className="size-3.5 text-muted-foreground"
+          aria-hidden="true"
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-60">
         <DropdownMenuLabel className="flex flex-col gap-0.5">
-          <span className="text-sm font-bold text-foreground">{authRoleLabels[user.role]}</span>
+          <span className="text-sm font-bold text-foreground">
+            {authRoleLabels[user.role]}
+          </span>
           <span className="flex items-center gap-1.5 font-medium">
             <ShieldCheck className="size-3.5" aria-hidden="true" />
-            {session.freshOtp ? "Vérification récente (OTP)" : "Pas de vérification récente"}
+            {session.freshOtp
+              ? "Vérification récente (OTP)"
+              : "Pas de vérification récente"}
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

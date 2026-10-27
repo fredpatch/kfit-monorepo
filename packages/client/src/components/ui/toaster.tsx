@@ -8,7 +8,8 @@ export function Toaster() {
       closeButton
       toastOptions={{
         classNames: {
-          toast: "!rounded-lg !border !border-border !bg-card !text-foreground !font-sans !shadow-lg",
+          toast:
+            "!rounded-lg !border !border-border !bg-card !text-foreground !font-sans !shadow-lg",
           description: "!text-muted-foreground",
           success: "[&_[data-icon]]:!text-success",
           error: "[&_[data-icon]]:!text-danger",

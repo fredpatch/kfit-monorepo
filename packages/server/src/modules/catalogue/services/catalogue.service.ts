@@ -61,7 +61,10 @@ export type CatalogueServiceRecord = {
   publishedAt: Date;
 };
 
-export type CatalogueAdminServiceRecord = Omit<CatalogueServiceRecord, "publishedAt"> & {
+export type CatalogueAdminServiceRecord = Omit<
+  CatalogueServiceRecord,
+  "publishedAt"
+> & {
   isPublic: boolean;
   publishedAt: Date | null;
   archivedAt: Date | null;
@@ -76,10 +79,22 @@ export type CatalogueSnapshot = {
 };
 
 /** Raw rows for the admin overview (UX-7). Claims follow capacityClaimCondition (S4). */
-export type CatalogueAdminOverviewSnapshot = Pick<CatalogueSnapshot, "variants" | "components" | "policies"> & {
+export type CatalogueAdminOverviewSnapshot = Pick<
+  CatalogueSnapshot,
+  "variants" | "components" | "policies"
+> & {
   services: CatalogueAdminServiceRecord[];
-  claims: Array<{ serviceId: string; variantId: string | null; onboarding: boolean; count: number }>;
-  waitlist: Array<{ serviceId: string; active: number; oldestEnteredAt: Date | null }>;
+  claims: Array<{
+    serviceId: string;
+    variantId: string | null;
+    onboarding: boolean;
+    count: number;
+  }>;
+  waitlist: Array<{
+    serviceId: string;
+    active: number;
+    oldestEnteredAt: Date | null;
+  }>;
 };
 
 export type CatalogueServiceWriteInput = {
@@ -105,12 +120,32 @@ export type CatalogueRepository = {
   listPublicServices(): Promise<CatalogueSnapshot>;
   listAdminServices(): Promise<CatalogueAdminServiceRecord[]>;
   getAdminOverviewSnapshot(now: Date): Promise<CatalogueAdminOverviewSnapshot>;
-  getAdminService(serviceId: string): Promise<CatalogueAdminServiceRecord | null>;
-  createService(input: CatalogueServiceWriteInput): Promise<CatalogueAdminServiceRecord | "slug_conflict">;
-  updateService(serviceId: string, input: CatalogueServicePatchInput): Promise<CatalogueAdminServiceRecord | "not_found" | "slug_conflict">;
-  publishService(serviceId: string, now: Date): Promise<CatalogueAdminServiceRecord | "not_found" | "archived" | { notDeliverable: CatalogueDeliverabilityFailure[] }>;
-  archiveService(serviceId: string, now: Date): Promise<CatalogueAdminServiceRecord | "not_found">;
-  reorderServices(items: Array<{ serviceId: string; sortOrder: number }>): Promise<CatalogueAdminServiceRecord[] | "not_found">;
+  getAdminService(
+    serviceId: string,
+  ): Promise<CatalogueAdminServiceRecord | null>;
+  createService(
+    input: CatalogueServiceWriteInput,
+  ): Promise<CatalogueAdminServiceRecord | "slug_conflict">;
+  updateService(
+    serviceId: string,
+    input: CatalogueServicePatchInput,
+  ): Promise<CatalogueAdminServiceRecord | "not_found" | "slug_conflict">;
+  publishService(
+    serviceId: string,
+    now: Date,
+  ): Promise<
+    | CatalogueAdminServiceRecord
+    | "not_found"
+    | "archived"
+    | { notDeliverable: CatalogueDeliverabilityFailure[] }
+  >;
+  archiveService(
+    serviceId: string,
+    now: Date,
+  ): Promise<CatalogueAdminServiceRecord | "not_found">;
+  reorderServices(
+    items: Array<{ serviceId: string; sortOrder: number }>,
+  ): Promise<CatalogueAdminServiceRecord[] | "not_found">;
 };
 
 type MutationResult =
@@ -122,22 +157,51 @@ type MutationResult =
   | { status: "publish_invalid"; reason: string }
   | { status: "not_deliverable"; failures: CatalogueDeliverabilityFailure[] };
 
-const availabilityStatuses: readonly CatalogueAvailabilityStatus[] = ["open", "temporarily_closed", "waitlist_only", "archived"];
+const availabilityStatuses: readonly CatalogueAvailabilityStatus[] = [
+  "open",
+  "temporarily_closed",
+  "waitlist_only",
+  "archived",
+];
 const pricingModes: readonly CataloguePricingMode[] = ["fixed", "quote"];
-const deliveryTypes: readonly CatalogueDeliveryType[] = ["one_time", "time_based"];
-const durationUnits: readonly CatalogueDurationUnit[] = ["day", "week", "month"];
-const capacityModes: readonly CatalogueCapacityMode[] = ["unlimited", "limited"];
+const deliveryTypes: readonly CatalogueDeliveryType[] = [
+  "one_time",
+  "time_based",
+];
+const durationUnits: readonly CatalogueDurationUnit[] = [
+  "day",
+  "week",
+  "month",
+];
+const capacityModes: readonly CatalogueCapacityMode[] = [
+  "unlimited",
+  "limited",
+];
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-function bySortThenName<T extends { sortOrder: number; name: string }>(left: T, right: T): number {
-  return left.sortOrder - right.sortOrder || left.name.localeCompare(right.name, "fr");
+function bySortThenName<T extends { sortOrder: number; name: string }>(
+  left: T,
+  right: T,
+): number {
+  return (
+    left.sortOrder - right.sortOrder ||
+    left.name.localeCompare(right.name, "fr")
+  );
 }
 
-function byComponentLabel(left: CatalogueServiceComponentRecord, right: CatalogueServiceComponentRecord): number {
-  return (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.label.localeCompare(right.label, "fr");
+function byComponentLabel(
+  left: CatalogueServiceComponentRecord,
+  right: CatalogueServiceComponentRecord,
+): number {
+  return (
+    (left.sortOrder ?? 0) - (right.sortOrder ?? 0) ||
+    left.label.localeCompare(right.label, "fr")
+  );
 }
 
-function toPolicy(policy: CatalogueServicePolicyRecord | undefined): CatalogueServicePolicy | null {
+function toPolicy(
+  policy: CatalogueServicePolicyRecord | undefined,
+): CatalogueServicePolicy | null {
   if (!policy) return null;
   return {
     followUpFrequencyDays: policy.followUpFrequencyDays,
@@ -148,7 +212,9 @@ function toPolicy(policy: CatalogueServicePolicyRecord | undefined): CatalogueSe
   };
 }
 
-function toComponent(component: CatalogueServiceComponentRecord): CatalogueServiceComponent {
+function toComponent(
+  component: CatalogueServiceComponentRecord,
+): CatalogueServiceComponent {
   return {
     id: component.id,
     variantId: component.variantId,
@@ -160,7 +226,9 @@ function toComponent(component: CatalogueServiceComponentRecord): CatalogueServi
   };
 }
 
-function toAdminService(service: CatalogueAdminServiceRecord): CatalogueAdminService {
+function toAdminService(
+  service: CatalogueAdminServiceRecord,
+): CatalogueAdminService {
   return {
     id: service.id,
     name: service.name,
@@ -183,8 +251,13 @@ function toAdminService(service: CatalogueAdminServiceRecord): CatalogueAdminSer
   };
 }
 
-function enumValue<T extends string>(value: unknown, allowed: readonly T[]): T | null {
-  return typeof value === "string" && allowed.includes(value as T) ? value as T : null;
+function enumValue<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+): T | null {
+  return typeof value === "string" && allowed.includes(value as T)
+    ? (value as T)
+    : null;
 }
 
 function optionalString(value: unknown): string | null | undefined {
@@ -202,25 +275,42 @@ function optionalInteger(value: unknown): number | null | undefined {
   return value;
 }
 
-function normalizeServiceInput(input: CatalogueServiceMutationInput, mode: "create" | "update"): CatalogueServiceWriteInput | CatalogueServicePatchInput | { invalid: string } {
+function normalizeServiceInput(
+  input: CatalogueServiceMutationInput,
+  mode: "create" | "update",
+):
+  | CatalogueServiceWriteInput
+  | CatalogueServicePatchInput
+  | { invalid: string } {
   const output: CatalogueServicePatchInput = {};
 
-  if (mode === "create" && (typeof input.name !== "string" || input.name.trim() === "")) return { invalid: "name_required" };
+  if (
+    mode === "create" &&
+    (typeof input.name !== "string" || input.name.trim() === "")
+  )
+    return { invalid: "name_required" };
   if (input.name !== undefined) {
-    if (typeof input.name !== "string" || input.name.trim() === "") return { invalid: "name_invalid" };
+    if (typeof input.name !== "string" || input.name.trim() === "")
+      return { invalid: "name_invalid" };
     output.name = input.name.trim();
   }
 
-  if (mode === "create" && (typeof input.slug !== "string" || !slugPattern.test(input.slug))) return { invalid: "slug_invalid" };
+  if (
+    mode === "create" &&
+    (typeof input.slug !== "string" || !slugPattern.test(input.slug))
+  )
+    return { invalid: "slug_invalid" };
   if (input.slug !== undefined) {
-    if (typeof input.slug !== "string" || !slugPattern.test(input.slug)) return { invalid: "slug_invalid" };
+    if (typeof input.slug !== "string" || !slugPattern.test(input.slug))
+      return { invalid: "slug_invalid" };
     output.slug = input.slug;
   }
 
   const description = optionalString(input.description);
   if (description !== undefined) output.description = description;
 
-  if (mode === "create" && !enumValue(input.pricingMode, pricingModes)) return { invalid: "pricing_mode_invalid" };
+  if (mode === "create" && !enumValue(input.pricingMode, pricingModes))
+    return { invalid: "pricing_mode_invalid" };
   if (input.pricingMode !== undefined) {
     const pricingMode = enumValue(input.pricingMode, pricingModes);
     if (!pricingMode) return { invalid: "pricing_mode_invalid" };
@@ -229,11 +319,13 @@ function normalizeServiceInput(input: CatalogueServiceMutationInput, mode: "crea
 
   const basePriceXaf = optionalInteger(input.basePriceXaf);
   if (basePriceXaf !== undefined) {
-    if (basePriceXaf !== null && basePriceXaf < 0) return { invalid: "base_price_invalid" };
+    if (basePriceXaf !== null && basePriceXaf < 0)
+      return { invalid: "base_price_invalid" };
     output.basePriceXaf = basePriceXaf;
   }
 
-  if (mode === "create" && !enumValue(input.deliveryType, deliveryTypes)) return { invalid: "delivery_type_invalid" };
+  if (mode === "create" && !enumValue(input.deliveryType, deliveryTypes))
+    return { invalid: "delivery_type_invalid" };
   if (input.deliveryType !== undefined) {
     const deliveryType = enumValue(input.deliveryType, deliveryTypes);
     if (!deliveryType) return { invalid: "delivery_type_invalid" };
@@ -242,7 +334,8 @@ function normalizeServiceInput(input: CatalogueServiceMutationInput, mode: "crea
 
   const defaultDurationValue = optionalInteger(input.defaultDurationValue);
   if (defaultDurationValue !== undefined) {
-    if (defaultDurationValue !== null && defaultDurationValue <= 0) return { invalid: "duration_invalid" };
+    if (defaultDurationValue !== null && defaultDurationValue <= 0)
+      return { invalid: "duration_invalid" };
     output.defaultDurationValue = defaultDurationValue;
   }
 
@@ -256,12 +349,16 @@ function normalizeServiceInput(input: CatalogueServiceMutationInput, mode: "crea
   }
 
   if (input.availabilityStatus !== undefined) {
-    const availabilityStatus = enumValue(input.availabilityStatus, availabilityStatuses);
+    const availabilityStatus = enumValue(
+      input.availabilityStatus,
+      availabilityStatuses,
+    );
     if (!availabilityStatus) return { invalid: "availability_invalid" };
     output.availabilityStatus = availabilityStatus;
   }
 
-  if (mode === "create" && !enumValue(input.capacityMode, capacityModes)) return { invalid: "capacity_mode_invalid" };
+  if (mode === "create" && !enumValue(input.capacityMode, capacityModes))
+    return { invalid: "capacity_mode_invalid" };
   if (input.capacityMode !== undefined) {
     const capacityMode = enumValue(input.capacityMode, capacityModes);
     if (!capacityMode) return { invalid: "capacity_mode_invalid" };
@@ -270,23 +367,27 @@ function normalizeServiceInput(input: CatalogueServiceMutationInput, mode: "crea
 
   const capacityLimit = optionalInteger(input.capacityLimit);
   if (capacityLimit !== undefined) {
-    if (capacityLimit !== null && capacityLimit <= 0) return { invalid: "capacity_limit_invalid" };
+    if (capacityLimit !== null && capacityLimit <= 0)
+      return { invalid: "capacity_limit_invalid" };
     output.capacityLimit = capacityLimit;
   }
 
   if (input.waitlistEnabled !== undefined) {
-    if (typeof input.waitlistEnabled !== "boolean") return { invalid: "waitlist_invalid" };
+    if (typeof input.waitlistEnabled !== "boolean")
+      return { invalid: "waitlist_invalid" };
     output.waitlistEnabled = input.waitlistEnabled;
   }
 
   if (input.isPublic !== undefined) {
-    if (typeof input.isPublic !== "boolean") return { invalid: "is_public_invalid" };
+    if (typeof input.isPublic !== "boolean")
+      return { invalid: "is_public_invalid" };
     output.isPublic = input.isPublic;
   }
 
   const sortOrder = optionalInteger(input.sortOrder);
   if (sortOrder !== undefined) {
-    if (sortOrder === null || sortOrder < 0) return { invalid: "sort_order_invalid" };
+    if (sortOrder === null || sortOrder < 0)
+      return { invalid: "sort_order_invalid" };
     output.sortOrder = sortOrder;
   }
 
@@ -325,10 +426,16 @@ function normalizeServiceInput(input: CatalogueServiceMutationInput, mode: "crea
   return output;
 }
 
-function normalizeCapacityControlInput(input: CatalogueServiceCapacityInput): CatalogueServicePatchInput | { invalid: string } {
-  const availabilityStatus = enumValue(input.availabilityStatus, availabilityStatuses);
+function normalizeCapacityControlInput(
+  input: CatalogueServiceCapacityInput,
+): CatalogueServicePatchInput | { invalid: string } {
+  const availabilityStatus = enumValue(
+    input.availabilityStatus,
+    availabilityStatuses,
+  );
   if (!availabilityStatus) return { invalid: "availability_invalid" };
-  if (availabilityStatus === "archived") return { invalid: "availability_archived_forbidden" };
+  if (availabilityStatus === "archived")
+    return { invalid: "availability_archived_forbidden" };
 
   const capacityMode = enumValue(input.capacityMode, capacityModes);
   if (!capacityMode) return { invalid: "capacity_mode_invalid" };
@@ -336,7 +443,8 @@ function normalizeCapacityControlInput(input: CatalogueServiceCapacityInput): Ca
   const capacityLimit = optionalInteger(input.capacityLimit);
   if (capacityLimit === undefined) return { invalid: "capacity_limit_invalid" };
 
-  if (typeof input.waitlistEnabled !== "boolean") return { invalid: "waitlist_invalid" };
+  if (typeof input.waitlistEnabled !== "boolean")
+    return { invalid: "waitlist_invalid" };
 
   const invalid = validateCapacityState({
     availabilityStatus,
@@ -354,8 +462,16 @@ function normalizeCapacityControlInput(input: CatalogueServiceCapacityInput): Ca
   };
 }
 
-function validateCapacityState(input: Pick<CatalogueServiceWriteInput, "availabilityStatus" | "capacityMode" | "capacityLimit" | "waitlistEnabled">): string | null {
-  if (input.capacityMode === "limited" && (input.capacityLimit === null || input.capacityLimit <= 0)) {
+function validateCapacityState(
+  input: Pick<
+    CatalogueServiceWriteInput,
+    "availabilityStatus" | "capacityMode" | "capacityLimit" | "waitlistEnabled"
+  >,
+): string | null {
+  if (
+    input.capacityMode === "limited" &&
+    (input.capacityLimit === null || input.capacityLimit <= 0)
+  ) {
     return "capacity_limit_required";
   }
   if (input.capacityMode === "unlimited" && input.capacityLimit !== null) {
@@ -367,16 +483,22 @@ function validateCapacityState(input: Pick<CatalogueServiceWriteInput, "availabi
   return null;
 }
 
-function validatePublishable(service: CatalogueAdminServiceRecord): string | null {
-  if (service.archivedAt || service.availabilityStatus === "archived") return "archived";
+function validatePublishable(
+  service: CatalogueAdminServiceRecord,
+): string | null {
+  if (service.archivedAt || service.availabilityStatus === "archived")
+    return "archived";
   if (!service.name.trim()) return "name_required";
   if (!slugPattern.test(service.slug)) return "slug_invalid";
-  if (service.capacityMode === "limited" && service.capacityLimit === null) return "capacity_limit_required";
+  if (service.capacityMode === "limited" && service.capacityLimit === null)
+    return "capacity_limit_required";
   return null;
 }
 
 /** Groups a snapshot by service / variant scope. Shared by the public list and the admin overview (UX-7). */
-function assembleSnapshot(snapshot: Pick<CatalogueSnapshot, "variants" | "components" | "policies">) {
+function assembleSnapshot(
+  snapshot: Pick<CatalogueSnapshot, "variants" | "components" | "policies">,
+) {
   const variantsByService = new Map<string, CatalogueServiceVariantRecord[]>();
   for (const variant of snapshot.variants) {
     const variants = variantsByService.get(variant.serviceId) ?? [];
@@ -384,7 +506,10 @@ function assembleSnapshot(snapshot: Pick<CatalogueSnapshot, "variants" | "compon
     variantsByService.set(variant.serviceId, variants);
   }
 
-  const componentsByScope = new Map<string, CatalogueServiceComponentRecord[]>();
+  const componentsByScope = new Map<
+    string,
+    CatalogueServiceComponentRecord[]
+  >();
   for (const component of snapshot.components) {
     const key = `${component.serviceId}:${component.variantId ?? "service"}`;
     const components = componentsByScope.get(key) ?? [];
@@ -394,25 +519,33 @@ function assembleSnapshot(snapshot: Pick<CatalogueSnapshot, "variants" | "compon
 
   const policyByScope = new Map<string, CatalogueServicePolicyRecord>();
   for (const policy of snapshot.policies) {
-    policyByScope.set(`${policy.serviceId}:${policy.variantId ?? "service"}`, policy);
+    policyByScope.set(
+      `${policy.serviceId}:${policy.variantId ?? "service"}`,
+      policy,
+    );
   }
 
   const componentsOf = (serviceId: string, variantId?: string) =>
-    [...(componentsByScope.get(`${serviceId}:${variantId ?? "service"}`) ?? [])].sort(byComponentLabel).map(toComponent);
-  const policyOf = (serviceId: string, variantId?: string) => toPolicy(policyByScope.get(`${serviceId}:${variantId ?? "service"}`));
+    [...(componentsByScope.get(`${serviceId}:${variantId ?? "service"}`) ?? [])]
+      .sort(byComponentLabel)
+      .map(toComponent);
+  const policyOf = (serviceId: string, variantId?: string) =>
+    toPolicy(policyByScope.get(`${serviceId}:${variantId ?? "service"}`));
   const variantsOf = (serviceId: string): CatalogueServiceVariant[] =>
-    [...(variantsByService.get(serviceId) ?? [])].sort(bySortThenName).map((variant) => ({
-      id: variant.id,
-      name: variant.name,
-      slug: variant.slug,
-      priceXaf: variant.priceXaf,
-      durationValue: variant.durationValue,
-      durationUnit: variant.durationUnit,
-      capacityLimit: variant.capacityLimit,
-      availabilityStatus: variant.availabilityStatus,
-      components: componentsOf(serviceId, variant.id),
-      policy: policyOf(serviceId, variant.id),
-    }));
+    [...(variantsByService.get(serviceId) ?? [])]
+      .sort(bySortThenName)
+      .map((variant) => ({
+        id: variant.id,
+        name: variant.name,
+        slug: variant.slug,
+        priceXaf: variant.priceXaf,
+        durationValue: variant.durationValue,
+        durationUnit: variant.durationUnit,
+        capacityLimit: variant.capacityLimit,
+        availabilityStatus: variant.availabilityStatus,
+        components: componentsOf(serviceId, variant.id),
+        policy: policyOf(serviceId, variant.id),
+      }));
   return { componentsOf, policyOf, variantsOf };
 }
 
@@ -449,28 +582,50 @@ export class CatalogueService {
   }
 
   /** Admin overview (UX-7): every service with occupancy (S4 claim rule), active waitlist, variants and rules. Read-only. */
-  async listAdminOverview(now = new Date()): Promise<CatalogueAdminServicesOverviewResponse> {
+  async listAdminOverview(
+    now = new Date(),
+  ): Promise<CatalogueAdminServicesOverviewResponse> {
     const snapshot = await this.repository.getAdminOverviewSnapshot(now);
     const { componentsOf, policyOf, variantsOf } = assembleSnapshot(snapshot);
-    const services = [...snapshot.services].sort(bySortThenName).map((service): CatalogueAdminServiceOverview => {
-      const claims = snapshot.claims.filter((c) => c.serviceId === service.id);
-      const sum = (rows: typeof claims) => ({
-        occupied: rows.reduce((total, c) => total + c.count, 0),
-        reservedOnboarding: rows.filter((c) => c.onboarding).reduce((total, c) => total + c.count, 0),
+    const services = [...snapshot.services]
+      .sort(bySortThenName)
+      .map((service): CatalogueAdminServiceOverview => {
+        const claims = snapshot.claims.filter(
+          (c) => c.serviceId === service.id,
+        );
+        const sum = (rows: typeof claims) => ({
+          occupied: rows.reduce((total, c) => total + c.count, 0),
+          reservedOnboarding: rows
+            .filter((c) => c.onboarding)
+            .reduce((total, c) => total + c.count, 0),
+        });
+        const variants = variantsOf(service.id);
+        const waitlist = snapshot.waitlist.find(
+          (w) => w.serviceId === service.id,
+        );
+        const prices = [
+          service.basePriceXaf,
+          ...variants.map((v) => v.priceXaf),
+        ].filter((p): p is number => p !== null);
+        return {
+          ...toAdminService(service),
+          occupancy: {
+            ...sum(claims),
+            byVariant: variants.map((v) => ({
+              variantId: v.id,
+              ...sum(claims.filter((c) => c.variantId === v.id)),
+            })),
+          },
+          waitlist: {
+            active: waitlist?.active ?? 0,
+            oldestEnteredAt: waitlist?.oldestEnteredAt?.toISOString() ?? null,
+          },
+          minPriceXaf: prices.length ? Math.min(...prices) : null,
+          components: componentsOf(service.id),
+          policy: policyOf(service.id),
+          variants,
+        };
       });
-      const variants = variantsOf(service.id);
-      const waitlist = snapshot.waitlist.find((w) => w.serviceId === service.id);
-      const prices = [service.basePriceXaf, ...variants.map((v) => v.priceXaf)].filter((p): p is number => p !== null);
-      return {
-        ...toAdminService(service),
-        occupancy: { ...sum(claims), byVariant: variants.map((v) => ({ variantId: v.id, ...sum(claims.filter((c) => c.variantId === v.id)) })) },
-        waitlist: { active: waitlist?.active ?? 0, oldestEnteredAt: waitlist?.oldestEnteredAt?.toISOString() ?? null },
-        minPriceXaf: prices.length ? Math.min(...prices) : null,
-        components: componentsOf(service.id),
-        policy: policyOf(service.id),
-        variants,
-      };
-    });
     return { asOf: now.toISOString(), services };
   }
 
@@ -479,27 +634,40 @@ export class CatalogueService {
     return { services: services.map(toAdminService) };
   }
 
-  async createAdminService(input: CatalogueServiceMutationInput): Promise<MutationResult> {
+  async createAdminService(
+    input: CatalogueServiceMutationInput,
+  ): Promise<MutationResult> {
     const normalized = normalizeServiceInput(input, "create");
-    if ("invalid" in normalized) return { status: "invalid", reason: normalized.invalid };
+    if ("invalid" in normalized)
+      return { status: "invalid", reason: normalized.invalid };
 
-    const created = await this.repository.createService(normalized as CatalogueServiceWriteInput);
+    const created = await this.repository.createService(
+      normalized as CatalogueServiceWriteInput,
+    );
     if (created === "slug_conflict") return { status: "slug_conflict" };
     return { status: "ok", response: { service: toAdminService(created) } };
   }
 
-  async updateAdminService(serviceId: string, input: CatalogueServiceMutationInput): Promise<MutationResult> {
+  async updateAdminService(
+    serviceId: string,
+    input: CatalogueServiceMutationInput,
+  ): Promise<MutationResult> {
     const normalized = normalizeServiceInput(input, "update");
-    if ("invalid" in normalized) return { status: "invalid", reason: normalized.invalid };
+    if ("invalid" in normalized)
+      return { status: "invalid", reason: normalized.invalid };
 
     const updated = await this.repository.updateService(serviceId, normalized);
     if (updated === "not_found") return { status: "not_found" };
     if (updated === "slug_conflict") return { status: "slug_conflict" };
-    if (updated.archivedAt || updated.availabilityStatus === "archived") return { status: "archived" };
+    if (updated.archivedAt || updated.availabilityStatus === "archived")
+      return { status: "archived" };
     return { status: "ok", response: { service: toAdminService(updated) } };
   }
 
-  async publishAdminService(serviceId: string, now = new Date()): Promise<MutationResult> {
+  async publishAdminService(
+    serviceId: string,
+    now = new Date(),
+  ): Promise<MutationResult> {
     const existing = await this.repository.getAdminService(serviceId);
     if (!existing) return { status: "not_found" };
 
@@ -510,28 +678,41 @@ export class CatalogueService {
     const result = await this.repository.publishService(serviceId, now);
     if (result === "not_found") return { status: "not_found" };
     if (result === "archived") return { status: "archived" };
-    if ("notDeliverable" in result) return { status: "not_deliverable", failures: result.notDeliverable };
+    if ("notDeliverable" in result)
+      return { status: "not_deliverable", failures: result.notDeliverable };
     return { status: "ok", response: { service: toAdminService(result) } };
   }
 
-  async archiveAdminService(serviceId: string, now = new Date()): Promise<MutationResult> {
+  async archiveAdminService(
+    serviceId: string,
+    now = new Date(),
+  ): Promise<MutationResult> {
     const result = await this.repository.archiveService(serviceId, now);
     if (result === "not_found") return { status: "not_found" };
     return { status: "ok", response: { service: toAdminService(result) } };
   }
 
-  async updateAdminServiceCapacity(serviceId: string, input: CatalogueServiceCapacityInput): Promise<MutationResult> {
+  async updateAdminServiceCapacity(
+    serviceId: string,
+    input: CatalogueServiceCapacityInput,
+  ): Promise<MutationResult> {
     const normalized = normalizeCapacityControlInput(input);
-    if ("invalid" in normalized) return { status: "invalid", reason: normalized.invalid };
+    if ("invalid" in normalized)
+      return { status: "invalid", reason: normalized.invalid };
 
     const updated = await this.repository.updateService(serviceId, normalized);
     if (updated === "not_found") return { status: "not_found" };
     if (updated === "slug_conflict") return { status: "slug_conflict" };
-    if (updated.archivedAt || updated.availabilityStatus === "archived") return { status: "archived" };
+    if (updated.archivedAt || updated.availabilityStatus === "archived")
+      return { status: "archived" };
     return { status: "ok", response: { service: toAdminService(updated) } };
   }
 
-  async reorderAdminServices(input: CatalogueServiceOrderInput): Promise<MutationResult | { status: "ok"; response: CatalogueAdminServicesResponse }> {
+  async reorderAdminServices(
+    input: CatalogueServiceOrderInput,
+  ): Promise<
+    MutationResult | { status: "ok"; response: CatalogueAdminServicesResponse }
+  > {
     if (!Array.isArray(input.items) || input.items.length === 0) {
       return { status: "invalid", reason: "items_required" };
     }
@@ -539,19 +720,35 @@ export class CatalogueService {
     const items: Array<{ serviceId: string; sortOrder: number }> = [];
     const seen = new Set<string>();
     for (const item of input.items) {
-      if (typeof item !== "object" || item === null) return { status: "invalid", reason: "item_invalid" };
+      if (typeof item !== "object" || item === null)
+        return { status: "invalid", reason: "item_invalid" };
       const candidate = item as { serviceId?: unknown; sortOrder?: unknown };
-      if (typeof candidate.serviceId !== "string" || candidate.serviceId.trim() === "") return { status: "invalid", reason: "service_id_invalid" };
-      if (typeof candidate.sortOrder !== "number" || !Number.isInteger(candidate.sortOrder) || candidate.sortOrder < 0) {
+      if (
+        typeof candidate.serviceId !== "string" ||
+        candidate.serviceId.trim() === ""
+      )
+        return { status: "invalid", reason: "service_id_invalid" };
+      if (
+        typeof candidate.sortOrder !== "number" ||
+        !Number.isInteger(candidate.sortOrder) ||
+        candidate.sortOrder < 0
+      ) {
         return { status: "invalid", reason: "sort_order_invalid" };
       }
-      if (seen.has(candidate.serviceId)) return { status: "invalid", reason: "duplicate_service" };
+      if (seen.has(candidate.serviceId))
+        return { status: "invalid", reason: "duplicate_service" };
       seen.add(candidate.serviceId);
-      items.push({ serviceId: candidate.serviceId, sortOrder: candidate.sortOrder });
+      items.push({
+        serviceId: candidate.serviceId,
+        sortOrder: candidate.sortOrder,
+      });
     }
 
     const reordered = await this.repository.reorderServices(items);
     if (reordered === "not_found") return { status: "not_found" };
-    return { status: "ok", response: { services: reordered.map(toAdminService) } };
+    return {
+      status: "ok",
+      response: { services: reordered.map(toAdminService) },
+    };
   }
 }

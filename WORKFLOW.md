@@ -189,3 +189,10 @@ After a significant validated slice, note in the report whether a reusable mecha
 - **Generated references** (`docs/reference/codes-erreur.md`, `variables-environnement.md`, `scripts-npm.md`): never edited by hand; run `npm run docs:generate`.
 - **Check**: `npm run docs:check` (also in CI) fails on stale references, broken relative links or missing front matter.
 - Reviewer checks the `Docs impact` line against the diff.
+
+## 17. Format et typographie (PRETTY-01)
+
+- **Format**: run `npm run format` (Prettier, options in `.prettierrc.json`, exclusions in `.prettierignore`) before reporting. `npm run format:check` runs in CI.
+- **No long dashes**: never write the em dash (U+2014) or the en dash (U+2013) in code, UI strings, docs, `exploration-cache` or root Markdown files; use « - ». `npm run lint:dashes` (also in CI) fails with `file:line`.
+- **Empty values** in the UI are shown as « - ».
+- French guillemets « » and non-breaking spaces stay.

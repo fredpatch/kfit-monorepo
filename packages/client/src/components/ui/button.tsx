@@ -13,10 +13,13 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary-hover",
-        secondary: "border border-input bg-secondary text-secondary-foreground hover:bg-muted",
+        secondary:
+          "border border-input bg-secondary text-secondary-foreground hover:bg-muted",
         ghost: "text-primary hover:bg-accent",
-        destructive: "border border-danger/30 bg-card text-danger hover:bg-danger-soft",
-        "destructive-solid": "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        destructive:
+          "border border-danger/30 bg-card text-danger hover:bg-danger-soft",
+        "destructive-solid":
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         whatsapp: "bg-success-soft text-success hover:bg-success-soft/70",
         link: "h-auto px-0 text-primary underline-offset-4 hover:underline",
       },

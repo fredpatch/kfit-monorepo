@@ -39,7 +39,10 @@ async function verifySchedulerTick() {
     });
   });
 
-  assert(ticks === 1, "Scheduler should fire exactly once in the controlled pre-flight");
+  assert(
+    ticks === 1,
+    "Scheduler should fire exactly once in the controlled pre-flight",
+  );
   console.log("node-cron scheduler tick verified");
 }
 
@@ -52,10 +55,9 @@ async function advisoryTryLock(client) {
 }
 
 async function advisoryUnlock(client) {
-  await client.query(
-    "select pg_advisory_unlock(hashtextextended($1, 0))",
-    [lockKey],
-  );
+  await client.query("select pg_advisory_unlock(hashtextextended($1, 0))", [
+    lockKey,
+  ]);
 }
 
 async function cleanup() {
@@ -77,14 +79,24 @@ try {
   const duplicateLock = await advisoryTryLock(clientB);
 
   assert(firstLock, "Worker A should acquire the job lock");
-  assert(!duplicateLock, "Worker B must not acquire a duplicate concurrent job lock");
-  console.log("Concurrent duplicate execution blocked by PostgreSQL advisory lock");
+  assert(
+    !duplicateLock,
+    "Worker B must not acquire a duplicate concurrent job lock",
+  );
+  console.log(
+    "Concurrent duplicate execution blocked by PostgreSQL advisory lock",
+  );
 
   await clientA.query(
     `insert into scheduled_job_runs
       (id, job_key, run_key, status, attempt, started_at, result_json)
      values ($1, $2, $3, 'running', 1, now(), $4::jsonb)`,
-    [crypto.randomUUID(), JOB_KEY, runKey, JSON.stringify({ phase: "first-attempt" })],
+    [
+      crypto.randomUUID(),
+      JOB_KEY,
+      runKey,
+      JSON.stringify({ phase: "first-attempt" }),
+    ],
   );
 
   let duplicatePrevented = false;
@@ -98,7 +110,10 @@ try {
   } catch (error) {
     duplicatePrevented = error?.code === "23505";
   }
-  assert(duplicatePrevented, "Stable job run key must prevent duplicate run records");
+  assert(
+    duplicatePrevented,
+    "Stable job run key must prevent duplicate run records",
+  );
   console.log("Stable (job_key, run_key) idempotency key verified");
 
   await clientA.query(
@@ -117,8 +132,14 @@ try {
       where job_key = $1 and run_key = $2`,
     [JOB_KEY, runKey],
   );
-  assert(failed.rows[0]?.status === "failed", "Failure outcome was not recorded");
-  assert(failed.rows[0]?.error_code === "PREFLIGHT_SIMULATED_FAILURE", "Stable error code missing");
+  assert(
+    failed.rows[0]?.status === "failed",
+    "Failure outcome was not recorded",
+  );
+  assert(
+    failed.rows[0]?.error_code === "PREFLIGHT_SIMULATED_FAILURE",
+    "Stable error code missing",
+  );
   console.log("Failure outcome and stable error code recorded");
 
   await clientA.query(
@@ -148,22 +169,37 @@ try {
       where job_key = $1 and run_key = $2`,
     [JOB_KEY, runKey],
   );
-  assert(retried.rows[0]?.status === "succeeded", "Retry did not reach succeeded state");
+  assert(
+    retried.rows[0]?.status === "succeeded",
+    "Retry did not reach succeeded state",
+  );
   assert(retried.rows[0]?.attempt === 2, "Retry attempt counter should be 2");
-  assert(retried.rows[0]?.result_json?.processed === 1, "Observable result metrics missing");
+  assert(
+    retried.rows[0]?.result_json?.processed === 1,
+    "Observable result metrics missing",
+  );
   console.log("Retry safety, attempt counting, and outcome metrics verified");
 
   await advisoryUnlock(clientA);
   const lockAfterRelease = await advisoryTryLock(clientB);
-  assert(lockAfterRelease, "Lock should be available after worker A releases it");
+  assert(
+    lockAfterRelease,
+    "Lock should be available after worker A releases it",
+  );
   await advisoryUnlock(clientB);
   console.log("Lock release/reacquisition verified");
 
   await cleanup();
   console.log("Scheduled-jobs pre-flight PASSED");
 } finally {
-  try { await advisoryUnlock(clientA); } catch {}
-  try { await advisoryUnlock(clientB); } catch {}
-  try { await cleanup(); } catch {}
+  try {
+    await advisoryUnlock(clientA);
+  } catch {}
+  try {
+    await advisoryUnlock(clientB);
+  } catch {}
+  try {
+    await cleanup();
+  } catch {}
   await Promise.allSettled([clientA.end(), clientB.end()]);
 }

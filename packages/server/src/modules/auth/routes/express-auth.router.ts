@@ -3,7 +3,10 @@ import type { Request, Response, Router } from "express";
 import { Router as createRouter } from "express";
 import type { AuthController } from "../controllers/auth.controller.js";
 import { parseCookieHeader } from "../middleware/auth.cookies.js";
-import { requireCsrf, requireSameOrigin } from "../middleware/auth.middleware.js";
+import {
+  requireCsrf,
+  requireSameOrigin,
+} from "../middleware/auth.middleware.js";
 import { authRoutes } from "./auth.routes.js";
 import type {
   AuthenticatedSessionContext,
@@ -12,7 +15,12 @@ import type {
   HttpJsonResponse,
 } from "../types/auth.http.types.js";
 
-export type ExpressAuthSessionResolver = (request: Request) => Promise<AuthenticatedSessionContext | null> | AuthenticatedSessionContext | null;
+export type ExpressAuthSessionResolver = (
+  request: Request,
+) =>
+  | Promise<AuthenticatedSessionContext | null>
+  | AuthenticatedSessionContext
+  | null;
 
 export type ExpressAuthRouterDeps = {
   controller: AuthController;
@@ -24,7 +32,10 @@ function firstHeader(value: string | string[] | undefined): string | undefined {
   return value;
 }
 
-async function toAuthContext(request: Request, resolveSession: ExpressAuthSessionResolver): Promise<AuthHttpRequestContext> {
+async function toAuthContext(
+  request: Request,
+  resolveSession: ExpressAuthSessionResolver,
+): Promise<AuthHttpRequestContext> {
   const headers: Record<string, string | undefined> = {};
   for (const [key, value] of Object.entries(request.headers)) {
     headers[key.toLowerCase()] = firstHeader(value);
@@ -50,7 +61,10 @@ function applyJsonResponse(response: Response, result: HttpJsonResponse): void {
       secure: cookie.options.secure,
       sameSite: cookie.options.sameSite,
       path: cookie.options.path,
-      maxAge: cookie.options.maxAgeSeconds === undefined ? undefined : cookie.options.maxAgeSeconds * 1000,
+      maxAge:
+        cookie.options.maxAgeSeconds === undefined
+          ? undefined
+          : cookie.options.maxAgeSeconds * 1000,
     });
   }
 
@@ -76,13 +90,37 @@ async function dispatchAuthRoute(
     case "bootstrapStatus":
       return controller.bootstrapStatus();
     case "bootstrap":
-      return controller.bootstrap(context, typeof body === "object" && body !== null ? body as { email?: unknown; password?: unknown } : {});
+      return controller.bootstrap(
+        context,
+        typeof body === "object" && body !== null
+          ? (body as { email?: unknown; password?: unknown })
+          : {},
+      );
     case "login":
-      return controller.login(context, typeof body === "object" && body !== null ? body as { email?: unknown; password?: unknown } : {});
+      return controller.login(
+        context,
+        typeof body === "object" && body !== null
+          ? (body as { email?: unknown; password?: unknown })
+          : {},
+      );
     case "verifyLogin":
-      return controller.verifyLogin(context, typeof body === "object" && body !== null ? body as { challengeId?: unknown; code?: unknown; trustDevice?: unknown } : {});
+      return controller.verifyLogin(
+        context,
+        typeof body === "object" && body !== null
+          ? (body as {
+              challengeId?: unknown;
+              code?: unknown;
+              trustDevice?: unknown;
+            })
+          : {},
+      );
     case "resendLoginOtp":
-      return controller.resendLoginOtp(context, typeof body === "object" && body !== null ? body as { challengeId?: unknown } : {});
+      return controller.resendLoginOtp(
+        context,
+        typeof body === "object" && body !== null
+          ? (body as { challengeId?: unknown })
+          : {},
+      );
     case "listTrustedDevices":
       return controller.listTrustedDevices(context);
     case "revokeTrustedDevice":
@@ -96,15 +134,35 @@ async function dispatchAuthRoute(
     case "currentSession":
       return controller.currentSession(context);
     case "requestPasswordRecovery":
-      return controller.requestPasswordRecovery(context, typeof body === "object" && body !== null ? body as { email?: unknown } : {});
+      return controller.requestPasswordRecovery(
+        context,
+        typeof body === "object" && body !== null
+          ? (body as { email?: unknown })
+          : {},
+      );
     case "verifyPasswordRecovery":
-      return controller.verifyPasswordRecovery(context, typeof body === "object" && body !== null ? body as { email?: unknown; code?: unknown } : {});
+      return controller.verifyPasswordRecovery(
+        context,
+        typeof body === "object" && body !== null
+          ? (body as { email?: unknown; code?: unknown })
+          : {},
+      );
     case "resetPassword":
-      return controller.resetPassword(context, typeof body === "object" && body !== null ? body as { resetToken?: unknown; password?: unknown } : {});
+      return controller.resetPassword(
+        context,
+        typeof body === "object" && body !== null
+          ? (body as { resetToken?: unknown; password?: unknown })
+          : {},
+      );
     case "requestSensitiveActionOtp":
       return controller.requestSensitiveActionOtp(context);
     case "verifySensitiveActionOtp":
-      return controller.verifySensitiveActionOtp(context, typeof body === "object" && body !== null ? body as { code?: unknown } : {});
+      return controller.verifySensitiveActionOtp(
+        context,
+        typeof body === "object" && body !== null
+          ? (body as { code?: unknown })
+          : {},
+      );
     default:
       return {
         status: 500,
@@ -113,7 +171,11 @@ async function dispatchAuthRoute(
   }
 }
 
-function registerAuthRoute(router: Router, route: AuthRouteDefinition, handler: (request: Request, response: Response) => Promise<void>): void {
+function registerAuthRoute(
+  router: Router,
+  route: AuthRouteDefinition,
+  handler: (request: Request, response: Response) => Promise<void>,
+): void {
   switch (route.method) {
     case "GET":
       router.get(route.path, handler);
@@ -137,15 +199,24 @@ export function createExpressAuthRouter(deps: ExpressAuthRouterDeps): Router {
   const router = createRouter();
 
   for (const route of authRoutes) {
-    registerAuthRoute(router, route, async (request: Request, response: Response) => {
-      try {
-        const context = await toAuthContext(request, deps.resolveSession);
-        const result = await dispatchAuthRoute(route, deps.controller, context, request.body);
-        applyJsonResponse(response, result);
-      } catch {
-        response.status(500).json({ error: "AUTH_ROUTE_UNEXPECTED_FAILURE" });
-      }
-    });
+    registerAuthRoute(
+      router,
+      route,
+      async (request: Request, response: Response) => {
+        try {
+          const context = await toAuthContext(request, deps.resolveSession);
+          const result = await dispatchAuthRoute(
+            route,
+            deps.controller,
+            context,
+            request.body,
+          );
+          applyJsonResponse(response, result);
+        } catch {
+          response.status(500).json({ error: "AUTH_ROUTE_UNEXPECTED_FAILURE" });
+        }
+      },
+    );
   }
 
   return router;

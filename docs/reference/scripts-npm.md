@@ -10,7 +10,7 @@ couvre: [DOC-01a]
 
 > Fichier généré - ne pas modifier à la main (npm run docs:generate).
 
-104 scripts.
+107 scripts.
 
 ## `package.json`
 
@@ -21,6 +21,9 @@ Lancer depuis la racine : `npm run <script>`.
 | `security:check` | `node packages/server/scripts/security/check-runtime-floor.mjs` |
 | `docs:generate` | `node packages/server/scripts/docs/generate-references.mjs` |
 | `docs:check` | `node packages/server/scripts/docs/generate-references.mjs --check` |
+| `format` | `prettier --write .` |
+| `format:check` | `prettier --check .` |
+| `lint:dashes` | `node packages/server/scripts/docs/check-dashes.mjs` |
 | `seed:cadence-history` | `npm run seed:cadence-history --workspace @kfit/server` |
 | `db:generate:cadence-history` | `npm run db:generate:cadence-history --workspace @kfit/server` |
 | `preflight:cadence-history` | `npm run preflight:cadence-history --workspace @kfit/server` |

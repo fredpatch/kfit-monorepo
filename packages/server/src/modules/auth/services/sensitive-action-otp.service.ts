@@ -1,6 +1,10 @@
 import type { AuthMailDelivery } from "./auth-mail.delivery.js";
 import type { AuthUserRepository } from "./auth-route.service.js";
-import type { OtpAuditRecorder, OtpChallengeRecord, OtpChallengeService } from "./otp-challenge.service.js";
+import type {
+  OtpAuditRecorder,
+  OtpChallengeRecord,
+  OtpChallengeService,
+} from "./otp-challenge.service.js";
 
 export type SensitiveActionOtpContext = {
   userId: string;
@@ -23,10 +27,18 @@ export class SensitiveActionOtpService {
     private readonly audit: OtpAuditRecorder,
   ) {}
 
-  async request(context: SensitiveActionOtpContext): Promise<SensitiveActionOtpResult> {
+  async request(
+    context: SensitiveActionOtpContext,
+  ): Promise<SensitiveActionOtpResult> {
     const user = await this.users.findById(context.userId);
     if (!user || user.status !== "active") {
-      await this.auditEvent("auth.otp.delivery_failed", "failure", context, null, "account_unavailable");
+      await this.auditEvent(
+        "auth.otp.delivery_failed",
+        "failure",
+        context,
+        null,
+        "account_unavailable",
+      );
       return { status: "delivery_failed" };
     }
 
@@ -40,13 +52,28 @@ export class SensitiveActionOtpService {
     });
 
     try {
-      await this.mail.sendSensitiveActionCode({ to: user.email, code: issued.code, expiresAt: issued.challenge.expiresAt });
+      await this.mail.sendSensitiveActionCode({
+        to: user.email,
+        code: issued.code,
+        expiresAt: issued.challenge.expiresAt,
+      });
     } catch {
-      await this.auditEvent("auth.otp.delivery_failed", "failure", context, issued.challenge.id, "mail_delivery_failed");
+      await this.auditEvent(
+        "auth.otp.delivery_failed",
+        "failure",
+        context,
+        issued.challenge.id,
+        "mail_delivery_failed",
+      );
       return { status: "delivery_failed" };
     }
 
-    await this.auditEvent("auth.otp.delivered", "success", context, issued.challenge.id);
+    await this.auditEvent(
+      "auth.otp.delivered",
+      "success",
+      context,
+      issued.challenge.id,
+    );
     return { status: "sent", challenge: issued.challenge };
   }
 

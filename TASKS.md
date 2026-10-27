@@ -1,4 +1,4 @@
-# K'FIT — Active Execution State
+# K'FIT - Active Execution State
 
 > Single source of active state for agents. Backlog/roadmap: Notion. Sprint specs: `exploration-cache/tasks/`. History: `changelog.md`, `exploration-cache/sessions/`, Git.
 > Update rules: WORKFLOW §12 and §14.
@@ -9,11 +9,11 @@ Sprint 6 S6.1–S6.4 are validated and Sprint 6 is closed on `main`. The former 
 
 ```text
 Branch            main
-Sprint            7 — Dashboard, notifications, rétention, sauvegardes et durcissement
-Active slice      OPS-01a supervision API
-Workflow state    OPS-01a committed 2026-10-27 on Fred's instruction (sprint-7.md § OPS-01a execution); next OPS-01b
-S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) — validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
-Last validated    S7.2 — validated by Fred 2026-10-25
+Sprint            7 - Dashboard, notifications, rétention, sauvegardes et durcissement
+Active slice      ROLE-01 superadmin + ops:create-user
+Workflow state    ROLE-01 validated by Fred and committed 2026-10-27 (sprint-7.md § ROLE-01 execution); next OPS-01b
+S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) - validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
+Last validated    S7.2 - validated by Fred 2026-10-25
 Implementation    2dc7c43 (S7.2a server) + 0eac6d4 (S7.2b client, UX-16)
 S7.2 delivered    S7.2a server (engine, outbox, jobs, API, migration 0014) + S7.2b client (UX-16 bell, panel, Réglages)
 S7.3 rules        Fred 2026-10-25: rules 2–9 approved, rule 1 amended; decisions D1–D12 in sprint-7.md
@@ -24,29 +24,30 @@ Recette 2026-10-25 fixes
   CONS-02b        client slice; validated live by Fred 2026-10-25 (b0af0a1)
   CAT-03a         catalogue variants, components, rules editable (REG-F2), server slice; validated by Fred 2026-10-25 (5c5325b)
   CAT-03b         client slice (D8 tabs + « Avant publication »); validated live by Fred 2026-10-25, committed (sprint-7.md § CAT-03b execution)
-  POL-01          recette polish F3 F4 F5 F8 F9 F10 F11 — committed 2026-10-25 (sprint-7.md § POL-01 execution); validated by Fred 2026-10-26
-TEST-01         integration DB kfit_test + dev « Données de test » cleanup — delivered and committed 2026-10-25 (sprint-7.md § TEST-01 execution); validated by Fred 2026-10-26
+  POL-01          recette polish F3 F4 F5 F8 F9 F10 F11 - committed 2026-10-25 (sprint-7.md § POL-01 execution); validated by Fred 2026-10-26
+TEST-01         integration DB kfit_test + dev « Données de test » cleanup - delivered and committed 2026-10-25 (sprint-7.md § TEST-01 execution); validated by Fred 2026-10-26
 Backlog (V1.1)    « RDV à clôturer dans À traiter » (POL-01 D8: display-only in POL-01)
 CI integration    kfit_test aligned 2026-10-26: service on 5433, .env.test written by CI, db:test:prepare (migrations + catalogue seed); was failing since TEST-01 (exit 9, .env.test absent)
-S7.3b-1         server read slice — validated, committed d6fdf61
-ARCH-01           archived freeze + unarchive — committed 356070a; validated live by Fred 2026-10-26
-S7.3b-2           privacy client — validated live by Fred 2026-10-26, committed 544b57d
+S7.3b-1         server read slice - validated, committed d6fdf61
+ARCH-01           archived freeze + unarchive - committed 356070a; validated live by Fred 2026-10-26
+S7.3b-2           privacy client - validated live by Fred 2026-10-26, committed 544b57d
 FIX-02            validated, committed 8d66297 (D5 flaky kept in backlog)
 SEC-01            validated, committed 92d352a, CI green 2026-10-26
 S7.4 prereqs      base image pinned to an exact patched Node tag; smoke test records node --version; security:check in the image build (SEC-01 D6)
-S7.4a             production entrypoint + refuse-to-start guards + X-Request-Id — validated, committed 302902d, CI green
-S7.4b             backup/restore tooling + security counters (migration 0017) — validated, committed d2fc5df
-S7.4c             drill run by Fred 2026-10-26 from the runbook — 2 defects → FIX-03
+S7.4a             production entrypoint + refuse-to-start guards + X-Request-Id - validated, committed 302902d, CI green
+S7.4b             backup/restore tooling + security counters (migration 0017) - validated, committed d2fc5df
+S7.4c             drill run by Fred 2026-10-26 from the runbook - 2 defects → FIX-03
 S7.4              CLOSED 2026-10-27 (S7.4a 302902d, S7.4b d2fc5df, DOC-01a 953cb22, FIX-03 + DOC-01b 4db73be; drill by Fred 2026-10-26)
-DOC-01a           documentation foundation + S7.4c runbook — committed 953cb22
-FIX-03 + DOC-01b  paths from the repo root, ops runner, coach + admin guides — committed 4db73be
-SEC-02a           trusted devices + login OTP (server), no migration — validated, committed e0d6158
+DOC-01a           documentation foundation + S7.4c runbook - committed 953cb22
+FIX-03 + DOC-01b  paths from the repo root, ops runner, coach + admin guides - committed 4db73be
+SEC-02a           trusted devices + login OTP (server), no migration - validated, committed e0d6158
 SEC-02            closed (e0d6158, bb2e993), BOOT-01 closed (bb2e993)
-OPS-01a           supervision API + supervision_alert notifications (migration 0018) — committed 2026-10-27; kfit_dev needs npm run db:migrate
-Next action       OPS-01b client, RET-01, Sprint 8 UAT
+OPS-01a           supervision API + supervision_alert notifications (migration 0018) - committed 0a1c210 (Fred: migrate kfit_dev; validation after OPS-01b)
+ROLE-01           superadmin role, hasRole guard, migration 0019, ops:create-user / ops:set-role - validated by Fred, committed 2026-10-27
+Next action       OPS-01b client (superadmin only), RET-01, Sprint 8 UAT
 Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »
-Backlog           « Flaky express unit tests (fetch failed, random test) — diagnose with the pgErrorInfo fix »
-Backlog           « OPS-01 Supervision (jobs, sauvegardes, contrôle de restauration, confidentialité, sécurité) — après SEC-02, avant UAT »
+Backlog           « Flaky express unit tests (fetch failed, random test) - diagnose with the pgErrorInfo fix »
+Backlog           « OPS-01 Supervision (jobs, sauvegardes, contrôle de restauration, confidentialité, sécurité) - après SEC-02, avant UAT »
 Backlog           « RET-01 rétention : purge de la file e-mail après envoi, durées audit/notifications, rappel prospects inactifs dans Supervision (après OPS-01) »
 Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser
 
@@ -61,13 +62,14 @@ UX-13             legacy stylesheet + wrapper removed, recette done (14106e7)
 UX next           Track B closed; UX-16 lands with S7.2. Remaining UI items wait on coach onboarding (name, logo, photo)
 ```
 
-## S7.1 — closed 2026-10-23
+## S7.1 - closed 2026-10-23
 
 Validated by Fred (PostgreSQL 542/542 after `bb3ba76`, browser/mobile/keyboard and DBeaver green). Full evidence: `exploration-cache/tasks/sprint-7.md` § S7.1 execution and closure.
 
 ## Blockers
 
 Before production:
+
 - Legal validation for the applicable Gabon context.
 - True encrypted off-server backup destination.
 - Device-OTP login + trusted device per the Sprint 1 auth contract (today `/auth/login` issues a session on any device).
@@ -116,10 +118,10 @@ Risks             See « Risks / pre-prod items » below
 Next action       Fred: choose the next track (pre-prod blockers listed below)
 ```
 
-## Refonte UI — suivi
+## Refonte UI - suivi
 
 > Goal: rebuild the admin and public screens to the validated mockups without changing business logic.
-> Mockups: canvas « K'FIT — Refonte UI » (boards 01–11). Plan: Notion « 🎨 K'FIT - Refonte UI · Plan d'implémentation ». Backlog: Notion « K'FIT — Development Backlog » (UX-* and [API·UX] items).
+> Mockups: canvas « K'FIT - Refonte UI » (boards 01–11). Plan: Notion « 🎨 K'FIT - Refonte UI · Plan d'implémentation ». Backlog: Notion « K'FIT - Development Backlog » (UX-\* and [API·UX] items).
 
 ### Process (agreed)
 
@@ -134,35 +136,35 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 
 ### Status
 
-| Step | Board | Scope | API added (read-only) | Status | Commit |
-| --- | --- | --- | --- | --- | --- |
-| UX-1 | 01 | Foundation: Tailwind v4, shadcn primitives, tokens, status map; legacy CSS isolated | — | Done | 88235de |
-| UX-2 | 01 | Admin shell, React Router routes, sidebar, mobile nav | — | Done | 141175f |
-| UX-3 | 01b | Data kit: DataTable, read-only tables, charts (KPI tile, sparkline, bars, stacked) | — | Done | c2d4497 |
-| UX-4a | 03 | Client profile shell | `GET /admin/customers/:id` | Done | 477650a |
-| UX-4b | 03, 08 | Profile Aperçu + Progression | — | Done | f92e7cb |
-| UX-4c | 03b | Profile Analyse tab | `GET /admin/customers/:id/analytics` | Done | 972dc22 |
-| UX-5 | 04 | Clients list + creation | `GET /admin/customers/overview` | Done | b8a1135 |
-| UX-6 | 05 | Requests queue + detail | — | Done | f21120f |
-| UX-7 | 06 | Catalogue + capacity | `GET /admin/catalogue/services/overview` | Done | 86362d5 |
-| UX-8 | 07 | Questionnaires (families, versions, editor) | — | Done | 309294d |
-| UX-9 | 02 | Aujourd'hui dashboard; `/admin` opens it; business time zone | `GET /admin/today`, `GET /admin/appointments` | Done | a122ccd |
-| UX-9b | 02 | Layout aligned to mockup; requests chart placeholder | — | Done | 8a4e435 |
-| UX-9c | 02 | Weekly requests chart + conversion, KPI sparklines/deltas, finance summary, operational alerts (built in S7.1) | `GET /admin/dashboard/*` (S7.1) | Done — first-name greeting still open | ed1c7d0 |
-| UX-9d | 02 | Fidelity fixes: board 02 order (À traiter under the charts), 8-week default, segmented period switch, header wording, compact funnel, « Stable » deltas, XAF, business-date label, task list capped at 8 | — | Done — Fred validated 2026-10-24 | 1d3a476 |
-| UX-9e | 02 | Alerts on Aujourd'hui limited to payments and quotes (no duplicate of À traiter) | — | Done | 6ca2a2f |
-| UX-10 | 09 | Connexion, Mot de passe oublié, Initialisation, password meter; recovery service bound in `dev-app.ts` (SMTP) | none (existing `/auth/recovery/*`) | Done — Fred validated 2026-10-24 | e0ae7f1 |
-| UX-11 | 10, 11a | Landing `/` (offers from the public catalogue, family filter, plans, steps, FAQ, CTA) + request page `/demande/:offre`; intake rules unchanged; legacy wrapper removed | — | Done — prod still needs coach onboarding (name/logo/photo) and legal pages | bf87713 |
-| UX-12a | 11e–h | Shared public shell (`components/public/PublicShell.tsx`, one no-referrer hook) + /document, /devis, /recu, /justificatif restyled; logic unchanged | — | Done | 4288d46 |
-| UX-12b | 11b–d | /questionnaire (one question per screen, health consent step), /consent, /appointment on the public shell; customer-only forms, coach forms untouched (UX-14); appointment times in Libreville; legacy wrapper removed | — | Done | 57e5613 |
-| UX-14 | 14a–14e | Legacy admin tabs: Rendez-vous, Suivis, Préparation, Santé et consentements + Suivis page. 14a (diff 1): Rendez-vous tab (Libreville times, schedule sheet with duration suggestion + auto response link, action dialogs), Suivis tab (open actions, history, « rythme » card, record sheet), Suivis page (table, filters, opens the form via `nouveau=suivi`) 14b: Préparation (banner + progress, checklist, waiver dialog, reservation) and Santé et consentements (consents, links, coach capture, questionnaire links + coach entry); last legacy admin panels removed. 14c: `GET …/questionnaire/revisions/:submissionId` (fresh sensitive-action OTP, `questionnaire.answers_viewed` audit with ids only, refused once « Données de santé » is withdrawn) + « Voir les réponses » with e-mail code step-up | — | Done | 56f8454, b751757, 63279f3, f989bec |
-| UX-15 | 15a–15d | Screens added in S5.5/S6 without a board. 15a: Finance + Devis tabs merged into « Paiements » (summary, proof banner, échéancier « n sur N », payments with receipt column + ⋯, quote card + side sheet, proofs history) + proof review dialog (preview, size, scan, 5 decisions). 15b: Documents tab (versioned list, Partager → link + separate code for sensitive docs, ⋯ add version / download / versions and links / archive / revoke with confirmation, private photos card) | — | Done | 27042a1, f86cdcb |
-| UX-16 | 12, 12b, 12c | S7.2 notification centre (bell panel, mobile sheet, Réglages) — board only, implemented inside S7.2 | — | Boards validated 2026-10-23 → S7.2 implementer (`sprint-7.md` § S7.2 UI) | — |
-| UX-13 | — | Cleanup: `legacy.css` (20 KB) and the `legacy` wrapper removed, dead `AdminProgressPanel` removed, h1 added to the request page; recette on the real API at 1440 / 390 px (reduced motion already global in `index.css`) | — | Done | 14106e7 |
+| Step   | Board        | Scope                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | API added (read-only)                         | Status                                                                     | Commit                             |
+| ------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------- |
+| UX-1   | 01           | Foundation: Tailwind v4, shadcn primitives, tokens, status map; legacy CSS isolated                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | -                                             | Done                                                                       | 88235de                            |
+| UX-2   | 01           | Admin shell, React Router routes, sidebar, mobile nav                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | -                                             | Done                                                                       | 141175f                            |
+| UX-3   | 01b          | Data kit: DataTable, read-only tables, charts (KPI tile, sparkline, bars, stacked)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | -                                             | Done                                                                       | c2d4497                            |
+| UX-4a  | 03           | Client profile shell                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `GET /admin/customers/:id`                    | Done                                                                       | 477650a                            |
+| UX-4b  | 03, 08       | Profile Aperçu + Progression                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | -                                             | Done                                                                       | f92e7cb                            |
+| UX-4c  | 03b          | Profile Analyse tab                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `GET /admin/customers/:id/analytics`          | Done                                                                       | 972dc22                            |
+| UX-5   | 04           | Clients list + creation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `GET /admin/customers/overview`               | Done                                                                       | b8a1135                            |
+| UX-6   | 05           | Requests queue + detail                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | -                                             | Done                                                                       | f21120f                            |
+| UX-7   | 06           | Catalogue + capacity                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `GET /admin/catalogue/services/overview`      | Done                                                                       | 86362d5                            |
+| UX-8   | 07           | Questionnaires (families, versions, editor)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | -                                             | Done                                                                       | 309294d                            |
+| UX-9   | 02           | Aujourd'hui dashboard; `/admin` opens it; business time zone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `GET /admin/today`, `GET /admin/appointments` | Done                                                                       | a122ccd                            |
+| UX-9b  | 02           | Layout aligned to mockup; requests chart placeholder                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | -                                             | Done                                                                       | 8a4e435                            |
+| UX-9c  | 02           | Weekly requests chart + conversion, KPI sparklines/deltas, finance summary, operational alerts (built in S7.1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `GET /admin/dashboard/*` (S7.1)               | Done - first-name greeting still open                                      | ed1c7d0                            |
+| UX-9d  | 02           | Fidelity fixes: board 02 order (À traiter under the charts), 8-week default, segmented period switch, header wording, compact funnel, « Stable » deltas, XAF, business-date label, task list capped at 8                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | -                                             | Done - Fred validated 2026-10-24                                           | 1d3a476                            |
+| UX-9e  | 02           | Alerts on Aujourd'hui limited to payments and quotes (no duplicate of À traiter)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | -                                             | Done                                                                       | 6ca2a2f                            |
+| UX-10  | 09           | Connexion, Mot de passe oublié, Initialisation, password meter; recovery service bound in `dev-app.ts` (SMTP)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | none (existing `/auth/recovery/*`)            | Done - Fred validated 2026-10-24                                           | e0ae7f1                            |
+| UX-11  | 10, 11a      | Landing `/` (offers from the public catalogue, family filter, plans, steps, FAQ, CTA) + request page `/demande/:offre`; intake rules unchanged; legacy wrapper removed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | -                                             | Done - prod still needs coach onboarding (name/logo/photo) and legal pages | bf87713                            |
+| UX-12a | 11e–h        | Shared public shell (`components/public/PublicShell.tsx`, one no-referrer hook) + /document, /devis, /recu, /justificatif restyled; logic unchanged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | -                                             | Done                                                                       | 4288d46                            |
+| UX-12b | 11b–d        | /questionnaire (one question per screen, health consent step), /consent, /appointment on the public shell; customer-only forms, coach forms untouched (UX-14); appointment times in Libreville; legacy wrapper removed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | -                                             | Done                                                                       | 57e5613                            |
+| UX-14  | 14a–14e      | Legacy admin tabs: Rendez-vous, Suivis, Préparation, Santé et consentements + Suivis page. 14a (diff 1): Rendez-vous tab (Libreville times, schedule sheet with duration suggestion + auto response link, action dialogs), Suivis tab (open actions, history, « rythme » card, record sheet), Suivis page (table, filters, opens the form via `nouveau=suivi`) 14b: Préparation (banner + progress, checklist, waiver dialog, reservation) and Santé et consentements (consents, links, coach capture, questionnaire links + coach entry); last legacy admin panels removed. 14c: `GET …/questionnaire/revisions/:submissionId` (fresh sensitive-action OTP, `questionnaire.answers_viewed` audit with ids only, refused once « Données de santé » is withdrawn) + « Voir les réponses » with e-mail code step-up | -                                             | Done                                                                       | 56f8454, b751757, 63279f3, f989bec |
+| UX-15  | 15a–15d      | Screens added in S5.5/S6 without a board. 15a: Finance + Devis tabs merged into « Paiements » (summary, proof banner, échéancier « n sur N », payments with receipt column + ⋯, quote card + side sheet, proofs history) + proof review dialog (preview, size, scan, 5 decisions). 15b: Documents tab (versioned list, Partager → link + separate code for sensitive docs, ⋯ add version / download / versions and links / archive / revoke with confirmation, private photos card)                                                                                                                                                                                                                                                                                                                               | -                                             | Done                                                                       | 27042a1, f86cdcb                   |
+| UX-16  | 12, 12b, 12c | S7.2 notification centre (bell panel, mobile sheet, Réglages) - board only, implemented inside S7.2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | -                                             | Boards validated 2026-10-23 → S7.2 implementer (`sprint-7.md` § S7.2 UI)   | -                                  |
+| UX-13  | -            | Cleanup: `legacy.css` (20 KB) and the `legacy` wrapper removed, dead `AdminProgressPanel` removed, h1 added to the request page; recette on the real API at 1440 / 390 px (reduced motion already global in `index.css`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | -                                             | Done                                                                       | 14106e7                            |
 
 ### Locked decisions (2026-10-22)
 
-- Business time zone **Africa/Libreville (UTC+1)** for today, week (Monday start), appointment display and datetime inputs — `@kfit/shared` `time/business-time.ts`, client `lib/format.ts`.
+- Business time zone **Africa/Libreville (UTC+1)** for today, week (Monday start), appointment display and datetime inputs - `@kfit/shared` `time/business-time.ts`, client `lib/format.ts`.
 - Client status derived in one place: `@kfit/shared` `customers/client-status.ts`.
 - Capacity limit below occupied places → warn, don't block. Occupancy = S4 capacity-claim rule.
 - Analytics rules (attendance, cadence, pace, responsiveness) validated in UX-4c.
@@ -182,7 +184,7 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 - [ ] Client test framework (Vitest + Testing Library)?
 - [x] Funnel counting rules: cumulative reach (Fred, S7.1).
 - [x] Aujourd'hui shows only the alerts « À traiter » does not list (unpaid installments, payment proofs, quotes), as « Paiements et devis à suivre »; the S7.2 notification centre keeps the full set (Fred 2026-10-23, UX-9e).
-- [ ] Customer wording: public pages say « ta coach » — waits for the coach onboarding (real name, logo, photo), to be implemented later (Fred 2026-10-24).
+- [ ] Customer wording: public pages say « ta coach » - waits for the coach onboarding (real name, logo, photo), to be implemented later (Fred 2026-10-24).
 
 ### Risks / pre-prod items
 
@@ -194,15 +196,15 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 - **Public contact links:** `VITE_PUBLIC_WHATSAPP` / `VITE_PUBLIC_INSTAGRAM` must be set at build time for staging/prod, else the WhatsApp/Instagram buttons are hidden.
 - Server `npm test` glob runs only 4 tests → run `node --test $(find dist -name "*.test.js")` (Fred to fix the script).
 
-### Sprint 7 needs for mockup fidelity (board 02 — Aujourd'hui) — delivered by S7.1 except the first name
+### Sprint 7 needs for mockup fidelity (board 02 - Aujourd'hui) - delivered by S7.1 except the first name
 
 > Notion: UX-9c, [API·UX] Séries temporelles, Endpoint agrégé des KPI, Statistiques de l'entonnoir, Prénom dans la session.
 
-- [x] **Weekly requests chart** — requests received per business week (Mon–Sun, Africa/Libreville); periods 4 sem. / 8 sem. / 12 mois (monthly buckets for 12 mois); current week highlighted; tooltip `N demandes · 6–12 oct.`. Replaces the « Historique disponible au Sprint 7 » card.
-- [x] **Conversion rate** in that chart's header (`47 sur 8 semaines · taux de conversion 38 %`) — depends on funnel counting rules.
-- [x] **KPI sparklines** — 8 weekly points for: clientes actives (end-of-week value), suivis en retard (end-of-week value), nouvelles demandes, séances réalisées. `KpiTile` already takes `trend` + `trendLabel`.
-- [x] **KPI delta vs previous period** (`+12 % vs période précédente`) — define the reference period and the favourable direction per KPI (fewer overdue follow-ups = good). `KpiTile` already takes `delta`.
-- [ ] **Greeting with first name** (`Bonjour Konny`) — `/auth/session` returns id + role only; needs a display name on the user (small migration).
+- [x] **Weekly requests chart** - requests received per business week (Mon–Sun, Africa/Libreville); periods 4 sem. / 8 sem. / 12 mois (monthly buckets for 12 mois); current week highlighted; tooltip `N demandes · 6–12 oct.`. Replaces the « Historique disponible au Sprint 7 » card.
+- [x] **Conversion rate** in that chart's header (`47 sur 8 semaines · taux de conversion 38 %`) - depends on funnel counting rules.
+- [x] **KPI sparklines** - 8 weekly points for: clientes actives (end-of-week value), suivis en retard (end-of-week value), nouvelles demandes, séances réalisées. `KpiTile` already takes `trend` + `trendLabel`.
+- [x] **KPI delta vs previous period** (`+12 % vs période précédente`) - define the reference period and the favourable direction per KPI (fewer overdue follow-ups = good). `KpiTile` already takes `delta`.
+- [ ] **Greeting with first name** (`Bonjour Konny`) - `/auth/session` returns id + role only; needs a display name on the user (small migration).
 - [x] Section order matches the mockup (UX-9b).
 
 ### Other deferred items from the redesign (Notion backlog)
@@ -211,11 +213,12 @@ UI conventions: French UI, explicit business rules, one primary action per view,
 - Manual request endpoint (`POST /admin/requests`), readable sequential references (SUB-0042), questionnaire draft update/retire, service family field, duplicate-request signal, admin subscriptions list, server-side pagination.
 - Device-OTP login + trusted device (server slice + board 09 OTP screen).
 
-## S7.1 Gate 1 — approved 2026-10-23
+## S7.1 Gate 1 - approved 2026-10-23
 
 Fred approved all 18 S7.1 dashboard/alert decisions.
 
 Locked rules:
+
 1. Keep `GET /admin/today` as the validated current operational snapshot; do not rewrite existing current-day rules.
 2. Add a separate read-only analytics endpoint: `GET /admin/dashboard/analytics?periode=4w|8w|12m`.
 3. All periods use Africa/Libreville business time; weeks are Monday–Sunday; 12m uses calendar-month buckets.
@@ -240,26 +243,29 @@ Locked rules:
 15. UX-9c is completed in S7.1 except coach first name. Keep `Bonjour`; displayName/session migration remains V1.1.
 16. No notification/email engine in S7.1.
 17. No mutation endpoints in S7.1. Proposed read surface:
-   - GET /admin/today
-   - GET /admin/appointments
-   - GET /admin/dashboard/analytics?periode=4w|8w|12m
-   - GET /admin/dashboard/alerts
+
+- GET /admin/today
+- GET /admin/appointments
+- GET /admin/dashboard/analytics?periode=4w|8w|12m
+- GET /admin/dashboard/alerts
+
 18. Validation must prove time boundaries, historical stock/flow correctness, request cohort conversion, finance correction/due semantics, read-only behavior and privacy.
 
 Implementation is authorized for S7.1 only. S7.2 remains closed until Fred locally validates S7.1.
 
-
-## S7.1 feasibility blocker — historical cadence
+## S7.1 feasibility blocker - historical cadence
 
 Independent Reviewer confirmed S7.1 cannot safely reconstruct historical overdue-follow-up stock from current data.
 
 Root cause:
+
 - cadence resolution may fall back to mutable service/variant `followUpFrequencyDays`;
 - catalogue policy updates/seeding can overwrite those fallback values;
 - subscription override audit/history cannot reconstruct a fallback value that was overwritten;
 - therefore an old weekly endpoint may be impossible to classify deterministically as healthy/due/overdue.
 
 Example:
+
 - 10 active days since meaningful activity;
 - historical cadence 7 days => overdue;
 - current cadence 14 days => healthy.
@@ -267,22 +273,24 @@ Example:
 Using today's policy for historical weeks is prohibited because it would fabricate history.
 
 Current state:
+
 - S7.1 BLOCKED at historical-feasibility gate;
 - no implementation files changed;
 - no migration/tests run for S7.1;
 - S7.2 remains closed.
 
 Planner recommendation:
+
 - capture effective cadence history prospectively;
 - legacy historical KPI buckets return unavailable when cadence provenance cannot be proven;
 - never backfill unknown historical cadence from today's configuration.
 
-
-## S7.1 Gate 1 amendment — cadence history approved 2026-10-23
+## S7.1 Gate 1 amendment - cadence history approved 2026-10-23
 
 Fred approved the cadence-history amendment after the historical-feasibility blocker.
 
 Locked amendment:
+
 - add prospective append-only history of the resolved effective follow-up cadence;
 - store the resolved value itself, not only a pointer to mutable catalogue policy;
 - capture source: override | variant | service | none;
@@ -299,16 +307,17 @@ Locked amendment:
 S7.1 is unblocked and APPROVED_FOR_IMPLEMENTATION.
 S7.2 remains closed until Fred locally validates S7.1.
 
-
-## S7.1 closure — 2026-10-23
+## S7.1 closure - 2026-10-23
 
 Status: **CLOSED / LOCALLY VALIDATED**.
 
 Implementation:
-- `ed1c7d0` — `feat(dashboard): add historical analytics and operational alerts`.
-- `bb3ba76` — `fix(finance): stabilize payment allocation read order`.
+
+- `ed1c7d0` - `feat(dashboard): add historical analytics and operational alerts`.
+- `bb3ba76` - `fix(finance): stabilize payment allocation read order`.
 
 Validation:
+
 - typecheck green;
 - build green;
 - db:check green;
@@ -319,6 +328,7 @@ Validation:
 - Fred confirmed browser/mobile/keyboard and DBeaver Gate 2 all green.
 
 Validated S7.1 scope:
+
 - historical KPI series and deltas;
 - 4w/8w/12m request chart;
 - cohort funnel;
@@ -328,16 +338,17 @@ Validated S7.1 scope:
 - current /admin/today semantics unchanged.
 
 Known coverage note:
+
 - actual catalogue-seed concurrency with simultaneous override/activation remains not directly runtime-tested; helper atomicity and DB overlap constraints are covered.
 
 S7.1 is closed. S7.2 is now the active planning slice; no S7.2 implementation before Gate 1.
 
-
-## S7.2 Gate 1 — approved 2026-10-23
+## S7.2 Gate 1 - approved 2026-10-23
 
 Fred approved all 32 S7.2 notification/reminder decisions.
 
 Locked rules:
+
 1. Business condition remains owned by source modules/S7.1 derivation; notification never invents business state.
 2. Durable in-app notification is primary; email is optional secondary delivery.
 3. Persist notifications with recipient/kind/severity/resource/deep-link/dedupe/read/resolved timestamps.

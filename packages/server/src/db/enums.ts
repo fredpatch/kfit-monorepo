@@ -1,4 +1,5 @@
-export const userRoles = ["admin", "coach"] as const;
+/** ROLE-01 R1 (CHECK users_role_known). */
+export const userRoles = ["superadmin", "admin", "coach"] as const;
 export type UserRole = (typeof userRoles)[number];
 
 export const userStatuses = ["active", "locked", "archived"] as const;

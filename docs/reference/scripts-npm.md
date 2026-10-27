@@ -8,9 +8,9 @@ couvre: [DOC-01a]
 
 # Scripts npm
 
-> Fichier généré — ne pas modifier à la main (npm run docs:generate).
+> Fichier généré - ne pas modifier à la main (npm run docs:generate).
 
-100 scripts.
+104 scripts.
 
 ## `package.json`
 
@@ -54,6 +54,8 @@ Lancer depuis la racine : `npm run <script>`.
 | `ops:backup` | `npm run ops:backup --workspace @kfit/server --` |
 | `ops:restore` | `npm run ops:restore --workspace @kfit/server --` |
 | `ops:restore-drill` | `npm run ops:restore-drill --workspace @kfit/server --` |
+| `ops:create-user` | `npm run ops:create-user --workspace @kfit/server --` |
+| `ops:set-role` | `npm run ops:set-role --workspace @kfit/server --` |
 | `privacy:journal-sync` | `npm run privacy:journal-sync --workspace @kfit/server` |
 | `preflight:otp` | `npm run preflight:otp --workspace @kfit/server` |
 | `preflight:smtp` | `npm run preflight:smtp --workspace @kfit/server` |
@@ -111,6 +113,8 @@ Lancer depuis la racine : `npm run <script> --workspace @kfit/server`.
 | `ops:backup` | `node ./scripts/ops/run.mjs backup` |
 | `ops:restore` | `node ./scripts/ops/run.mjs restore` |
 | `ops:restore-drill` | `node ./scripts/ops/run.mjs restore-drill` |
+| `ops:create-user` | `node ./scripts/ops/run.mjs create-user` |
+| `ops:set-role` | `node ./scripts/ops/run.mjs set-role` |
 | `db:check` | `drizzle-kit check` |
 | `preflight:onboarding-uniqueness` | `node ./scripts/preflight/onboarding-uniqueness.mjs` |
 | `preflight:consents` | `node ./scripts/preflight/consents.mjs` |

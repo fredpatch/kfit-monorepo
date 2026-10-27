@@ -34,5 +34,5 @@ test("FIX-03 F3: --skip-build and the target override are refused outside NODE_E
   });
   const unknown = run(["drop-everything"], { NODE_ENV: "test" });
   assert.equal(unknown.status, 1);
-  assert.match(unknown.stderr, /usage: node scripts\/ops\/run\.mjs <backup\|restore\|restore-drill\|privacy-replay\|privacy-journal-sync>/);
+  assert.match(unknown.stderr, /usage: node scripts\/ops\/run\.mjs <backup\|restore\|restore-drill\|privacy-replay\|privacy-journal-sync\|create-user\|set-role>/);
 });

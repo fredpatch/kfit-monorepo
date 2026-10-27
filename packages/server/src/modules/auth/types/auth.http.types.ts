@@ -1,9 +1,10 @@
+import type { AuthRole } from "@kfit/shared";
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export type AuthenticatedSessionContext = {
   userId: string;
   sessionId: string;
-  role: "admin" | "coach";
+  role: AuthRole;
   freshOtpConsumedAt?: Date | null;
 };
 

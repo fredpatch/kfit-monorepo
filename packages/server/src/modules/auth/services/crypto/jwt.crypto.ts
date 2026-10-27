@@ -1,9 +1,10 @@
+import { isAuthRole, type AuthRole } from "@kfit/shared";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export type AccessTokenClaims = {
   sub: string;
   sid: string;
-  role: "admin" | "coach";
+  role: AuthRole;
   iat: number;
   exp: number;
 };
@@ -11,7 +12,7 @@ export type AccessTokenClaims = {
 export type SignAccessTokenInput = {
   userId: string;
   sessionId: string;
-  role: "admin" | "coach";
+  role: AuthRole;
   secret: string;
   ttlMs: number;
   now?: Date;
@@ -71,7 +72,7 @@ export function verifyAccessToken(token: string | undefined, secret: string, now
   if (!safeEqual(signature, expected)) return null;
 
   const claims = decodeJson<AccessTokenClaims>(payload);
-  if (!claims || !claims.sub || !claims.sid || (claims.role !== "admin" && claims.role !== "coach")) return null;
+  if (!claims || !claims.sub || !claims.sid || !isAuthRole(claims.role)) return null;
   if (!Number.isSafeInteger(claims.iat) || !Number.isSafeInteger(claims.exp)) return null;
   if (claims.exp * 1000 <= now.getTime()) return null;
 

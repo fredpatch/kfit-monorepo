@@ -14,7 +14,7 @@ const user: AuthUserRecord = {
 };
 
 function makeService(existingUsers = 0) {
-  const created: Array<{ email: string; passwordHash: string; role: "admin" | "coach" }> = [];
+  const created: Array<{ email: string; passwordHash: string; role: AuthUserRecord["role"] }> = [];
   const auditEvents: RecordAuditEventInput[] = [];
 
   const repository: BootstrapRepository = {

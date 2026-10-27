@@ -1,3 +1,4 @@
+import type { AuthRole } from "@kfit/shared";
 import type { AuthCookieMode } from "../middleware/auth.cookies.js";
 import { authCookieNames, authCookieOptions, csrfCookieOptions, DEVICE_COOKIE_MAX_AGE_SECONDS, generateCsrfToken } from "../middleware/auth.cookies.js";
 import { generateDeviceToken, parseDeviceToken } from "./crypto/device-token.crypto.js";
@@ -13,7 +14,7 @@ export type AuthUserRecord = {
   email: string;
   passwordHash: string;
   status: "active" | "locked" | "archived";
-  role: "admin" | "coach";
+  role: AuthRole;
 };
 
 export type AuthUserRepository = {
@@ -52,7 +53,7 @@ export type AuthCookie = {
 export type AuthenticatedPayload = {
   user: {
     id: string;
-    role: "admin" | "coach";
+    role: AuthRole;
   };
   session: {
     id: string;

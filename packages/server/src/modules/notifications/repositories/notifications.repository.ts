@@ -13,6 +13,7 @@ import type { db as appDb } from "../../../db/client.js";
 import { users } from "../../../db/schema/auth.js";
 import { notificationEmailOutbox, notifications, operationalSettings } from "../../../db/schema/notifications.js";
 import { AuditService } from "../../auth/services/audit.service.js";
+import { rolesWith } from "../../auth/services/roles.js";
 import {
   digestDedupeKey,
   digestDue,
@@ -52,6 +53,9 @@ export async function readSettings(db: Db | Tx): Promise<{ settings: Notificatio
   return { settings, updatedAt };
 }
 
+/** ROLE-01 R3: supervision alerts reach superadmins only; an admin's open supervision row resolves on the next reconcile. */
+const SUPERVISION_RECIPIENT_ROLES: readonly string[] = rolesWith("superadmin");
+
 export class DrizzleNotificationsRepository {
   constructor(private readonly db: Db, private readonly options: { auditHashPepper: string; appBaseUrl: string }) {}
 
@@ -60,9 +64,9 @@ export class DrizzleNotificationsRepository {
       userAgent: actor.userAgent, eventType, entityType: "notification", entityId, result: "success", metadata });
   }
 
-  /** Active internal recipients (Gate 1 § Recipients): admin users only, active, not archived. Customers never receive these e-mails. */
+  /** Active internal recipients (Gate 1 § Recipients): admin users only (ROLE-01 R2: superadmin included), active, not archived. Customers never receive these e-mails. */
   async recipients(tx: Db | Tx) {
-    return tx.select({ id: users.id, email: users.email }).from(users).where(and(eq(users.role, "admin"), eq(users.status, "active"), isNull(users.archivedAt)));
+    return tx.select({ id: users.id, email: users.email, role: users.role }).from(users).where(and(inArray(users.role, rolesWith("admin")), eq(users.status, "active"), isNull(users.archivedAt)));
   }
 
   /**
@@ -76,12 +80,13 @@ export class DrizzleNotificationsRepository {
       const result: ReconcileResult = { recipients: 0, opened: 0, refreshed: 0, resolved: 0, emailsQueued: 0 };
       const recipients = await this.recipients(tx);
       result.recipients = recipients.length;
-      const wanted = new Map(candidates.map((c) => [c.dedupeKey, c]));
       for (const recipient of recipients) {
+        const mine = SUPERVISION_RECIPIENT_ROLES.includes(recipient.role) ? candidates : candidates.filter((c) => c.kind !== "supervision_alert");
+        const wanted = new Set(mine.map((c) => c.dedupeKey));
         const open = await tx.select().from(notifications).where(and(eq(notifications.recipientUserId, recipient.id), isNull(notifications.resolvedAt))).for("update");
         const openByKey = new Map(open.map((row) => [row.dedupeKey, row]));
         const active: Row[] = [];
-        for (const candidate of candidates) {
+        for (const candidate of mine) {
           const existing = openByKey.get(candidate.dedupeKey);
           const fields = { title: candidate.title, summary: candidate.summary, customerDisplayName: candidate.customerDisplayName, deepLink: candidate.deepLink,
             severity: candidate.severity, occurredAt: candidate.occurredAt, lastDetectedAt: now, updatedAt: now };

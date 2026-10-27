@@ -1,4 +1,5 @@
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/auth.http.types.js";
 import type { ReceiptsService } from "../services/receipts.service.js";
 import type { ReceiptAction, ReceiptResult } from "../services/receipts.types.js";
@@ -13,7 +14,7 @@ export class ReceiptsController {
   }
   async execute(c: AuthHttpRequestContext, id: string, action: ReceiptAction, body: unknown): Promise<ReceiptControllerResult> {
     const publicAccess = action === "public-read" || action === "public-pdf";
-    if (!publicAccess) { const auth = requireAuthenticatedSession(c); if (!auth.ok) return auth.response; if (auth.session.role !== "admin") return { status: 403, body: { error: "RECEIPT_ADMIN_FORBIDDEN" } }; }
+    if (!publicAccess) { const auth = requireAuthenticatedSession(c); if (!auth.ok) return auth.response; if (!hasRole(auth.session, "admin")) return { status: 403, body: { error: "RECEIPT_ADMIN_FORBIDDEN" } }; }
     return this.map(await this.service.execute(id, action, body, { userId: publicAccess ? null : c.session?.userId ?? null, requestId: c.requestId, ipAddress: c.ipAddress ?? null, userAgent: c.userAgent ?? null }));
   }
 }

@@ -380,7 +380,7 @@ export class DrizzleBootstrapRepository implements BootstrapRepository {
     return rows.length;
   }
 
-  async createFirstUser(input: { email: string; passwordHash: string; role: "admin" | "coach" }): Promise<AuthUserRecord> {
+  async createFirstUser(input: { email: string; passwordHash: string; role: AuthUserRecord["role"] }): Promise<AuthUserRecord> {
     return this.database.transaction(async (tx) => {
       await tx.execute(sql`select pg_advisory_xact_lock(540118001)`);
 

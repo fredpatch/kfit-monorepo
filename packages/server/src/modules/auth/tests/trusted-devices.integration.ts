@@ -5,12 +5,13 @@ import { once } from "node:events";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { after, before, test } from "node:test";
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, eq, gte, inArray, or } from "drizzle-orm";
 import { authApiRoutes, businessDateKey } from "@kfit/shared";
 import { createServerApp } from "../../../app.js";
 import { db, pool } from "../../../db/client.js";
 import { auditEvents, authSessions, otpChallenges, trustedDevices, users } from "../../../db/schema/auth.js";
-import { securityEventCounters } from "../../../db/schema/operations.js";
+import { scheduledJobRuns, securityEventCounters } from "../../../db/schema/operations.js";
+import { userOpsMain } from "../../../ops/user-accounts.js";
 import { createSecurityEventCounter, drizzleSecurityCounterStore, rateLimitedCode, type SecurityEventCode } from "../../../security/security-event-counters.js";
 import { assertLocalTestDatabase, cleanupInOrder } from "../../../testing/integration-fixtures.js";
 import { AuthController } from "../controllers/auth.controller.js";
@@ -48,11 +49,12 @@ const FIREFOX_LINUX = "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 
 const passwords = new PasswordService();
 const userA = { id: randomUUID(), email: `sec02-a-${randomUUID()}@example.invalid` };
 const userB = { id: randomUUID(), email: `sec02-b-${randomUUID()}@example.invalid` };
-const userIds = [userA.id, userB.id];
+const userIds: string[] = [userA.id, userB.id];
 const requestIds: string[] = [];
 /** Request ids of the running test (reset by resetUser), so audit assertions never count rows of an earlier test. */
 let testRequestIds: string[] = [];
 let safe = false;
+const suiteStart = new Date();
 
 before(async () => {
   assertLocalTestDatabase(); safe = true;
@@ -64,7 +66,8 @@ after(async () => {
   try {
     if (safe) {
       await cleanupInOrder([
-        ["audit_events", () => db.delete(auditEvents).where(or(inArray(auditEvents.actorUserId, userIds), inArray(auditEvents.requestId, requestIds)))],
+        ["audit_events", () => db.delete(auditEvents).where(or(inArray(auditEvents.actorUserId, userIds), inArray(auditEvents.requestId, requestIds), inArray(auditEvents.entityId, userIds)))],
+        ["ops runs", () => db.delete(scheduledJobRuns).where(and(eq(scheduledJobRuns.jobKey, "ops.create_user"), gte(scheduledJobRuns.startedAt, suiteStart)))],
         ["auth_sessions", () => db.delete(authSessions).where(inArray(authSessions.userId, userIds))],
         ["otp_challenges", () => db.delete(otpChallenges).where(inArray(otpChallenges.userId, userIds))],
         ["trusted_devices", () => db.delete(trustedDevices).where(inArray(trustedDevices.userId, userIds))],
@@ -487,4 +490,28 @@ test("SEC-02 E7: no audit row holds the code, the device cookie value or the ful
   for (const cookie of browserCookies) assert.equal(dump.includes(cookie), false, "the device cookie reached the audit");
   assert.equal(dump.includes(CHROME_WINDOWS), false, "the full User-Agent reached the audit");
   assert.equal(dump.includes("Chrome/130"), false);
+});
+
+test("ROLE-01 R5: an account from ops:create-user refuses every password until « Mot de passe oublié » sets one; then login asks the device code as usual", async () => {
+  const email = `role01-recovery-${randomUUID()}@example.invalid`;
+  assert.equal(await userOpsMain("createUser", ["--email", email, "--role", "admin"], process.env), 0);
+  const [created] = await db.select({ id: users.id }).from(users).where(eq(users.email, email));
+  userIds.push(created!.id);
+  testRequestIds = [];
+  const { app, lastCode } = buildApp();
+  await serve(app, async (url) => {
+    const browser = new Browser(url);
+    assert.deepEqual(await browser.login(email), { status: 401, body: { error: "AUTH_INVALID_CREDENTIALS" } });
+
+    assert.equal((await browser.send("POST", authApiRoutes.requestPasswordRecovery, { email })).status, 202);
+    const verified = await browser.send("POST", authApiRoutes.verifyPasswordRecovery, { email, code: lastCode(email, "recovery") });
+    assert.equal(verified.status, 200);
+    assert.equal((await browser.send("POST", authApiRoutes.resetPassword, { resetToken: verified.body.resetToken, password })).status, 200);
+
+    const login = await browser.login(email);
+    assert.equal(login.status, 202, "unknown device: the e-mailed code, as for every account");
+    const signedIn = await browser.verify(login.body.challengeId, lastCode(email), true);
+    assert.equal(signedIn.status, 200);
+    assert.equal((signedIn.body.user as Json).role, "admin");
+  });
 });

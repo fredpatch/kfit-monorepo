@@ -1,5 +1,6 @@
 import type { ConsentCommand, ConsentDefinitionCommand, ConsentDefinitionService, ConsentService } from "../services/consent.service.js";
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import { isFreshOtp } from "../../auth/services/policies/session.policy.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/auth.http.types.js";
 import type { FreshOtpCheck } from "../../questionnaires/controllers/questionnaire.controller.js";
@@ -17,7 +18,7 @@ export class ConsentController {
   async definitions(context: AuthHttpRequestContext, action: ConsentDefinitionCommand["action"], body: unknown, definitionId?: string): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (auth.session.role !== "admin" || !this.definitionService) return { status: 403, body: { error: "CONSENT_ADMIN_FORBIDDEN" } };
+    if (!hasRole(auth.session, "admin") || !this.definitionService) return { status: 403, body: { error: "CONSENT_ADMIN_FORBIDDEN" } };
     if (action === "definition_publish") {
       const consumedAt = this.freshOtp ? await this.freshOtp.lastConsumedAt(auth.session.userId, auth.session.sessionId) : null;
       if (!this.freshOtp || !isFreshOtp(consumedAt, this.freshOtp.now?.() ?? new Date(), this.freshOtp.windowMs)) return { status: 403, body: { error: "AUTH_FRESH_OTP_REQUIRED" } };
@@ -28,7 +29,7 @@ export class ConsentController {
   async execute(context: AuthHttpRequestContext, subscriptionId: string, action: ConsentCommand["action"], body: unknown, selector?: string): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (auth.session.role !== "admin") return { status: 403, body: { error: "CONSENT_ADMIN_FORBIDDEN" } };
+    if (!hasRole(auth.session, "admin")) return { status: 403, body: { error: "CONSENT_ADMIN_FORBIDDEN" } };
     return response(await this.service.execute(subscriptionId, action, body, selector, { userId: auth.session.userId, requestId: context.requestId,
       ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null }));
   }

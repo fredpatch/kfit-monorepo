@@ -1,5 +1,5 @@
 /*
- * OPS-01 « Supervision » (Gate 1 approved 2026-10-27): admin-only operational health. Counts, dates and codes only:
+ * OPS-01 « Supervision » (Gate 1 approved 2026-10-27): superadmin-only operational health (ROLE-01 R2). Counts, dates and codes only:
  * never an IP, an e-mail, a customer name, a file name or a journal subject id.
  */
 
@@ -12,7 +12,7 @@ export const supervisionApiRoutes = {
 } as const;
 
 export const supervisionErrorCodes = [
-  "SUPERVISION_ADMIN_FORBIDDEN",
+  "SUPERVISION_SUPERADMIN_FORBIDDEN",
   "SUPERVISION_INVALID_INPUT",
   "SUPERVISION_JOB_NOT_RUNNABLE",
   "SUPERVISION_JOB_BUSY",

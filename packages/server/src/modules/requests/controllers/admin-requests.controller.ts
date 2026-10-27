@@ -13,6 +13,7 @@ import {
   type WithdrawWaitlistEntryResponse,
 } from "@kfit/shared";
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js";
 import type { AdminRequestsService } from "../services/admin-requests.service.js";
 import type { HttpJsonResponse } from "../types/requests.http.types.js";
@@ -22,7 +23,7 @@ type ErrorBody = { error: string; reason?: string };
 function requireAdminSession(context: AuthHttpRequestContext): HttpJsonResponse<ErrorBody> | null {
   const auth = requireAuthenticatedSession(context);
   if (!auth.ok) return auth.response;
-  if (auth.session.role !== "admin") {
+  if (!hasRole(auth.session, "admin")) {
     return { status: 403, body: { error: "REQUEST_ADMIN_FORBIDDEN" } };
   }
   return null;

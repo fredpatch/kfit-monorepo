@@ -4,7 +4,7 @@ import { NavLink, Outlet, useNavigate } from "react-router";
 import { cn } from "../../lib/utils.js";
 import { useAuth } from "../../auth/state/auth-context.js";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu.js";
-import { adminNav, allNavItems, type NavItem } from "./nav-config.js";
+import { navFor, type NavGroup, type NavItem } from "./nav-config.js";
 import { useNavBadges } from "./use-nav-badges.js";
 import { UserMenu } from "./UserMenu.js";
 import { NotificationCenter } from "../../notifications/components/NotificationCenter.js";
@@ -32,12 +32,12 @@ function CountBadge({ value, hot }: { value: number | null; hot: boolean }) {
   );
 }
 
-function Sidebar({ badges }: { badges: ReturnType<typeof useNavBadges> }) {
+function Sidebar({ badges, nav }: { badges: ReturnType<typeof useNavBadges>; nav: NavGroup[] }) {
   return (
     <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col gap-6 overflow-y-auto bg-sidebar px-3.5 py-5 md:flex">
       <Brand />
       <nav aria-label="Navigation principale" className="flex flex-col gap-4">
-        {adminNav.map((group) => (
+        {nav.map((group) => (
           <div key={group.title ?? "root"} className="flex flex-col gap-0.5">
             {group.title ? <span className="px-2.5 pb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-sidebar-muted">{group.title}</span> : null}
             {group.items.map((item) => (
@@ -83,11 +83,12 @@ function MobileTab({ item, badge }: { item: NavItem; badge: number | null }) {
 }
 
 /** Phone navigation (board 04b): primary screens as tabs, the rest under « Plus ». */
-function MobileNav({ badges }: { badges: ReturnType<typeof useNavBadges> }) {
+function MobileNav({ badges, nav }: { badges: ReturnType<typeof useNavBadges>; nav: NavGroup[] }) {
   const navigate = useNavigate();
   const auth = useAuth();
-  const primary = allNavItems.filter((item) => item.mobile);
-  const more = allNavItems.filter((item) => !item.mobile);
+  const items = nav.flatMap((group) => group.items);
+  const primary = items.filter((item) => item.mobile);
+  const more = items.filter((item) => !item.mobile);
 
   return (
     <nav aria-label="Navigation principale" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-card px-1 pb-[max(env(safe-area-inset-bottom),8px)] pt-1.5 md:hidden">
@@ -117,10 +118,11 @@ function MobileNav({ badges }: { badges: ReturnType<typeof useNavBadges> }) {
 /** Admin frame (board 02): dark sidebar on desktop, top bar with account menu, bottom tabs on phones. */
 export function AdminLayout() {
   const badges = useNavBadges();
+  const nav = navFor(useAuth().session?.user ?? null);
 
   return (
     <div className="flex min-h-dvh bg-background">
-      <Sidebar badges={badges} />
+      <Sidebar badges={badges} nav={nav} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-card/95 px-4 backdrop-blur sm:px-8">
           <span className="flex items-center gap-2 md:hidden">
@@ -139,7 +141,7 @@ export function AdminLayout() {
           </Suspense>
         </main>
       </div>
-      <MobileNav badges={badges} />
+      <MobileNav badges={badges} nav={nav} />
     </div>
   );
 }

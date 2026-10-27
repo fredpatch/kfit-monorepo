@@ -1,5 +1,6 @@
 import type { OnboardingErrorCode, OnboardingResponse } from "@kfit/shared";
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/auth.http.types.js";
 import type { OnboardingCommand, OnboardingFailure, OnboardingService } from "../services/onboarding.service.js";
 
@@ -14,7 +15,7 @@ export class OnboardingController {
   async execute(context: AuthHttpRequestContext, subscriptionId: string, action: OnboardingCommand["action"], body: unknown, itemId?: string): Promise<HttpJsonResponse<OnboardingResponse | { error: string }>> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (auth.session.role !== "admin") return { status: 403, body: { error: "ONBOARDING_ADMIN_FORBIDDEN" } };
+    if (!hasRole(auth.session, "admin")) return { status: 403, body: { error: "ONBOARDING_ADMIN_FORBIDDEN" } };
     const result = await this.service.execute(subscriptionId, action, body, itemId, {
       userId: auth.session.userId, requestId: context.requestId, ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null,
     });

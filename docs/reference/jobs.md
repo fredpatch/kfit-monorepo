@@ -2,8 +2,8 @@
 titre: Jobs planifiés et scripts d'exploitation
 public: exploitation, développeur
 statut: à jour
-vérifié-sur: bb2e993
-couvre: [S7.2, S7.3, S7.4a, S7.4b, OPS-01a]
+vérifié-sur: 0a1c210
+couvre: [S7.2, S7.3, S7.4a, S7.4b, OPS-01a, ROLE-01]
 ---
 
 # Jobs planifiés et scripts d'exploitation
@@ -42,19 +42,21 @@ Lancés à la main ou par un timer de l'hôte (Sprint 9), jamais par l'API ni de
 | `ops.backup` | `npm run ops:backup` | nom de la sauvegarde (`kfit-backup-<UTC>`) | base source (`DATABASE_URL`), insérée après l'instantané : la sauvegarde ne contient pas sa propre ligne |
 | `ops.restore` | `npm run ops:restore -- …` | nom du dossier de la sauvegarde | base restaurée une fois `pg_restore` terminé ; sinon base source |
 | `ops.restore_drill` | `npm run ops:restore-drill` | `<sauvegarde>:<identifiant du contrôle>` | base source |
+| `ops.create_user` | `npm run ops:create-user -- --email <e> --role admin\|coach [--label <prénom>]` | identifiant aléatoire (UUID) | `DATABASE_URL` ; `result_json` = `{ created: 1 }` |
+| `ops.set_role` | `npm run ops:set-role -- --email <e> --role admin\|coach` | identifiant aléatoire (UUID) | `DATABASE_URL` ; `result_json` = `{ changed: 0 \| 1 }` |
 
-Statuts : `running` (sauvegarde et contrôle seulement), puis `succeeded` ou `failed`. Une nouvelle exécution sur la même clé incrémente `attempt`. `result_json` ne contient que des nombres, des durées et des noms ; `error_code` est un des codes [ops](codes-erreur.md). Détails : [sauvegarde et restauration](../runbooks/sauvegarde-restauration.md).
+Statuts : `running` (sauvegarde et contrôle seulement), puis `succeeded` ou `failed`. Les scripts de comptes (ROLE-01) n'affichent qu'une phrase et n'écrivent jamais l'e-mail : procédure dans [premier compte administrateur § 3](../runbooks/premier-compte-administrateur.md#3-créer-le-compte-de-la-coach-role-01). Une nouvelle exécution sur la même clé incrémente `attempt`. `result_json` ne contient que des nombres, des durées et des noms ; `error_code` est un des codes [ops](codes-erreur.md). Détails : [sauvegarde et restauration](../runbooks/sauvegarde-restauration.md).
 
 Le script `privacy:replay` (rejouer les anonymisations après une restauration, base locale du port 5433 uniquement) et `privacy:journal-sync` (compléter le journal depuis la base) n'écrivent pas de ligne `scheduled_job_runs`. `privacy:replay` écrit un événement d'audit `privacy.replay_run`.
 
 ## Supervision (OPS-01)
 
-Sources : `packages/server/src/modules/supervision/*`, `packages/shared/src/supervision/contracts.ts`. L'API est en place (OPS-01a) ; la page « Supervision » de l'interface arrive avec OPS-01b. Toutes les routes exigent une session administrateur (un coach reçoit `403 SUPERVISION_ADMIN_FORBIDDEN`). Les réponses ne contiennent que des nombres, des dates et des codes : jamais d'adresse IP, d'e-mail, de nom de cliente, de nom de fichier ou d'identifiant de personne du journal.
+Sources : `packages/server/src/modules/supervision/*`, `packages/shared/src/supervision/contracts.ts`. L'API est en place (OPS-01a) ; la page « Supervision » de l'interface arrive avec OPS-01b. Toutes les routes exigent une session super-administrateur (ROLE-01 : un administrateur ou un coach reçoit `403 SUPERVISION_SUPERADMIN_FORBIDDEN`). Les réponses ne contiennent que des nombres, des dates et des codes : jamais d'adresse IP, d'e-mail, de nom de cliente, de nom de fichier ou d'identifiant de personne du journal.
 
 | Route | Rôle |
 | --- | --- |
 | `GET /admin/supervision/overview` | Alertes en cours, état de chaque job, dernière sauvegarde, dernier contrôle de restauration, confidentialité, version de Node et contrôles de production. |
-| `GET /admin/supervision/status` | `{ level: ok \| warning \| critical, alertCount }`, à partir des notifications de supervision ouvertes de l'administrateur (pastille du menu). |
+| `GET /admin/supervision/status` | `{ level: ok \| warning \| critical, alertCount }`, à partir des notifications de supervision ouvertes du super-administrateur (pastille du menu). |
 | `GET /admin/supervision/security?days=7\|30` | Une ligne par jour de Libreville, à zéro quand rien ne s'est passé : connexions refusées, codes faux ou bloqués, initialisations refusées, refus par limite de débit (par portée), corps compressés refusés, liens publics invalides ou expirés. |
 | `POST /admin/supervision/jobs/<job_key>/run` | Lance tout de suite `notifications.reconcile` ou `notifications.email-delivery` (autres jobs : `400 SUPERVISION_JOB_NOT_RUNNABLE`). |
 | `POST /admin/supervision/jobs/privacy.purge/simulate` | Compte ce que la suppression des fichiers ferait maintenant, sans rien supprimer. |
@@ -83,4 +85,4 @@ Sources : `packages/server/src/modules/supervision/*`, `packages/shared/src/supe
 | `JOB_LATE` | avertissement | Un job est en retard. |
 | `JOB_NEVER_RUN` | avertissement | Un job ne s'est jamais exécuté (production seulement). |
 
-**Notifications et e-mails.** `notifications.reconcile` calcule ces alertes à chaque passage. Chaque alerte ouvre une notification « Alerte de supervision » pour chaque administrateur actif (jamais un coach), avec un lien vers `/admin/supervision`, et la ferme quand la condition disparaît. La colonne `severity` ne connaît que `warning` et `info` : une alerte critique est enregistrée `warning`, la gravité exacte reste dans l'API. E-mail : réglage « Alertes de supervision » (`notifications.supervision_alert.email_enabled`), activé par défaut. Au plus un e-mail par alerte, par administrateur et par jour de Libreville (clé d'envoi `supervision:<administrateur>:<alerte>:<AAAA-MM-JJ>`) : une alerte qui disparaît puis revient le même jour n'est pas renvoyée, une alerte qui dure est rappelée une fois par jour.
+**Notifications et e-mails.** `notifications.reconcile` calcule ces alertes à chaque passage. Chaque alerte ouvre une notification « Alerte de supervision » pour chaque super-administrateur actif (jamais un administrateur ni un coach ; une alerte ouverte pour un administrateur avant ROLE-01 est fermée au passage suivant), avec un lien vers `/admin/supervision`, et la ferme quand la condition disparaît. La colonne `severity` ne connaît que `warning` et `info` : une alerte critique est enregistrée `warning`, la gravité exacte reste dans l'API. E-mail : réglage « Alertes de supervision » (`notifications.supervision_alert.email_enabled`), activé par défaut. Au plus un e-mail par alerte, par super-administrateur et par jour de Libreville (clé d'envoi `supervision:<destinataire>:<alerte>:<AAAA-MM-JJ>`) : une alerte qui disparaît puis revient le même jour n'est pas renvoyée, une alerte qui dure est rappelée une fois par jour.

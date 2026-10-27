@@ -10,7 +10,7 @@ import type { SecurityEventCode } from "../../../security/security-event-counter
 import { AuthController } from "../controllers/auth.controller.js";
 import type { RecordAuditEventInput } from "../services/audit.service.js";
 import { BOOTSTRAP_ATTEMPTS_PER_IP, bootstrapTokenPolicy, createBootstrapRateLimiter } from "../services/bootstrap-access.js";
-import { BootstrapService, type BootstrapRepository } from "../services/bootstrap.service.js";
+import { BOOTSTRAP_ROLE, BootstrapService, type BootstrapRepository } from "../services/bootstrap.service.js";
 import { PasswordService } from "../services/password.service.js";
 
 const token = "synthetic-bootstrap-token-0123456789abcdef";
@@ -29,7 +29,7 @@ async function withBootstrapApp(mode: "development" | "production", env: NodeJS.
   };
   const recordSecurityEvent = (code: SecurityEventCode) => { state.counted.push(code); };
   const bootstrapService = new BootstrapService(repository, passwords, { record: async (event) => { state.audit.push(event); } }, {
-    defaultRole: "admin",
+    defaultRole: BOOTSTRAP_ROLE,
     tokenPolicy: bootstrapTokenPolicy(mode, env),
     allowAttempt: createBootstrapRateLimiter(() => recordSecurityEvent("RATE_LIMITED:auth_bootstrap")),
   });
@@ -76,6 +76,7 @@ test("BOOT-01 B1/B2: a wrong token is refused and audited without its value; the
     const created = await send({ [bootstrapTokenHeaderName]: token });
     assert.equal(created.status, 201);
     assert.equal((created.body as { user: { email: string; role: string } }).user.email, "admin@example.invalid");
+    assert.equal((created.body as { user: { role: string } }).user.role, "superadmin", "ROLE-01 R4: production bootstrap creates the superadmin");
     assert.deepEqual(await send({ [bootstrapTokenHeaderName]: token }), { status: 409, body: { error: "BOOTSTRAP_ALREADY_COMPLETED" } });
   });
 });
@@ -100,7 +101,9 @@ test("BOOT-01 B2: more than 5 attempts per address in 15 minutes answer 429 and 
 
 test("BOOT-01 B1: development is unchanged (no token needed)", async () => {
   await withBootstrapApp("development", {}, async (send, state) => {
-    assert.equal((await send()).status, 201);
+    const created = await send();
+    assert.equal(created.status, 201);
+    assert.equal((created.body as { user: { role: string } }).user.role, "superadmin", "ROLE-01 R4: development bootstrap creates the superadmin");
     assert.equal(state.users, 1);
   });
 });

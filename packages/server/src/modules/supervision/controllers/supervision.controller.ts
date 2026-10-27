@@ -1,19 +1,20 @@
 import { supervisionSecurityPeriods, type SupervisionErrorCode } from "@kfit/shared";
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/auth.http.types.js";
 import type { SupervisionService } from "../services/supervision.service.js";
 
 export type SupervisionAction = "overview" | "status" | "security" | "run_job" | "simulate_purge";
 const fail = (status: number, error: SupervisionErrorCode): HttpJsonResponse => ({ status, body: { error } });
 
-/** O1: admin only; a user only reads operational counts, never customer data. */
+/** O1 / ROLE-01 R2: superadmin only; a user only reads operational counts, never customer data. */
 export class SupervisionController {
   constructor(private readonly service: Pick<SupervisionService, "overview" | "status" | "security" | "runJob" | "simulatePurge">) {}
 
   async handle(context: AuthHttpRequestContext, action: SupervisionAction, input: { jobKey?: string | undefined; query?: Record<string, unknown> }): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (auth.session.role !== "admin") return fail(403, "SUPERVISION_ADMIN_FORBIDDEN");
+    if (!hasRole(auth.session, "superadmin")) return fail(403, "SUPERVISION_SUPERADMIN_FORBIDDEN");
     const actor = { userId: auth.session.userId, requestId: context.requestId, ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null };
     switch (action) {
       case "overview":

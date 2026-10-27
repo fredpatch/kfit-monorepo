@@ -13,6 +13,8 @@ const TARGETS = {
   "restore-drill": "./restore-drill.mjs",
   "privacy-replay": "../privacy/replay.mjs",
   "privacy-journal-sync": "../privacy/journal-sync.mjs",
+  "create-user": "./create-user.mjs",
+  "set-role": "./set-role.mjs",
 };
 
 const [job, ...rest] = process.argv.slice(2);

@@ -1,5 +1,6 @@
 import type { RequestConversionResponse, RequestErrorResponse } from "@kfit/shared";
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/auth.http.types.js";
 import type { RequestConversionService } from "../services/request-conversion.service.js";
 
@@ -9,7 +10,7 @@ export class RequestConversionController {
   async convert(context: AuthHttpRequestContext, requestId: string, body: unknown): Promise<HttpJsonResponse<RequestConversionResponse | RequestErrorResponse>> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (auth.session.role !== "admin") return { status: 403, body: { error: "REQUEST_ADMIN_FORBIDDEN" } };
+    if (!hasRole(auth.session, "admin")) return { status: 403, body: { error: "REQUEST_ADMIN_FORBIDDEN" } };
     const result = await this.service.convert(requestId, body, {
       userId: auth.session.userId, requestId: context.requestId,
       ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null,

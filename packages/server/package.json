@@ -30,6 +30,8 @@
     "ops:backup": "node ./scripts/ops/run.mjs backup",
     "ops:restore": "node ./scripts/ops/run.mjs restore",
     "ops:restore-drill": "node ./scripts/ops/run.mjs restore-drill",
+    "ops:create-user": "node ./scripts/ops/run.mjs create-user",
+    "ops:set-role": "node ./scripts/ops/run.mjs set-role",
     "db:check": "drizzle-kit check",
     "preflight:onboarding-uniqueness": "node ./scripts/preflight/onboarding-uniqueness.mjs",
     "preflight:consents": "node ./scripts/preflight/consents.mjs",

@@ -1,11 +1,14 @@
 import { eq, or, sql } from "drizzle-orm";
-import { developmentDemoAccount } from "@kfit/shared";
+import { developmentDemoAccount, rolesWith } from "@kfit/shared";
 import type { db as appDb } from "../db/client.js";
 import { users } from "../db/schema/auth.js";
 import { AuditService } from "../modules/auth/services/audit.service.js";
 import { PasswordService } from "../modules/auth/services/password.service.js";
 
 export class DemoAdminSetupError extends Error {}
+
+/** ROLE-01 R4: the migration may promote the demo account (oldest active user) to superadmin; it stays the demo account. */
+const DEMO_ACCOUNT_ROLES: readonly string[] = rolesWith("admin");
 
 export function assertLocalDemoEnvironment(environment: { NODE_ENV?: string | undefined; DATABASE_URL?: string | undefined }): void {
   if (environment.NODE_ENV !== "development") throw new DemoAdminSetupError("Demo setup requires NODE_ENV=development.");
@@ -27,7 +30,7 @@ export async function provisionDemoAdmin(database: typeof appDb, options: { audi
     if (existing.length > 0) {
       const account = existing[0];
       if (existing.length !== 1 || !account || account.id !== developmentDemoAccount.id
-        || account.email !== developmentDemoAccount.email || account.role !== "admin"
+        || account.email !== developmentDemoAccount.email || !DEMO_ACCOUNT_ROLES.includes(account.role)
         || account.status !== "active" || account.archivedAt !== null
         || !await passwords.verify(developmentDemoAccount.password, account.passwordHash)) {
         throw new DemoAdminSetupError("Demo identity is already occupied or modified. Existing users were preserved.");

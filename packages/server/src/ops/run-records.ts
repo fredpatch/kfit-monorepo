@@ -3,7 +3,9 @@ import type { OpsError, OpsErrorCode } from "./ops-errors.js";
 
 /** S7.4 D12 / S7.4b B8: every ops run leaves one scheduled_job_runs row (job_key, run_key unique). */
 export const OPS_JOB_KEYS = { backup: "ops.backup", restore: "ops.restore", drill: "ops.restore_drill" } as const;
-export type OpsJobKey = (typeof OPS_JOB_KEYS)[keyof typeof OPS_JOB_KEYS];
+/** ROLE-01 R5: staff account scripts (counts only). */
+export const USER_OPS_JOB_KEYS = { createUser: "ops.create_user", setRole: "ops.set_role" } as const;
+export type OpsJobKey = (typeof OPS_JOB_KEYS)[keyof typeof OPS_JOB_KEYS] | (typeof USER_OPS_JOB_KEYS)[keyof typeof USER_OPS_JOB_KEYS];
 /** Counts, sizes, durations and the bundle name only: no path, host or key material. */
 export type OpsRunResult = Record<string, number | string>;
 /** What a script prints and its exit code: 0 only when the run succeeded and its row was written (B8). */

@@ -42,6 +42,8 @@
     "ops:backup": "npm run ops:backup --workspace @kfit/server --",
     "ops:restore": "npm run ops:restore --workspace @kfit/server --",
     "ops:restore-drill": "npm run ops:restore-drill --workspace @kfit/server --",
+    "ops:create-user": "npm run ops:create-user --workspace @kfit/server --",
+    "ops:set-role": "npm run ops:set-role --workspace @kfit/server --",
     "privacy:journal-sync": "npm run privacy:journal-sync --workspace @kfit/server",
     "preflight:otp": "npm run preflight:otp --workspace @kfit/server",
     "preflight:smtp": "npm run preflight:smtp --workspace @kfit/server",

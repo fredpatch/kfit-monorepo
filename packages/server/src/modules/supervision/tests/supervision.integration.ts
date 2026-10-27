@@ -30,9 +30,11 @@ import { SupervisionService } from "../services/supervision.service.js";
 
 const pepper = "synthetic-ops01-pepper-0123456789abcdef";
 const testStart = new Date();
-const admins = [{ id: randomUUID(), email: `ops01-admin-a-${randomUUID()}@example.invalid` }, { id: randomUUID(), email: `ops01-admin-b-${randomUUID()}@example.invalid` }];
+const superadmins = [{ id: randomUUID(), email: `ops01-superadmin-a-${randomUUID()}@example.invalid` }, { id: randomUUID(), email: `ops01-superadmin-b-${randomUUID()}@example.invalid` }];
+/** ROLE-01 R2/R3: an admin (the coach in V1) is refused Supervision and never receives its alerts. */
+const admin = { id: randomUUID(), email: `ops01-admin-${randomUUID()}@example.invalid` };
 const coach = { id: randomUUID(), email: `ops01-coach-${randomUUID()}@example.invalid` };
-const allUsers = [...admins, coach];
+const allUsers = [...superadmins, admin, coach];
 const seededRunIds: string[] = [], auditIds: string[] = [], accessIds: string[] = [], documentIds: string[] = [], holdIds: string[] = [];
 const TEST_COUNTER = "RATE_LIMITED:ops01_test_scope" as SecurityEventCode;
 let journalDir = "", storageDir = "", safe = false;
@@ -40,7 +42,7 @@ const unused = async (): Promise<never> => { throw new Error("unused in this tes
 
 before(async () => {
   assertLocalTestDatabase(); safe = true;
-  await db.insert(users).values([...admins.map((u) => ({ ...u, role: "admin" })), { ...coach, role: "coach" }].map((u) => ({ ...u, passwordHash: "unused", status: "active" })));
+  await db.insert(users).values([...superadmins.map((u) => ({ ...u, role: "superadmin" })), { ...admin, role: "admin" }, { ...coach, role: "coach" }].map((u) => ({ ...u, passwordHash: "unused", status: "active" })));
   journalDir = await mkdtemp(path.join(os.tmpdir(), "kfit-ops01-journal-"));
   storageDir = await mkdtemp(path.join(os.tmpdir(), "kfit-ops01-storage-"));
 });
@@ -82,7 +84,8 @@ function buildService(mode: "development" | "production", runners: Record<string
 
 async function serve(service: SupervisionService, run: (call: (method: string, route: string, as?: string) => Promise<{ status: number; body: unknown; text: string }>) => Promise<void>) {
   const sessions = new Map<string, AuthenticatedSessionContext>([
-    ...admins.map((u) => [u.id, { userId: u.id, sessionId: randomUUID(), role: "admin" as const }] as const),
+    ...superadmins.map((u) => [u.id, { userId: u.id, sessionId: randomUUID(), role: "superadmin" as const }] as const),
+    [admin.id, { userId: admin.id, sessionId: randomUUID(), role: "admin" as const }],
     [coach.id, { userId: coach.id, sessionId: randomUUID(), role: "coach" as const }],
   ]);
   const app = createServerApp({
@@ -94,7 +97,7 @@ async function serve(service: SupervisionService, run: (call: (method: string, r
   server.listen(0, "127.0.0.1"); await once(server, "listening");
   const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   try {
-    await run(async (method, route, as = admins[0]!.id) => {
+    await run(async (method, route, as = superadmins[0]!.id) => {
       const response = await fetch(url + route, { method, headers: { "x-test-user": as, cookie: "kfit_csrf=ops01", "x-csrf-token": "ops01", "content-type": "application/json" }, ...(method === "POST" ? { body: "{}" } : {}) });
       const text = await response.text();
       return { status: response.status, body: JSON.parse(text) as unknown, text };
@@ -173,18 +176,19 @@ test("OPS-01 O2: security series are zero-filled for 7 and 30 Libreville days an
   });
 });
 
-test("OPS-01 O1: a coach gets 403 and an anonymous caller 401 on every route; POST needs CSRF and same origin", async () => {
+test("OPS-01 O1 / ROLE-01 R2: a superadmin gets 200, an admin or a coach 403 SUPERVISION_SUPERADMIN_FORBIDDEN, an anonymous caller 401 on every route; POST needs CSRF and same origin", async () => {
   await serve(buildService("development"), async (call) => {
     const routes: Array<[string, string]> = [
       ["GET", supervisionApiRoutes.overview], ["GET", supervisionApiRoutes.status], ["GET", `${supervisionApiRoutes.security}?days=7`],
       ["POST", supervisionApiRoutes.runJob.replace(":jobKey", "notifications.reconcile")], ["POST", supervisionApiRoutes.simulatePurge],
     ];
+    for (const route of [supervisionApiRoutes.overview, supervisionApiRoutes.status]) assert.equal((await call("GET", route)).status, 200, route);
     for (const [method, route] of routes) {
-      assert.deepEqual(await call(method, route, coach.id).then((r) => [r.status, r.body]), [403, { error: "SUPERVISION_ADMIN_FORBIDDEN" }], route);
+      for (const refused of [admin.id, coach.id]) assert.deepEqual(await call(method, route, refused).then((r) => [r.status, r.body]), [403, { error: "SUPERVISION_SUPERADMIN_FORBIDDEN" }], route);
       assert.equal((await call(method, route, "nobody")).status, 401, route);
     }
   });
-  const app = createServerApp({ authController: new AuthController({ otpChallengeService: { issue: unused, verify: unused } }), resolveAuthSession: () => ({ userId: admins[0]!.id, sessionId: randomUUID(), role: "admin" }), supervisionController: new SupervisionController(buildService("development")) });
+  const app = createServerApp({ authController: new AuthController({ otpChallengeService: { issue: unused, verify: unused } }), resolveAuthSession: () => ({ userId: superadmins[0]!.id, sessionId: randomUUID(), role: "superadmin" }), supervisionController: new SupervisionController(buildService("development")) });
   const server = createServer(app);
   server.listen(0, "127.0.0.1"); await once(server, "listening");
   try {
@@ -205,7 +209,7 @@ test("OPS-01 O4: a manual run writes one manual:* row and an audit row; a second
     assert.deepEqual({ ...(first.body as Record<string, unknown>), durationMs: 0 }, { jobKey: "notifications.email-delivery", outcome: "succeeded", durationMs: 0, result: { claimed: 0 }, errorCode: null });
     const rows = await db.select().from(scheduledJobRuns).where(and(eq(scheduledJobRuns.jobKey, "notifications.email-delivery"), like(scheduledJobRuns.runKey, "manual:%"), gte(scheduledJobRuns.startedAt, testStart)));
     assert.deepEqual(rows.map((r) => r.status), ["succeeded"]);
-    const audit = await db.select().from(auditEvents).where(and(eq(auditEvents.actorUserId, admins[0]!.id), eq(auditEvents.eventType, "ops.job.manual_run")));
+    const audit = await db.select().from(auditEvents).where(and(eq(auditEvents.actorUserId, superadmins[0]!.id), eq(auditEvents.eventType, "ops.job.manual_run")));
     assert.equal(audit.length, 1);
     assert.deepEqual([(audit[0]!.metadataJson as Record<string, unknown>).jobKey, (audit[0]!.metadataJson as Record<string, unknown>).outcome], ["notifications.email-delivery", "succeeded"]);
 
@@ -263,14 +267,14 @@ test("OPS-01 O4: simulating the purge counts the eligible documents and changes 
     }, { subjectsDue: 2, filesDue: 3, bytesDue: 300, heldBack: 1 });
     assert.deepEqual(await countRows(), beforeCounts, "nothing deleted, no run row, storage untouched");
     assert.equal(beforeCounts.files.split(",").length, keys.length);
-    const audit = await db.select().from(auditEvents).where(and(eq(auditEvents.actorUserId, admins[0]!.id), eq(auditEvents.eventType, "ops.purge.simulated")));
+    const audit = await db.select().from(auditEvents).where(and(eq(auditEvents.actorUserId, superadmins[0]!.id), eq(auditEvents.eventType, "ops.purge.simulated")));
     assert.equal(audit.length, 2);
     assertNoPersonalData(simulated.text);
     assert.equal(simulated.text.includes("synthetic.pdf"), false, "no file name");
   });
 });
 
-test("OPS-01 O9: reconcile opens supervision_alert for every active admin only, dedupes, e-mails once per day, resolves when cleared; status levels", async () => {
+test("OPS-01 O9 / ROLE-01 R3: reconcile opens supervision_alert for every active superadmin only, resolves an admin's stale row, dedupes, e-mails once per day, resolves when cleared; status levels", async () => {
   await seedRun("ops.backup", "succeeded", 40, { bundleBytes: 1 });
   const service = buildService("development");
   const repository = new DrizzleNotificationsRepository(db, { auditHashPepper: pepper, appBaseUrl: "http://localhost:5173" });
@@ -280,19 +284,25 @@ test("OPS-01 O9: reconcile opens supervision_alert for every active admin only, 
     .where(and(eq(notifications.recipientUserId, userId), eq(notifications.kind, "supervision_alert"), eq(notifications.dedupeKey, staleKey), sql`${notifications.resolvedAt} is null`));
   const mailsFor = async (userId: string) => db.select().from(notificationEmailOutbox).where(and(eq(notificationEmailOutbox.recipientUserId, userId), like(notificationEmailOutbox.dedupeKey, `supervision:%:${staleKey}:%`)));
 
+  // A row opened for an admin before ROLE-01: the next reconcile resolves it.
+  await db.insert(notifications).values({ recipientUserId: admin.id, kind: "supervision_alert", resourceType: "supervision", resourceId: randomUUID(), dedupeKey: staleKey,
+    title: "Alerte de supervision", summary: "synthetic", deepLink: "/admin/supervision", severity: "warning", occurredAt: testStart, firstDetectedAt: testStart, lastDetectedAt: testStart });
   await jobs.reconcile();
-  for (const admin of admins) {
-    const rows = await openFor(admin.id);
-    assert.equal(rows.length, 1, "one open alert per admin");
+  assert.equal((await openFor(admin.id)).length, 0, "an admin's open supervision row is resolved");
+  assert.equal((await db.select().from(notifications).where(and(eq(notifications.recipientUserId, admin.id), eq(notifications.kind, "supervision_alert")))).length, 1, "never a new row for an admin");
+  assert.equal((await mailsFor(admin.id)).length, 0, "never an e-mail to an admin");
+  for (const superadmin of superadmins) {
+    const rows = await openFor(superadmin.id);
+    assert.equal(rows.length, 1, "one open alert per superadmin");
     assert.deepEqual([rows[0]!.severity, rows[0]!.resourceType, rows[0]!.deepLink, rows[0]!.customerId], ["warning", "supervision", "/admin/supervision", null]);
-    assert.equal((await mailsFor(admin.id)).length, 1);
+    assert.equal((await mailsFor(superadmin.id)).length, 1);
   }
   assert.equal((await db.select().from(notifications).where(eq(notifications.recipientUserId, coach.id))).length, 0, "never a coach");
 
   await jobs.reconcile();
-  for (const admin of admins) {
-    assert.equal(await openFor(admin.id).then((r) => r.length), 1, "dedupe across runs");
-    assert.equal((await mailsFor(admin.id)).length, 1, "one e-mail per alert per Libreville day");
+  for (const superadmin of superadmins) {
+    assert.equal(await openFor(superadmin.id).then((r) => r.length), 1, "dedupe across runs");
+    assert.equal((await mailsFor(superadmin.id)).length, 1, "one e-mail per alert per Libreville day");
   }
 
   await serve(service, async (call) => {
@@ -305,13 +315,13 @@ test("OPS-01 O9: reconcile opens supervision_alert for every active admin only, 
 
   await seedRun("ops.backup", "succeeded", 0.1, { bundleBytes: 2 });
   await jobs.reconcile();
-  for (const admin of admins) {
-    assert.equal(await openFor(admin.id).then((r) => r.length), 0, "resolved once a fresh backup exists");
-    const resolved = await db.select().from(notifications).where(and(eq(notifications.recipientUserId, admin.id), eq(notifications.dedupeKey, staleKey)));
+  for (const superadmin of superadmins) {
+    assert.equal(await openFor(superadmin.id).then((r) => r.length), 0, "resolved once a fresh backup exists");
+    const resolved = await db.select().from(notifications).where(and(eq(notifications.recipientUserId, superadmin.id), eq(notifications.dedupeKey, staleKey)));
     assert.ok(resolved.every((row) => row.resolvedAt !== null));
   }
   await serve(service, async (call) => {
-    const open = await db.select().from(notifications).where(and(eq(notifications.recipientUserId, admins[0]!.id), eq(notifications.kind, "supervision_alert"), sql`${notifications.resolvedAt} is null`));
+    const open = await db.select().from(notifications).where(and(eq(notifications.recipientUserId, superadmins[0]!.id), eq(notifications.kind, "supervision_alert"), sql`${notifications.resolvedAt} is null`));
     const status = (await call("GET", supervisionApiRoutes.status)).body as { level: string; alertCount: number };
     assert.equal(status.alertCount, open.length);
     if (open.length === 0) assert.equal(status.level, "ok");

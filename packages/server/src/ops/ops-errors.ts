@@ -17,6 +17,11 @@ export const opsErrorCodes = [
   "REPLAY_FAILED",
   "DRILL_MISMATCH",
   "ENV_INVALID",
+  // ROLE-01 R5: ops:create-user / ops:set-role.
+  "SUPERADMIN_ONLY_VIA_BOOTSTRAP",
+  "USER_EMAIL_TAKEN",
+  "USER_NOT_FOUND",
+  "USER_WRITE_FAILED",
 ] as const;
 export type OpsErrorCode = (typeof opsErrorCodes)[number];
 

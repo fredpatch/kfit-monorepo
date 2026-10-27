@@ -1,3 +1,4 @@
+import type { AuthRole } from "@kfit/shared";
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { RecordAuditEventInput } from "./audit.service.js";
 import type { AuthUserRecord } from "./auth-route.service.js";
@@ -20,7 +21,7 @@ export type BootstrapRepository = {
   createFirstUser(input: {
     email: string;
     passwordHash: string;
-    role: "admin" | "coach";
+    role: AuthRole;
   }): Promise<AuthUserRecord>;
 };
 
@@ -28,8 +29,11 @@ export type BootstrapAuditRecorder = {
   record(input: RecordAuditEventInput): Promise<unknown>;
 };
 
+/** ROLE-01 R4: the first account is the only superadmin; ops:create-user never creates one. */
+export const BOOTSTRAP_ROLE: AuthRole = "superadmin";
+
 export type BootstrapServiceOptions = {
-  defaultRole: "admin" | "coach";
+  defaultRole: AuthRole;
   tokenPolicy?: BootstrapTokenPolicy;
   /** BOOT-01 B2: attempts per client address (refusals are counted by the caller's limiter). */
   allowAttempt?: (ipAddress: string, now: number) => boolean;

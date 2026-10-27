@@ -1,8 +1,7 @@
 import { ChevronDown, LogOut, ShieldCheck } from "lucide-react";
+import { authRoleLabels } from "@kfit/shared";
 import { useAuth } from "../../auth/state/auth-context.js";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu.js";
-
-const roleLabels: Record<string, string> = { admin: "Coach · administratrice" };
 
 /** Replaces the former « Session active » block (board 02): session details live in the account menu. */
 export function UserMenu() {
@@ -24,7 +23,7 @@ export function UserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-60">
         <DropdownMenuLabel className="flex flex-col gap-0.5">
-          <span className="text-sm font-bold text-foreground">{roleLabels[user.role] ?? user.role}</span>
+          <span className="text-sm font-bold text-foreground">{authRoleLabels[user.role]}</span>
           <span className="flex items-center gap-1.5 font-medium">
             <ShieldCheck className="size-3.5" aria-hidden="true" />
             {session.freshOtp ? "Vérification récente (OTP)" : "Pas de vérification récente"}

@@ -1,5 +1,6 @@
 import type { DashboardAnalyticsResponse, DashboardAlertsResponse, DashboardErrorCode } from "@kfit/shared";
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/auth.http.types.js";
 import type { DashboardAnalyticsService } from "../services/analytics.service.js";
 import type { DashboardAlertsService } from "../services/alerts.service.js";
@@ -9,7 +10,7 @@ export class DashboardAnalyticsController {
   async handle(context: AuthHttpRequestContext, action: "analytics" | "alerts", query: { periode?: unknown }): Promise<HttpJsonResponse<DashboardAnalyticsResponse | DashboardAlertsResponse | { error: DashboardErrorCode } | { error: string }>> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (auth.session.role !== "admin") return { status: 403, body: { error: "DASHBOARD_ADMIN_FORBIDDEN" } };
+    if (!hasRole(auth.session, "admin")) return { status: 403, body: { error: "DASHBOARD_ADMIN_FORBIDDEN" } };
     if (action === "analytics") {
       const result = await this.service.analytics(query);
       return result.status === "invalid" ? { status: 400, body: { error: "DASHBOARD_INVALID_INPUT" } } : { status: 200, body: result.response };

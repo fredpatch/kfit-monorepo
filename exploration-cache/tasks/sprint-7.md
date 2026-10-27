@@ -1,4 +1,4 @@
-# K'FIT — Sprint 7 execution spec
+# K'FIT - Sprint 7 execution spec
 
 ## Objective
 
@@ -6,10 +6,10 @@ Deliver the V1 Core operational layer: dashboard KPIs and alert workspaces, noti
 
 ## Ordered tasks
 
-1. S7.1 — Core dashboard KPIs and operational alert workspaces — CLOSED / validated 2026-10-23.
-2. S7.2 — Dashboard and email notification engine with configurable reminders — CLOSED / validated 2026-10-25.
-3. S7.3 — Retention, anonymization, soft-delete purge and privacy-action replay — APPROVED_FOR_IMPLEMENTATION (Gate 1 approved 2026-10-25; S7.3a server in progress).
-4. S7.4 — Backup/restore and production-hardening acceptance — APPROVED_FOR_IMPLEMENTATION (Gate 1 approved 2026-10-26, D1–D11; S7.4a in progress)
+1. S7.1 - Core dashboard KPIs and operational alert workspaces - CLOSED / validated 2026-10-23.
+2. S7.2 - Dashboard and email notification engine with configurable reminders - CLOSED / validated 2026-10-25.
+3. S7.3 - Retention, anonymization, soft-delete purge and privacy-action replay - APPROVED_FOR_IMPLEMENTATION (Gate 1 approved 2026-10-25; S7.3a server in progress).
+4. S7.4 - Backup/restore and production-hardening acceptance - APPROVED_FOR_IMPLEMENTATION (Gate 1 approved 2026-10-26, D1–D11; S7.4a in progress)
 
 ## Dependency notes
 
@@ -19,11 +19,12 @@ Deliver the V1 Core operational layer: dashboard KPIs and alert workspaces, noti
 - Staging, production and coach training belong to Sprint 9, not Sprint 7.
 - Sprint 8 remains the V1 Core UAT/correction gate.
 
-## S7.1 — initial planning target
+## S7.1 - initial planning target
 
 Backlog source: **Core dashboard KPIs and operational alert workspaces**.
 
 Known required inputs:
+
 - requests;
 - subscriptions;
 - follow-ups;
@@ -31,9 +32,11 @@ Known required inputs:
 - financial ledger.
 
 Known business note:
+
 - collected, billed/future, overdue and outstanding financial amounts must remain distinct rather than collapsed into one money KPI.
 
 Related deferred UX/API work to reconcile during Gate 1:
+
 - weekly/monthly time series for board 02;
 - KPI sparklines and period deltas;
 - requests funnel period statistics;
@@ -41,12 +44,12 @@ Related deferred UX/API work to reconcile during Gate 1:
 
 No S7.1 implementation before Fred approves Gate 1.
 
-
-## S7.1 Gate 1 — approved 2026-10-23
+## S7.1 Gate 1 - approved 2026-10-23
 
 Goal: complete the V1 Core coach dashboard with historical KPI series, request-funnel analytics, authoritative finance summaries and derived operational-alert workspaces without creating a duplicate business-state or notification system.
 
 ### Existing foundation to preserve
+
 - UX-9 / UX-9b `GET /admin/today`, `GET /admin/appointments` and TodayPage layout;
 - existing KpiTile/Sparkline/chart primitives;
 - Africa/Libreville shared business-time helpers;
@@ -54,17 +57,21 @@ Goal: complete the V1 Core coach dashboard with historical KPI series, request-f
 - existing queues/read models from owner modules.
 
 ### API split
+
 Current operational snapshot stays:
+
 - `GET /admin/today`
 - `GET /admin/appointments`
 
 New read-only S7.1 endpoints:
+
 - `GET /admin/dashboard/analytics?periode=4w|8w|12m`
 - `GET /admin/dashboard/alerts`
 
 No mutation endpoint.
 
 ### Time model
+
 - timezone: Africa/Libreville;
 - business week: Monday 00:00 through next Monday 00:00;
 - 4w / 8w use weekly buckets;
@@ -73,7 +80,9 @@ No mutation endpoint.
 - all historical/as-of logic must be deterministic at boundary instants.
 
 ### KPI time-series semantics
+
 Eight weekly sparkline points:
+
 - activeClients: count active at end of each business week;
 - followUpsOverdue: count overdue at end of each business week;
 - newRequests: submitted during each business week;
@@ -82,24 +91,30 @@ Eight weekly sparkline points:
 Current TodayPage numbers remain owned by `/admin/today`.
 
 ### KPI deltas
+
 Compare current business week with the immediately preceding business week.
 Direction/tone:
+
 - active clients: increase favourable;
 - overdue follow-ups: decrease favourable;
 - new requests: increase favourable;
 - completed sessions: increase favourable.
 
 If prior value = 0:
+
 - return absolute change / semantic delta;
 - never emit an infinite or misleading percentage.
 
 ### Requests chart
+
 Periods:
+
 - 4w: four weekly buckets;
 - 8w: eight weekly buckets;
 - 12m: twelve calendar-month buckets.
 
 Return:
+
 - bucket start/end;
 - count;
 - whether current bucket;
@@ -107,9 +122,11 @@ Return:
 - selected-period funnel/conversion summary.
 
 ### Funnel cohort
+
 Cohort = requests whose submittedAt falls inside selected period.
 
 For that cohort:
+
 - received = all cohort requests;
 - contacted = request has at least one recorded contact attempt;
 - qualified = qualification result is qualified or qualified_with_conditions;
@@ -120,7 +137,9 @@ Global conversionRate = converted / received.
 A request received in the selected period remains attributed to that cohort when it converts later; endpoint is evaluated as-of-now.
 
 ### Finance analytics
+
 Server returns distinct authoritative XAF values:
+
 - collectedXaf;
 - dueXaf;
 - futureXaf;
@@ -128,6 +147,7 @@ Server returns distinct authoritative XAF values:
 - outstandingXaf.
 
 Definitions:
+
 - collectedXaf: effective net confirmed payment_received amount collected in the selected period after authoritative payment_correction effects;
 - dueXaf: current active-plan remaining amount due exactly on current business date;
 - futureXaf: current active-plan remaining amount due after current business date;
@@ -135,15 +155,18 @@ Definitions:
 - outstandingXaf: all current remaining obligation on authoritative active schedules.
 
 Invariant:
+
 - outstandingXaf = overdueXaf + dueXaf + futureXaf for current authoritative active schedules.
 
 Exclude superseded/cancelled schedules.
 Quotes, proofs and receipts never determine financial truth.
 
 ### Operational alerts
+
 Derived read model only. No alerts table and no persisted notification.
 
 Candidate groups:
+
 - overdue follow-ups;
 - requests still to contact;
 - overdue installments;
@@ -153,6 +176,7 @@ Candidate groups:
 - completion_due subscriptions.
 
 Every alert:
+
 - has stable kind/severity;
 - contains safe display fields only;
 - deep-links to the owner workspace/action;
@@ -161,7 +185,9 @@ Every alert:
 S7.2 remains responsible for persisted notifications and email reminders.
 
 ### UX-9c completion
+
 Complete:
+
 - requests chart;
 - 4w/8w/12m selector;
 - conversion header;
@@ -174,11 +200,14 @@ Do not add coach first name in S7.1.
 Keep title `Bonjour`; displayName/session work remains V1.1.
 
 ### Persistence
+
 Prefer zero schema change.
 No KPI snapshot table unless current authoritative history cannot reconstruct a required historical stock safely. If such a blocker is discovered, stop and report before schema expansion.
 
 ### Validation requirements
+
 At minimum:
+
 - Africa/Libreville Monday/Sunday boundaries;
 - current-week and previous-week delta boundaries;
 - month/year rollover for 12m;
@@ -198,14 +227,14 @@ At minimum:
 
 Fred approved this complete Gate 1. Implementation is authorized for S7.1 only. S7.2 remains closed until local validation.
 
-
-## S7.1 feasibility blocker — cadence history
+## S7.1 feasibility blocker - cadence history
 
 Historical status: **BLOCKED / GATE 1 AMENDMENT REQUIRED**, resolved by the approved amendment below.
 
 The Reviewer confirmed that historical overdue-follow-up stock cannot always be reconstructed safely.
 
 Why:
+
 - effective cadence may resolve from mutable variant/service fallback policy;
 - those policy values can be overwritten without preserved history;
 - override audit is insufficient when the historical source was service/variant fallback;
@@ -214,6 +243,7 @@ Why:
 No S7.1 implementation/migration/tests were performed after the blocker was found.
 
 Recommended amendment:
+
 1. add prospective effective-cadence history;
 2. do not invent/backfill overwritten legacy fallback values;
 3. return explicit historical availability metadata for overdue-follow-up series;
@@ -223,8 +253,7 @@ Recommended amendment:
 
 S7.2 remains closed.
 
-
-## S7.1 Gate 1 amendment — cadence history approved 2026-10-23
+## S7.1 Gate 1 amendment - cadence history approved 2026-10-23
 
 Status: **APPROVED_FOR_IMPLEMENTATION**.
 
@@ -237,6 +266,7 @@ The original Gate 1 required historical overdue-follow-up stock to be reconstruc
 Add an append-only effective-cadence history for subscriptions.
 
 Conceptual fields:
+
 - id;
 - subscriptionId;
 - effectiveFrequencyDays nullable;
@@ -253,6 +283,7 @@ Do not merely reference mutable service/variant values.
 ### History writes
 
 Create/transition cadence history whenever the effective cadence changes because of:
+
 - subscription cadence override update;
 - service/variant fallback policy update that changes the resolved cadence for a subscription;
 - variant assignment change if such a path exists/is introduced;
@@ -266,6 +297,7 @@ Use explicit deterministic transitions and prevent overlapping effective ranges.
 Do not infer old fallback values from today's catalogue policy.
 
 Migration may initialize one current row for existing applicable subscriptions from the current resolved cadence with:
+
 - effectiveFrom = migration/application initialization time.
 
 This establishes authoritative history only from that instant forward.
@@ -277,24 +309,28 @@ No historical backfill before that instant unless evidence already stored elsewh
 Overdue-follow-up trend points change from plain number to availability-aware data.
 
 Conceptual point:
+
 - value: number | null;
 - availability: complete | unavailable.
 
 A historical bucket is `complete` only if the effective cadence can be proven for every subscription whose eligibility/activity could affect that bucket's overdue stock.
 
 If cadence provenance is incomplete:
+
 - value = null;
 - availability = unavailable.
 
 Never use:
+
 - 0;
 - today's cadence;
 - nearest-known cadence;
-as substitutes for missing history.
+  as substitutes for missing history.
 
 ### Delta behavior
 
 If current or previous comparison point is unavailable:
+
 - delta is unavailable/null;
 - client must not show a fabricated percentage/direction.
 
@@ -305,6 +341,7 @@ If current or previous comparison point is unavailable:
 ### UI
 
 Sparkline:
+
 - known points render normally;
 - unavailable historical points render as gaps;
 - tooltip/accessible label communicates `Historique indisponible`.
@@ -316,6 +353,7 @@ As authoritative history accumulates, unavailable legacy points naturally age ou
 The original zero-migration preference is amended.
 
 One additive migration is authorized only for:
+
 - effective follow-up cadence history;
 - constraints/indexes required to preserve append-only/non-overlapping history.
 
@@ -324,6 +362,7 @@ No dashboard snapshot/cache/alert persistence table is authorized.
 ### Validation additions
 
 Must prove:
+
 - migration does not invent pre-migration history;
 - initialization starts authority from the initialization timestamp;
 - service fallback change closes old history and opens new resolved cadence history;
@@ -340,7 +379,7 @@ Must prove:
 All other S7.1 Gate 1 rules remain locked.
 S7.2 remains closed until S7.1 local validation.
 
-## S7.1 execution and Gate 2 acceptance — 2026-10-23
+## S7.1 execution and Gate 2 acceptance - 2026-10-23
 
 - Delivered the approved analytics/alerts contracts, protected GET routes, batch historical readers and owner finance reuse, plus French TodayPage UX-9c. Existing current Today and agenda semantics remain unchanged.
 - Fred additionally approved cumulative stage reach when a qualified/converted request has no separate contact-attempt record. No request workflow or source row was changed to enforce analytics ordering.
@@ -349,20 +388,21 @@ S7.2 remains closed until S7.1 local validation.
 - Agent-run typecheck/build/db:check/diff passed; server **523/523**, shared **56/56**. Latest PostgreSQL **541/542 passed, 1 failed, zero skips**; all **35 new cases passed** (17 cadence, 18 dashboard). The unchanged S6.3 payment-proof assertion at `payment-proofs.repository.integration.ts:152` assumes FIFO array order where the existing query breaks timestamp ties by UUID. This full-suite failure remains open; no test weakening or further retry after three actual failures. Earlier new fixture errors were corrected at the business-week boundary without changing assertions.
 - Independent Reviewer: **REVIEW PASSED WITH NOTES**. Independent QA: **QA PASSED WITH LIMITATIONS**. No confirmed S7.1 defect. Agent browser/mobile/keyboard/navigation/tooltips were not runtime-validated. Actual catalogue-seed execution/concurrent seed-versus-override/activation paths were inspected but not directly exercised; helper atomicity and DB concurrency were tested.
 - Fred Gate 2 is NOT yet confirmed in this chat. Browser/mobile/keyboard and DBeaver checks remain pending.
-- Implementation commit: `ed1c7d0` — `feat(dashboard): add historical analytics and operational alerts`.
+- Implementation commit: `ed1c7d0` - `feat(dashboard): add historical analytics and operational alerts`.
 - Full PostgreSQL suite remains 541/542 because of the existing payment-proof allocation-order assertion. S7.1 cannot be closed until that suite is green and Fred completes human Gate 2.
 - S7.2 remains closed.
 
-
-## S7.1 closure — 2026-10-23
+## S7.1 closure - 2026-10-23
 
 Status: **CLOSED / LOCALLY VALIDATED**.
 
 Implementation:
+
 - `ed1c7d0` dashboard analytics/alerts;
 - `bb3ba76` deterministic finance allocation read ordering.
 
 Evidence:
+
 - server 523/523;
 - shared 56/56;
 - PostgreSQL 542/542;
@@ -372,6 +412,7 @@ Evidence:
 - Fred browser/mobile/keyboard and DBeaver checks all green.
 
 The cadence-history amendment is validated:
+
 - prospective initialization only;
 - no invented legacy cadence;
 - unknown historical follow-up points remain unavailable/null;
@@ -379,12 +420,12 @@ The cadence-history amendment is validated:
 
 S7.1 acceptance is satisfied. S7.2 planning may begin; implementation requires separate Gate 1 approval.
 
-
-## S7.2 Gate 1 — approved 2026-10-23
+## S7.2 Gate 1 - approved 2026-10-23
 
 Goal: persist internal operational notifications from authoritative source conditions and deliver privacy-safe optional email reminders/digests through a durable retryable outbox.
 
 ### Reused mechanisms
+
 - S7.1 operational alert/source-condition derivation;
 - Scheduled Business Jobs (KNW-45);
 - Typed Settings (KNW-42);
@@ -396,6 +437,7 @@ Goal: persist internal operational notifications from authoritative source condi
 - Idempotent Business Command.
 
 ### Architectural ownership
+
 - source module = business truth;
 - notification = durable operational delivery/history;
 - email = optional external side effect.
@@ -405,6 +447,7 @@ Notification processing never mutates the owner business state.
 ### Persistence
 
 Proposed notification fields:
+
 - id;
 - recipientUserId;
 - kind;
@@ -432,6 +475,7 @@ Prefer a DB-level uniqueness strategy compatible with preserving resolved histor
 ### Notification lifecycle
 
 Derived lifecycle:
+
 - unread + unresolved;
 - read + unresolved;
 - resolved.
@@ -443,7 +487,9 @@ Historical resolved rows are preserved.
 No V1 Core dismiss-forever semantics.
 
 ### Initial kinds
+
 Closed vocabulary:
+
 - follow_up_overdue;
 - request_to_contact;
 - installment_overdue;
@@ -454,6 +500,7 @@ Closed vocabulary:
 Add quote_action_required only if implementation proves a single precise authoritative quote condition already exists. Otherwise leave it out.
 
 ### Dedupe examples
+
 - follow_up_overdue:<subscriptionId>
 - request_to_contact:<requestId>
 - installment_overdue:<installmentId>
@@ -464,6 +511,7 @@ Add quote_action_required only if implementation proves a single precise authori
 Stable condition identity must not include mutable display strings.
 
 ### Recipients
+
 V1 Core notifications target internal active admin/coach users who are authorized to use the operational workspace.
 
 Internal email uses users.email only.
@@ -473,6 +521,7 @@ Do not send operational reminder emails to customer/prospect emails in S7.2.
 ### Email outbox
 
 Proposed fields:
+
 - id;
 - notificationId nullable when message is digest-level;
 - recipientUserId;
@@ -493,6 +542,7 @@ Proposed fields:
 - updatedAt.
 
 States:
+
 - pending;
 - sending;
 - sent;
@@ -502,21 +552,26 @@ States:
 Freeze exact delivery recipient/content in the row.
 
 ### SMTP failure semantics
+
 Notification durability is independent of SMTP.
 
 SMTP failure:
+
 - notification remains present/unresolved as applicable;
 - outbox records failure and retry schedule;
 - no source business mutation.
 
 Notification persistence/reconciliation failure:
+
 - scheduled job records failed;
 - do not silently send a standalone email without durable notification history.
 
 ### Retry policy
+
 Use typed configuration.
 
 Recommended bounded defaults:
+
 - initial eligible delivery immediately/at digest schedule;
 - retry +5m;
 - +30m;
@@ -527,9 +582,11 @@ Recommended bounded defaults:
 The exact implementation may model these as retry delay list/max attempts, but must stay typed/validated.
 
 ### Settings
+
 Use a closed typed registry.
 
 Candidate keys:
+
 - notifications.email.enabled
 - notifications.follow_up_overdue.email_enabled
 - notifications.request_to_contact.email_enabled
@@ -544,6 +601,7 @@ Candidate keys:
 - notifications.email.max_attempts / retry policy configuration if exposed.
 
 Every setting:
+
 - declared type;
 - default;
 - validator;
@@ -555,11 +613,13 @@ Unknown keys rejected.
 V1 Core uses global operational settings. No per-user preference matrix unless implementation proves it is required.
 
 ### Default delivery policy
+
 Dashboard/in-app notification center is primary.
 
 Normal operational alerts should preferentially be summarized in one daily digest rather than create email spam.
 
 Default digest:
+
 - enabled;
 - 08:00 Africa/Libreville;
 - French;
@@ -570,7 +630,9 @@ Repeated unresolved reminders may become email-eligible again only according to 
 A 15-minute reconciliation job must not create repeated emails for the same logical reminder window.
 
 ### Privacy
+
 Email/notification safe fields may include:
+
 - customer display name where operationally necessary;
 - subscription/reference;
 - alert kind;
@@ -578,6 +640,7 @@ Email/notification safe fields may include:
 - deep link.
 
 Exclude:
+
 - health questionnaires;
 - progress measurements;
 - private documents;
@@ -588,24 +651,30 @@ Exclude:
 - secure bearer tokens.
 
 ### Scheduled jobs
+
 Use coordinated jobs, not uncoordinated cron side effects in each API replica.
 
 Jobs:
+
 - notifications.reconcile
 - notifications.email-delivery
 
 Suggested wake cadence:
+
 - reconcile every 15 minutes;
 - delivery every 5 minutes.
 
 Each logical run:
+
 - stable runKey;
 - PostgreSQL advisory ownership;
 - scheduled_job_runs outcome/attempt/error metrics;
 - retry-safe effects.
 
 ### Reconciliation behavior
+
 One reconciliation:
+
 1. discover current authoritative source conditions using owner policies/read models;
 2. compute target internal recipients;
 3. upsert/open notification by stable dedupe;
@@ -618,6 +687,7 @@ One reconciliation:
 Do not send SMTP inside the reconciliation transaction.
 
 ### Email delivery worker
+
 1. claim due pending/failed rows safely;
 2. prevent two workers from sending same row concurrently;
 3. mark sending;
@@ -629,12 +699,14 @@ Do not send SMTP inside the reconciliation transaction.
 A sent row is never automatically resent.
 
 ### Digest
+
 Daily digest groups active unresolved notifications for one recipient.
 
 Suggested subject:
-K'FIT — Actions à traiter
+K'FIT - Actions à traiter
 
 Example safe body:
+
 - 3 suivis en retard
 - 2 demandes à contacter
 - 1 échéance en retard
@@ -645,7 +717,9 @@ Prefer counts/links and minimal display data.
 Digest delivery dedupe must be stable per recipient + Libreville business date.
 
 ### API
+
 Admin:
+
 - GET /admin/notifications
 - GET /admin/notifications/unread-count
 - POST /admin/notifications/:notificationId/read
@@ -654,15 +728,18 @@ Admin:
 - PUT /admin/notification-settings
 
 Optional scoped operations if implementation remains small:
+
 - GET /admin/notification-email-outbox
 - POST /admin/notification-email-outbox/:outboxId/retry
 
 No generic notification content/status PATCH.
 
 ### UI
+
 Add notification center/bell to existing admin shell.
 
 Required UX:
+
 - unread badge;
 - unresolved/recent list;
 - mark one read;
@@ -676,10 +753,12 @@ Add small notification settings UI for approved typed keys.
 
 If an outbox troubleshooting surface is added, keep it operational/simple; do not build a full mail administration application.
 
-Design reference (validated by Fred 2026-10-23, UI only — no scope change): canvas « K'FIT — Refonte UI », boards 12 (desktop panel from the bell, tabs « À traiter » / « Résolues », « Tout marquer comme lu », no dismiss), 12b (mobile full-screen sheet) and 12c (« Réglages » page under Configuration in the sidebar: in-app always on, e-mail master switch, daily digest + hour, per-kind reminders with « tous les N jours » only where a reminder_days key exists). Rows show only the safe fields above; until readable references exist, show the offer name instead of the raw reference. Board switch states and day values are examples: defaults come from the settings registry. Badge = unread unresolved count. Reuse the kit (`Button`, `SegmentedControl`, `Switch`, `Field`, `Dialog`/popover, toasts). Notion: UX-16.
+Design reference (validated by Fred 2026-10-23, UI only - no scope change): canvas « K'FIT - Refonte UI », boards 12 (desktop panel from the bell, tabs « À traiter » / « Résolues », « Tout marquer comme lu », no dismiss), 12b (mobile full-screen sheet) and 12c (« Réglages » page under Configuration in the sidebar: in-app always on, e-mail master switch, daily digest + hour, per-kind reminders with « tous les N jours » only where a reminder_days key exists). Rows show only the safe fields above; until readable references exist, show the offer name instead of the raw reference. Board switch states and day values are examples: defaults come from the settings registry. Badge = unread unresolved count. Reuse the kit (`Button`, `SegmentedControl`, `Switch`, `Field`, `Dialog`/popover, toasts). Notion: UX-16.
 
 ### Audit
+
 Generic structural audit candidates:
+
 - notification.read
 - notification.read_all
 - notification.settings_updated
@@ -688,6 +767,7 @@ Generic structural audit candidates:
 Avoid flooding generic audit with every scheduled reconciliation/send outcome; scheduled_job_runs/outbox are their durable operational evidence.
 
 Never audit:
+
 - full email body;
 - bearer;
 - private customer notes;
@@ -695,7 +775,9 @@ Never audit:
 - payment external reference.
 
 ### Expected migration
+
 Additive S7.2 migration is expected for:
+
 - notifications;
 - notification email outbox;
 - notification settings storage if no generic typed-setting store exists;
@@ -704,7 +786,9 @@ Additive S7.2 migration is expected for:
 Do not alter business-domain tables just to support notifications.
 
 ### Validation
+
 Mandatory:
+
 - duplicate reconciliation -> one open logical notification;
 - condition disappearance -> resolvedAt, history preserved;
 - read does not resolve;
@@ -733,11 +817,12 @@ Mandatory:
 
 Fred approved this complete Gate 1. Implementation is authorized for S7.2 only. S7.3 remains closed until Fred local validation.
 
-## S7.2 execution — 2026-10-24 (Claude)
+## S7.2 execution - 2026-10-24 (Claude)
 
 Delivered as S7.2a (server) and S7.2b (client, UX-16). Pending Fred local validation.
 
 Defaults chosen inside the approved registry (to confirm):
+
 - e-mail master on; daily digest on at 08:00 Africa/Libreville;
 - per-kind e-mails off for all 7 kinds (digest is the default channel, avoids spam);
 - reminder_days: follow_up_overdue 3, installment_overdue 7 (1–30);
@@ -748,19 +833,20 @@ Defaults chosen inside the approved registry (to confirm):
 - optional outbox list/retry endpoints not built (no notification.email_retry_requested audit yet).
 
 Evidence (scratch worktree on origin/main 733020e, local PostgreSQL 5433):
+
 - server tsc clean; unit 545 (2 Chromium PDF tests fail locally without browser, unrelated);
 - integration 553/553 incl. notifications.repository.integration (Gate 1 validation list: dedupe, concurrent reconcile,
   resolution history, read ≠ resolve, recurrence, e-mail/category off, reminder windows, digest 08:00 + one per date,
   SMTP retry, SKIP LOCKED claims, sent never resent, dead letter, advisory-locked job runs, inactive/archived/coach excluded,
   privacy-safe payloads, no business mutation);
-- runtime: dev API with jobs + SMTP sink received the French digest (« K'FIT — Actions à traiter », 2 demandes à contacter);
+- runtime: dev API with jobs + SMTP sink received the French digest (« K'FIT - Actions à traiter », 2 demandes à contacter);
 - browser (1440/390, real API): bell badge, panel, mark one/all read, resolved tab, deep link, Escape returns focus,
   Réglages save/reload/validation (45 days rejected client-side; server rejects too).
 
 Known limits: reminders verified by integration, not by the SMTP sink run; jobs start from the dev API entrypoint
 (no production entrypoint before Sprint 9); `KFIT_NOTIFICATION_JOBS=off` disables them.
 
-## S7.3 Gate 1 — approved 2026-10-25
+## S7.3 Gate 1 - approved 2026-10-25
 
 Status: APPROVED_FOR_IMPLEMENTATION (S7.3a server first, S7.3b client after validation).
 
@@ -773,7 +859,7 @@ Approved: rules 2 (sensitive-action e-mail OTP + typed confirmation, irreversibl
 immutability exception), 5 (holds win), 6 (purge job, with D3), 7 (replay log, with D11), 8 (audit), 9 (out of V1, D4).
 
 Rule 1 amended (D6): anonymization is manual only, on an archived customer or prospect; no automatic time-based
-anonymization in V1; no retention-duration keys — only `privacy.purge.delay_days` is added to the settings registry.
+anonymization in V1; no retention-duration keys - only `privacy.purge.delay_days` is added to the settings registry.
 
 Compliance (legal sign-off before production, not before coding): Gabon loi n°001/2011 / CNPDCP, health-data
 sensitivity, OHADA retention of accounting records (≈10 years, to verify). Rule 3 assumes de-identified financial rows
@@ -807,48 +893,48 @@ Categories: identity / health / financial / technical. Actions: null / replace /
 marker) / keep / purge (document → `pending_purge`). Redaction marker (D2): free text → NULL when nullable, else
 `REDACTED_TEXT = "[effacé]"`; JSON → `{}` (or `[]` for arrays) when NOT NULL.
 
-| table.column | category | action on anonymize | rationale |
-| --- | --- | --- | --- |
-| customers.full_name | identity | replace « Client anonymisé · XXXX » | rule 3; NOT NULL; XXXX = first 4 hex of sha256(id), uppercase (D2a) |
-| customers.whatsapp | identity | replace placeholder `anon-<id>` | rule 3; NOT NULL, indexed — placeholder, no column change (D2a) |
-| customers.email, city | identity | null | rule 3 |
-| customers.country, preferred_contact_channel | identity (weak) | keep | not identifying alone; country kept (D2g) |
-| customers.anonymized_at | technical | set now | marker read by every filter |
-| prospects.full_name, whatsapp, email, city | identity | as customers | source prospect anonymized with the customer (D8) |
-| prospects.source | technical | keep | marketing attribution |
-| service_requests.objective, message | health / identity free text | redact | free text from the prospect (D2e) |
-| service_requests.submission_token | technical | keep | not personal |
-| contact_attempts.note | identity free text | redact | coach notes about the person (D2e) |
-| qualification_reviews.suitability_note, conditions_json, blockers_json | health free text | redact | may hold health remarks (D2e) |
-| waitlist_entries.priority_note | free text | redact | D2e |
-| questionnaire_answers.answer_json | health | redact (rule 4 exception) | rule 3 health free text |
-| questionnaire_submissions.* | technical | keep | dates/status only |
-| medical_clearance_records.note | health | redact | D2g |
-| consent_records.verification_metadata_json | technical / identity | redact | rule 3 "consent free text"; decision + dates kept as proof |
-| consent_records.decision, captured_at, definition id | legal fact | keep | proof of consent history |
-| progress_measurements.feeling_note | health | redact | rule 3 measurement notes |
-| progress_measurements.weight_kg, waist_cm, hips_cm, chest_cm, body_fat_estimate | health | null | numeric health data (D2b) |
-| progress_photos → documents | health | purge | rule 3 (D3) |
-| goals.label, baseline/target values | health | keep | D2g |
-| follow_ups.note, next_action | health free text | redact | rule 3 follow-up notes |
-| appointments.reschedule_note, location_or_channel | free text | redact | D2g |
-| subscription_pauses.reason, subscription_status_history.reason, onboarding_items.waiver_reason, component_events.reason | free text | redact | D2g |
-| subscriptions.*, payment_plans.*, installments.*, payment_allocations.* | financial | keep | rule 3 financial facts |
-| payment_events.amount/method/dates | financial | keep | rule 3 |
-| payment_events.external_reference, metadata_json | financial | keep | accounting reconciliation (D2c) |
-| payment_proofs.claimed_*/confirmed_* | financial | keep | rule 3 |
-| payment_proofs.customer_message, review_note | free text | redact | written by/about the person (D2c) |
-| payment_proofs → documents (proof files) | financial evidence | keep (not pending_purge) | payment evidence (D2c) |
-| quotes.*, quote_versions.amount/terms, quote_number | financial | keep | rule 3 |
-| quote_versions.service_snapshot_json + PDF (customerName) | financial document | keep | issued accounting document (D2d) |
-| receipts.receipt_number, amounts, snapshot_json (customerName) + PDF | financial document | keep | issued accounting document (D2d) |
-| documents (sensitivity private / sensitive_health, owner subscription) | health / private | purge | rule 3 (D3) |
-| document_versions.original_filename | identity (may contain name) | deleted with purge | D3 |
-| secure_access_tokens (hashes) | technical | revoke active tokens, keep rows | stop outstanding links; hashes only |
-| external_access_events, audit_events (ip/ua hashes) | technical | keep | hashed, audit trail |
-| notifications.customer_display_name, title, summary | identity copy | replace with pseudonym | D2f |
-| notification_email_outbox.body_text, body_html | identity copy | redact; pending/sending rows → dead_letter | D2f |
-| users.* | staff | out of scope | not a data subject of this feature |
+| table.column                                                                                                            | category                    | action on anonymize                        | rationale                                                           |
+| ----------------------------------------------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------ | ------------------------------------------------------------------- |
+| customers.full_name                                                                                                     | identity                    | replace « Client anonymisé · XXXX »        | rule 3; NOT NULL; XXXX = first 4 hex of sha256(id), uppercase (D2a) |
+| customers.whatsapp                                                                                                      | identity                    | replace placeholder `anon-<id>`            | rule 3; NOT NULL, indexed - placeholder, no column change (D2a)     |
+| customers.email, city                                                                                                   | identity                    | null                                       | rule 3                                                              |
+| customers.country, preferred_contact_channel                                                                            | identity (weak)             | keep                                       | not identifying alone; country kept (D2g)                           |
+| customers.anonymized_at                                                                                                 | technical                   | set now                                    | marker read by every filter                                         |
+| prospects.full_name, whatsapp, email, city                                                                              | identity                    | as customers                               | source prospect anonymized with the customer (D8)                   |
+| prospects.source                                                                                                        | technical                   | keep                                       | marketing attribution                                               |
+| service_requests.objective, message                                                                                     | health / identity free text | redact                                     | free text from the prospect (D2e)                                   |
+| service_requests.submission_token                                                                                       | technical                   | keep                                       | not personal                                                        |
+| contact_attempts.note                                                                                                   | identity free text          | redact                                     | coach notes about the person (D2e)                                  |
+| qualification_reviews.suitability_note, conditions_json, blockers_json                                                  | health free text            | redact                                     | may hold health remarks (D2e)                                       |
+| waitlist_entries.priority_note                                                                                          | free text                   | redact                                     | D2e                                                                 |
+| questionnaire_answers.answer_json                                                                                       | health                      | redact (rule 4 exception)                  | rule 3 health free text                                             |
+| questionnaire_submissions.\*                                                                                            | technical                   | keep                                       | dates/status only                                                   |
+| medical_clearance_records.note                                                                                          | health                      | redact                                     | D2g                                                                 |
+| consent_records.verification_metadata_json                                                                              | technical / identity        | redact                                     | rule 3 "consent free text"; decision + dates kept as proof          |
+| consent_records.decision, captured_at, definition id                                                                    | legal fact                  | keep                                       | proof of consent history                                            |
+| progress_measurements.feeling_note                                                                                      | health                      | redact                                     | rule 3 measurement notes                                            |
+| progress_measurements.weight_kg, waist_cm, hips_cm, chest_cm, body_fat_estimate                                         | health                      | null                                       | numeric health data (D2b)                                           |
+| progress_photos → documents                                                                                             | health                      | purge                                      | rule 3 (D3)                                                         |
+| goals.label, baseline/target values                                                                                     | health                      | keep                                       | D2g                                                                 |
+| follow_ups.note, next_action                                                                                            | health free text            | redact                                     | rule 3 follow-up notes                                              |
+| appointments.reschedule_note, location_or_channel                                                                       | free text                   | redact                                     | D2g                                                                 |
+| subscription_pauses.reason, subscription_status_history.reason, onboarding_items.waiver_reason, component_events.reason | free text                   | redact                                     | D2g                                                                 |
+| subscriptions._, payment_plans._, installments._, payment_allocations._                                                 | financial                   | keep                                       | rule 3 financial facts                                              |
+| payment_events.amount/method/dates                                                                                      | financial                   | keep                                       | rule 3                                                              |
+| payment_events.external_reference, metadata_json                                                                        | financial                   | keep                                       | accounting reconciliation (D2c)                                     |
+| payment*proofs.claimed*_/confirmed\__                                                                                   | financial                   | keep                                       | rule 3                                                              |
+| payment_proofs.customer_message, review_note                                                                            | free text                   | redact                                     | written by/about the person (D2c)                                   |
+| payment_proofs → documents (proof files)                                                                                | financial evidence          | keep (not pending_purge)                   | payment evidence (D2c)                                              |
+| quotes.\*, quote_versions.amount/terms, quote_number                                                                    | financial                   | keep                                       | rule 3                                                              |
+| quote_versions.service_snapshot_json + PDF (customerName)                                                               | financial document          | keep                                       | issued accounting document (D2d)                                    |
+| receipts.receipt_number, amounts, snapshot_json (customerName) + PDF                                                    | financial document          | keep                                       | issued accounting document (D2d)                                    |
+| documents (sensitivity private / sensitive_health, owner subscription)                                                  | health / private            | purge                                      | rule 3 (D3)                                                         |
+| document_versions.original_filename                                                                                     | identity (may contain name) | deleted with purge                         | D3                                                                  |
+| secure_access_tokens (hashes)                                                                                           | technical                   | revoke active tokens, keep rows            | stop outstanding links; hashes only                                 |
+| external_access_events, audit_events (ip/ua hashes)                                                                     | technical                   | keep                                       | hashed, audit trail                                                 |
+| notifications.customer_display_name, title, summary                                                                     | identity copy               | replace with pseudonym                     | D2f                                                                 |
+| notification_email_outbox.body_text, body_html                                                                          | identity copy               | redact; pending/sending rows → dead_letter | D2f                                                                 |
+| users.\*                                                                                                                | staff                       | out of scope                               | not a data subject of this feature                                  |
 
 ### Reused mechanisms
 
@@ -867,9 +953,10 @@ constants) → `anonymization.service.ts`, `retention-hold.service.ts`, `privacy
 `app.ts`, composed in `dev-app.ts`. The column plan (table → columns → action) is one declarative constant used by
 both anonymize and replay.
 
-### Persistence — migration 0015 (small, additive)
+### Persistence - migration 0015 (small, additive)
 
 Tables exist; only constraints/indexes are missing:
+
 - partial unique index `anonymization_events_subject_executed_uq` on (subject_type, subject_id) where status = 'executed'
   (one executed anonymization per subject; replay idempotency);
 - check constraints: `retention_holds.status in ('active','released')`, `anonymization_events.status in ('executed')`
@@ -884,7 +971,8 @@ Existing-row check before the checks: `select status, count(*) from retention_ho
 ### Anonymization transaction (customer; prospect is the same minus subscriptions)
 
 One transaction, fixed lock order:
-1. `pg_advisory_xact_lock(hashtextextended('privacy-subject:<type>:<id>', 0))` — also taken by hold create/release.
+
+1. `pg_advisory_xact_lock(hashtextextended('privacy-subject:<type>:<id>', 0))` - also taken by hold create/release.
 2. `select … for update` on the subject row; refuse `PRIVACY_SUBJECT_NOT_FOUND`, `PRIVACY_SUBJECT_NOT_ARCHIVED`;
    already anonymized → idempotent success returning the existing event (double submit / retry).
 3. Active hold check on the subject scope and its documents (D7) → `PRIVACY_RETENTION_HOLD_ACTIVE`.
@@ -912,7 +1000,7 @@ gains an update path (a test asserts the other repositories expose none).
 - Job key `privacy.purge`, daily 03:00 Africa/Libreville, `windowRunKey` per business day, advisory lock via the runner,
   kill switch `KFIT_PRIVACY_JOBS=off`.
 - Batch 50 documents `where status = 'pending_purge' and purge_after <= now()` ordered by purge_after, `for update skip
-  locked`, hold re-checked per document (hold on document or its owner subject → skipped, counted).
+locked`, hold re-checked per document (hold on document or its owner subject → skipped, counted).
 - Order per document: delete storage objects first (document already inaccessible), then in one transaction delete
   `document_versions`, set `current_version_id = null`, status `purged` (tombstone row kept). A crash between the two
   steps leaves a `pending_purge` row whose files are gone; the next run deletes again (`rm force` is idempotent) and
@@ -932,22 +1020,23 @@ gains an update path (a test asserts the other repositories expose none).
 ### Settings (rules 1, 6)
 
 Closed registry keys, all `sensitivity: "privacy"`, `scope: "global"`:
-- `privacy.purge.delay_days` — integer 1–365, default 30 (D3c, D6). No retention-duration keys (D6).
+
+- `privacy.purge.delay_days` - integer 1–365, default 30 (D3c, D6). No retention-duration keys (D6).
 
 ### API
 
 All admin-session + CSRF + same-origin (mutations); `Cache-Control: no-store`.
 
-| Method | Path | Step-up | Success | Errors |
-| --- | --- | --- | --- | --- |
-| POST | /admin/customers/:customerId/archive | no | 200 | PRIVACY_SUBJECT_NOT_FOUND, PRIVACY_SUBJECT_HAS_ACTIVE_SUBSCRIPTION (D1) |
-| POST | /admin/prospects/:prospectId/archive | no | 200 | PRIVACY_SUBJECT_NOT_FOUND, PRIVACY_SUBJECT_HAS_OPEN_REQUEST (D1) |
-| POST | /admin/customers/:customerId/anonymize | fresh OTP + `{ confirmName }` (D9) | 200 `{ anonymizationEventId, executedAt }` | AUTH_FRESH_OTP_REQUIRED, PRIVACY_CONFIRMATION_MISMATCH, PRIVACY_SUBJECT_NOT_FOUND, PRIVACY_SUBJECT_NOT_ARCHIVED, PRIVACY_RETENTION_HOLD_ACTIVE |
-| POST | /admin/prospects/:prospectId/anonymize | same | same | same |
-| GET | /admin/retention-holds?scopeType&scopeId | no | 200 list | PRIVACY_INVALID_INPUT |
-| POST | /admin/retention-holds | no | 201 | PRIVACY_INVALID_INPUT, PRIVACY_SUBJECT_NOT_FOUND, PRIVACY_HOLD_ALREADY_ACTIVE |
-| POST | /admin/retention-holds/:holdId/release | no | 200 | PRIVACY_HOLD_NOT_FOUND, PRIVACY_HOLD_ALREADY_RELEASED |
-| GET/PUT | existing settings endpoint, widened registry | no | 200 | unknown key / invalid value |
+| Method  | Path                                         | Step-up                            | Success                                    | Errors                                                                                                                                         |
+| ------- | -------------------------------------------- | ---------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST    | /admin/customers/:customerId/archive         | no                                 | 200                                        | PRIVACY_SUBJECT_NOT_FOUND, PRIVACY_SUBJECT_HAS_ACTIVE_SUBSCRIPTION (D1)                                                                        |
+| POST    | /admin/prospects/:prospectId/archive         | no                                 | 200                                        | PRIVACY_SUBJECT_NOT_FOUND, PRIVACY_SUBJECT_HAS_OPEN_REQUEST (D1)                                                                               |
+| POST    | /admin/customers/:customerId/anonymize       | fresh OTP + `{ confirmName }` (D9) | 200 `{ anonymizationEventId, executedAt }` | AUTH_FRESH_OTP_REQUIRED, PRIVACY_CONFIRMATION_MISMATCH, PRIVACY_SUBJECT_NOT_FOUND, PRIVACY_SUBJECT_NOT_ARCHIVED, PRIVACY_RETENTION_HOLD_ACTIVE |
+| POST    | /admin/prospects/:prospectId/anonymize       | same                               | same                                       | same                                                                                                                                           |
+| GET     | /admin/retention-holds?scopeType&scopeId     | no                                 | 200 list                                   | PRIVACY_INVALID_INPUT                                                                                                                          |
+| POST    | /admin/retention-holds                       | no                                 | 201                                        | PRIVACY_INVALID_INPUT, PRIVACY_SUBJECT_NOT_FOUND, PRIVACY_HOLD_ALREADY_ACTIVE                                                                  |
+| POST    | /admin/retention-holds/:holdId/release       | no                                 | 200                                        | PRIVACY_HOLD_NOT_FOUND, PRIVACY_HOLD_ALREADY_RELEASED                                                                                          |
+| GET/PUT | existing settings endpoint, widened registry | no                                 | 200                                        | unknown key / invalid value                                                                                                                    |
 
 Unexpected → `PRIVACY_ROUTE_UNEXPECTED_FAILURE` (500), logged as error type + SQLSTATE only.
 Typed confirmation = the subject's full name as displayed, compared after trim + NFC + collapsed whitespace, case-sensitive (D9).
@@ -962,7 +1051,7 @@ Typed confirmation = the subject's full name as displayed, compared after trim +
 - Card « Blocages de conservation » on the fiche: list, « Ajouter un blocage » (type + motif), « Lever le blocage »
   (confirmation).
 - Anonymized customer: header « Client anonymisé · XXXX », health tabs replaced by « Données effacées le {date} ».
-- Configuration › Réglages: section « Confidentialité » — « Délai avant suppression des fichiers (jours) ».
+- Configuration › Réglages: section « Confidentialité » - « Délai avant suppression des fichiers (jours) ».
 - Desktop + 390 px, keyboard, focus return (S7.2b patterns).
 
 ### Audit (rule 8)
@@ -995,11 +1084,11 @@ table/column names, counts. Never: names, WhatsApp, e-mail, hold reason, free-te
 
 - Rule 7 vs restore: events newer than the backup survive only in the off-database journal (D11); a journal append that fails
   after commit must be backfilled with `privacy:journal-sync`.
-- Over-wiping a column the business still needs (or under-wiping a free-text column holding health data) — inventory
+- Over-wiping a column the business still needs (or under-wiping a free-text column holding health data) - inventory
   review by Fred is the control.
 - Names inside issued receipt/quote PDFs survive anonymization (D2d); needs legal confirmation.
 - Readers that do not yet filter `anonymized_at` (requests list for prospects) would show the pseudonym, not hide it.
-- Purge deletes files irreversibly; a wrong `purge_after` or missing hold check destroys evidence — covered by tests
+- Purge deletes files irreversibly; a wrong `purge_after` or missing hold check destroys evidence - covered by tests
   and the default-off kill switch in non-dev environments.
 
 ### Slice plan
@@ -1016,14 +1105,14 @@ table/column names, counts. Never: names, WhatsApp, e-mail, hold reason, free-te
 
 D1. Add « Archiver » for customers and prospects. Customer: refused while any subscription is active/onboarding/paused (PRIVACY_SUBJECT_HAS_ACTIVE_SUBSCRIPTION). Prospect: refused while any request is open (PRIVACY_SUBJECT_HAS_OPEN_REQUEST). No unarchive in S7.3 (backlog item).
 D2. Rule 3 scope approved with:
-  a. Pseudonym « Client anonymisé · XXXX », XXXX = first 4 hex of sha256(subject id), uppercase. WhatsApp → placeholder `anon-<subject id>` (no column change).
-  b. Numeric measurements (weight_kg, waist_cm, hips_cm, chest_cm, body_fat_estimate) → null.
-  c. payment_events.external_reference + metadata_json kept; payment_proofs.customer_message + review_note redacted; proof files KEPT (not pending_purge).
-  d. Customer name kept inside issued receipt/quote snapshots and PDFs (accounting documents — legal to confirm).
-  e. Prospect free text redacted: service_requests.objective/message, contact_attempts.note, qualification_reviews.suitability_note/conditions_json/blockers_json, waitlist_entries.priority_note.
-  f. notifications.customer_display_name/title/summary → pseudonym; notification_email_outbox body_text/body_html redacted; pending/sending rows → dead_letter.
-  g. Other free text redacted: appointments.reschedule_note/location_or_channel, subscription_pauses.reason, subscription_status_history.reason, onboarding_items.waiver_reason, component_events.reason, medical_clearance_records.note. goals and country kept.
-  Redaction marker: free text → NULL when nullable, else the constant REDACTED_TEXT = "[effacé]"; JSON → {} (or [] for arrays) when NOT NULL.
+a. Pseudonym « Client anonymisé · XXXX », XXXX = first 4 hex of sha256(subject id), uppercase. WhatsApp → placeholder `anon-<subject id>` (no column change).
+b. Numeric measurements (weight_kg, waist_cm, hips_cm, chest_cm, body_fat_estimate) → null.
+c. payment_events.external_reference + metadata_json kept; payment_proofs.customer_message + review_note redacted; proof files KEPT (not pending_purge).
+d. Customer name kept inside issued receipt/quote snapshots and PDFs (accounting documents - legal to confirm).
+e. Prospect free text redacted: service_requests.objective/message, contact_attempts.note, qualification_reviews.suitability_note/conditions_json/blockers_json, waitlist_entries.priority_note.
+f. notifications.customer_display_name/title/summary → pseudonym; notification_email_outbox body_text/body_html redacted; pending/sending rows → dead_letter.
+g. Other free text redacted: appointments.reschedule_note/location_or_channel, subscription_pauses.reason, subscription_status_history.reason, onboarding_items.waiver_reason, component_events.reason, medical_clearance_records.note. goals and country kept.
+Redaction marker: free text → NULL when nullable, else the constant REDACTED_TEXT = "[effacé]"; JSON → {} (or [] for arrays) when NOT NULL.
 D3. Purge (rule 6 approved with): (a) only anonymization marks documents pending_purge in V1; (b) storage deleted before the DB tombstone commit; (c) purge_after = anonymization time + privacy.purge.delay_days (default 30); (d) daily 03:00 Africa/Libreville, batch 50.
 D4. Out of V1 confirmed: self-service erasure/export, automatic expiry, bulk anonymization.
 D5. Anonymized subjects hidden from named lists, search, alerts, notifications; their payments still count in revenue aggregates.
@@ -1040,18 +1129,19 @@ D1 precision (Fred 2026-10-25, asked during S7.3a): a customer is archivable onl
 PRIVACY_SUBJECT_HAS_ACTIVE_SUBSCRIPTION. A prospect is archivable only when every request is terminal (`rejected`,
 `abandoned`, `converted`, `closed_duplicate`).
 
-## S7.3a execution — 2026-10-25 (Claude)
+## S7.3a execution - 2026-10-25 (Claude)
 
 Delivered: S7.3a server only, uncommitted, pending Fred local validation. S7.3b (client) is a separate brief.
 
 Evidence (local PostgreSQL 5433, `kfit_dev`):
+
 - tsc clean for shared, server, client; `npm run db:check` clean.
 - shared tests 59 → 62; server unit 545 → 569 (privacy policy 7, immutability scan 1, express 12, journal/job 4);
   integration 553 → 566 (`privacy.repository.integration` 13). No residue left in `kfit_dev` after the suites.
 - Migration `0015_lethal_the_liberteens.sql` (generated with `npm run db:generate`; the only wrapper in the repo is the
   cadence-specific one): partial unique index `anonymization_events_subject_executed_uq` + 5 checks (hold status/scope/type,
   event status/subject type). Existing-row check before: 0 holds, 0 events. Applied on a fresh scratch DB
-  (`kfit_s73_fresh`, left in place — dropping a DB is a never-tier command) and on `kfit_dev`: 16 migrations each.
+  (`kfit_s73_fresh`, left in place - dropping a DB is a never-tier command) and on `kfit_dev`: 16 migrations each.
 - `documents_status_idx` (status, purge_after) already existed, so Gate 1's "documents purge index" needed no migration.
 
 Defaults: `privacy.purge.delay_days` = 30 (1–365, sensitivity privacy, widened S7.2 registry); purge job `privacy.purge`
@@ -1059,6 +1149,7 @@ daily 03:00 Africa/Libreville, run key = Libreville business date, batch 50; `KF
 `KFIT_PRIVACY_JOURNAL_DIR` empty by default (journal disabled, startup warning). Both documented in `.env.example`.
 
 Implementation notes (within Gate 1 / D1–D12):
+
 - One declarative `ANONYMIZATION_PLAN` (policy) drives anonymize and replay; a unit test proves it covers every non-keep
   inventory row and touches no kept financial column.
 - Pseudonyms derive from each row's own id: the customer row from the customer id, the linked prospect from the prospect id;
@@ -1073,12 +1164,14 @@ Implementation notes (within Gate 1 / D1–D12):
   at once and resolved by the next S7.2 reconcile (the alert source excludes the subject).
 
 Known limits:
+
 - `privacy:replay` and `privacy:journal-sync` refuse any database other than the local 5433 one until S7.4.
 - Purge job starts only from the dev entrypoint (D12).
 - S7.3b must add Vite proxy entries for `/admin/prospects` and `/admin/retention-holds` (`/admin/customers` exists).
 - No unarchive (D1 backlog). Names inside issued receipt/quote PDFs are kept (D2d, legal to confirm).
 
 Manual validation (Fred):
+
 1. `npm run db:migrate`, restart `npm run dev:api`: startup shows the privacy journal warning unless
    `KFIT_PRIVACY_JOURNAL_DIR` is set; set it to a local folder outside the repo and restart.
 2. Pick a customer whose subscriptions are all completed/cancelled: `POST /admin/customers/:id/archive` (CSRF headers as the
@@ -1094,9 +1187,10 @@ Manual validation (Fred):
    release → anonymize succeeds.
 6. `npm run privacy:journal-sync` → `{ appended: 0 }`; `npm run privacy:replay -- --since <ISO before step 3>` → `replayed: 1`, no change.
 
-## CONS-02 Gate 1 — approved 2026-10-25 (recette fixes REG-F6 + REG-F7)
+## CONS-02 Gate 1 - approved 2026-10-25 (recette fixes REG-F6 + REG-F7)
 
 ### Context (verified on main 001f55d)
+
 - consent_records are append-only and superseding; a decision counts only against the LATEST published definition of its type (latestDefinitions + currentDecisions). Keep this rule.
 - Required bundle = service_terms + privacy_notice (requiredConsentTypes). The onboarding link (token action "onboarding_consent") and coach capture only carry those two (repository l.~175: `.filter(requiredConsentTypes…)`; ConsentDecisions = Record<RequiredConsentType,…>).
 - consent.repository.ts l.116 and l.170 refuse everything except revoke/revoke_link when subscription.status !== "onboarding".
@@ -1105,34 +1199,32 @@ Manual validation (Fred):
 - secure_access_tokens has context_json → use it for the requested types; no new table expected.
 
 ### Decisions (Fred 2026-10-25)
+
 D1. New « Demander un accord » flow for optional consents, allowed when the subscription is onboarding, active or paused (never completed/cancelled/other).
 D2. Optional types = health_data, progress_photo_storage, marketing, publication (named constant optionalConsentTypes). The coach picks which ones go in a request (at least one); client default selection (health_data + progress_photo_storage) is a UI concern.
-D3. Public link: new token action "optional_consent", context_json = { types, definitionIds } (latest published ids at issue time). Same public page/route family, generalized to N definitions; no pre-checked choice; each type granted or refused independently (a refusal is recorded as evidence); link consumed on submit; default validity 7 days (coach may set expiry like today); one available optional link per subscription — issuing a new one revokes the previous. Stale when any requested definition is no longer the latest published (existing CONSENT_LINK_STALE). A requested type with no published definition → refuse issue with CONSENT_DEFINITIONS_MISSING.
+D3. Public link: new token action "optional_consent", context_json = { types, definitionIds } (latest published ids at issue time). Same public page/route family, generalized to N definitions; no pre-checked choice; each type granted or refused independently (a refusal is recorded as evidence); link consumed on submit; default validity 7 days (coach may set expiry like today); one available optional link per subscription - issuing a new one revokes the previous. Stale when any requested definition is no longer the latest published (existing CONSENT_LINK_STALE). A requested type with no published definition → refuse issue with CONSENT_DEFINITIONS_MISSING.
 D4. Coach-assisted capture extended to optional types while onboarding/active/paused: capturedVia "coach_assisted", expectedDefinitionIds guard (existing pattern), no free-text note.
 D5. Required types stay onboarding-only (existing link + capture unchanged). A new required version never re-blocks active/paused subscriptions.
 D6. New version of an optional type keeps the existing rule (old grant no longer current). Expose per subscription in the consent detail: for each optional type → state "granted" | "refused" | "revoked" | "renewal_required" (granted on an older version) | "none", so the client can show « Accord à renouveler ».
-D7. Consent texts admin API (admin session + CSRF + same-origin; publish additionally requires a fresh sensitive-action OTP via isFreshOtp, same as anonymization):
-    - GET list by type with all versions (status, version, publishedAt, contentHash, title; content on detail);
-    - POST create draft (next version number computed server-side), PATCH draft (title/content only while draft), DELETE draft (never published);
-    - GET publish-impact: { type, activeSubscriptionsAffected } = active/paused/onboarding subscriptions whose current decision for that type is "granted" on the current latest version (they will need renewal) — counts only;
-    - POST publish (OTP) → immutable, hash, publishedAt; previous latest stays in history (no auto-retire);
-    - Reuse saveDefinition semantics; keep advisory/lock order via lockConsentDefinitions.
-    Audit: consent.definition_draft_saved, consent.definition_published, consent.request_link_issued, consent.decision_recorded (existing), metadata = type, version, ids, counts — never text content.
+D7. Consent texts admin API (admin session + CSRF + same-origin; publish additionally requires a fresh sensitive-action OTP via isFreshOtp, same as anonymization): - GET list by type with all versions (status, version, publishedAt, contentHash, title; content on detail); - POST create draft (next version number computed server-side), PATCH draft (title/content only while draft), DELETE draft (never published); - GET publish-impact: { type, activeSubscriptionsAffected } = active/paused/onboarding subscriptions whose current decision for that type is "granted" on the current latest version (they will need renewal) - counts only; - POST publish (OTP) → immutable, hash, publishedAt; previous latest stays in history (no auto-retire); - Reuse saveDefinition semantics; keep advisory/lock order via lockConsentDefinitions.
+Audit: consent.definition_draft_saved, consent.definition_published, consent.request_link_issued, consent.decision_recorded (existing), metadata = type, version, ids, counts - never text content.
 D8. Slices: CONS-02a server (this run), CONS-02b client (separate).
-D9. Real legal texts are a separate Fred/legal task. Add to TASKS.md under S7.4 prerequisites: "production guard: refuse production start if any published consent definition title contains « DÉMONSTRATION »" — do NOT implement it now.
+D9. Real legal texts are a separate Fred/legal task. Add to TASKS.md under S7.4 prerequisites: "production guard: refuse production start if any published consent definition title contains « DÉMONSTRATION »" - do NOT implement it now.
 
 Status: CONS-02a APPROVED_FOR_IMPLEMENTATION
 
-## CONS-02a execution — 2026-10-25 (Claude)
+## CONS-02a execution - 2026-10-25 (Claude)
 
 Status: validated by Fred 2026-10-25, committed 2aae7f9. No migration (context_json carries the requested types).
 
 Tests (agent-run, local PostgreSQL 5433):
+
 - shared 62 → 64; server unit + express 574 → 587; integration 571 → 583.
 - First full integration run: 582/583, `DrizzleRequestsRepository resolves a real Postgres unique-token collision` failed once, then passed alone and in a second full run (583/583). Reported as flaky, not touched.
 - Mutation check: narrowing the optional status rule to onboarding makes 8 of the 12 new PG tests fail.
 
 Routes (all admin routes: admin session + CSRF + same origin on mutations):
+
 - POST /admin/subscriptions/:subscriptionId/consent-requests `{ types, expiresAt? }` → `{ token, link }` (optional link, D3)
 - POST /admin/subscriptions/:subscriptionId/consents/optional-capture `{ decisions, expectedDefinitionIds }` → consent detail (D4)
 - POST /admin/subscriptions/:subscriptionId/consent-link/:tokenId/revoke now revokes onboarding and optional links
@@ -1145,20 +1237,21 @@ Routes (all admin routes: admin session + CSRF + same origin on mutations):
 Defaults and rules: optional link validity 7 days when expiresAt is absent; status rule `consentScopeStatuses` (required: onboarding; optional: onboarding, active, paused); `ConsentDetail.optionalStates` per optional type (D6); `ConsentDetail.links[].kind/types` added; new code CONSENT_TYPE_NOT_REQUESTED (400).
 
 Known limits:
+
 - Editing, deleting or publishing a non-draft answers the existing CONSENT_DEFINITION_IMMUTABLE (409); no CONSENT_DEFINITION_NOT_DRAFT code was added.
 - Extra audit events beyond D7: consent.definition_draft_deleted, and consent.link_revoked with reason "superseded" when a new optional link replaces one.
 - CONSENT_DEFINITIONS_MISSING on optional issue is not PG-tested (every type has a published definition in kfit_dev).
 - Until CONS-02b, the current Santé tab lists optional links with the onboarding links (none exist until the new API is used).
 
-## CONS-02b plan — approved by Fred 2026-10-25 (client)
+## CONS-02b plan - approved by Fred 2026-10-25 (client)
 
 1. Public consent page renders the definitions the link carries (onboarding: both required; optional: « Tes accords facultatifs », refusal never blocks coaching). Nothing preselected, every requested text answered.
 2. Santé tab: « Accords facultatifs » block with per-type state (« Accord à renouveler »), « Demander un accord » (default health_data + progress_photo_storage, 7 days) and coach-assisted optional capture while onboarding/active/paused. Required block unchanged. Link list shows the link kind.
 3. New Configuration page « Textes de consentement » (/admin/consentements): versions by type, draft create/edit/delete, published read-only, publish with impact preview and sensitive-action OTP step-up.
 4. API client + French error messages; status rule (consentScopeStatuses) moved to the shared contract, server stays authoritative.
-Browser QA by Claude in Chrome authorized (dev:api + dev:web).
+   Browser QA by Claude in Chrome authorized (dev:api + dev:web).
 
-## CONS-02b execution — 2026-10-25 (Claude)
+## CONS-02b execution - 2026-10-25 (Claude)
 
 Status: delivered and committed 2026-10-25 on Fred's instruction; browser validation pending. Client only, plus `consentScopeStatuses` / `consentScopeAllows` moved to the shared contract (server re-exports them).
 
@@ -1167,30 +1260,28 @@ NOT VALIDATED: browser behaviour. The Chrome extension was not connected, so no 
 
 Delivered: public page renders the link's definitions (« Tes accords facultatifs » for optional links); Santé tab split into « Conditions obligatoires » and « Accords facultatifs » with « Accord à renouveler », « Demander un accord » and « Recueillir des accords »; link list names each link's documents; new page /admin/consentements « Textes de consentement » (versions, drafts, read, publish with impact and OTP step-up); nav entry under Configuration.
 
-## CAT-03 Gate 1 — approved 2026-10-25 (recette fix REG-F2)
+## CAT-03 Gate 1 - approved 2026-10-25 (recette fix REG-F2)
 
 ### Context (verified on main)
-- Tables exist, seed-only today: service_variants (archived_at), service_components (NO archived_at), service_policies (unique (service_id, variant_id) — NULL variant rows are NOT unique in PostgreSQL).
+
+- Tables exist, seed-only today: service_variants (archived_at), service_components (NO archived_at), service_policies (unique (service_id, variant_id) - NULL variant rows are NOT unique in PostgreSQL).
 - Catalogue API (modules/catalogue) only writes service-level fields, capacity, order, publish, archive. validatePublishable (catalogue.service.ts ~l.368) checks name/slug/price/capacity only.
 - Existing service_policies writer to mirror: questionnaires/repositories/template.repository.ts (~l.60–80: select scope FOR UPDATE, update or insert).
 - Cadence-history protocol (S7.1, gotchas.md): writers take fence key 7247001 before owner row locks; helpers in follow-ups/repositories/cadence-history.repository.ts: lockCadenceWrites, lockPolicyCadenceScope(tx, serviceIds) → recordPolicyCadenceChanges(tx, before, at). Same transaction, before/after resolution.
-- Capacity claim writers lock the service row first (onboarding.repository.ts ~l.25 comment) — variant capacity edits must follow the same order.
+- Capacity claim writers lock the service row first (onboarding.repository.ts ~l.25 comment) - variant capacity edits must follow the same order.
 - Snapshots: conversion copies price/duration/components into subscriptions/subscription_components (label_snapshot, quantity_entitled, source_service_component_id FK restrict); appointments snapshot late-cancel/missed rules. Onboarding reads medical clearance LIVE via resolveEffectivePolicy (onboarding.service.ts ~l.37–47), which today accepts only not_required | required_if_risk_flag; questionnaire.repository.ts also handles "required".
 - Seed values in use: componentType appointment | follow_up | program; consumptionPolicy manual; medical not_required | required_if_risk_flag.
 
 ### Decisions (Fred 2026-10-25)
+
 D1. Variants: create; edit name, slug (unique per service), priceXaf, durationValue/Unit, capacityLimit, availabilityStatus, sortOrder; archive (never delete). Archived variants excluded from public catalogue, qualification list (already) and new conversions. Existing subscriptions never rewritten. Capacity edits follow the service-lock-first order.
 D2. Components: scope = service (variantId null) or one variant of the same service; componentType ∈ {appointment, follow_up, program} (closed constant); label; quantity > 0; isMandatory; consumptionPolicy ∈ {manual} only in V1. Edit allowed (subscriptions keep snapshots). Removal = archive (new archived_at); archived components are excluded from new conversions and from the public/admin "included" lists. No hard delete.
 D3. Rules: one service-level row + optional per-variant override row. Editable fields: followUpFrequencyDays (null = no cadence, else 1–90), lateCancelNoticeHours (null or 1–168), lateCancelConsumesComponent, missedConsumesComponent, medicalClearancePolicy. questionnaireTemplateId is NOT editable here (stays on the Questionnaires screen; preserve it on every write). Any write that can change a resolved cadence runs lockCadenceWrites → lockPolicyCadenceScope([serviceId]) → write → recordPolicyCadenceChanges in the same transaction. Removing a variant override = delete that override row (fallback to service), also through the cadence protocol.
 D4. Medical clearance closed list: not_required | required_if_risk_flag | required. Extend resolveEffectivePolicy and the onboarding requirement derivation so "required" creates an always-blocking medical clearance item (same item/flow as the risk-flag case, without needing a risk flag). Keep questionnaire behaviour consistent.
 D5. Effect of edits: late-cancel/missed rules apply to new appointments only (existing snapshots). Medical clearance applies live to subscriptions in onboarding: the rules write response includes { onboardingSubscriptionsAffected } and readiness items of those subscriptions are re-derived consistently in the same transaction (reuse the existing derivation; do not invent a new one).
-D6. Deliverability check, pure function, used by publish and by a read endpoint:
-    - every active (non-archived) variant reaches ≥ 1 non-archived component (service-level or its own); a variant-less offer needs ≥ 1 service-level component;
-    - a service-level rules row exists with medicalClearancePolicy explicitly set (not null);
-    - pricing: fixed → base price or every active variant has a price; quote → no price required;
-    - time_based → every active variant resolves a duration (variant or service default); one_time → none required.
-    Publish refuses with CATALOGUE_SERVICE_NOT_DELIVERABLE + list of failed rule keys. GET .../deliverability returns { deliverable, failures[] } for any offer (published offers that fail are flagged, never auto-unpublished).
-D7. Migration 0016 (normal `npm run db:generate`, never hand-edit output): service_components.archived_at (nullable timestamptz); replace service_policies_scope_uq with a unique index on (service_id, variant_id) NULLS NOT DISTINCT — if Drizzle cannot express NULLS NOT DISTINCT, STOP and ask before any custom SQL. Preflight first and report: duplicate service-level policy rows per service (expected 0); if any exist, STOP and ask.
+D6. Deliverability check, pure function, used by publish and by a read endpoint: - every active (non-archived) variant reaches ≥ 1 non-archived component (service-level or its own); a variant-less offer needs ≥ 1 service-level component; - a service-level rules row exists with medicalClearancePolicy explicitly set (not null); - pricing: fixed → base price or every active variant has a price; quote → no price required; - time_based → every active variant resolves a duration (variant or service default); one_time → none required.
+Publish refuses with CATALOGUE_SERVICE_NOT_DELIVERABLE + list of failed rule keys. GET .../deliverability returns { deliverable, failures[] } for any offer (published offers that fail are flagged, never auto-unpublished).
+D7. Migration 0016 (normal `npm run db:generate`, never hand-edit output): service_components.archived_at (nullable timestamptz); replace service_policies_scope_uq with a unique index on (service_id, variant_id) NULLS NOT DISTINCT - if Drizzle cannot express NULLS NOT DISTINCT, STOP and ask before any custom SQL. Preflight first and report: duplicate service-level policy rows per service (expected 0); if any exist, STOP and ask.
 D8. UI (CAT-03b, not this run): « Variantes », « Contenu », « Règles » tabs editable + « Avant publication » checklist.
 D9. Slices: CAT-03a server (this run) → CAT-03b client.
 
@@ -1198,7 +1289,7 @@ Amendment (Fred 2026-10-25, during CAT-03a): « Programme sportif 12 semaines »
 
 Status: CAT-03a APPROVED_FOR_IMPLEMENTATION
 
-## CAT-03a execution — 2026-10-25 (Claude)
+## CAT-03a execution - 2026-10-25 (Claude)
 
 Status: committed 2026-10-25 on Fred's instruction (agent tests accepted); live validation with CAT-03b.
 
@@ -1206,16 +1297,19 @@ Tests (agent-run, local PostgreSQL 5433): shared 64 → 65; server unit + expres
 Mutation checks: an empty deliverability rule fails the publish-guard test; skipping recordPolicyCadenceChanges fails both cadence tests.
 
 Migration 0016 (`npm run db:generate`, not edited):
+
 ```sql
 DROP INDEX "service_policies_scope_uq";
 ALTER TABLE "service_components" ADD COLUMN "archived_at" timestamp with time zone;
 ALTER TABLE "service_policies" ADD CONSTRAINT "service_policies_scope_uq" UNIQUE NULLS NOT DISTINCT("service_id","variant_id");
 ```
+
 Preflight on kfit_dev (PostgreSQL 16.15): 0 duplicate offer-level rows, 0 duplicate variant-level rows. Applied to a fresh database (kfit_cat03_fresh, left in place) and to kfit_dev; `db:check` clean.
 
 Routes: POST/PATCH variants, POST variant archive, POST/PATCH components, POST component archive, PUT offer rules, PUT/DELETE variant rules, GET deliverability (catalogueApiRoutes). Publish now returns 409 CATALOGUE_SERVICE_NOT_DELIVERABLE + failures.
 
 Choices and limits:
+
 - NULLS NOT DISTINCT is a unique constraint (Drizzle supports it on constraints only); PostgreSQL backs it with a unique index. No custom SQL.
 - D6 owns publish pricing: the older `fixed_price_required` check (base price mandatory for fixed offers) was removed so « every active variant has a price » can publish.
 - Removing a variant override refuses with CATALOGUE_RULES_OVERRIDE_HAS_QUESTIONNAIRE when that row also carries a questionnaire assignment (deleting it would drop the assignment, D3).
@@ -1225,22 +1319,24 @@ Choices and limits:
 - Archives are idempotent (a repeat writes no audit event). Variant duration must be a value and unit pair.
 - kfit_dev keeps the old seed until `npm run db:seed` runs: « Programme sportif 12 semaines » reports service_rules_missing there until then.
 
-## CAT-03b execution — 2026-10-25 (Claude)
+## CAT-03b execution - 2026-10-25 (Claude)
 
 Status: validated by Fred live 2026-10-25 and committed. Client only (no server or shared change).
 Checks (agent-run): client tsc clean, client build OK. The client has no test runner. Browser: NOT VALIDATED by agent (Fred runs the live test).
 
 Offer sheet (board 06) per D8:
+
 - « Contenu »: service fields as before, plus « Prestations incluses dans l'offre » (add, edit, retirer = archive with confirmation).
 - « Variantes »: add, edit, archive (confirmation shows the subscriptions that keep it); per variant: its own prestations and its own rules (« Revenir aux règles de l'offre » removes the override).
 - « Règles »: editable offer rules (cadence 1–90 days or none, late-cancel 1–168 h or none, two consumption switches, medical policy incl. « Toujours requis »); a toast reports clients in preparation updated (D5).
 - « Avant publication »: the server deliverability report as a four-point checklist; also shown in the publish dialog, where « Publier » stays disabled until the offer is deliverable.
-Limits: a variant's position is set at creation only (the overview DTO carries no stored order); the client-side « published fixed offer needs a base price » check was removed to match D6.
+  Limits: a variant's position is set at creation only (the overview DTO carries no stored order); the client-side « published fixed offer needs a base price » check was removed to match D6.
 
-## POL-01 Gate 1 — approved 2026-10-25 (recette polish)
+## POL-01 Gate 1 - approved 2026-10-25 (recette polish)
 
 ### Context (verified on main 949d710)
-- F3: integration tests run against kfit_dev on 5433 by design (guard pattern: quotes.repository.integration.ts ~l.41, asserts host localhost/127.0.0.1, port 5433, path /kfit_dev). Four files have NO guard: modules/auth/tests/auth.repositories.integration.ts, modules/auth/tests/password-recovery.repository.integration.ts, modules/requests/tests/admin-requests.repository.integration.ts, modules/requests/tests/requests.repository.integration.ts. The last one inserts a PUBLIC open service « Integration test service » and its after() deletes prospects by a fixed WhatsApp "+24100000000" then the service — one FK failure aborts the rest → leaked service. « Individual check » is not in the code (manual draft, Fred archives it in the UI).
+
+- F3: integration tests run against kfit_dev on 5433 by design (guard pattern: quotes.repository.integration.ts ~l.41, asserts host localhost/127.0.0.1, port 5433, path /kfit_dev). Four files have NO guard: modules/auth/tests/auth.repositories.integration.ts, modules/auth/tests/password-recovery.repository.integration.ts, modules/requests/tests/admin-requests.repository.integration.ts, modules/requests/tests/requests.repository.integration.ts. The last one inserts a PUBLIC open service « Integration test service » and its after() deletes prospects by a fixed WhatsApp "+24100000000" then the service - one FK failure aborts the rest → leaked service. « Individual check » is not in the code (manual draft, Fred archives it in the UI).
 - F4: app/routes/client-profile.tsx ~l.143/166: header badge = deriveClientStatus(subscriptions) (shared customers/client-status.ts). Labels (« En pause », « Revue de fin »…) collide with subscription chip labels.
 - F5: receipts/services/receipt-snapshot.ts publicReceipt() hard-codes canDownload: true; receipts.repository.ts publicCommand ~l.70–88 increments useCount on public-pdf. client receipts/components/PublicReceiptPage.tsx never refetches after a download → button stays active, next click returns RECEIPT_LINK_CONSUMED. Default maxUses 3 (1–20) is correct, unchanged.
 - F8: profile/documents/DocumentsTab.tsx ~l.345: DialogContent description falls back to the upload text for every dialog without a doc (summary, photo).
@@ -1249,11 +1345,12 @@ Limits: a variant's position is set at creation only (the overview DTO carries n
 - F11: profile/appointments/AppointmentsTab.tsx ~l.25, ~l.81: « À venir » = status in {scheduled, confirmed, reschedule_requested} regardless of time; a past scheduled/confirmed appointment stays there as « Confirmé ». Aujourd'hui agenda list in TodayPage.tsx ~l.172–188.
 
 ### Decisions (Fred 2026-10-25)
-D1. F3: add the existing 5433/kfit_dev guard to the 4 files. Test fixtures: name prefix "[TEST] ", services isPublic false, unique WhatsApp per run (derived from randomUUID), cleanup by the test's own ids only, in reverse FK order, each delete in its own try/catch so one failure never skips the rest. Add scripts/dev/cleanup-test-fixtures.sql (NOT executed by you): a transaction that lists then deletes rows named « Integration test service » / « Integration Test » and their dependent request/prospect rows, ending with ROLLBACK by default and a commented COMMIT — Fred reviews and runs it in DBeaver.
+
+D1. F3: add the existing 5433/kfit_dev guard to the 4 files. Test fixtures: name prefix "[TEST] ", services isPublic false, unique WhatsApp per run (derived from randomUUID), cleanup by the test's own ids only, in reverse FK order, each delete in its own try/catch so one failure never skips the rest. Add scripts/dev/cleanup-test-fixtures.sql (NOT executed by you): a transaction that lists then deletes rows named « Integration test service » / « Integration Test » and their dependent request/prospect rows, ending with ROLLBACK by default and a commented COMMIT - Fred reviews and runs it in DBeaver.
 D2. F4: header status rule unchanged. Add a neutral pill « N abonnements ouverts » when more than one subscription is open (isOpenSubscription), and a tooltip on the status pill « Statut global : abonnement le plus avancé ». No server change.
 D3. F5: PublicReceiptMetadata gains remainingDownloads (maxUses − useCount, ≥ 0); canDownload = remainingDownloads > 0. The page shows « N téléchargement(s) restant(s) », refetches metadata after each successful download, and on RECEIPT_LINK_CONSUMED / EXPIRED / REVOKED disables the button and keeps the error message. A consumed link still refuses the whole page on load (unchanged).
 D4. F8: one description per dialog kind. summary → « PDF généré à partir des mesures et objectifs enregistrés · lien protégé par un code. »; photo → « JPG, PNG ou WebP · 10 Mo maximum · consentement photos requis. »; upload unchanged.
-D5. F9: new TodayTaskKind values installment_overdue and payment_proof_pending. Validated order becomes: follow_up_overdue → installment_overdue → follow_up_due → payment_proof_pending → request_new → request_follow_up → preparation_expired → preparation_ready → preparation_waiting → completion_due. installment_overdue = remainingXaf > 0 and business due date (Africa/Libreville) < today, one task per installment, most days late first; payment_proof_pending = proofs awaiting review, oldest first. Anonymized/archived subjects excluded (same owner filter as alerts, S7.3 D5). Quote changes stay alerts-only. Source: move the finance/proof read into a TodaySources entry (reuse DrizzleDashboardAlertsRepository.snapshot logic or extract a shared reader — no duplicate query logic); DashboardAlertsService then maps these two kinds from today tasks instead of its own loops. Alerts output (kinds, titles, summaries, deepLinks, order, dedupe) must stay identical — regression test. Notification reconcile (S7.2) must be unaffected — check its source and report.
+D5. F9: new TodayTaskKind values installment_overdue and payment_proof_pending. Validated order becomes: follow_up_overdue → installment_overdue → follow_up_due → payment_proof_pending → request_new → request_follow_up → preparation_expired → preparation_ready → preparation_waiting → completion_due. installment_overdue = remainingXaf > 0 and business due date (Africa/Libreville) < today, one task per installment, most days late first; payment_proof_pending = proofs awaiting review, oldest first. Anonymized/archived subjects excluded (same owner filter as alerts, S7.3 D5). Quote changes stay alerts-only. Source: move the finance/proof read into a TodaySources entry (reuse DrizzleDashboardAlertsRepository.snapshot logic or extract a shared reader - no duplicate query logic); DashboardAlertsService then maps these two kinds from today tasks instead of its own loops. Alerts output (kinds, titles, summaries, deepLinks, order, dedupe) must stay identical - regression test. Notification reconcile (S7.2) must be unaffected - check its source and report.
 D6. F9 header sentence: « N action(s) à traiter aujourd'hui » + « , dont X suivi(s) en retard » + « , Y échéance(s) en retard » (each part only when > 0); « Rien d'urgent… » only when N = 0. Task rows: installment → status « En retard · d j » (danger), meta « <offre> · <montant> FCFA restant », action « Enregistrer le paiement », link onglet=finance; proof → status « À examiner » (warning), action « Examiner le justificatif », link onglet=finance. KPIs unchanged.
 D7. F10: NotificationUnreadCountResponse becomes { unread, open } (additive; open = resolvedAt null for the session user). Bell badge keeps unread; tab « À traiter · N » uses open. Same route, no new endpoint.
 D8. F11: display only, no new task kind (backlog item « RDV à clôturer dans À traiter », V1.1). An appointment with status scheduled|confirmed and scheduledEnd ≤ now is « à clôturer »: profile tab shows a « À clôturer » group above « À venir » with a warning pill « À clôturer » and primary action « Marquer terminé » (existing complete action; early-completion rule unchanged); « À venir » keeps only future ones; same pill in the Aujourd'hui agenda list. Pure helper isAppointmentToClose(a, now) in client lib, unit-tested.
@@ -1261,7 +1358,7 @@ No migration. All API changes additive.
 
 Status: POL-01 APPROVED_FOR_IMPLEMENTATION
 
-## POL-01 execution — 2026-10-25 (Claude)
+## POL-01 execution - 2026-10-25 (Claude)
 
 Status: committed 2026-10-25 on Fred's instruction; manual checks pending. No migration; API changes additive.
 
@@ -1270,6 +1367,7 @@ Alerts regression (D5): dashboard alerts on kfit_dev captured before the change 
 Notification reconcile (S7.2): reads `dashboardAlerts.alerts()` (dev-app.ts); alerts unchanged → reconcile unaffected.
 
 Per finding:
+
 - F3 (D1): `src/testing/integration-fixtures.ts` (guard, `[TEST] ` names, per-run WhatsApp, ordered cleanup that tries every step) used by the 4 files; services private. Guard proven by running with a port-5432 URL (refused before any query). Two consecutive runs of the 4 files: 15/15 each, 0 `[TEST]` rows left. `packages/server/scripts/dev/cleanup-test-fixtures.sql` (ROLLBACK by default, not run): 3 legacy « Integration test service » rows remain for it.
 - F4 (D2): client-profile header tooltip « Statut global : abonnement le plus avancé » + « N abonnements ouverts » pill (isOpenSubscription).
 - F5 (D3): `remainingDownloads` in public receipt metadata; page shows remaining count, refetches after each download, disables on consumed/expired/revoked and keeps the receipt visible.
@@ -1278,38 +1376,41 @@ Per finding:
 - F10 (D7): unread-count returns `{ unread, open }` in one query; tab uses `open`.
 - F11 (D8): shared `isAppointmentToClose`; profile « À clôturer » group above « À venir »; Aujourd'hui agenda pill.
 
-Deviation: the pure helpers asked « in client lib » (isAppointmentToClose, receipt link-closed rule, header counts) live in `@kfit/shared` — the client has no test runner, shared does; the client imports them from there.
+Deviation: the pure helpers asked « in client lib » (isAppointmentToClose, receipt link-closed rule, header counts) live in `@kfit/shared` - the client has no test runner, shared does; the client imports them from there.
 Incident during the run: the dev API's notifications reconcile job (every 15 min) wrote notifications on the progress test's fixture subscriptions and treated its fixture admin as a recipient, so that file's cleanup failed once and leaked 58 subscriptions plus a synthetic health_data consent text (latest version → every real health grant would read « à renouveler »). Cleaned with Fred's approval in one transaction by the fixture's ids. Root cause is outside POL-01: integration runs and the dev API jobs share kfit_dev.
 Flaky: « DrizzleRequestsRepository resolves a real Postgres unique-token collision » failed in two full runs, passes alone (3/3) and in the last full run; reported, not changed.
 
-## TEST-01 Gate 1 — approved 2026-10-25 (test DB isolation + test-data cleanup)
+## TEST-01 Gate 1 - approved 2026-10-25 (test DB isolation + test-data cleanup)
 
 ### Context (verified on main 3e0295e)
-- Integration runs: packages/server `npm run test:integration` (build + node --test --test-concurrency=1 "dist/**/*.integration.js"), invoked with --env-file=../../.env → DATABASE_URL = local kfit_dev on 5433, the same DB the dev API and its jobs (notifications reconcile 15 min, delivery 5 min, privacy purge) use.
+
+- Integration runs: packages/server `npm run test:integration` (build + node --test --test-concurrency=1 "dist/\*_/_.integration.js"), invoked with --env-file=../../.env → DATABASE_URL = local kfit_dev on 5433, the same DB the dev API and its jobs (notifications reconcile 15 min, delivery 5 min, privacy purge) use.
 - Guards: src/testing/integration-fixtures.ts (isLocalTestDatabase / assertLocalTestDatabase, path /kfit_dev, testFixtureName "[TEST] ", uniqueTestWhatsapp) used by 6 files; 17 integration files still carry an inline copy of the kfit_dev guard (e.g. quotes.repository.integration.ts ~l.41).
 - Migrations: src/db/migrations (drizzle-kit migrate). Legacy cleanup SQL: packages/server/scripts/dev/cleanup-test-fixtures.sql (keep as fallback; its marker names and "keep converted" rule are the reference for D5).
 - Réglages page: client notifications/components/NotificationSettingsPage.tsx, route "reglages" in app/App.tsx ~l.99. Dev-only patterns: client import.meta.env.DEV (LoginForm demo button, UiGallery); server dev-only composition in dev-app.ts.
 - Known flaky (POL-01 report): « DrizzleRequestsRepository resolves a real Postgres unique-token collision » fails in some full runs, passes alone.
 
 ### Decisions (Fred 2026-10-25)
-D1. Test DB: integration tests run ONLY on local `kfit_test` (localhost/127.0.0.1, port 5433, path /kfit_test). Config in a gitignored `.env.test` at repo root (+ committed `.env.test.example`, no values printed). Single guard: integration-fixtures.ts asserts /kfit_test; replace all 17 inline guards by assertLocalTestDatabase (no inline copies left — add a unit test that greps dist/source for the old inline pattern or for "/kfit_dev" in *.integration.ts and fails). `test:integration` uses .env.test. The dev entrypoint must never start with DATABASE_URL pointing at kfit_test (startup check, dev warning → refuse).
+
+D1. Test DB: integration tests run ONLY on local `kfit_test` (localhost/127.0.0.1, port 5433, path /kfit_test). Config in a gitignored `.env.test` at repo root (+ committed `.env.test.example`, no values printed). Single guard: integration-fixtures.ts asserts /kfit_test; replace all 17 inline guards by assertLocalTestDatabase (no inline copies left - add a unit test that greps dist/source for the old inline pattern or for "/kfit_dev" in \*.integration.ts and fails). `test:integration` uses .env.test. The dev entrypoint must never start with DATABASE_URL pointing at kfit_test (startup check, dev warning → refuse).
 D2. `npm run db:test:prepare` (packages/server): create kfit_test if missing (connect to the maintenance DB with the same credentials), then drizzle-kit migrate against it. Idempotent. No seed by default; if some integration tests depend on demo seed data, STOP and report which ones (one yes/no question: seed kfit_test with the demo SQL?).
 D3. Flaky test: diagnose « unique-token collision » (likely shared state/timing with other files on the same DB); fix only if the cause is test isolation; otherwise report the cause and leave it.
 D4. Cleanup is DEV ONLY, enforced twice: server routes mounted only in dev-app.ts AND each request refused unless NODE_ENV !== "production" and DATABASE_URL is local kfit_dev on 5433 (named constant, reuse the URL parser; error DEV_TOOLS_UNAVAILABLE). Client card « Données de test » on Réglages rendered only when import.meta.env.DEV; absent from the production bundle (verify with the client build: grep the dist for the card title → 0).
-D5. Test data = roots whose name/title starts with "[TEST] " or equals a legacy marker (« Integration test service », « Integration Test »): services, prospects, customers, consent definitions; plus every row depending on them (requests, contacts, qualifications, waitlist, subscriptions and all subscription children, appointments, payments/receipts/proofs/quotes, documents rows, consents, notifications + outbox, cadence history…). Keep (never delete) anything also linked to a non-test customer or to a request converted for a non-test customer — same rule as the SQL script. User accounts are never deleted (Analyser lists them as « comptes de test conservés » if named "[TEST] "). Audit logs and anonymization_events are never deleted. Stored files of deleted document versions: delete from storage after commit, best effort, log ids only.
+D5. Test data = roots whose name/title starts with "[TEST] " or equals a legacy marker (« Integration test service », « Integration Test »): services, prospects, customers, consent definitions; plus every row depending on them (requests, contacts, qualifications, waitlist, subscriptions and all subscription children, appointments, payments/receipts/proofs/quotes, documents rows, consents, notifications + outbox, cadence history…). Keep (never delete) anything also linked to a non-test customer or to a request converted for a non-test customer - same rule as the SQL script. User accounts are never deleted (Analyser lists them as « comptes de test conservés » if named "[TEST] "). Audit logs and anonymization_events are never deleted. Stored files of deleted document versions: delete from storage after commit, best effort, log ids only.
 D6. Two steps:
-   - GET  /admin/dev/test-data → { counts: { [kind]: number }, kept: { [kind]: number }, fingerprint } (no names, no PII, nothing changes).
-   - POST /admin/dev/test-data/purge { fingerprint } → recomputes; fingerprint mismatch → 409 DEV_TEST_DATA_CHANGED (re-analyse); else deletes in ONE transaction in reverse FK order and returns the counts. Admin session + CSRF + same-origin. Audit event dev.test_data_purged with counts only.
-   UI: « Analyser » shows a table kind → count (French labels) + kept counts; « Supprimer les données de test » opens a confirm dialog repeating the totals; success toast with totals; empty state « Aucune donnée de test ».
-D7. Hard delete is allowed here only (test fixtures, not business data — the soft-delete rule does not apply). The deletion order is ONE declarative constant (table list) with a unit/integration test proving that every table holding an FK into the covered roots is in the list (derive from the Drizzle schema). If an immutability guard or trigger blocks a delete, STOP and ask — do not disable it.
+
+- GET /admin/dev/test-data → { counts: { [kind]: number }, kept: { [kind]: number }, fingerprint } (no names, no PII, nothing changes).
+- POST /admin/dev/test-data/purge { fingerprint } → recomputes; fingerprint mismatch → 409 DEV_TEST_DATA_CHANGED (re-analyse); else deletes in ONE transaction in reverse FK order and returns the counts. Admin session + CSRF + same-origin. Audit event dev.test_data_purged with counts only.
+  UI: « Analyser » shows a table kind → count (French labels) + kept counts; « Supprimer les données de test » opens a confirm dialog repeating the totals; success toast with totals; empty state « Aucune donnée de test ».
+  D7. Hard delete is allowed here only (test fixtures, not business data - the soft-delete rule does not apply). The deletion order is ONE declarative constant (table list) with a unit/integration test proving that every table holding an FK into the covered roots is in the list (derive from the Drizzle schema). If an immutability guard or trigger blocks a delete, STOP and ask - do not disable it.
 
 Status: TEST-01 APPROVED_FOR_IMPLEMENTATION
 
-## TEST-01 execution — 2026-10-25 (Claude)
+## TEST-01 execution - 2026-10-25 (Claude)
 
 Status: delivered; committed and pushed 2026-10-25 on Fred's instruction. Manual checks (Réglages purge on kfit_dev) pending.
 
-- D1: single guard `assertLocalTestDatabase` (localhost/127.0.0.1:5433/kfit_test, postgres URL, no query) on the shared parser `src/db/database-target.ts`. Replaced 17 inline kfit_dev guards **and 7 port-only guards** (catalogue, customers, today, notifications, onboarding, request-conversion, variantless-offer), so all 30 integration files use it; a unit test fails on any inline copy or "/kfit_dev" in *.integration.ts. Root `.env.test` (gitignored) + committed `.env.test.example`; `test:integration` = `--env-file-if-exists=../../.env --env-file=../../.env.test` (.env.test overrides). Dev API (scripts/dev/api-server.mjs) exits 1 when DATABASE_URL names kfit_test (checked: exit 1).
+- D1: single guard `assertLocalTestDatabase` (localhost/127.0.0.1:5433/kfit_test, postgres URL, no query) on the shared parser `src/db/database-target.ts`. Replaced 17 inline kfit_dev guards **and 7 port-only guards** (catalogue, customers, today, notifications, onboarding, request-conversion, variantless-offer), so all 30 integration files use it; a unit test fails on any inline copy or "/kfit_dev" in \*.integration.ts. Root `.env.test` (gitignored) + committed `.env.test.example`; `test:integration` = `--env-file-if-exists=../../.env --env-file=../../.env.test` (.env.test overrides). Dev API (scripts/dev/api-server.mjs) exits 1 when DATABASE_URL names kfit_test (checked: exit 1).
 - D2: `npm run db:test:prepare` creates kfit_test via the `postgres` maintenance DB, runs drizzle-kit migrate, then `seed:catalogue` (Fred 2026-10-25: yes; 3 customers tests + 1 agenda test read a seeded service). Ran 3×: second and third runs are no-ops.
 - D3: « unique-token collision » reproduces **alone** on the isolated kfit_test (5/12 runs), so the cause is not test isolation. Cause: `isUniqueViolation` (requests.repositories.ts:15) reads only the top-level `code`; drizzle 0.44 wraps the pg error in `.cause`, so a real concurrent collision is rethrown instead of replayed. The test passes only when the second call's pre-check already sees the committed row. Left unchanged (product bug; same top-level-only check in catalogue.repositories.ts:135). Needs its own brief.
 - D4–D7: shared `dev/test-data.ts` (routes, kinds, DTOs, parser, DEV_TOOLS_UNAVAILABLE / DEV_TEST_DATA_CHANGED). Server module `modules/dev-tools`: plan (one ordered constant, FK edges read from Drizzle, polymorphic owner/resource/scope links, quotes↔quote_versions←subscriptions cycle cleared via two nullable columns), pure classifier (roots by own label only; real = linked to a non-test customer/subscription; needed = FK-referenced by kept or non-test rows), fingerprint, repository (advisory lock, recompute, one transaction, FK violation → 409), service (files removed after commit, best effort, logged by document version id), controller (guard before auth on every request), router mounted only from dev-app.ts. Client card « Données de test » loaded lazily under `import.meta.env.DEV` on Réglages.
@@ -1318,18 +1419,20 @@ Status: delivered; committed and pushed 2026-10-25 on Fred's instruction. Manual
 - Read-only analysis of kfit_dev (no purge): 3 services to delete (the legacy « Integration test service » rows), nothing kept.
 - Limits: the dev API was not running during the integration run (Fred's manual step 1 covers it). No client test runner, so the bundle check is the build + grep. Fixtures named without "[TEST] " (e.g. « Synthetic Dashboard ») are not detected, by design (D5).
 
-## S7.3b Gate 1 — approved 2026-10-26 (privacy client)
+## S7.3b Gate 1 - approved 2026-10-26 (privacy client)
 
 ### Context (verified on main fa06b35)
+
 - customers.repository.ts l.15: `const active = and(isNull(archivedAt), isNull(anonymizedAt))` is applied to listActive, getDetail (l.46), getOverviewSource, getAnalyticsSource, searchActive. After « Archiver » the fiche (GET /admin/customers/:customerId) returns 404 → « Anonymiser… » and the anonymized view are unreachable. This is the gap.
 - Anonymization (S7.3a) already writes the pseudonym into customers.full_name, WhatsApp → `anon-<id>`, email → null.
 - shared customers/contracts.ts: AdminCustomer (l.23), AdminCustomerDetailResponse (l.65), routes (l.4–11; `detail: "/admin/customers/:customerId"`).
 - shared requests/contracts.ts: AdminServiceRequestProspect (l.178) = { id, fullName, whatsapp, email }. admin-requests.repositories.ts l.214 hides anonymized prospects from the queue (keep).
 - server privacy/services/privacy.policy.ts: TERMINAL_REQUEST_STATUSES (l.18), prospect eligibility (l.53); customer archive eligibility (D1 precision: every subscription completed|cancelled).
 - Holds: GET /admin/retention-holds supports scopeType/scopeId filters (privacy.controller.ts l.65).
-- client/vite.config.ts: no proxy entry for /admin/prospects nor /admin/retention-holds (Fred has a local uncommitted line for the latter — overwrite it with the committed version, report it).
+- client/vite.config.ts: no proxy entry for /admin/prospects nor /admin/retention-holds (Fred has a local uncommitted line for the latter - overwrite it with the committed version, report it).
 
 ### Decisions (Fred 2026-10-26)
+
 D1. Customer read path: GET /admin/customers/:customerId also returns archived and anonymized customers. Response gains `privacy: { archivedAt: string|null; anonymizedAt: string|null; archivable: boolean; activeHolds: number }`. archivable = not archived AND every subscription completed|cancelled (reuse the privacy policy rule, no copy). Anonymized: customer.whatsapp and customer.email returned as null (type: detail customer whatsapp string|null), fullName = stored pseudonym. List, search, overview, analytics, alerts, notifications stay unchanged (S7.3 D5): analytics still 404 for archived/anonymized.
 D2. New GET /admin/customers/archived → { customers: [{ id, displayName, archivedAt, anonymizedAt, activeHolds }] }, archivedAt desc, archived (named) + anonymized (pseudonym only, no contact fields). Registered BEFORE /:customerId.
 D3. Archived fiche is read-only in the UI (S7.3b-2). Server: audit every writer that takes a customerId or acts on its subscriptions and report whether an archived/anonymized customer is refused (cite line). Fix only with a one-line guard returning an existing error code; anything bigger → report, do not fix.
@@ -1342,7 +1445,7 @@ No migration. All API changes additive.
 
 Status: S7.3b-1 APPROVED_FOR_IMPLEMENTATION
 
-## S7.3b-1 execution — 2026-10-26 (Claude)
+## S7.3b-1 execution - 2026-10-26 (Claude)
 
 Status: delivered; committed and pushed 2026-10-26 on Fred's instruction → Fred: validate; then S7.3b-2 (client).
 
@@ -1358,35 +1461,37 @@ Status: delivered; committed and pushed 2026-10-26 on Fred's instruction → Fre
 - Checks (agent-run): tsc shared/server/client clean; client build ok; shared 71/71; server unit 625/625 (TEST-01: 623); integration on kfit_test 604/604 (TEST-01: 597; +5 customers-privacy, +1 receipts, +1 quotes).
 - Flaky (pre-existing, unrelated): express unit tests occasionally fail with `fetch failed` (a different test each time: dashboard GET, notification settings, admin requests contact-attempt); 3 of 5 full unit runs passed.
 
-## ARCH-01 Gate 1 — approved 2026-10-26 (archived subjects freeze)
+## ARCH-01 Gate 1 - approved 2026-10-26 (archived subjects freeze)
 
 ### Context (verified on main d6fdf61)
-- Archive: privacy.repository.ts archive() l.~73–88 — lockSubject (advisory, l.47) → subject row FOR UPDATE → refusal rules → set archived_at → audit. Already-archived returns early (l.78). It revokes no token.
+
+- Archive: privacy.repository.ts archive() l.~73–88 - lockSubject (advisory, l.47) → subject row FOR UPDATE → refusal rules → set archived_at → audit. Already-archived returns early (l.78). It revokes no token.
 - Anonymize requires archived (PRIVACY_SUBJECT_NOT_ARCHIVED), locks the subject row FOR UPDATE, then updates subscription rows. Token revocation: applyAll l.~239–241 via tokenResourceIds(tx, scope, docs) l.162 (subscriptions, requests, document versions, appointments, installments, proofs, quotes, quote versions, receipts).
 - Nothing checks customers.archived_at / prospects.archived_at in writers except conversion matching (activeCustomerWhatsappMatches, customers.repository.ts l.33). Full D3 audit with lines: sprint-7.md § S7.3b-1 execution. Unguarded today: renew from completed (subscriptions.repository.ts ~l.127), appointment status/restore-component/response links (appointments.repository.ts ~l.106–135), follow-up complete/cancel (follow-ups.repository.ts ~l.96–103), goal pause/resume/cancel/confirm-outcome (progress.repository.ts ~l.145–158), documents upload/summary/photo/version/link (documents.repository.ts ~l.81+), finance plans/payments/corrections (finance.repository.ts ~l.166), payment-proof link + review, receipts share/void, quotes create/version/edit/share/cancel/synchronize. Stop-gap one-line guards: receipts.repository.ts ~l.106 (RECEIPT_INVALID_PAYMENT), quotes.repository.ts ~l.184 (QUOTE_INVALID_STATE).
 - Prospect writers: admin-requests.repositories.ts createContactAttempt ~l.312, transitionStatus ~l.389, recordQualificationReview ~l.444, createWaitlistEntry ~l.560, withdrawWaitlistEntry ~l.681; request-conversion.repository.ts. Public request form requests.repositories.ts ~l.73 matches an existing prospect by WhatsApp with no archived filter → a returning person's new request attaches to the archived prospect.
 - No unique index on customers/prospects whatsapp (indexes only).
 
 ### Decisions (Fred 2026-10-26)
-D1. Freeze: a customer or prospect with archived_at not null (archived or anonymized) is frozen. Every admin or public writer acting on that customer, its subscriptions (and their children) or that prospect / its requests refuses with CUSTOMER_ARCHIVED or PROSPECT_ARCHIVED (409). One shared assertion per subject type (e.g. assertCustomerWritable(tx, { customerId } | { subscriptionId }), assertProspectWritable(tx, { prospectId } | { requestId })), used by every writer. It replaces the two stop-gap guards (receipts ~l.106, quotes ~l.184) — those return CUSTOMER_ARCHIVED now.
+
+D1. Freeze: a customer or prospect with archived_at not null (archived or anonymized) is frozen. Every admin or public writer acting on that customer, its subscriptions (and their children) or that prospect / its requests refuses with CUSTOMER_ARCHIVED or PROSPECT_ARCHIVED (409). One shared assertion per subject type (e.g. assertCustomerWritable(tx, { customerId } | { subscriptionId }), assertProspectWritable(tx, { prospectId } | { requestId })), used by every writer. It replaces the two stop-gap guards (receipts ~l.106, quotes ~l.184) - those return CUSTOMER_ARCHIVED now.
 D2. Lock order: the assertion selects the subject row FOR SHARE and is the FIRST row lock in the writer transaction (only advisory fences such as the cadence fence 7247001 may come before it). Archive/anonymize take the same row FOR UPDATE → they serialize with writers, no lock cycle with anonymize updating subscription rows. Resolve customerId from subscriptionId with a plain read before locking.
 D3. Exceptions (never frozen): consent revoke (withdrawal); privacy actions (archive, anonymize, holds, unarchive); system jobs (privacy purge, notification reconcile/delivery); reads. Keep them as one named exemption list.
 D4. Renew from a completed subscription of an archived customer → CUSTOMER_ARCHIVED. Accounting corrections (receipt void, payment correction, plans) are frozen too: correction = unarchive first (D6). Corrections on an anonymized customer's financial rows are refused in V1 (compliance open item, legal sign-off).
 D5. Archive revokes every non-revoked public link of the subject in the same transaction, reusing tokenResourceIds (customer scope: its subscriptions + documents + proofs/quotes/receipts; prospect scope: its requests). Audit metadata gains tokensRevoked (count). Calling archive on an already-archived subject is still idempotent (same archivedAt) and also revokes any remaining live link (covers subjects archived before ARCH-01). Revoked links stay revoked after unarchive.
-D6. Unarchive: POST /admin/customers/:customerId/unarchive and POST /admin/prospects/:prospectId/unarchive. Admin session + CSRF + same-origin (no OTP). Body { reason } with reason ∈ closed list unarchiveReasons = accounting_correction | returning_customer | archived_by_mistake (French labels in shared: « Correction comptable », « Client de retour », « Archivé par erreur »). Not archived → PRIVACY_SUBJECT_NOT_ARCHIVED (409); anonymized → PRIVACY_SUBJECT_ANONYMIZED (409, new code — anonymization stays irreversible); invalid reason → PRIVACY_INVALID_INPUT. Same locks as archive (lockSubject → row FOR UPDATE). Sets archived_at null; audit privacy.subject_unarchived { subjectType, reason }. Active holds do not block unarchive.
+D6. Unarchive: POST /admin/customers/:customerId/unarchive and POST /admin/prospects/:prospectId/unarchive. Admin session + CSRF + same-origin (no OTP). Body { reason } with reason ∈ closed list unarchiveReasons = accounting_correction | returning_customer | archived_by_mistake (French labels in shared: « Correction comptable », « Client de retour », « Archivé par erreur »). Not archived → PRIVACY_SUBJECT_NOT_ARCHIVED (409); anonymized → PRIVACY_SUBJECT_ANONYMIZED (409, new code - anonymization stays irreversible); invalid reason → PRIVACY_INVALID_INPUT. Same locks as archive (lockSubject → row FOR UPDATE). Sets archived_at null; audit privacy.subject_unarchived { subjectType, reason }. Active holds do not block unarchive.
 D7. Public request form: the WhatsApp match only considers prospects with archived_at null and anonymized_at null; otherwise a new prospect row is created (same behaviour as conversion's active-only customer match). The public response stays identical either way (no existence leak).
-D8. Coverage: one declarative constant listing every guarded writer (module → method) plus the D3 exemption list; a test fails when a repository write method in the covered modules is in neither list (static source scan of repository classes is acceptable — keep it simple and report how it works and its blind spots).
+D8. Coverage: one declarative constant listing every guarded writer (module → method) plus the D3 exemption list; a test fails when a repository write method in the covered modules is in neither list (static source scan of repository classes is acceptable - keep it simple and report how it works and its blind spots).
 D9. Customer detail privacy DTO (S7.3b-1): add `unarchivable: boolean` (archived AND not anonymized). Additive.
 D10. Slices: ARCH-01 server (this run) → S7.3b-2 client (archived fiche read-only, « Désarchiver… » dialog with the reason list, then the rest of S7.3b).
 No migration. All API changes additive except the two stop-gap error codes (D1).
 
 Status: ARCH-01 APPROVED_FOR_IMPLEMENTATION
 
-## ARCH-01 execution — 2026-10-26 (Claude)
+## ARCH-01 execution - 2026-10-26 (Claude)
 
 Status: delivered; committed and pushed 2026-10-26 on Fred’s instruction → Fred: validate; then S7.3b-2 (client).
 
-- Mechanism (D1, D2): `privacy/repositories/subject-freeze.ts` — `assertCustomerWritable(tx, { customerId } | { subscriptionId })` and `assertProspectWritable(tx, { prospectId } | { requestId })` resolve the owner with a plain read, then take the subject row FOR SHARE as the first row lock of the writer transaction (only advisory fences such as cadence 7247001 come before). A frozen subject throws `SubjectArchivedError` (rolls back); each module router catch maps it to 409 { error: CUSTOMER_ARCHIVED | PROSPECT_ARCHIVED } via `respondIfSubjectArchived`. Archive/anonymize/unarchive take the same row FOR UPDATE after the subject advisory lock.
+- Mechanism (D1, D2): `privacy/repositories/subject-freeze.ts` - `assertCustomerWritable(tx, { customerId } | { subscriptionId })` and `assertProspectWritable(tx, { prospectId } | { requestId })` resolve the owner with a plain read, then take the subject row FOR SHARE as the first row lock of the writer transaction (only advisory fences such as cadence 7247001 come before). A frozen subject throws `SubjectArchivedError` (rolls back); each module router catch maps it to 409 { error: CUSTOMER_ARCHIVED | PROSPECT_ARCHIVED } via `respondIfSubjectArchived`. Archive/anonymize/unarchive take the same row FOR UPDATE after the subject advisory lock.
 - Guarded writers (route registrations, D8 constant `ARCHIVE_FREEZE_GUARDED_ROUTES`): appointments 3 (schedule, every appointment action via appointmentApiRoutes[action], public response), follow-ups 4, progress 6, documents 8, finance 6, payment-proofs 8 (incl. public upload), receipts 4 (issue, share, link revoke, void), quotes 9 (incl. public respond), consents 6 (incl. public submit), questionnaires 4 (incl. public submit), onboarding 5, subscriptions 1 (every lifecycle command incl. renew via subscriptionApiRoutes[action]), requests 6 (contact attempt, status, qualification, waitlist entry/withdraw, conversion). Total 70 route keys in 13 modules. Placement: one guard per execute dispatcher (after the plain ownership read, before the first FOR UPDATE), per-action owner resolvers in documents, payment-proofs, receipts, quotes.
 - Stop-gaps (S7.3b-1) removed: receipts issue and quotes issue now answer CUSTOMER_ARCHIVED through the shared guard.
 - Exemptions (D3, `ARCHIVE_FREEZE_EXEMPTIONS`): consent revoke; privacy archive/unarchive/anonymize/holds; jobs privacy.purge, notifications.reconcile, notifications.email-delivery; reads. Also listed because they have no customer/prospect target: consent texts, questionnaire templates, notifications state, customer create, public request form (D7). Public document link verify/download is treated as a read: the link is revoked at archive (D5).
@@ -1396,24 +1501,26 @@ Status: delivered; committed and pushed 2026-10-26 on Fred’s instruction → F
 - Checks (agent-run): tsc shared/server/client clean; client build ok; shared 72/72; server unit 630/630 (S7.3b-1: 625); integration on kfit_test 614/614 (S7.3b-1: 604; +9 archive-freeze, +1 receipt void). Mutation checks: disabling the customer guard, the archive revocation or the D7 filter each fails the matching integration tests. No flaky unit failure in this run.
 - Limits: when a public appointment/consent/questionnaire submission is refused as archived, the access-event row records ROUTE_UNEXPECTED_FAILURE before the 409 (cosmetic). Corrections on an anonymized customer stay refused (D4 open compliance item).
 
-## S7.3b-2 Gate 1 — approved 2026-10-26 (privacy client)
+## S7.3b-2 Gate 1 - approved 2026-10-26 (privacy client)
 
 ### Context (verified on main 356070a)
+
 - Server API ready: privacyApiRoutes (shared privacy/contracts.ts l.~21: archive/anonymize customer + prospect, holds list/create/release) + unarchive routes (ARCH-01); unarchiveReasons + French labels (l.~56); CreateRetentionHoldInput { scopeType, scopeId, holdType, reason } (l.~94); retentionHoldTypeLabels. GET /admin/customers/archived (S7.3b-1). Customer detail privacy { archivedAt, anonymizedAt, archivable, unarchivable, activeHolds } (shared customers/contracts.ts l.~73); anonymized → whatsapp/email null, fullName = pseudonym. Request detail prospect.privacy { archivedAt, anonymizedAt, archivable }.
 - Anonymize controller order (privacy.controller.ts l.~61–68): input → fresh OTP (403 AUTH_FRESH_OTP_REQUIRED) → repository: name mismatch 400 PRIVACY_CONFIRMATION_MISMATCH → hold 409 PRIVACY_RETENTION_HOLD_ACTIVE → 200 (alreadyAnonymized idempotent). Name normalization: server privacy.policy.ts l.~34–36 (NFC + trim + collapse whitespace, case-sensitive).
 - OTP step pattern: consents/components/ConsentTextsPage.tsx PublishDialog l.~184–266 (try → 403 → requestSensitiveActionOtp → OtpCodeInput → verifySensitiveActionOtp → retry; sensitiveOtpRequestMessage).
-- Fiche: app/routes/client-profile.tsx — header l.~150–220 (no ⋯ menu today; WhatsApp button hidden when whatsapp null), « Nouvel abonnement » disabled button, profileTabs l.37 (apercu, analyse, rendez-vous, suivis, preparation, progression, documents, paiements, sante), TabsContent l.~242–291. UI primitives: components/ui dropdown-menu, dialog, tooltip, field, segmented-control, empty-state, status-pill.
-- Clients: customers/components/ClientsPage.tsx — views via customerOverviewViews + `vue` param (l.~21–29), data GET /admin/customers/overview. customers/api/customers-api.ts has no archived/privacy calls. No privacy API client exists.
-- Requests: requests/components/RequestDetail.tsx — header l.~137–151 (name, WhatsApp, e-mail, WhatsApp button), ⋯ DropdownMenu l.~156–170 with destructive group.
-- Réglages: notifications/components/NotificationSettingsPage.tsx — draft over notificationSettingKeys; registry (shared notifications/contracts.ts l.~86–100) already holds privacy.purge.delay_days (int 1–365, default 30, group "privacy"); DEV TestDataCard l.~27, ~176.
+- Fiche: app/routes/client-profile.tsx - header l.~150–220 (no ⋯ menu today; WhatsApp button hidden when whatsapp null), « Nouvel abonnement » disabled button, profileTabs l.37 (apercu, analyse, rendez-vous, suivis, preparation, progression, documents, paiements, sante), TabsContent l.~242–291. UI primitives: components/ui dropdown-menu, dialog, tooltip, field, segmented-control, empty-state, status-pill.
+- Clients: customers/components/ClientsPage.tsx - views via customerOverviewViews + `vue` param (l.~21–29), data GET /admin/customers/overview. customers/api/customers-api.ts has no archived/privacy calls. No privacy API client exists.
+- Requests: requests/components/RequestDetail.tsx - header l.~137–151 (name, WhatsApp, e-mail, WhatsApp button), ⋯ DropdownMenu l.~156–170 with destructive group.
+- Réglages: notifications/components/NotificationSettingsPage.tsx - draft over notificationSettingKeys; registry (shared notifications/contracts.ts l.~86–100) already holds privacy.purge.delay_days (int 1–365, default 30, group "privacy"); DEV TestDataCard l.~27, ~176.
 - Gate 1 UI text: sprint-7.md § S7.3 Gate 1 › « UI (S7.3b, French) ».
 
 ### Decisions (Fred 2026-10-26)
+
 D1. Clients: new view « Archivés » (vue=archives), fed by GET /admin/customers/archived (own query, not the overview). Columns: Nom (pseudonym when anonymized), Archivé le, État (pill « Archivé » or « Anonymisé »), Blocages (count, hidden when 0). Row → fiche. Empty « Aucun client archivé ». Other views unchanged.
 D2. Archived fiche (archived, not anonymized): banner under the header « Client archivé le {date} · fiche en lecture seule. » + button « Désarchiver… ». Tab contents wrapped in one ReadOnlyFiche boundary = native `<fieldset disabled>` (disables every button/input inside; links stay usable). « Analyse » tab hidden (server 404). « Nouvel abonnement » hidden. Subscription chips and tab switching stay usable.
 D3. Header ⋯ menu (new): active customer → « Archiver le client » (disabled + tooltip « Tous les abonnements doivent être terminés ou annulés. » when !archivable) and « Ajouter un blocage de conservation »; archived → « Désarchiver… » (when unarchivable), « Ajouter un blocage de conservation », separator, « Anonymiser… » (destructive); anonymized → « Ajouter un blocage de conservation » only. Archive confirm dialog: « Archiver {nom} ? La fiche passe en lecture seule et les liens publics envoyés au client sont désactivés. Tu pourras la désarchiver. » → « Archiver ».
 D4. Unarchive dialog: required radio list of the 3 unarchiveReasons (shared labels, no default) + note « Les liens publics désactivés ne sont pas rétablis. » → « Désarchiver ». Errors: 409 PRIVACY_SUBJECT_ANONYMIZED / NOT_ARCHIVED → refetch + message.
-D5. Anonymize dialog (Gate 1 text): warning paragraph; when activeHolds > 0 → message « Un blocage de conservation est actif sur ce client. Lève-le avant d'anonymiser. » and the action disabled; field « Saisis le nom {NOM} pour confirmer »; action enabled only when the normalized input equals the displayed name — move the server normalization function to @kfit/shared and reuse it on both sides (no copy; server tests unchanged). Flow follows the server order: submit → 403 → OTP step (PublishDialog pattern, « Code envoyé à ton adresse e-mail ») → auto-retry → 400 mismatch → back to the name step « Le nom saisi ne correspond pas. » → 409 hold → hold message + refetch holds. Success: toast « Client anonymisé. », refetch detail + archived list, focus back to the ⋯ trigger. The typed name is never persisted (no draft storage) nor logged.
+D5. Anonymize dialog (Gate 1 text): warning paragraph; when activeHolds > 0 → message « Un blocage de conservation est actif sur ce client. Lève-le avant d'anonymiser. » and the action disabled; field « Saisis le nom {NOM} pour confirmer »; action enabled only when the normalized input equals the displayed name - move the server normalization function to @kfit/shared and reuse it on both sides (no copy; server tests unchanged). Flow follows the server order: submit → 403 → OTP step (PublishDialog pattern, « Code envoyé à ton adresse e-mail ») → auto-retry → 400 mismatch → back to the name step « Le nom saisi ne correspond pas. » → 409 hold → hold message + refetch holds. Success: toast « Client anonymisé. », refetch detail + archived list, focus back to the ⋯ trigger. The typed name is never persisted (no draft storage) nor logged.
 D6. Anonymized view: title/breadcrumb = pseudonym, no contact lines, no WhatsApp button, pill « Anonymisé »; banner « Données effacées le {date}. Les paiements, devis et reçus sont conservés. »; tabs Progression, Documents, Santé et consentements → EmptyState « Données effacées le {date} »; Analyse hidden; other tabs read-only as in D2.
 D7. Holds card « Blocages de conservation » under the header, outside the read-only boundary, shown when ≥ 1 active hold (GET holds?scopeType=customer&scopeId=). Rows: type label, motif, posé le {date}, « Lever le blocage » (confirm dialog « Lever ce blocage ? L'anonymisation et la suppression des fichiers redeviennent possibles. »). « Ajouter un blocage de conservation » dialog: type (select, retentionHoldTypeLabels) + motif (required textarea, server max) → « Ajouter ». Available in every state. Customer scope only (document holds stay API-only).
 D8. Prospect (RequestDetail): pill « Prospect archivé » / « Prospect anonymisé » in the header. Archived → decision actions (primary + ⋯ decisions) hidden; ⋯ = « Désarchiver le prospect… », separator, « Anonymiser le prospect… ». Anonymized → pseudonym, no WhatsApp/e-mail/WhatsApp button, no ⋯ menu. Active and archivable → extra destructive group item « Archiver le prospect ». Same dialog components as the customer (subjectType prop; confirmation name = prospect.fullName). No holds card for prospects (API-only).
@@ -1424,24 +1531,25 @@ No server change. If one turns out necessary, STOP and ask (one yes/no question)
 
 Status: S7.3b-2 APPROVED_FOR_IMPLEMENTATION
 
-## S7.3b-2 execution — 2026-10-26 (Claude)
+## S7.3b-2 execution - 2026-10-26 (Claude)
 
 Status: delivered, uncommitted → Fred: validate S7.3b-2 + ARCH-01 live (manual steps in the brief).
 
 - Shared (`privacy/subject-view.ts`, tests `subject-view.test.ts`, 5 tests): `normalizeConfirmName` / `confirmationMatches` moved from server privacy.policy.ts (the policy re-exports them, server tests unchanged); `subjectMode` (active | archived | anonymized), `customerPrivacyMenu` (D3), `prospectPrivacyMenu` (D8), `ficheTabVisibility` + `ficheReadOnly` (D2, D6).
 - Client API (D11): `privacy/api/privacy-api.ts` (archive, unarchive, anonymize per subject type; customer holds list/create/release), `customersApi.archived()`, `privacy/api/privacy-queries.ts` (archived list, active customer holds, `usePrivacyRefresh` invalidating ["customers"], ["privacy","holds"], ["requests"]). Error map `privacy/lib/privacy-error-messages.ts` (D10).
-- D10 central fallback: none exists — each of 17 client modules has its own `*ErrorMessage`; CUSTOMER_ARCHIVED / PROSPECT_ARCHIVED are mapped only in the privacy map (not added module by module). With the read-only fiche, those codes are reachable only through a race.
+- D10 central fallback: none exists - each of 17 client modules has its own `*ErrorMessage`; CUSTOMER_ARCHIVED / PROSPECT_ARCHIVED are mapped only in the privacy map (not added module by module). With the read-only fiche, those codes are reachable only through a race.
 - Clients (D1): view « Archivés » (vue=archives) after the overview views, own query, columns Nom / Archivé le / État / Blocages, mobile cards. The view row now renders independently of the overview query.
 - Fiche (D2–D7): ⋯ menu from `customerPrivacyMenu` (disabled « Archiver le client » with tooltip + sr-only reason); banners archived / anonymized; `ReadOnlyFiche` = `<fieldset disabled>` around tab contents (reset styles, min-w-0); Analyse hidden and unknown tab → Aperçu; « Nouvel abonnement » hidden when frozen; anonymized: pill, no contact lines, no WhatsApp, erased tabs (Progression, Documents, Santé) → EmptyState. Holds card outside the boundary, release + add dialogs. Dialogs: archive, unarchive (radio reasons, no default), anonymize (name step → 403 auto-sends the code → verify → auto-retry → 400 back to name step → 409 hold message + refresh). Focus returns to the opener, or the ⋯ trigger when the opener is gone (`usePrivacyDialog`).
 - RequestDetail (D8): pills « Prospect archivé » / « Prospect anonymisé »; frozen → no decision buttons, no « + Tentative », ⋯ = privacy entries only; anonymized → no contact text, no WhatsApp, no ⋯; active + archivable → « Archiver le prospect » in the destructive group.
 - Réglages (D9): card « Confidentialité », number field on privacy.purge.delay_days (registry label, 1–365, inline error), saved by the existing Enregistrer.
 - Checks (agent-run): tsc shared/server/client clean; client build ok; shared 77/77 (+5); server unit 630/630; integration on kfit_test 614/614 (shared change on the server path).
-- NOT VALIDATED by the agent: browser runs (desktop + 390 px), ARCH-01 HTTP 409 checks from the console — Fred runs them from his browser (agent browser use declined).
+- NOT VALIDATED by the agent: browser runs (desktop + 390 px), ARCH-01 HTTP 409 checks from the console - Fred runs them from his browser (agent browser use declined).
 - Limits: prospect anonymize dialog passes activeHolds=0 (prospect holds are API-only); a server 409 still shows the hold message. Anonymized prospect detail relies on the request detail route returning anonymized prospects (not exercised by the agent).
 
-## FIX-02 Gate 1 — approved 2026-10-26 (error handling after S7.3)
+## FIX-02 Gate 1 - approved 2026-10-26 (error handling after S7.3)
 
 ### Context (verified on main 544b57d)
+
 - Drizzle wraps driver errors: SQLSTATE/constraint sit on `error.cause`. Two helpers read only the top level → a real unique violation becomes 500:
   - requests/repositories/requests.repositories.ts l.15 isUniqueViolation (used l.127 service_requests_submission_token_uq, l.135 service_requests_reference_uq retry) → Notion row « Collision de jeton de demande… »;
   - catalogue/repositories/catalogue.repositories.ts l.135 isUniqueViolation (used l.250, l.265 → "slug_conflict").
@@ -1452,17 +1560,18 @@ Status: delivered, uncommitted → Fred: validate S7.3b-2 + ARCH-01 live (manual
 - Client: 18 module `<module>ErrorMessage(error)` functions (e.g. finance/api/finance-api.ts l.30), each duplicating the AUTH_SESSION_REQUIRED and AUTH_CSRF_INVALID / AUTH_ORIGIN_INVALID branches. CUSTOMER_ARCHIVED / PROSPECT_ARCHIVED French texts exist only in privacy/lib/privacy-error-messages.ts l.~19 → other modules show their generic fallback.
 
 ### Decisions (Fred 2026-10-26)
-D1. One server helper `pgErrorInfo(error): { code: string; constraint: string | null } | null` in packages/server/src/db/pg-error.ts: walks `.cause` (stops on self-reference and after 10 levels), returns the first object with a string `code`. Plus `isPgUniqueViolation(error, constraint?)` and `isPgForeignKeyViolation(error)`. Replace the 2 buggy helpers AND the 7 local walkers by it (pure refactor for those 7 — same outcomes; existing tests unchanged). No other behaviour change.
+
+D1. One server helper `pgErrorInfo(error): { code: string; constraint: string | null } | null` in packages/server/src/db/pg-error.ts: walks `.cause` (stops on self-reference and after 10 levels), returns the first object with a string `code`. Plus `isPgUniqueViolation(error, constraint?)` and `isPgForeignKeyViolation(error)`. Replace the 2 buggy helpers AND the 7 local walkers by it (pure refactor for those 7 - same outcomes; existing tests unchanged). No other behaviour change.
 D2. Effects of D1: request token collision → existing retry/409 path (whatever l.127/135 already intend); catalogue offer slug conflict → existing "slug_conflict" outcome → its current 409 code. Do not invent new codes.
-D3. Access events: when the caught error is SubjectArchivedError, record its code (CUSTOMER_ARCHIVED / PROSPECT_ARCHIVED) instead of *_ROUTE_UNEXPECTED_FAILURE in the 3 repositories above. Grep every other repository that records a *_ROUTE_UNEXPECTED_FAILURE result into an access/event row and apply the same rule there (report the list). The HTTP response stays 409 (unchanged).
-D4. Documents: regression test only — upload on an archived customer → 409 CUSTOMER_ARCHIVED and the storage directory contains no new file (use the test storage root). Same for add-version.
+D3. Access events: when the caught error is SubjectArchivedError, record its code (CUSTOMER_ARCHIVED / PROSPECT_ARCHIVED) instead of _\_ROUTE_UNEXPECTED_FAILURE in the 3 repositories above. Grep every other repository that records a _\_ROUTE_UNEXPECTED_FAILURE result into an access/event row and apply the same rule there (report the list). The HTTP response stays 409 (unchanged).
+D4. Documents: regression test only - upload on an archived customer → 409 CUSTOMER_ARCHIVED and the storage directory contains no new file (use the test storage root). Same for add-version.
 D5. Flaky « fetch failed »: diagnose (likely server listen/close lifecycle or port reuse in the express test helper, or keep-alive sockets after close). Fix only if the cause is in the test harness (e.g. listen on port 0 + await close + closeAllConnections). Product code unchanged. Prove with 10 consecutive full unit runs (report pass count). If not reproducible or the cause is elsewhere, report the evidence and leave it.
 D6. Client: one `commonApiErrorMessage(code: unknown): string | null` in client lib/api-error-messages.ts handling AUTH_SESSION_REQUIRED, AUTH_CSRF_INVALID, AUTH_ORIGIN_INVALID (current texts, unchanged) and CUSTOMER_ARCHIVED, PROSPECT_ARCHIVED (texts moved from privacy-error-messages.ts, privacy keeps importing them). Each of the 18 module functions calls it first and drops its own duplicated AUTH branches. Module-specific messages keep priority only for module codes. No visual change otherwise.
 No migration. No API contract change.
 
 Status: FIX-02 APPROVED_FOR_IMPLEMENTATION
 
-## FIX-02 execution — 2026-10-26 (Claude)
+## FIX-02 execution - 2026-10-26 (Claude)
 
 Status: delivered, uncommitted → Fred: validate.
 
@@ -1471,51 +1580,54 @@ Status: delivered, uncommitted → Fred: validate.
 - D2: new integration test forces the submission-token collision deterministically (an open transaction holds an uncommitted row with the same token; the repository insert blocks on the unique index; commit → wrapped 23505 → existing replay path → "replayed"). The existing race test is kept; with the helper mutated back to top-level-only it still passes (it rarely reaches the collision path), while the forced test fails. Catalogue: real router + service + repository over HTTP, duplicate slug on create and on PATCH → 409 CATALOGUE_SERVICE_SLUG_CONFLICT (was 500); fails under the same mutation.
 - D3: `accessFailureResult(error, unexpected)` in privacy/repositories/subject-freeze.ts; applied in appointments.repository.ts, consent.repository.ts, questionnaire.repository.ts. Grep of every repository writing an access/event row from a catch: only those 3. quotes.repository.ts l.96 records QUOTE_ROUTE_UNEXPECTED_FAILURE for a PDF render failure inside the transaction (not a caught freeze) → unchanged. Test: archived customer + live tokens inserted after archive → each public call rejects with CUSTOMER_ARCHIVED and the access event row records CUSTOMER_ARCHIVED (fails when the helper is mutated). HTTP stays 409.
 - D4: test over the real documents router with PrivateDocumentStorage on a temp root and a local ClamAV INSTREAM stand-in: upload and add-version on an archived customer → 409 CUSTOMER_ARCHIVED, storage root empty after each (fails when persistThen's catch-side remove is disabled). No product change.
-- D5: not fixed — cause not in the named harness pattern. Evidence: all 25 express tests listen on port 0; 21 already use closeAllConnections + awaited close, including subscriptions.express.test where a failure was observed (2 consecutive tests). 1 failure in 13 plain full runs before the final check, 0 in 35 runs with a fetch-cause preload (15 single, 20 under double load), so the cause code was never captured. Final 10 consecutive full unit runs: 9 × 633/633, 1 × 628/633 — 5 tests failing at once in 3 different test files (finance, follow-ups, privacy express), i.e. separate processes, which points to the environment (Windows loopback/socket or load) rather than one test helper. Product and harness unchanged; backlog line kept.
+- D5: not fixed - cause not in the named harness pattern. Evidence: all 25 express tests listen on port 0; 21 already use closeAllConnections + awaited close, including subscriptions.express.test where a failure was observed (2 consecutive tests). 1 failure in 13 plain full runs before the final check, 0 in 35 runs with a fetch-cause preload (15 single, 20 under double load), so the cause code was never captured. Final 10 consecutive full unit runs: 9 × 633/633, 1 × 628/633 - 5 tests failing at once in 3 different test files (finance, follow-ups, privacy express), i.e. separate processes, which points to the environment (Windows loopback/socket or load) rather than one test helper. Product and harness unchanged; backlog line kept.
 - D6: `packages/client/src/lib/api-error-messages.ts` `commonApiErrorMessage(code, audience = "admin")` with AUTH_SESSION_REQUIRED / AUTH_CSRF_INVALID / AUTH_ORIGIN_INVALID (one wording, Fred 2026-10-26: majority texts) and CUSTOMER_ARCHIVED / PROSPECT_ARCHIVED (moved from privacy-error-messages.ts, which imports them). 18 module functions call it first: appointments, catalogue, consents, customers, dashboard, documents, finance, follow-ups, notifications, onboarding, payment-proofs, privacy, progress, questionnaires, quotes, receipts, subscriptions, requests (new `requestErrorMessage(error)` used by the 4 admin call sites; the public request form keeps its typed path). Wording change accepted by Fred: AUTH texts in customers, privacy, notifications, consents, questionnaires now use the common wording; documents, quotes, requests, dashboard (CSRF) gain AUTH messages instead of their fallback.
 - D6 addition (no visual change for customers): the 7 functions also used by public link pages take `audience`; the 16 public call sites pass "public", so CUSTOMER_ARCHIVED / PROSPECT_ARCHIVED keep showing the module's existing fallback to the customer instead of the coach instruction « désarchive-le… ».
 - Checks (agent-run): tsc shared/server/client clean; client build ok; shared 77/77; server unit 10 runs as above; integration 618/618.
 - Limits: D5 open (environmental flake, ~1 run in 10–20 on this machine). No browser check of D6 texts (no runner; tsc + build only).
 
-## SEC-01 Gate 1 — approved 2026-10-26 (security floor, CVE-2026-111497)
+## SEC-01 Gate 1 - approved 2026-10-26 (security floor, CVE-2026-111497)
 
 ### Context (verified on main 1bfbc31)
+
 - Runtime not pinned: root package.json engines `"node": ">=22"`; no .nvmrc; .github/workflows/ci.yml setup-node `node-version: 22` (resolves whatever 22.x the runner has).
 - Lockfile: express 5.2.1, body-parser 2.3.0 (decodes `Content-Encoding: br` request bodies).
 - Body parsers: app.ts l.84 `app.use(express.json({ limit: "1mb" }))` inside createServerApp (app-level, before every router); documents/routes/express-documents.router.ts l.12 `raw({type:[pdf, jpeg, png, webp]})`. Check payment-proofs and any other router for `raw(` / `express.raw` / `express.text` / `urlencoded` and list them.
-- Entrypoint: only dev-app.ts createDevelopmentRuntime (l.~92) — no production entrypoint yet (S7.4 later). No Dockerfile yet.
+- Entrypoint: only dev-app.ts createDevelopmentRuntime (l.~92) - no production entrypoint yet (S7.4 later). No Dockerfile yet.
 - Outbound HTTP: no server-side fetch/axios/http.request found in src (grep). Puppeteer renders local HTML; SMTP via nodemailer.
 
 ### Decisions (Fred 2026-10-26)
-D1. Security-floor registry: packages/server/src/security/security-floor.ts — one declarative constant SECURITY_FLOOR = [{ id: "CVE-2026-111497", component: "node", minimumByLine: { 22: "22.23.4", 24: "24.22.1", 26: "26.12.1" }, publishedAt: "2026-10-22", note: "Brotli decoder OOB write (Node2Shell / HTTP2Shell)" }]. Pure function evaluateRuntimeFloor(version: string, floor = SECURITY_FLOOR) → { ok: true } | { ok: false, failures: [{ id, reason: "below_minimum" | "unsupported_line", current, required? }] }. A major line absent from minimumByLine = unsupported_line (covers EOL 20/25/18…). Semver compare without new dependency. Runtime advisories only; npm packages stay with npm audit. Adding the next advisory must be a one-entry change (say so in a comment).
-D2. Startup check: assertRuntimeSecurityFloor({ nodeEnv, version = process.version, log }) — production → throw (refuse to start) with the failure ids; any other env → one structured warning (ids + versions, no stack). Called first in createDevelopmentRuntime and exported for the future production entrypoint (S7.4). Named constant for the error code SECURITY_FLOOR_NOT_MET.
-D3. CI + local pinning: add `.nvmrc` = 22.23.4; root engines `">=22.23.4"`; ci.yml setup-node `node-version-file: .nvmrc`; new CI step right after Setup Node: `node packages/server/scripts/security/check-runtime-floor.mjs` (reads the compiled registry or a tiny duplicated-free JSON export — no copy of the table; exits 1 with the failure list). Also `npm run security:check` at root running the same script. Do not run npm ci.
+
+D1. Security-floor registry: packages/server/src/security/security-floor.ts - one declarative constant SECURITY_FLOOR = [{ id: "CVE-2026-111497", component: "node", minimumByLine: { 22: "22.23.4", 24: "24.22.1", 26: "26.12.1" }, publishedAt: "2026-10-22", note: "Brotli decoder OOB write (Node2Shell / HTTP2Shell)" }]. Pure function evaluateRuntimeFloor(version: string, floor = SECURITY_FLOOR) → { ok: true } | { ok: false, failures: [{ id, reason: "below_minimum" | "unsupported_line", current, required? }] }. A major line absent from minimumByLine = unsupported_line (covers EOL 20/25/18…). Semver compare without new dependency. Runtime advisories only; npm packages stay with npm audit. Adding the next advisory must be a one-entry change (say so in a comment).
+D2. Startup check: assertRuntimeSecurityFloor({ nodeEnv, version = process.version, log }) - production → throw (refuse to start) with the failure ids; any other env → one structured warning (ids + versions, no stack). Called first in createDevelopmentRuntime and exported for the future production entrypoint (S7.4). Named constant for the error code SECURITY_FLOOR_NOT_MET.
+D3. CI + local pinning: add `.nvmrc` = 22.23.4; root engines `">=22.23.4"`; ci.yml setup-node `node-version-file: .nvmrc`; new CI step right after Setup Node: `node packages/server/scripts/security/check-runtime-floor.mjs` (reads the compiled registry or a tiny duplicated-free JSON export - no copy of the table; exits 1 with the failure list). Also `npm run security:check` at root running the same script. Do not run npm ci.
 D4. Request encoding guard: middleware rejectEncodedRequestBodies mounted in createServerApp BEFORE express.json (therefore before every router, incl. documents raw). Allowed: header absent, or exactly "identity" (case-insensitive, trimmed). Anything else (br, gzip, deflate, lists) → 415 { error: "REQUEST_ENCODING_UNSUPPORTED" }, body never read. Named constant ALLOWED_REQUEST_CONTENT_ENCODINGS = ["identity"] citing CVE-2026-111497. Applies to every method, admin and public routes. Response compression (if any) unaffected.
-D5. Outbound: confirm by grep (src + scripts) that no server code fetches remote HTTP. If one exists, report it (file, line, target) and do NOT change it — decision in S7.4 Gate 1.
+D5. Outbound: confirm by grep (src + scripts) that no server code fetches remote HTTP. If one exists, report it (file, line, target) and do NOT change it - decision in S7.4 Gate 1.
 D6. Deploy note for S7.4 (doc only, no Dockerfile now): sprint-7.md S7.4 prerequisites gets "base image pinned to an exact patched tag (e.g. node:22.23.4-alpine, never node:22); smoke test records `node --version`; security:check runs in the image build".
 No migration. No API contract change except the new 415 code (add it to the shared error vocabulary only if a shared list of generic HTTP codes exists; otherwise server constant + report).
 
 Status: SEC-01 APPROVED_FOR_IMPLEMENTATION
 
-## SEC-01 execution — 2026-10-26 (Claude)
+## SEC-01 execution - 2026-10-26 (Claude)
 
 Status: delivered, uncommitted → Fred: validate.
 
 - Node used: v24.22.1 (above the floor for line 24). `npm run security:check` → ✔.
 - Counts: shared 77 → 77; server unit 633 → 643 (+5 floor/startup, +3 encoding middleware, +2 check script); integration on kfit_test 618 → 618.
-- D1: `packages/server/src/security/security-floor.ts` — SECURITY_FLOOR (one entry, CVE-2026-111497), `parseNodeVersion` (strict "vX.Y.Z" / "X.Y.Z"; a suffix or anything else is unreadable), `evaluateRuntimeFloor`. Unreadable versions fail closed as `unsupported_line` (keeps D1's two reasons). Next advisory = one entry (comment + test with a synthetic second entry).
-- D2: `security/runtime-floor.startup.ts` — SECURITY_FLOOR_NOT_MET, SecurityFloorError, `assertRuntimeSecurityFloor({ nodeEnv, version, log })`; first statement of createDevelopmentRuntime; exported for the S7.4 production entrypoint. Dev warning = one line `SECURITY_FLOOR_NOT_MET {"failures":[…]}`, no stack.
-- D4: `security/reject-encoded-request-bodies.ts` — ALLOWED_REQUEST_CONTENT_ENCODINGS = ["identity"], REQUEST_ENCODING_UNSUPPORTED; mounted in createServerApp after the request logger and before express.json, so before every parser. Responses set `Connection: close` so the unread body cannot be parsed as a next request on the same socket. No shared list of generic HTTP codes exists → server constant only.
+- D1: `packages/server/src/security/security-floor.ts` - SECURITY_FLOOR (one entry, CVE-2026-111497), `parseNodeVersion` (strict "vX.Y.Z" / "X.Y.Z"; a suffix or anything else is unreadable), `evaluateRuntimeFloor`. Unreadable versions fail closed as `unsupported_line` (keeps D1's two reasons). Next advisory = one entry (comment + test with a synthetic second entry).
+- D2: `security/runtime-floor.startup.ts` - SECURITY_FLOOR_NOT_MET, SecurityFloorError, `assertRuntimeSecurityFloor({ nodeEnv, version, log })`; first statement of createDevelopmentRuntime; exported for the S7.4 production entrypoint. Dev warning = one line `SECURITY_FLOOR_NOT_MET {"failures":[…]}`, no stack.
+- D4: `security/reject-encoded-request-bodies.ts` - ALLOWED_REQUEST_CONTENT_ENCODINGS = ["identity"], REQUEST_ENCODING_UNSUPPORTED; mounted in createServerApp after the request logger and before express.json, so before every parser. Responses set `Connection: close` so the unread body cannot be parsed as a next request on the same socket. No shared list of generic HTTP codes exists → server constant only.
   - Parser coverage (all behind the guard): app.ts `express.json({ limit: "1mb" })` (app-level); documents router `raw({ type: pdf/jpeg/png/webp, limit: "11mb" })` (create, add-version, progress photo); payment-proofs router `raw({ type: () => true, limit: "11mb" })` invoked inside the public upload handler. No express.text / urlencoded anywhere in src.
   - Tests through the real createServerApp: br, gzip, deflate, case/space variants and lists → 415 with the handler never reached; absent / identity / " Identity " reach the route; GET /health unaffected; document upload (br) and public payment-proof upload (gzip) → 415 before raw(); control upload without the header reaches storage. Removing the mount from dist/app.js fails 2 of the 3 tests. Live dev API: POST /requests with `Content-Encoding: br` → 415.
 - D3: `.nvmrc` = 22.23.4; root engines `>=22.23.4`; root `npm run security:check`; ci.yml setup-node `node-version-file: .nvmrc` + step "Runtime security floor" right after Setup Node. `scripts/security/check-runtime-floor.mjs` runs before `npm ci`/build, so it imports the registry source `src/security/security-floor.ts` through Node type stripping (no dist, no copy of the table); a Node too old to strip types is below every floor line, and the import failure exits 1. KFIT_SECURITY_FLOOR_TEST_VERSION is ignored when NODE_ENV=production. Script tests: exit 0 on this runner, exit 1 for v22.23.3 and v20.19.0, override ignored in production.
 - D5: no outbound HTTP in packages/server/src (only TCP to ClamAV: dev/startup-checks.ts l.29, documents/services/document-storage.service.ts l.46). Scripts (dev preflights, not runtime): preflight/auth-staging.mjs l.31 → AUTH_STAGING_PROXY_URL (default http://127.0.0.1:8080); preflight/password-recovery.mjs l.168 → its own local test server, l.183 and l.205 → Mailpit API (MAILPIT_API_URL, default http://127.0.0.1:8025); preflight/files.mjs l.42/73 → ClamAV TCP. Unchanged; for S7.4 Gate 1.
-- Limits: CI not run here (the new step and `node-version-file` are validated only by reading the workflow and running the script locally on Node 24); type stripping on Node 22.23.4 is assumed from the 22.x line, not run. package-lock.json still records the root engines `>=22` (npm rewrites it on the next install; npm ci not run, per D3). One full unit run had 5 express failures in 2 files (receipts, admin-requests) while the watch-mode dev API was restarting on the same dist/; the 2 files passed 3/3 alone and the next full run passed 643/643 — same flake as FIX-02 D5.
+- Limits: CI not run here (the new step and `node-version-file` are validated only by reading the workflow and running the script locally on Node 24); type stripping on Node 22.23.4 is assumed from the 22.x line, not run. package-lock.json still records the root engines `>=22` (npm rewrites it on the next install; npm ci not run, per D3). One full unit run had 5 express failures in 2 files (receipts, admin-requests) while the watch-mode dev API was restarting on the same dist/; the 2 files passed 3/3 alone and the next full run passed 643/643 - same flake as FIX-02 D5.
 
 ## S7.4 prerequisites (SEC-01 D6)
+
 - base image pinned to an exact patched tag (e.g. node:22.23.4-alpine, never node:22); smoke test records `node --version`; security:check runs in the image build.
 
-## S7.4 Gate 1 — approved 2026-10-26
+## S7.4 Gate 1 - approved 2026-10-26
 
 Scope: code-side production readiness + proven backup/restore. Actual staging/production deployment, Dockerfile, nginx, Certbot, host timer install and off-server destination = Sprint 9.
 D1 shared runtime factory, createProductionRuntime(), dev tools never mounted in production.
@@ -1529,63 +1641,67 @@ D8 scheduling by host timer calling the script (not node-cron); documented in S7
 D9 ops:restore: verify manifest first; restore into a named target DB; refuse non-empty target without --confirm-overwrite; restore files + journal; run privacy:replay automatically before traffic; audit event with counts only; replay guard widened to the confirmed restore target, still refuses kfit_dev.
 D10 automated restore drill test: backup → anonymize after backup → restore → subject re-anonymized, files and counts match.
 D11 runbook docs/runbooks/backup-restore.md + production start checklist; Fred runs a full local drill on the prod compose = S7.4 acceptance.
-D12 (Fred 2026-10-26): ops scripts record every run in scheduled_job_runs; 415/429 refusals counted per day (no IP) — data for OPS-01. Restore / backup are never triggerable from the UI (D9).
+D12 (Fred 2026-10-26): ops scripts record every run in scheduled_job_runs; 415/429 refusals counted per day (no IP) - data for OPS-01. Restore / backup are never triggerable from the UI (D9).
 Then SEC-02 (trusted devices / suspicious-device OTP) before Sprint 8 UAT.
 
 ## S7.4a scope
 
 ### Context (verified on main 580fca4)
+
 - Only runtime: src/dev-app.ts createDevelopmentRuntime() (l.~93), started by scripts/dev/api-server.mjs (loads ../.env, refuses kfit_test, runStartupChecks, starts notification + privacy jobs, listens 127.0.0.1, SIGINT/SIGTERM shutdown). AuthRouteService cookieMode hard-coded "development" (l.119) → cookies not Secure. devToolsController always passed (l.306). No `trust proxy`.
 - Privacy jobs: api-server.mjs l.35 `KFIT_PRIVACY_JOBS=off` disables; journal optional (dev-app.ts l.247 createPrivacyJournal(process.env.KFIT_PRIVACY_JOURNAL_DIR), warning only).
-- Env read by src: DATABASE_URL, NODE_ENV, LOG_LEVEL, KFIT_APP_BASE_URL, PRIVATE_STORAGE_ROOT, CLAMAV_HOST/PORT, SMTP_HOST (+ SMTP_* in .env.example), AUTH_ACCESS_TOKEN_SECRET, AUTH_AUDIT_HASH_PEPPER, AUTH_OTP_PEPPER, AUTH_RECOVERY_TOKEN_SECRET, AUTH_REFRESH_TOKEN_PEPPER (loadAuthConfig), KFIT_PRIVACY_JOURNAL_DIR, plus document/other peppers — grep and list the complete set. .env.prod.example only has POSTGRES_* + DATABASE_URL.
-- consent_definitions (db/schema/onboarding.ts l.35): title, status ("draft" default; published state value — confirm), publishedAt, retiredAt.
+- Env read by src: DATABASE*URL, NODE_ENV, LOG_LEVEL, KFIT_APP_BASE_URL, PRIVATE_STORAGE_ROOT, CLAMAV_HOST/PORT, SMTP_HOST (+ SMTP*_ in .env.example), AUTH*ACCESS_TOKEN_SECRET, AUTH_AUDIT_HASH_PEPPER, AUTH_OTP_PEPPER, AUTH_RECOVERY_TOKEN_SECRET, AUTH_REFRESH_TOKEN_PEPPER (loadAuthConfig), KFIT_PRIVACY_JOURNAL_DIR, plus document/other peppers - grep and list the complete set. .env.prod.example only has POSTGRES*_ + DATABASE_URL.
+- consent_definitions (db/schema/onboarding.ts l.35): title, status ("draft" default; published state value - confirm), publishedAt, retiredAt.
 - X-Request-Id: 13 routers read headers["x-request-id"] (auth, customers, requests, admin-requests, onboarding, privacy, catalogue, today, analytics, subscriptions, documents, notifications, dev-tools); only notifications and dev-tools validate it. audit_events.request_id is uuid → a non-UUID header makes audited writes fail (500).
 - database-target.ts has namesIntegrationTestDatabase().
 
 ### Decisions (Gate 1 D1–D5, detailed)
-A1 (D1). Runtime factory: extract the shared wiring of createDevelopmentRuntime into createRuntime(options: { mode: "development" | "production"; env }) in src/runtime.ts; createDevelopmentRuntime() and new createProductionRuntime() are thin wrappers. Production: cookieMode "production"; devToolsController NOT passed (and dev-tools module not imported by the production entry chain if feasible — report); `app.set("trust proxy", "loopback")` (nginx on the same host, Sprint 9). Dev behaviour byte-for-byte unchanged (existing tests prove it).
-A2 (D1). Entrypoint: scripts/prod/api-server.mjs — no dotenv (env comes from the process/compose), NODE_ENV must equal "production" else exit 1; runs the production guards (A3) BEFORE listen; binds KFIT_API_HOST (default 127.0.0.1) and KFIT_API_PORT; starts notification + privacy jobs; graceful shutdown like dev. Root/server script `start:prod` (requires prior build). Not wired into any compose file yet (Sprint 9).
-A3 (D2). Guards in src/runtime/production-guards.ts — pure checks + one async DB check, each failure has a code; all failures collected then one error listing codes (no secret values in messages):
-  - SECURITY_FLOOR (existing assertRuntimeSecurityFloor, production throws);
-  - ENV_MISSING: named constant PRODUCTION_REQUIRED_ENV (complete list from Context grep, incl. SMTP_*, PRIVATE_STORAGE_ROOT, CLAMAV_*, KFIT_PRIVACY_JOURNAL_DIR, KFIT_APP_BASE_URL, all AUTH_* secrets/peppers); empty or placeholder values (named PLACEHOLDER_PATTERNS: "change-me", "changeme", "example", "dev-", "xxx", "todo", case-insensitive) count as missing; secrets shorter than 32 chars → ENV_WEAK_SECRET;
-  - APP_BASE_URL_NOT_HTTPS;
-  - DATABASE_TARGET_FORBIDDEN: database name kfit_dev or kfit_test, or host localhost:5433 (dev port);
-  - PRIVACY_JOURNAL_UNAVAILABLE: dir exists, is a directory, writable (write+remove a probe file);
-  - PRIVACY_JOBS_DISABLED: KFIT_PRIVACY_JOBS=off in production (D3); KFIT_NOTIFICATION_JOBS=off allowed but logged as warning;
-  - DEMO_CONSENT_PUBLISHED (S7.3 D9): any consent_definitions row currently published (status published, retiredAt null) whose title contains « DÉMONSTRATION » (case-insensitive, accent-insensitive: also DEMONSTRATION) → refuse; message gives count and consent types only.
+
+A1 (D1). Runtime factory: extract the shared wiring of createDevelopmentRuntime into createRuntime(options: { mode: "development" | "production"; env }) in src/runtime.ts; createDevelopmentRuntime() and new createProductionRuntime() are thin wrappers. Production: cookieMode "production"; devToolsController NOT passed (and dev-tools module not imported by the production entry chain if feasible - report); `app.set("trust proxy", "loopback")` (nginx on the same host, Sprint 9). Dev behaviour byte-for-byte unchanged (existing tests prove it).
+A2 (D1). Entrypoint: scripts/prod/api-server.mjs - no dotenv (env comes from the process/compose), NODE_ENV must equal "production" else exit 1; runs the production guards (A3) BEFORE listen; binds KFIT_API_HOST (default 127.0.0.1) and KFIT_API_PORT; starts notification + privacy jobs; graceful shutdown like dev. Root/server script `start:prod` (requires prior build). Not wired into any compose file yet (Sprint 9).
+A3 (D2). Guards in src/runtime/production-guards.ts - pure checks + one async DB check, each failure has a code; all failures collected then one error listing codes (no secret values in messages):
+
+- SECURITY_FLOOR (existing assertRuntimeSecurityFloor, production throws);
+- ENV*MISSING: named constant PRODUCTION_REQUIRED_ENV (complete list from Context grep, incl. SMTP*_, PRIVATE*STORAGE_ROOT, CLAMAV*_, KFIT*PRIVACY_JOURNAL_DIR, KFIT_APP_BASE_URL, all AUTH*\* secrets/peppers); empty or placeholder values (named PLACEHOLDER_PATTERNS: "change-me", "changeme", "example", "dev-", "xxx", "todo", case-insensitive) count as missing; secrets shorter than 32 chars → ENV_WEAK_SECRET;
+- APP_BASE_URL_NOT_HTTPS;
+- DATABASE_TARGET_FORBIDDEN: database name kfit_dev or kfit_test, or host localhost:5433 (dev port);
+- PRIVACY_JOURNAL_UNAVAILABLE: dir exists, is a directory, writable (write+remove a probe file);
+- PRIVACY_JOBS_DISABLED: KFIT_PRIVACY_JOBS=off in production (D3); KFIT_NOTIFICATION_JOBS=off allowed but logged as warning;
+- DEMO_CONSENT_PUBLISHED (S7.3 D9): any consent_definitions row currently published (status published, retiredAt null) whose title contains « DÉMONSTRATION » (case-insensitive, accent-insensitive: also DEMONSTRATION) → refuse; message gives count and consent types only.
   Exported runProductionGuards({ env, pool/db, version }) → { ok } | { ok:false, failures:[{code, detail}] }.
-A4 (D3). Privacy jobs always start in production; journal mandatory (A3). Dev unchanged.
-A5 (D4). Global middleware requestIdMiddleware mounted first in createServerApp (before the SEC-01 encoding guard): keep header if it is a canonical UUID (any version, case-insensitive, single value), otherwise overwrite req.headers["x-request-id"] with randomUUID(); always set response header X-Request-Id. Remove the now-redundant local guards in notifications and dev-tools only if trivially equivalent; leave the other 11 routers reading the header (they now always get a UUID). Named constant cites S7.4 D4.
-A6 (D5). Outbound HTTP: record in sprint-7.md "SEC-01 D5 audit closed: runtime has no outbound HTTP; dev preflight scripts are dev-only (auth-staging, password-recovery/Mailpit)". No code change.
-A7. .env.prod.example: add every PRODUCTION_REQUIRED_ENV key with an obvious placeholder value (so the guard rejects an unedited copy) and a one-line French comment per group. No real values. .env.staging.example: same keys.
-No migration. No API contract change except the always-present X-Request-Id response header.
+  A4 (D3). Privacy jobs always start in production; journal mandatory (A3). Dev unchanged.
+  A5 (D4). Global middleware requestIdMiddleware mounted first in createServerApp (before the SEC-01 encoding guard): keep header if it is a canonical UUID (any version, case-insensitive, single value), otherwise overwrite req.headers["x-request-id"] with randomUUID(); always set response header X-Request-Id. Remove the now-redundant local guards in notifications and dev-tools only if trivially equivalent; leave the other 11 routers reading the header (they now always get a UUID). Named constant cites S7.4 D4.
+  A6 (D5). Outbound HTTP: record in sprint-7.md "SEC-01 D5 audit closed: runtime has no outbound HTTP; dev preflight scripts are dev-only (auth-staging, password-recovery/Mailpit)". No code change.
+  A7. .env.prod.example: add every PRODUCTION_REQUIRED_ENV key with an obvious placeholder value (so the guard rejects an unedited copy) and a one-line French comment per group. No real values. .env.staging.example: same keys.
+  No migration. No API contract change except the always-present X-Request-Id response header.
 
 Status: S7.4a APPROVED_FOR_IMPLEMENTATION
 
-## S7.4a execution — 2026-10-26 (Claude)
+## S7.4a execution - 2026-10-26 (Claude)
 
 Status: delivered, uncommitted → Fred: validate.
 
 - Node v24.22.1; `npm run security:check` ✔. Counts: shared 77 → 77; server unit 643 → 656 (655 pass + 1 skipped: read-only journal dir on Windows); integration on kfit_test 618 → 623, also 623/623 without the root .env (CI-like).
 - A1: `src/runtime.ts` `createRuntime({ mode, env, devToolsController? })` holds the whole composition (moved verbatim from dev-app.ts; `process.env` → `env`; cookieMode = mode). `dev-app.ts` = development wrapper injecting the dev-tools factory; `prod-app.ts` `createProductionRuntime(env)`. Production: Secure cookies, `trust proxy` = "loopback" (PRODUCTION_TRUST_PROXY), dev tools never mounted.
-  - Dev-tools exclusion: runtime.ts and prod-app.ts import only the DevToolsController type; controller, service and repository are loaded by dev-app.ts only. app.ts still imports the dev-tools router module (routing code, mounted only when a controller is passed) — not loaded: the destructive service/repository.
+  - Dev-tools exclusion: runtime.ts and prod-app.ts import only the DevToolsController type; controller, service and repository are loaded by dev-app.ts only. app.ts still imports the dev-tools router module (routing code, mounted only when a controller is passed) - not loaded: the destructive service/repository.
 - A2: `scripts/prod/api-server.mjs` (no dotenv; NODE_ENV must be "production"; guards before anything listens; DB client loaded only when the guards need it; runStartupChecks; privacy jobs always, notification jobs unless KFIT_NOTIFICATION_JOBS=off; binds KFIT_API_HOST (default 127.0.0.1) : KFIT_API_PORT; SIGINT/SIGTERM shutdown). `npm run start:prod` (root + server). Not wired into compose (Sprint 9).
 - A3: `src/runtime/production-guards.ts`. Codes: SECURITY_FLOOR, ENV_MISSING, ENV_WEAK_SECRET, APP_BASE_URL_NOT_HTTPS, DATABASE_TARGET_FORBIDDEN, PRIVACY_JOURNAL_UNAVAILABLE, PRIVACY_JOBS_DISABLED, DEMO_CONSENT_PUBLISHED. All collected, one log line `CODE (detail)` with key names / counts / consent types only.
-  - PRODUCTION_REQUIRED_ENV: DATABASE_URL, KFIT_APP_BASE_URL, PRIVATE_STORAGE_ROOT, KFIT_PRIVACY_JOURNAL_DIR, CLAMAV_HOST, CLAMAV_PORT, SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, SMTP_FROM, AUTH_OTP_PEPPER, AUTH_AUDIT_HASH_PEPPER, AUTH_REFRESH_TOKEN_PEPPER, AUTH_ACCESS_TOKEN_SECRET, AUTH_RECOVERY_TOKEN_SECRET (secrets = the 5 AUTH_*, ≥ 32 chars). Optional, defaulted: NODE_ENV, LOG_LEVEL, AUTH_*_TTL/limits (loadAuthConfig), KFIT_API_HOST/PORT, KFIT_NOTIFICATION_JOBS.
-  - PLACEHOLDER_PATTERNS also contains "change_me" (deviation: the existing .env.*.example values are CHANGE_ME_WITH_A_STRONG_SECRET, which the brief's list did not match).
+  - PRODUCTION*REQUIRED_ENV: DATABASE_URL, KFIT_APP_BASE_URL, PRIVATE_STORAGE_ROOT, KFIT_PRIVACY_JOURNAL_DIR, CLAMAV_HOST, CLAMAV_PORT, SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, SMTP_FROM, AUTH_OTP_PEPPER, AUTH_AUDIT_HASH_PEPPER, AUTH_REFRESH_TOKEN_PEPPER, AUTH_ACCESS_TOKEN_SECRET, AUTH_RECOVERY_TOKEN_SECRET (secrets = the 5 AUTH*_, ≥ 32 chars). Optional, defaulted: NODE*ENV, LOG_LEVEL, AUTH*_\_TTL/limits (loadAuthConfig), KFIT_API_HOST/PORT, KFIT_NOTIFICATION_JOBS.
+  - PLACEHOLDER_PATTERNS also contains "change_me" (deviation: the existing .env.\*.example values are CHANGE_ME_WITH_A_STRONG_SECRET, which the brief's list did not match).
   - A key already ENV_MISSING is not probed again (journal dir, database). The demo-consent query is read-only and also runs on a forbidden target; an unreachable database reports DEMO_CONSENT_PUBLISHED "not verified".
 - A4: privacy jobs always start in the production entry; the journal is required by the guards. Dev unchanged.
-- A5: `src/http/request-id.middleware.ts` mounted first in createServerApp (before the request logger and the SEC-01 guard): canonical UUID kept, anything else (absent, empty, malformed, oversized, repeated → Node joins "a, b") replaced by randomUUID(); X-Request-Id always on the response. Routers touched: none — the 11 reading the header now always get a UUID; the local guards in notifications and dev-tools were kept because both routers are also mounted alone in their own express tests (in the app they are now no-ops).
+- A5: `src/http/request-id.middleware.ts` mounted first in createServerApp (before the request logger and the SEC-01 guard): canonical UUID kept, anything else (absent, empty, malformed, oversized, repeated → Node joins "a, b") replaced by randomUUID(); X-Request-Id always on the response. Routers touched: none - the 11 reading the header now always get a UUID; the local guards in notifications and dev-tools were kept because both routers are also mounted alone in their own express tests (in the app they are now no-ops).
 - A6: SEC-01 D5 audit closed: runtime has no outbound HTTP; dev preflight scripts are dev-only (auth-staging, password-recovery/Mailpit).
 - A7: .env.prod.example and .env.staging.example gain every PRODUCTION_REQUIRED_ENV key with a « change-me » placeholder and a French comment per group. Unedited copies refused with ENV_MISSING only (verified by running the entry with each file).
-- Tests: guards (unit, each code alone, all-good, multiple, placeholders, short secrets, targets, journal missing / file / read-only skipped on Windows), demo consent (integration: draft/retired ok, published and unaccented refused), runtime (integration: Secure cookies, trust proxy, dev tools 404 in production; dev unchanged), request id (express: kept / replaced / echoed / seen by the route; integration: login with "not-a-uuid" → 200 and audited with the generated UUID — fails when the middleware is removed), entry smoke (spawn: NODE_ENV ≠ production → 1; empty production env → 1, ENV_MISSING, planted value never printed).
+- Tests: guards (unit, each code alone, all-good, multiple, placeholders, short secrets, targets, journal missing / file / read-only skipped on Windows), demo consent (integration: draft/retired ok, published and unaccented refused), runtime (integration: Secure cookies, trust proxy, dev tools 404 in production; dev unchanged), request id (express: kept / replaced / echoed / seen by the route; integration: login with "not-a-uuid" → 200 and audited with the generated UUID - fails when the middleware is removed), entry smoke (spawn: NODE_ENV ≠ production → 1; empty production env → 1, ENV_MISSING, planted value never printed).
 - Verified by hand: dev API restarted unchanged (same startup lines); `x-request-id: nope` on the dev API → generated UUID echoed; NODE_ENV=production with the dev .env → ENV_MISSING, DATABASE_TARGET_FORBIDDEN, DEMO_CONSENT_PUBLISHED (refused before listen).
 - Limits: no production start was attempted (by design); runStartupChecks is reused from dev/ (it checks DB, SMTP, ClamAV). Read-only journal-dir test runs on Linux CI only.
 
-## S7.4b scope — approved 2026-10-26
+## S7.4b scope - approved 2026-10-26
 
 ### Context (verified on main 302902d)
-- scripts/preflight/backup-restore.mjs (Sprint 0, 193 lines): docker compose exec postgres pg_dump/psql, AES-256-GCM envelope as base64 JSON in memory, SHA-256 secondary copy, isolated restore into kfit_restore_<id>, drop after. Proof of concept only — keep it, do not reuse its in-memory envelope.
+
+- scripts/preflight/backup-restore.mjs (Sprint 0, 193 lines): docker compose exec postgres pg*dump/psql, AES-256-GCM envelope as base64 JSON in memory, SHA-256 secondary copy, isolated restore into kfit_restore*<id>, drop after. Proof of concept only - keep it, do not reuse its in-memory envelope.
 - scheduled_job_runs (db/schema/operations.ts l.6): job_key, run_key (unique pair), status, started/finished_at, attempt, result_json, error_code.
 - privacy: scripts/privacy/replay.mjs → runPrivacyReplay({repository, journal, removeStoredObject}, since, now); guard = localhost:5433 only + loads ../.env; journal = privacy-journal.jsonl lines {eventId, subjectType, subjectId, executedAt, planVersion, linkedSubjects} (ids only).
 - Private files under PRIVATE_STORAGE_ROOT. Production postgres runs in compose on an internal network (docker-compose.prod.yml), so host scripts reach it via `docker compose exec`.
@@ -1593,25 +1709,27 @@ Status: delivered, uncommitted → Fred: validate.
 - CI: postgres service container on 5433 (no compose) → integration tests that need pg_dump must use native client tools.
 
 ### Decisions
+
 B1. Shared ops library packages/server/src/ops/: pure manifest/rotation/crypto helpers (unit-testable) + thin process wrappers. Scripts in packages/server/scripts/ops/{backup,restore,restore-drill}.mjs import dist; npm scripts ops:backup, ops:restore, ops:restore-drill (build first, like privacy:replay).
 B2. Postgres access mode: BACKUP_PG_MODE = "docker" (default; `docker compose [-f BACKUP_COMPOSE_FILE] exec -T <BACKUP_PG_SERVICE=postgres> pg_dump …`) | "native" (pg_dump/pg_restore/psql on PATH, connection from DATABASE_URL). Refuse if client major < server major (check `pg_dump --version` vs `show server_version_num`).
 B3. Bundle = one directory `kfit-backup-<UTC yyyyMMddTHHmmssZ>/` with: db.dump.enc (pg_dump -Fc), files.tar.enc (system `tar` of PRIVATE_STORAGE_ROOT, works on Linux and Windows 10+ bsdtar; report the binary used), journal.jsonl.enc (copy of the live journal), manifest.json. Each part encrypted STREAMING (no whole-file buffering) with AES-256-GCM, random 12-byte IV per part, auth tag stored in the manifest. Manifest: format version, createdAt, source db name (no host/credentials), latest applied migration id, per part {file, bytes, sha256 of ciphertext, iv, authTag}, key fingerprint = HMAC-SHA256(key, "kfit-backup-key-id") first 16 hex, and manifestMac = HMAC-SHA256 over the canonical manifest with a key derived from BACKUP_ENCRYPTION_KEY (HKDF, info "kfit-backup-manifest"). BACKUP_ENCRYPTION_KEY = 64 hex, never logged, never in the manifest.
 B4. ops:backup: writes to BACKUP_DIR (tmp name, fsync, atomic rename when complete), verifies by re-reading every part hash, copies to BACKUP_SECONDARY_DIR and verifies the copy hashes; then rotation on both (B5). Exit 1 on any failure; a partial bundle is never left under its final name.
-B5. Retention (named constants, S7.4 D7): keep the 7 most recent daily bundles + the latest bundle of each of the 4 most recent ISO weeks (Africa/Libreville calendar); never delete the bundle just written; never delete anything that is not a well-formed kfit-backup-* directory with a valid manifest. Pure function planRotation(bundles, now) → {keep, delete} with unit tests.
+B5. Retention (named constants, S7.4 D7): keep the 7 most recent daily bundles + the latest bundle of each of the 4 most recent ISO weeks (Africa/Libreville calendar); never delete the bundle just written; never delete anything that is not a well-formed kfit-backup-\* directory with a valid manifest. Pure function planRotation(bundles, now) → {keep, delete} with unit tests.
 B6. ops:restore --bundle <dir> --target-db <name> --files-target <dir> [--confirm-overwrite]:
-  1. verify manifestMac, key fingerprint, then every part hash — before touching anything;
-  2. refuse target db kfit_test always; refuse kfit_dev always (dev drills use kfit_restore_*); refuse a non-empty target db or non-empty files-target unless --confirm-overwrite;
-  3. create target db if absent, pg_restore --no-owner --exit-on-error, files untar into files-target;
-  4. journal: NEVER overwrite the live journal (it holds anonymizations made after the backup). Merge = union by eventId of live journal + bundle journal into KFIT_PRIVACY_JOURNAL_DIR (append missing lines only, keep order by executedAt); report counts;
-  5. run privacy replay against the restored target (since = manifest createdAt minus 24 h safety margin, named constant) with removeStoredObject on files-target;
-  6. record runs (B8) in the restored target; print counts only.
-  Widen the replay guard: scripts/privacy/replay.mjs keeps its local-5433 behaviour; ops:restore calls runPrivacyReplay directly with an explicit target (still refuses kfit_dev, D9).
-B7. ops:restore-drill: picks the newest valid bundle in BACKUP_DIR (or --bundle), restores into a throwaway db `kfit_restore_<8 hex>` + temp files dir, runs replay, verifies: row counts per table vs manifest table counts (backup records them — add `tableCounts` to the manifest), file count + total bytes vs manifest, schema migration id matches, replay result; then ALWAYS drops the throwaway db and temp dir (finally). Records its run in the SOURCE database (the live one). Exit 1 on any mismatch.
-B8. Run records (D12): job_key ops.backup | ops.restore | ops.restore_drill; run_key = bundle name (drill: bundle name + ":" + drill id); status running → succeeded | failed; result_json counts/sizes/durations/bundle name/rotation counts only (no paths outside BACKUP_DIR basename, no host, no key material); error_code from a named list (BACKUP_KEY_INVALID, PG_CLIENT_TOO_OLD, DUMP_FAILED, ENCRYPT_FAILED, VERIFY_FAILED, SECONDARY_COPY_FAILED, ROTATION_FAILED, MANIFEST_INVALID, TARGET_FORBIDDEN, TARGET_NOT_EMPTY, RESTORE_FAILED, REPLAY_FAILED, DRILL_MISMATCH). If the database itself is unreachable, still exit 1 and print the code.
-B9. Security counters (D12): migration 0016 `security_event_counters (day date, code text, count integer, primary key(day, code))` (Drizzle schema + generated migration). Service increments fire-and-forget (upsert count+1; failures logged once per minute, never affect the response). Codes: REQUEST_ENCODING_UNSUPPORTED (SEC-01 guard) and RATE_LIMITED:<scope> for each IpRateLimiter refusal (scope = router name). No IP, no path params. Day in Africa/Libreville. No read API yet (OPS-01).
-B10. Env: BACKUP_DIR, BACKUP_SECONDARY_DIR, BACKUP_ENCRYPTION_KEY, BACKUP_PG_MODE, BACKUP_COMPOSE_FILE, BACKUP_PG_SERVICE in .env.example / .env.prod.example (placeholders) with French comments; scripts load the root .env like replay.mjs when present, otherwise use the process env (production). BACKUP_* are NOT added to PRODUCTION_REQUIRED_ENV (the API does not need them) — the ops scripts validate their own env (BACKUP_DIR ≠ BACKUP_SECONDARY_DIR, neither inside PRIVATE_STORAGE_ROOT or the journal dir).
 
-## S7.4b execution — 2026-10-26 (Claude)
+1. verify manifestMac, key fingerprint, then every part hash - before touching anything;
+2. refuse target db kfit*test always; refuse kfit_dev always (dev drills use kfit_restore*\*); refuse a non-empty target db or non-empty files-target unless --confirm-overwrite;
+3. create target db if absent, pg_restore --no-owner --exit-on-error, files untar into files-target;
+4. journal: NEVER overwrite the live journal (it holds anonymizations made after the backup). Merge = union by eventId of live journal + bundle journal into KFIT_PRIVACY_JOURNAL_DIR (append missing lines only, keep order by executedAt); report counts;
+5. run privacy replay against the restored target (since = manifest createdAt minus 24 h safety margin, named constant) with removeStoredObject on files-target;
+6. record runs (B8) in the restored target; print counts only.
+   Widen the replay guard: scripts/privacy/replay.mjs keeps its local-5433 behaviour; ops:restore calls runPrivacyReplay directly with an explicit target (still refuses kfit*dev, D9).
+   B7. ops:restore-drill: picks the newest valid bundle in BACKUP_DIR (or --bundle), restores into a throwaway db `kfit_restore*<8 hex>`+ temp files dir, runs replay, verifies: row counts per table vs manifest table counts (backup records them - add`tableCounts`to the manifest), file count + total bytes vs manifest, schema migration id matches, replay result; then ALWAYS drops the throwaway db and temp dir (finally). Records its run in the SOURCE database (the live one). Exit 1 on any mismatch.
+B8. Run records (D12): job_key ops.backup | ops.restore | ops.restore_drill; run_key = bundle name (drill: bundle name + ":" + drill id); status running → succeeded | failed; result_json counts/sizes/durations/bundle name/rotation counts only (no paths outside BACKUP_DIR basename, no host, no key material); error_code from a named list (BACKUP_KEY_INVALID, PG_CLIENT_TOO_OLD, DUMP_FAILED, ENCRYPT_FAILED, VERIFY_FAILED, SECONDARY_COPY_FAILED, ROTATION_FAILED, MANIFEST_INVALID, TARGET_FORBIDDEN, TARGET_NOT_EMPTY, RESTORE_FAILED, REPLAY_FAILED, DRILL_MISMATCH). If the database itself is unreachable, still exit 1 and print the code.
+B9. Security counters (D12): migration 0016`security*event_counters (day date, code text, count integer, primary key(day, code))` (Drizzle schema + generated migration). Service increments fire-and-forget (upsert count+1; failures logged once per minute, never affect the response). Codes: REQUEST_ENCODING_UNSUPPORTED (SEC-01 guard) and RATE_LIMITED:<scope> for each IpRateLimiter refusal (scope = router name). No IP, no path params. Day in Africa/Libreville. No read API yet (OPS-01).
+   B10. Env: BACKUP_DIR, BACKUP_SECONDARY_DIR, BACKUP_ENCRYPTION_KEY, BACKUP_PG_MODE, BACKUP_COMPOSE_FILE, BACKUP_PG_SERVICE in .env.example / .env.prod.example (placeholders) with French comments; scripts load the root .env like replay.mjs when present, otherwise use the process env (production). BACKUP*\* are NOT added to PRODUCTION_REQUIRED_ENV (the API does not need them) - the ops scripts validate their own env (BACKUP_DIR ≠ BACKUP_SECONDARY_DIR, neither inside PRIVATE_STORAGE_ROOT or the journal dir).
+
+## S7.4b execution - 2026-10-26 (Claude)
 
 Status: delivered, uncommitted → Fred: validate.
 
@@ -1627,305 +1745,319 @@ Status: delivered, uncommitted → Fred: validate.
 - B7: drill = throwaway `kfit_restore_<8 hex>` + temp dir; table counts, files, migration compared before replay (replay rewrites rows); replay purgeFailed > 0 = mismatch; live journal only read (in-memory union); drop + rm always, then checks the database is gone. Recorded in the source database.
 - B8: rows via upsert on (job_key, run_key): running → succeeded/failed; final-only write or rerun = attempt + 1. Restore records in the target once pg_restore succeeded, before that (or if the target is unwritable) in the source database. Exit 1 when the run failed or its row could not be written.
 - B9: migration **0017** `security_event_counters` (0016 was already taken). `createSecurityEventCounter(store, { warn })` fire-and-forget, warn throttled to one line/min (error type only). rejectEncodedRequestBodies is now a factory with onRefused; IpRateLimiter gains onRefused; the 7 routers with a default limiter take onRateLimited; app.ts wires scopes requests, appointments, consents, documents, payment-proofs, questionnaires, quotes, receipts. Day = businessDateKey (Libreville).
-- B10: .env.example / .env.prod.example BACKUP_* with French comments; ops config refuses equal/nested backup dirs and overlap with PRIVATE_STORAGE_ROOT or the journal dir (ENV_INVALID). PRIVATE_STORAGE_ROOT default shared with the API via resolvePrivateStorageRoot.
+- B10: .env.example / .env.prod.example BACKUP\_\* with French comments; ops config refuses equal/nested backup dirs and overlap with PRIVATE_STORAGE_ROOT or the journal dir (ENV_INVALID). PRIVATE_STORAGE_ROOT default shared with the API via resolvePrivateStorageRoot.
 - Tests: unit (manifest canonical/MAC/tamper/wrong key, 6 MiB streaming round trip + tamper, rotation day/week/Libreville midnight/newest/foreign, journal union, target guard, env), express (415/429 recorded per scope; failing store never changes 415/429, one warning), integration (counters on kfit_test; D10 end to end; tampered part → VERIFY_FAILED and forged manifest → MANIFEST_INVALID with no target created; kfit_dev/kfit_test refused; failed backup row with DUMP_FAILED). Mutations: removing the part verify fails the tamper test; ignoring the live journal fails D10.
-- Local run (docker mode, kfit_dev): ops:backup → bundle 4.63 MB (dump 0.32 MB, 26 files 4.28 MB, 57 tables / 1 900 rows, journal 2 lines) in 1.25 s; ops:restore-drill → all counts matched, replay 2 events, 0 missing, 0 purge failures, 3.5 s; no kfit_restore_* database left, temp dir removed; kfit_dev has one ops.backup and one ops.restore_drill row (succeeded).
+- Local run (docker mode, kfit*dev): ops:backup → bundle 4.63 MB (dump 0.32 MB, 26 files 4.28 MB, 57 tables / 1 900 rows, journal 2 lines) in 1.25 s; ops:restore-drill → all counts matched, replay 2 events, 0 missing, 0 purge failures, 3.5 s; no kfit_restore*\* database left, temp dir removed; kfit_dev has one ops.backup and one ops.restore_drill row (succeeded).
 - Deviations: migration number 0017; error code ENV_INVALID added to the B8 list (env/usage refusals); wrong key reported as BACKUP_KEY_INVALID (fingerprint checked before the MAC); restore failures before pg_restore are recorded in the source database (no target table yet); the drill reads the live journal without appending to it.
-- Limits: ops:restore CLI not run by hand (library path covered by the integration test; never against kfit_dev). kfit_dev not migrated to 0017 (counter writes there log one warning/min until `npm run db:migrate`). In production, the scripts need DATABASE_URL reachable from where they run (records, counts, replay) while pg tools go through docker exec — Sprint 9 decides (publish on 127.0.0.1 or run inside the network).
+- Limits: ops:restore CLI not run by hand (library path covered by the integration test; never against kfit_dev). kfit_dev not migrated to 0017 (counter writes there log one warning/min until `npm run db:migrate`). In production, the scripts need DATABASE_URL reachable from where they run (records, counts, replay) while pg tools go through docker exec - Sprint 9 decides (publish on 127.0.0.1 or run inside the network).
 
-## DOC-01 Gate 1 — approved 2026-10-26
+## DOC-01 Gate 1 - approved 2026-10-26
 
-S7.4c: merged into DOC-01a (runbook) — Fred runs the drill from the runbook.
+S7.4c: merged into DOC-01a (runbook) - Fred runs the drill from the runbook.
 
 ### Decisions (Fred 2026-10-26)
-DC1. Location: repo `docs/` is the single source of truth (versioned with code). Coach-facing guides get published as shareable documents for UAT (later, not in this run).
-DC2. Language: French for every human-facing doc (guides, runbooks, maintenance, references, conformité, recette, notes de version); English for docs/architecture/. Tutoiement in the coach guide (same tone as the UI), vouvoiement nowhere else needed — keep neutral impersonal French in ops docs.
-DC3. Every doc starts with a front-matter block:
-  ---
-  titre: …
-  public: coach | administrateur | exploitation | développeur | juriste
-  statut: brouillon | à jour | à revoir
-  vérifié-sur: <short commit sha>
-  couvre: [S7.4a, S7.4b, …]
-  ---
-DC4. Structure (create exactly this; empty sections get « À rédiger — <slice> » placeholders, not invented text):
-  docs/README.md — index: one table (document, public, statut, vérifié-sur) + « Comment maintenir cette documentation ».
-  docs/guides/guide-coach.md — skeleton only (chapter headings per workflow, DOC-01b fills).
-  docs/guides/guide-administrateur.md — skeleton only (DOC-01b fills).
-  docs/runbooks/README.md — list + when to use each.
-  docs/runbooks/sauvegarde-restauration.md — FULL (S7.4c, see DC5).
-  docs/runbooks/demarrage-production.md — FULL: production start checklist from S7.4a guards (each guard code → meaning → fix), prerequisites, start/stop commands, what « healthy » looks like (/health, startup log lines). Sprint 9 items (nginx, TLS, compose service for the API, host timer) marked « Sprint 9 ».
-  docs/runbooks/plancher-securite.md — FULL: what the security floor is, how to add the next advisory (one entry in security-floor.ts + test), how to upgrade Node (.nvmrc, engines, CI, image tag), how to check (`npm run security:check`).
-  docs/runbooks/incident.md, rotation-secrets.md, panne-dependances.md (ClamAV/SMTP/PostgreSQL down), echec-job.md — skeletons with the known facts only (job keys from scheduled_job_runs, env var names, refusal codes); « À rédiger » elsewhere.
-  docs/maintenance/manuel-maintenance.md — skeleton + what exists today: environments (from docs/docker-environments.md), migrations (db:generate/db:migrate/db:check, test db prepare), npm scripts catalogue (generated, DC6), logs (logger, LOG_LEVEL), monthly `npm audit` + security floor review; deployment = « Sprint 9 ».
-  docs/architecture/README.md (EN): system overview (monorepo packages, layering controller → service → repository, Express app composition order: request id → encoding guard → json → routers), module map (one line per module in packages/server/src/modules), security model summary (cookies/CSRF/origin, sessions, public tokens hashed + scoped + expiring, archived-subject freeze, security floor, startup guards), data/privacy model summary; LINK to exploration-cache/project/* files instead of copying them.
-  docs/reference/codes-erreur.md and docs/reference/variables-environnement.md and docs/reference/scripts-npm.md — GENERATED (DC6).
-  docs/reference/jobs.md — job keys (notification reconcile/delivery, privacy purge, ops.backup/ops.restore/ops.restore_drill), schedule, lock, idempotency, where recorded; written by hand from code.
-  docs/conformite/README.md + registre-traitements.md + politique-conservation.md + mesures-securite.md + sous-traitants.md + notice-confidentialite-brouillon.md — DRAFTS, each with a banner « Brouillon technique — à faire valider par un juriste avant toute mise en production. Ne constitue pas un avis juridique. » Fill only facts from code: data categories per table group (identity, contact, health questionnaire answers, progress photos/sensitive_health documents, payments, consents, audit), purposes as implemented, retention values as configured (purge delay setting, prospect retention, holds), security measures implemented (encryption of backups, hashed tokens/peppers, ClamAV, CSRF, archive freeze, anonymization + replay journal, security floor). Legal bases, authority notification, transfers, applicable Gabonese law details = « À compléter par le juriste ». Subprocessors: list only technical dependencies that will process data (hosting provider TBD Sprint 9, SMTP provider TBD) as TBD lines.
-  docs/recette/ — move docs/RECETTE_V1_CORE.md here (git mv not allowed → copy content, delete old file, report it); README pointing to Sprint 8.
-  docs/notes-de-version/README.md — format only (per version: « Ce qui change pour toi », « Corrections », « À savoir »).
-  docs/archive/ — move the 5 historical files (preflight-backup-restore, preflight-private-files, sprint-1-auth-*, docker-environments after its content is reused) with a one-line header « Archivé — remplacé par <doc> ».
-DC5. S7.4c runbook docs/runbooks/sauvegarde-restauration.md, written for an operator who did not build it, step by step with exact commands and expected output (counts lines, exit codes), from scripts/ops/* and src/ops/* as implemented:
-  1. Principes (bundle contents, chiffrement, manifeste signé, rotation 7 j + 4 sem., copie secondaire, journal de confidentialité jamais écrasé — fusion par eventId, pourquoi).
-  2. Préparer (env vars, génération de la clé, où la conserver HORS du serveur et hors du dépôt, BACKUP_PG_MODE docker/native).
-  3. Sauvegarder manuellement + vérifier (scheduled_job_runs row).
-  4. Planifier (timer hôte — exemple systemd timer + cron, marqué « installé au Sprint 9 »).
-  5. Contrôle de restauration (ops:restore-drill) — fréquence hebdomadaire recommandée, lecture du résultat.
-  6. Restaurer en situation réelle — ordre exact: couper le trafic → vérifier le bundle → restaurer dans une base cible → fichiers → journal (fusion) → replay automatique → contrôles → réouvrir le trafic; commandes, flags (--confirm-overwrite), refus attendus (kfit_dev/kfit_test), codes d'erreur → action.
-  7. Exercice complet S7.4c (pour Fred) — checklist on local docker using docker-compose.prod.yml where possible, otherwise kfit_restore_* on the dev cluster; explicitly list which steps are possible locally today and which wait for Sprint 9.
-  8. Dépannage — every B8 error code → cause → action.
-DC6. Generated references (no new dependency): packages/server/scripts/docs/generate-references.mjs, npm scripts `docs:generate` and `docs:check` (regenerate to a temp dir and diff; exit 1 on drift). Sources:
-  - codes-erreur.md: every `*ErrorCodes` const array in packages/shared/src/**/contracts.ts (+ server-only codes exported as named constants if a list exists: SECURITY_FLOOR_NOT_MET, startup guard codes, REQUEST_ENCODING_UNSUPPORTED, ops error codes) → table: code | module | message affiché (French text from the client message maps when found, else « — ») . Parse the TS sources as text with a strict regex; fail loudly if an expected array is not found (no silent empty table).
-  - variables-environnement.md: keys from .env.example (+ comments as description), flag « requis en production » from PRODUCTION_REQUIRED_ENV, « scripts ops » for BACKUP_*; never print values from .env (read only .env.example).
-  - scripts-npm.md: root + packages scripts with their command.
-  Generated files carry a header « Fichier généré — ne pas modifier à la main (npm run docs:generate) ».
-  CI: add a `docs:check` step after Typecheck in .github/workflows/ci.yml.
-DC7. Docs impact rule: WORKFLOW.md gets a section « Documentation (DOC-01) »: Definition of Done includes updating the affected docs in the same change set; every implementer report ends with a « Docs impact » line (files touched or « aucun »); front-matter vérifié-sur updated on every touched doc; generated references via docs:generate. AGENTS.md + .github/agents/implementer.agent.md + reviewer.agent.md: one line each pointing to that section (reviewer checks it).
-DC8. README.md (root): short « Documentation » section linking docs/README.md.
 
-## DOC-01a execution — 2026-10-26 (Claude)
+DC1. Location: repo `docs/` is the single source of truth (versioned with code). Coach-facing guides get published as shareable documents for UAT (later, not in this run).
+DC2. Language: French for every human-facing doc (guides, runbooks, maintenance, references, conformité, recette, notes de version); English for docs/architecture/. Tutoiement in the coach guide (same tone as the UI), vouvoiement nowhere else needed - keep neutral impersonal French in ops docs.
+DC3. Every doc starts with a front-matter block:
+
+---
+
+titre: …
+public: coach | administrateur | exploitation | développeur | juriste
+statut: brouillon | à jour | à revoir
+vérifié-sur: <short commit sha>
+couvre: [S7.4a, S7.4b, …]
+
+---
+
+DC4. Structure (create exactly this; empty sections get « À rédiger - <slice> » placeholders, not invented text):
+docs/README.md - index: one table (document, public, statut, vérifié-sur) + « Comment maintenir cette documentation ».
+docs/guides/guide-coach.md - skeleton only (chapter headings per workflow, DOC-01b fills).
+docs/guides/guide-administrateur.md - skeleton only (DOC-01b fills).
+docs/runbooks/README.md - list + when to use each.
+docs/runbooks/sauvegarde-restauration.md - FULL (S7.4c, see DC5).
+docs/runbooks/demarrage-production.md - FULL: production start checklist from S7.4a guards (each guard code → meaning → fix), prerequisites, start/stop commands, what « healthy » looks like (/health, startup log lines). Sprint 9 items (nginx, TLS, compose service for the API, host timer) marked « Sprint 9 ».
+docs/runbooks/plancher-securite.md - FULL: what the security floor is, how to add the next advisory (one entry in security-floor.ts + test), how to upgrade Node (.nvmrc, engines, CI, image tag), how to check (`npm run security:check`).
+docs/runbooks/incident.md, rotation-secrets.md, panne-dependances.md (ClamAV/SMTP/PostgreSQL down), echec-job.md - skeletons with the known facts only (job keys from scheduled_job_runs, env var names, refusal codes); « À rédiger » elsewhere.
+docs/maintenance/manuel-maintenance.md - skeleton + what exists today: environments (from docs/docker-environments.md), migrations (db:generate/db:migrate/db:check, test db prepare), npm scripts catalogue (generated, DC6), logs (logger, LOG_LEVEL), monthly `npm audit` + security floor review; deployment = « Sprint 9 ».
+docs/architecture/README.md (EN): system overview (monorepo packages, layering controller → service → repository, Express app composition order: request id → encoding guard → json → routers), module map (one line per module in packages/server/src/modules), security model summary (cookies/CSRF/origin, sessions, public tokens hashed + scoped + expiring, archived-subject freeze, security floor, startup guards), data/privacy model summary; LINK to exploration-cache/project/_ files instead of copying them.
+docs/reference/codes-erreur.md and docs/reference/variables-environnement.md and docs/reference/scripts-npm.md - GENERATED (DC6).
+docs/reference/jobs.md - job keys (notification reconcile/delivery, privacy purge, ops.backup/ops.restore/ops.restore_drill), schedule, lock, idempotency, where recorded; written by hand from code.
+docs/conformite/README.md + registre-traitements.md + politique-conservation.md + mesures-securite.md + sous-traitants.md + notice-confidentialite-brouillon.md - DRAFTS, each with a banner « Brouillon technique - à faire valider par un juriste avant toute mise en production. Ne constitue pas un avis juridique. » Fill only facts from code: data categories per table group (identity, contact, health questionnaire answers, progress photos/sensitive_health documents, payments, consents, audit), purposes as implemented, retention values as configured (purge delay setting, prospect retention, holds), security measures implemented (encryption of backups, hashed tokens/peppers, ClamAV, CSRF, archive freeze, anonymization + replay journal, security floor). Legal bases, authority notification, transfers, applicable Gabonese law details = « À compléter par le juriste ». Subprocessors: list only technical dependencies that will process data (hosting provider TBD Sprint 9, SMTP provider TBD) as TBD lines.
+docs/recette/ - move docs/RECETTE_V1_CORE.md here (git mv not allowed → copy content, delete old file, report it); README pointing to Sprint 8.
+docs/notes-de-version/README.md - format only (per version: « Ce qui change pour toi », « Corrections », « À savoir »).
+docs/archive/ - move the 5 historical files (preflight-backup-restore, preflight-private-files, sprint-1-auth-_, docker-environments after its content is reused) with a one-line header « Archivé - remplacé par <doc> ».
+DC5. S7.4c runbook docs/runbooks/sauvegarde-restauration.md, written for an operator who did not build it, step by step with exact commands and expected output (counts lines, exit codes), from scripts/ops/_ and src/ops/_ as implemented:
+
+1. Principes (bundle contents, chiffrement, manifeste signé, rotation 7 j + 4 sem., copie secondaire, journal de confidentialité jamais écrasé - fusion par eventId, pourquoi).
+2. Préparer (env vars, génération de la clé, où la conserver HORS du serveur et hors du dépôt, BACKUP_PG_MODE docker/native).
+3. Sauvegarder manuellement + vérifier (scheduled_job_runs row).
+4. Planifier (timer hôte - exemple systemd timer + cron, marqué « installé au Sprint 9 »).
+5. Contrôle de restauration (ops:restore-drill) - fréquence hebdomadaire recommandée, lecture du résultat.
+6. Restaurer en situation réelle - ordre exact: couper le trafic → vérifier le bundle → restaurer dans une base cible → fichiers → journal (fusion) → replay automatique → contrôles → réouvrir le trafic; commandes, flags (--confirm-overwrite), refus attendus (kfit_dev/kfit_test), codes d'erreur → action.
+7. Exercice complet S7.4c (pour Fred) - checklist on local docker using docker-compose.prod.yml where possible, otherwise kfit*restore*\* on the dev cluster; explicitly list which steps are possible locally today and which wait for Sprint 9.
+8. Dépannage - every B8 error code → cause → action.
+   DC6. Generated references (no new dependency): packages/server/scripts/docs/generate-references.mjs, npm scripts `docs:generate` and `docs:check` (regenerate to a temp dir and diff; exit 1 on drift). Sources:
+
+- codes-erreur.md: every `*ErrorCodes` const array in packages/shared/src/\*\*/contracts.ts (+ server-only codes exported as named constants if a list exists: SECURITY_FLOOR_NOT_MET, startup guard codes, REQUEST_ENCODING_UNSUPPORTED, ops error codes) → table: code | module | message affiché (French text from the client message maps when found, else « - ») . Parse the TS sources as text with a strict regex; fail loudly if an expected array is not found (no silent empty table).
+- variables-environnement.md: keys from .env.example (+ comments as description), flag « requis en production » from PRODUCTION*REQUIRED_ENV, « scripts ops » for BACKUP*\*; never print values from .env (read only .env.example).
+- scripts-npm.md: root + packages scripts with their command.
+  Generated files carry a header « Fichier généré - ne pas modifier à la main (npm run docs:generate) ».
+  CI: add a `docs:check` step after Typecheck in .github/workflows/ci.yml.
+  DC7. Docs impact rule: WORKFLOW.md gets a section « Documentation (DOC-01) »: Definition of Done includes updating the affected docs in the same change set; every implementer report ends with a « Docs impact » line (files touched or « aucun »); front-matter vérifié-sur updated on every touched doc; generated references via docs:generate. AGENTS.md + .github/agents/implementer.agent.md + reviewer.agent.md: one line each pointing to that section (reviewer checks it).
+  DC8. README.md (root): short « Documentation » section linking docs/README.md.
+
+## DOC-01a execution - 2026-10-26 (Claude)
 
 Status: delivered, uncommitted → Fred: review docs + run S7.4c drill from the runbook.
 
-- Created (31 pages under docs/, all with DC3 front matter, vérifié-sur d2fc5df): README.md (index + maintenance rules); guides/guide-coach.md, guide-administrateur.md (skeletons); runbooks/README.md, sauvegarde-restauration.md (FULL, S7.4c), demarrage-production.md (FULL), plancher-securite.md (FULL), incident.md, rotation-secrets.md, panne-dependances.md, echec-job.md (skeletons + known facts); maintenance/manuel-maintenance.md; architecture/README.md (EN, links exploration-cache/project/*); reference/jobs.md (hand-written) + codes-erreur.md, variables-environnement.md, scripts-npm.md (generated); conformite/ README + 5 drafts with the juriste banner; recette/README.md + RECETTE_V1_CORE.md; notes-de-version/README.md; archive/ (5 files).
-- Moves (copy + delete, no git mv): docs/RECETTE_V1_CORE.md → docs/recette/; docs/{preflight-backup-restore, preflight-private-files, sprint-1-auth-adaptation-contract, sprint-1-auth-staging-validation, docker-environments}.md → docs/archive/ with front matter + « Archivé — remplacé par … ». Content otherwise unchanged. Old paths still cited in exploration-cache history (sessions/2026-10-22.md, tasks/completed/tasks-archive-s5-s6.md, sprint-7.md) — left as history.
-- DC6: packages/server/scripts/docs/generate-references.mjs (no dependency, reads sources as text, runs before any build). Generated: 317 error codes (21 shared arrays + productionGuardCodes, opsErrorCodes, SECURITY_FLOOR_NOT_MET, REQUEST_ENCODING_UNSUPPORTED; client message found for 256, « — » for 61), 52 environment variables, 100 npm scripts. `docs:check` regenerates into a temp dir and compares, checks every relative link (docs/ + root README) and the DC3 front matter; exit 1 on any problem (verified: tampered code line → exit 1; broken link → exit 1). CI step « Documentation references and links (DOC-01) » after Typecheck. Server `npm test` also runs scripts/**/*.test.mjs (5 generator tests): unit 674 → 679 (678 pass + 1 skipped on Windows).
+- Created (31 pages under docs/, all with DC3 front matter, vérifié-sur d2fc5df): README.md (index + maintenance rules); guides/guide-coach.md, guide-administrateur.md (skeletons); runbooks/README.md, sauvegarde-restauration.md (FULL, S7.4c), demarrage-production.md (FULL), plancher-securite.md (FULL), incident.md, rotation-secrets.md, panne-dependances.md, echec-job.md (skeletons + known facts); maintenance/manuel-maintenance.md; architecture/README.md (EN, links exploration-cache/project/\*); reference/jobs.md (hand-written) + codes-erreur.md, variables-environnement.md, scripts-npm.md (generated); conformite/ README + 5 drafts with the juriste banner; recette/README.md + RECETTE_V1_CORE.md; notes-de-version/README.md; archive/ (5 files).
+- Moves (copy + delete, no git mv): docs/RECETTE_V1_CORE.md → docs/recette/; docs/{preflight-backup-restore, preflight-private-files, sprint-1-auth-adaptation-contract, sprint-1-auth-staging-validation, docker-environments}.md → docs/archive/ with front matter + « Archivé - remplacé par … ». Content otherwise unchanged. Old paths still cited in exploration-cache history (sessions/2026-10-22.md, tasks/completed/tasks-archive-s5-s6.md, sprint-7.md) - left as history.
+- DC6: packages/server/scripts/docs/generate-references.mjs (no dependency, reads sources as text, runs before any build). Generated: 317 error codes (21 shared arrays + productionGuardCodes, opsErrorCodes, SECURITY_FLOOR_NOT_MET, REQUEST_ENCODING_UNSUPPORTED; client message found for 256, « - » for 61), 52 environment variables, 100 npm scripts. `docs:check` regenerates into a temp dir and compares, checks every relative link (docs/ + root README) and the DC3 front matter; exit 1 on any problem (verified: tampered code line → exit 1; broken link → exit 1). CI step « Documentation references and links (DOC-01) » after Typecheck. Server `npm test` also runs scripts/\*_/_.test.mjs (5 generator tests): unit 674 → 679 (678 pass + 1 skipped on Windows).
 - DC7/DC8: WORKFLOW.md § 16 Documentation (DOC-01); one line each in AGENTS.md § 13, .github/agents/implementer.agent.md (Finishing 5), reviewer.agent.md (Check › Docs); README.md « Documentation ».
-- À vérifier: (1) ops:restore with --confirm-overwrite (pg_restore --clean --if-exists) has no automated test; (2) no command replays privacy events alone against a restore target (privacy:replay is local-5433 only); (3) switching the API to the restored database and files, and production migrations — Sprint 9; (4) SMTP outage: how the outbox resumes; (5) effects of rotating each secret (sessions, links, audit hashes); (6) no automatic retention found for never-converted prospects, audit_events, notifications / e-mail outbox.
-- Deviations: codes-erreur scans every non-test .ts of packages/shared/src (not only contracts.ts) so devToolsErrorCodes (dev/test-data.ts) is included; variables-environnement has a « Groupe » column (section heading) beside « Description » (comment directly above the key) and lists PRIVATE_STORAGE_ROOT, required in production but absent from .env.example; docs:check also checks front matter and the root README links; README.md / AGENTS.md describe AGENTS.md and .github/agents/ as portable « do not edit per project » — edited per DC7.
+- À vérifier: (1) ops:restore with --confirm-overwrite (pg_restore --clean --if-exists) has no automated test; (2) no command replays privacy events alone against a restore target (privacy:replay is local-5433 only); (3) switching the API to the restored database and files, and production migrations - Sprint 9; (4) SMTP outage: how the outbox resumes; (5) effects of rotating each secret (sessions, links, audit hashes); (6) no automatic retention found for never-converted prospects, audit_events, notifications / e-mail outbox.
+- Deviations: codes-erreur scans every non-test .ts of packages/shared/src (not only contracts.ts) so devToolsErrorCodes (dev/test-data.ts) is included; variables-environnement has a « Groupe » column (section heading) beside « Description » (comment directly above the key) and lists PRIVATE_STORAGE_ROOT, required in production but absent from .env.example; docs:check also checks front matter and the root README links; README.md / AGENTS.md describe AGENTS.md and .github/agents/ as portable « do not edit per project » - edited per DC7.
 - Limits: .env.example comments are English, so the generated descriptions are English; guides and four runbooks are skeletons for DOC-01b; conformité drafts contain code facts only.
 
-## S7.4c drill — 2026-10-26 (Fred)
+## S7.4c drill - 2026-10-26 (Fred)
 
 Runbook docs/runbooks/sauvegarde-restauration.md §1–§8 confirmed on the local dev cluster (counts restored: customers 13, subscriptions 12, payments 5, documents 34, files 26; TARGET_NOT_EMPTY, VERIFY_FAILED, MANIFEST_INVALID, BACKUP_KEY_INVALID, unreachable DB all as documented; --confirm-overwrite verified by hand). Two defects found → FIX-03 (Windows: a path with a space passed through `npm run` arrives with a trailing `^`; relative paths resolve from the current directory, so a restore run from the repo root merged into a journal the API does not read).
 
 S7.4 status: CLOSED after FIX-03 is validated (deployment = Sprint 9).
 
-## FIX-03 + DOC-01b Gate 1 — approved 2026-10-26
+## FIX-03 + DOC-01b Gate 1 - approved 2026-10-26
 
 ### FIX-03 decisions
-F1. One helper src/config/paths.ts: REPO_ROOT (derived from the module location: dist/config → repo root, works from src via tests too) and resolveConfiguredPath(value, { fallback }) — absolute stays absolute; relative resolves against REPO_ROOT, never cwd. Use it for PRIVATE_STORAGE_ROOT (and its default → REPO_ROOT/storage/private/documents — must equal today's default when started from packages/server: verify and state it), KFIT_PRIVACY_JOURNAL_DIR, BACKUP_DIR, BACKUP_SECONDARY_DIR, and the ops CLI path args (--bundle, --files-target). Grep for any other env/path read via process.cwd() in src and scripts/ops, scripts/privacy; fix the same way, list them.
-F2. Production guard (S7.4a) gains PATH_NOT_ABSOLUTE for PRIVATE_STORAGE_ROOT and KFIT_PRIVACY_JOURNAL_DIR; ops scripts refuse relative BACKUP_* when NODE_ENV=production (ENV_INVALID).
-F3. ops:* npm scripts become a single node command (no `&&` chain): scripts/ops/run.mjs <backup|restore|restore-drill> builds first by spawning `npm run build` WITHOUT forwarding user args (stdio inherit; exit on failure), then imports the target script with process.argv rewritten to the user args exactly. Same treatment for privacy:replay and privacy:journal-sync if they share the pattern (report). Root scripts keep forwarding with `--`.
-F4. Runbook: replace Fred's Windows workaround paragraph with the fixed behaviour (keep a one-line note « corrigé par FIX-03 »); relative paths now always resolve from the repo root — say it once in §2.
+
+F1. One helper src/config/paths.ts: REPO*ROOT (derived from the module location: dist/config → repo root, works from src via tests too) and resolveConfiguredPath(value, { fallback }) - absolute stays absolute; relative resolves against REPO_ROOT, never cwd. Use it for PRIVATE_STORAGE_ROOT (and its default → REPO_ROOT/storage/private/documents - must equal today's default when started from packages/server: verify and state it), KFIT_PRIVACY_JOURNAL_DIR, BACKUP_DIR, BACKUP_SECONDARY_DIR, and the ops CLI path args (--bundle, --files-target). Grep for any other env/path read via process.cwd() in src and scripts/ops, scripts/privacy; fix the same way, list them.
+F2. Production guard (S7.4a) gains PATH_NOT_ABSOLUTE for PRIVATE_STORAGE_ROOT and KFIT_PRIVACY_JOURNAL_DIR; ops scripts refuse relative BACKUP*_ when NODE_ENV=production (ENV_INVALID).
+F3. ops:_ npm scripts become a single node command (no `&&` chain): scripts/ops/run.mjs <backup|restore|restore-drill> builds first by spawning `npm run build` WITHOUT forwarding user args (stdio inherit; exit on failure), then imports the target script with process.argv rewritten to the user args exactly. Same treatment for privacy:replay and privacy:journal-sync if they share the pattern (report). Root scripts keep forwarding with `--`.
+F4. Runbook: replace Fred's Windows workaround paragraph with the fixed behaviour (keep a one-line note « corrigé par FIX-03 »); relative paths now always resolve from the repo root - say it once in §2.
 
 ### DOC-01b decisions
+
 G1. docs/guides/guide-coach.md (public: coach, FR, tutoiement, same words as the UI labels): one chapter per workflow, in the order the coach works: Se connecter (session, mot de passe oublié) → Aujourd'hui (tableau de bord, alertes) → Demandes (file, qualification, conversion) → Clients et fiche client → Abonnements (cycle de vie, pause, fin) → Paiements, reçus, preuves de paiement → Devis → Rendez-vous → Suivis → Questionnaires et consentements (liens envoyés à la cliente) → Documents (envoi, liens, code de vérification) → Progression et objectifs → Notifications (cloche, e-mails) → Archiver / anonymiser (côté coach : ce que ça change) → FAQ « Pourquoi je ne peux pas… » (one entry per refusal a coach can hit: archived customer, active subscription blocking archive, expired link, duplicate payment, etc., each mapped to its error code). Each chapter: À quoi ça sert · Étapes (numbered, UI labels in « ») · Règles métier (explicit) · Ce que voit la cliente (for public links) · Erreurs fréquentes. No screenshots in this run (placeholders « [capture : …] » allowed, max 1 per chapter).
-G2. docs/guides/guide-administrateur.md (public: administrateur, FR): Rôles et accès · Réglages (each setting: effect, default, range — from the settings registry) · Catalogue (services, variantes, composants, règles, « Avant publication ») · Textes de consentement (versions, publication, pourquoi « DÉMONSTRATION » bloque la production) · Utilisateurs et sessions (durées, OTP; appareils de confiance = « SEC-02, à venir ») · Confidentialité (archiver, désarchiver, anonymiser — irréversible, blocages de conservation, délai de purge, journal) · Supervision (« OPS-01, à venir ») · Sauvegardes (link to runbook, rôle de l'administrateur) · Données de test (dev uniquement).
+G2. docs/guides/guide-administrateur.md (public: administrateur, FR): Rôles et accès · Réglages (each setting: effect, default, range - from the settings registry) · Catalogue (services, variantes, composants, règles, « Avant publication ») · Textes de consentement (versions, publication, pourquoi « DÉMONSTRATION » bloque la production) · Utilisateurs et sessions (durées, OTP; appareils de confiance = « SEC-02, à venir ») · Confidentialité (archiver, désarchiver, anonymiser - irréversible, blocages de conservation, délai de purge, journal) · Supervision (« OPS-01, à venir ») · Sauvegardes (link to runbook, rôle de l'administrateur) · Données de test (dev uniquement).
 G3. Source of truth for labels and rules: the client components + shared contracts + settings registry. Every business rule stated must cite nothing in the guide (no code refs for readers), but keep a hidden list in sprint-7.md « DOC-01b sources » (rule → file:line) so a reviewer can verify.
-G4. Error codes without French message (61 in codes-erreur.md): classify each as reachable by a coach/admin in the UI, reachable only via public links (customer), or internal/unreachable — table in sprint-7.md (code, module, class, where it surfaces). Do NOT write the missing messages (they go into OPS-01 client part). In the guides' FAQ use the existing generic message for those.
+G4. Error codes without French message (61 in codes-erreur.md): classify each as reachable by a coach/admin in the UI, reachable only via public links (customer), or internal/unreachable - table in sprint-7.md (code, module, class, where it surfaces). Do NOT write the missing messages (they go into OPS-01 client part). In the guides' FAQ use the existing generic message for those.
 G5. Update docs/README.md statuses (guides → « brouillon » until Fred + coach review), vérifié-sur on touched docs, docs:generate if anything generated changed.
 
-## FIX-03 + DOC-01b execution — 2026-10-27 (Claude)
+## FIX-03 + DOC-01b execution - 2026-10-27 (Claude)
 
 Status: delivered, uncommitted → Fred: validate FIX-03, review guides (then coach review).
 
 ### FIX-03
+
 - Counts: shared 77 → 77; server unit 679 → 686 (685 pass + 1 skipped on Windows, unchanged); integration on kfit_test 627 → 627. security:check ✔, tsc shared/server/client clean, client build ok, docs:check ok (318 codes: + PATH_NOT_ABSOLUTE).
 - F1 `src/config/paths.ts`: REPO_ROOT (module location, 4 levels up from src/config or dist/config), DEFAULT_PRIVATE_STORAGE_DIR = storage/private/documents, resolveConfiguredPath(value, { fallback }). Paths now resolved from the repository root, never cwd:
-  - PRIVATE_STORAGE_ROOT and its default — resolvePrivateStorageRoot (document-storage.service.ts), used by the API, privacy:replay and the ops scripts. Default verified equal to the pre-FIX-03 default of an API started from packages/server (unit test, and 3/3 recent documents read through the storage class).
-  - KFIT_PRIVACY_JOURNAL_DIR — inside createPrivacyJournal, so the API runtime, privacy:replay, privacy:journal-sync and ops:restore all resolve it the same way.
-  - BACKUP_DIR, BACKUP_SECONDARY_DIR, BACKUP_COMPOSE_FILE — loadOpsConfig (the `cwd` option is gone; composeDir defaults to REPO_ROOT).
-  - --bundle, --files-target — ops-cli.ts; restore-drill.ts no longer path.resolve()s against cwd.
+  - PRIVATE_STORAGE_ROOT and its default - resolvePrivateStorageRoot (document-storage.service.ts), used by the API, privacy:replay and the ops scripts. Default verified equal to the pre-FIX-03 default of an API started from packages/server (unit test, and 3/3 recent documents read through the storage class).
+  - KFIT_PRIVACY_JOURNAL_DIR - inside createPrivacyJournal, so the API runtime, privacy:replay, privacy:journal-sync and ops:restore all resolve it the same way.
+  - BACKUP_DIR, BACKUP_SECONDARY_DIR, BACKUP_COMPOSE_FILE - loadOpsConfig (the `cwd` option is gone; composeDir defaults to REPO_ROOT).
+  - --bundle, --files-target - ops-cli.ts; restore-drill.ts no longer path.resolve()s against cwd.
   - No other cwd-relative path read in src, scripts/ops, scripts/privacy (grep of process.cwd / path.resolve).
 - F2: production guard PATH_NOT_ABSOLUTE (PRIVATE_STORAGE_ROOT, KFIT_PRIVACY_JOURNAL_DIR; a relative key is not probed further); ops config refuses relative BACKUP_DIR / BACKUP_SECONDARY_DIR / BACKUP_COMPOSE_FILE under NODE_ENV=production (ENV_INVALID).
-- F3: `scripts/ops/run.mjs <backup|restore|restore-drill|privacy-replay|privacy-journal-sync>` — builds with a fixed `npm run build` (no user args, stdio inherit, exit on failure), then imports the target with process.argv = user args. ops:backup, ops:restore, ops:restore-drill, privacy:replay and privacy:journal-sync (same `npm run build && node …` pattern) now call it; root scripts unchanged (forward with `--`). --skip-build and KFIT_OPS_RUNNER_TARGET only with NODE_ENV=test.
+- F3: `scripts/ops/run.mjs <backup|restore|restore-drill|privacy-replay|privacy-journal-sync>` - builds with a fixed `npm run build` (no user args, stdio inherit, exit on failure), then imports the target with process.argv = user args. ops:backup, ops:restore, ops:restore-drill, privacy:replay and privacy:journal-sync (same `npm run build && node …` pattern) now call it; root scripts unchanged (forward with `--`). --skip-build and KFIT_OPS_RUNNER_TARGET only with NODE_ENV=test.
 - Windows manual: `npm run ops:restore -- --bundle "<absolute path with a space>" --target-db kfit_restore_fix03 --files-target "backups/fix03 restored files"` from the repo root → succeeded, bundle name intact (no `^`), 26 files under the repo-root target, journalLive 2 (the real journal), then dropped/removed. PowerShell `npm run ops:restore -- --bundle "C:/Users/Prime Daily/x/…"` → name intact (MANIFEST_INVALID, expected for a missing bundle).
 - Local .env (Fred's yes, 2026-10-27): KFIT_PRIVACY_JOURNAL_DIR=packages/server/privacy-journal, BACKUP_DIR=backups/primary, BACKUP_SECONDARY_DIR=backups/secondary (same folders as before). .env.example and the runbook example use the repo-root form.
 - Dev API: `npm run dev:api` starts unchanged (database, SMTP, ClamAV ready, journal found, /health ok); watch-mode API restarted afterwards.
 - F4: runbook §2 says once that relative paths resolve from the repo root; Fred's Windows workaround replaced by « corrigé par FIX-03 »; démarrage-production gains PATH_NOT_ABSOLUTE.
 
 ### DOC-01b
+
 - guide-coach.md chapters: 1 Se connecter · 2 Aujourd'hui · 3 Demandes · 4 Clients et fiche client · 5 Abonnements · 6 Paiements, reçus et justificatifs · 7 Devis · 8 Rendez-vous · 9 Suivis · 10 Questionnaires et consentements · 11 Documents · 12 Progression et objectifs · 13 Notifications · 14 Archiver, désarchiver, anonymiser · 15 FAQ « Pourquoi je ne peux pas… » (28 entries, each with its code). One « [capture : …] » placeholder.
 - guide-administrateur.md sections: Rôles et accès · Réglages (14 settings: effect, default, range) · Catalogue · Textes de consentement (« DÉMONSTRATION ») · Questionnaires · Comptes et sessions · Confidentialité · Supervision (OPS-01, à venir) · Sauvegardes · Données de test.
 - docs/README.md: guides stay « brouillon »; vérifié-sur 7b1d467 on the 4 touched docs.
 
 ### DOC-01b sources (rule → file:line, for review)
 
-| Règle | Source |
-| --- | --- |
-| Mot de passe : 12 caractères, une lettre, un chiffre | `packages/shared/src/auth/password-policy.ts:7` |
-| Code de récupération expire en 5 minutes (texte écran) | `packages/client/src/auth/components/RecoveryFlow.tsx:150` |
-| Inactivité 30 min / session 12 h / OTP 5 min, 5 essais / vérification récente 10 min / délai mot de passe 10 min | `packages/server/src/modules/auth/config/auth.config.ts:11` |
-| Message unique de connexion refusée | `packages/client/src/auth/api/auth-errors.ts:24` |
-| Lignes « À traiter » et leurs boutons | `packages/client/src/dashboard/components/TodayPage.tsx:33` |
-| Vues des demandes | `packages/client/src/requests/lib/request-labels.ts:34` |
-| Transitions autorisées des demandes | `packages/shared/src/requests/contracts.ts:111` |
-| Contact jamais dans le futur | `packages/client/src/requests/components/request-actions.tsx:71` |
-| Une décision de qualification par demande | `packages/client/src/requests/components/request-actions.tsx:207` |
-| Conversion : abonnement en préparation, demande close définitivement | `packages/client/src/requests/components/request-actions.tsx:431` |
-| Retirer de la liste d'attente → Abandonnée | `packages/client/src/requests/components/RequestDetail.tsx:308` |
-| Page publique « Ma demande » : aucun paiement | `packages/client/src/requests/components/PublicRequestForm.tsx:200` |
-| Vues des clients | `packages/client/src/customers/components/ClientsPage.tsx:29` |
-| WhatsApp vérifié avant création | `packages/client/src/customers/components/NewCustomerSheet.tsx:92` |
-| Onglets de la fiche | `packages/client/src/app/routes/client-profile.tsx:61` |
-| Analyse masquée hors cliente active ; onglets effacés après anonymisation | `packages/shared/src/privacy/subject-view.ts:49` |
-| États d'abonnement | `packages/client/src/lib/status-map.ts:41` |
-| Décisions d'abonnement et leurs effets | `packages/client/src/profile/overview/subscription-commands.ts:19` |
-| Motif obligatoire (pause, annulation, reprise après revue, revue anticipée, fin avec prestations dues) | `packages/client/src/profile/overview/subscription-commands.ts:39` |
-| Préparation : exigences + place avant « Prêt à démarrer » ; démarrage séparé | `packages/client/src/profile/preparation/PreparationTab.tsx:257` |
-| Réservation expirée : préparation arrêtée, état conservé | `packages/client/src/profile/preparation/PreparationTab.tsx:166` |
-| Statut financier sans effet sur l'abonnement | `packages/client/src/profile/payments/PaymentsTab.tsx:70` |
-| Paiement confirmé et réparti par ordre d'exigibilité | `packages/client/src/profile/payments/FinanceOperationDialog.tsx:156` |
-| Pas de trop-perçu | `packages/shared/src/finance/contracts.ts:18` |
-| Correction = écriture compensatoire | `packages/client/src/profile/payments/PaymentsTab.tsx:262` |
-| Un seul reçu par paiement confirmé | `packages/client/src/profile/payments/receipt-actions.tsx:44` |
-| Lien de reçu : 1 à 20 téléchargements | `packages/client/src/profile/payments/receipt-actions.tsx:113` |
-| Annulation de reçu seulement si paiement entièrement corrigé | `packages/client/src/profile/payments/receipt-actions.tsx:176` |
-| Lien de dépôt : un seul dépôt réussi | `packages/client/src/profile/payments/proof-actions.tsx:92` |
-| Confirmation complète = montant déclaré | `packages/client/src/profile/payments/ProofReviewDialog.tsx:98` |
-| Lien affiché une seule fois | `packages/client/src/profile/payments/OneTimeLink.tsx:24` |
-| Justificatif : l'envoi ne confirme pas le paiement | `packages/client/src/payment-proofs/components/PublicPaymentProofPage.tsx:63` |
-| Devis : version émise figée ; service/formule/durée figés | `packages/client/src/profile/payments/QuotesCard.tsx:197` |
-| Devis : application du montant après acceptation ; blocage si activité financière | `packages/shared/src/quotes/contracts.ts:5` |
-| Devis public : Accepter / Demander un changement / Refuser | `packages/client/src/quotes/components/PublicQuotePage.tsx:13` |
-| Rendez-vous : abonnement actif pour planifier/reporter | `packages/client/src/profile/appointments/AppointmentsTab.tsx:150` |
-| Séance déduite à la fin ou selon la règle d'absence / annulation tardive | `packages/client/src/profile/appointments/AppointmentsTab.tsx:261` |
-| Lien de rendez-vous expire au début | `packages/client/src/profile/appointments/AppointmentsTab.tsx:255` |
-| Rendez-vous public : une seule réponse par lien | `packages/client/src/appointments/components/PublicAppointmentPage.tsx:121` |
-| Suivi : abonnement actif seulement | `packages/client/src/profile/follow-ups/FollowUpsTab.tsx:90` |
-| Suivi remet le rythme à zéro | `packages/client/src/profile/follow-ups/FollowUpsTab.tsx:205` |
-| Pause ne consomme pas le rythme | `packages/client/src/profile/follow-ups/FollowUpsTab.tsx:82` |
-| Conditions obligatoires / accords facultatifs | `packages/shared/src/consents/contracts.ts:3` |
-| Périodes de recueil des consentements | `packages/shared/src/consents/contracts.ts:9` |
-| Consentement public : refus sans effet sur l'accompagnement, aucune case pré-cochée | `packages/client/src/consents/components/PublicConsentPage.tsx:83` |
-| Document : lien 24 h, 3 ouvertures | `packages/client/src/profile/documents/DocumentsTab.tsx:35` |
-| Code envoyé séparément du lien | `packages/client/src/profile/documents/DocumentsTab.tsx:234` |
-| Photos privées, accord photos requis | `packages/client/src/profile/documents/DocumentsTab.tsx:207` |
-| Mesure : actif ou en pause, consentement santé | `packages/shared/src/progress/contracts.ts:16` |
-| Objectif : la confirmation du coach fait foi | `packages/client/src/profile/progress/GoalDecisionDialog.tsx:21` |
-| Types de notifications | `packages/shared/src/notifications/contracts.ts:19` |
-| Notification résolue quand la situation est réglée ; e-mails sans montant ni santé | `packages/client/src/notifications/components/NotificationSettingsPage.tsx:116` |
-| Registre des réglages (défauts, plages) | `packages/shared/src/notifications/contracts.ts:86` |
-| Délai de purge 30 j (1–365) | `packages/shared/src/notifications/contracts.ts:100` |
-| Menu confidentialité selon l'état | `packages/shared/src/privacy/subject-view.ts:30` |
-| Archiver : tous les abonnements terminés ou annulés | `packages/client/src/privacy/components/SubjectPrivacyDialogs.tsx:36` |
-| Archivage : lecture seule, liens publics désactivés | `packages/client/src/privacy/components/SubjectPrivacyDialogs.tsx:105` |
-| Désarchiver ne rétablit pas les liens | `packages/client/src/privacy/components/SubjectPrivacyDialogs.tsx:150` |
-| Motifs de désarchivage | `packages/shared/src/privacy/contracts.ts:59` |
-| Anonymisation irréversible ; paiements, devis, reçus conservés | `packages/client/src/privacy/components/SubjectPrivacyDialogs.tsx:221` |
-| Types de blocage | `packages/shared/src/privacy/contracts.ts:16` |
-| Motif de blocage 3 à 500 caractères | `packages/shared/src/privacy/contracts.ts:96` |
-| Blocage : pas d'anonymisation ni de suppression de fichiers | `packages/client/src/privacy/components/CustomerHoldsCard.tsx:89` |
-| Portée des blocages (client, prospect, document) | `packages/shared/src/privacy/contracts.ts:9` |
-| Purge quotidienne 03:00 Libreville | `packages/server/src/modules/privacy/services/privacy.policy.ts:22` |
-| Catalogue : onglets | `packages/client/src/catalogue/lib/catalogue-meta.ts:19` |
-| Catalogue : sections de l'offre | `packages/client/src/catalogue/components/ServiceSheet.tsx:160` |
-| Slug fixé après publication | `packages/client/src/catalogue/components/ServiceSheet.tsx:239` |
-| Contenu : nouvelles ventes seulement | `packages/client/src/catalogue/components/ServiceSheet.tsx:280` |
-| Limites des règles (cadence 1–90 j, annulation 1–168 h) | `packages/shared/src/catalogue/contracts.ts:53` |
-| Avis médical appliqué tout de suite aux clientes en préparation | `packages/client/src/catalogue/components/RulesEditor.tsx:67` |
-| Avant publication : 4 points | `packages/client/src/catalogue/components/DeliverabilityChecklist.tsx:9` |
-| Offre archivée : hors page publique, lecture seule, abonnements inchangés | `packages/client/src/catalogue/components/CataloguePage.tsx:301` |
-| Textes : version publiée immuable, code OTP pour publier | `packages/client/src/consents/components/ConsentTextsPage.tsx:246` |
-| « DÉMONSTRATION » bloque la production | `packages/server/src/runtime/production-guards.ts:55` |
-| Questionnaires : versions figées, héritage variante → offre | `packages/client/src/questionnaires/components/QuestionnairesPage.tsx:235` |
-| Rôle unique « Coach · administratrice » | `packages/client/src/app/layout/UserMenu.tsx:5` |
-| Données de test : dev uniquement, audit et comptes jamais supprimés | `packages/client/src/dev/TestDataCard.tsx:134` |
+| Règle                                                                                                            | Source                                                                          |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Mot de passe : 12 caractères, une lettre, un chiffre                                                             | `packages/shared/src/auth/password-policy.ts:7`                                 |
+| Code de récupération expire en 5 minutes (texte écran)                                                           | `packages/client/src/auth/components/RecoveryFlow.tsx:150`                      |
+| Inactivité 30 min / session 12 h / OTP 5 min, 5 essais / vérification récente 10 min / délai mot de passe 10 min | `packages/server/src/modules/auth/config/auth.config.ts:11`                     |
+| Message unique de connexion refusée                                                                              | `packages/client/src/auth/api/auth-errors.ts:24`                                |
+| Lignes « À traiter » et leurs boutons                                                                            | `packages/client/src/dashboard/components/TodayPage.tsx:33`                     |
+| Vues des demandes                                                                                                | `packages/client/src/requests/lib/request-labels.ts:34`                         |
+| Transitions autorisées des demandes                                                                              | `packages/shared/src/requests/contracts.ts:111`                                 |
+| Contact jamais dans le futur                                                                                     | `packages/client/src/requests/components/request-actions.tsx:71`                |
+| Une décision de qualification par demande                                                                        | `packages/client/src/requests/components/request-actions.tsx:207`               |
+| Conversion : abonnement en préparation, demande close définitivement                                             | `packages/client/src/requests/components/request-actions.tsx:431`               |
+| Retirer de la liste d'attente → Abandonnée                                                                       | `packages/client/src/requests/components/RequestDetail.tsx:308`                 |
+| Page publique « Ma demande » : aucun paiement                                                                    | `packages/client/src/requests/components/PublicRequestForm.tsx:200`             |
+| Vues des clients                                                                                                 | `packages/client/src/customers/components/ClientsPage.tsx:29`                   |
+| WhatsApp vérifié avant création                                                                                  | `packages/client/src/customers/components/NewCustomerSheet.tsx:92`              |
+| Onglets de la fiche                                                                                              | `packages/client/src/app/routes/client-profile.tsx:61`                          |
+| Analyse masquée hors cliente active ; onglets effacés après anonymisation                                        | `packages/shared/src/privacy/subject-view.ts:49`                                |
+| États d'abonnement                                                                                               | `packages/client/src/lib/status-map.ts:41`                                      |
+| Décisions d'abonnement et leurs effets                                                                           | `packages/client/src/profile/overview/subscription-commands.ts:19`              |
+| Motif obligatoire (pause, annulation, reprise après revue, revue anticipée, fin avec prestations dues)           | `packages/client/src/profile/overview/subscription-commands.ts:39`              |
+| Préparation : exigences + place avant « Prêt à démarrer » ; démarrage séparé                                     | `packages/client/src/profile/preparation/PreparationTab.tsx:257`                |
+| Réservation expirée : préparation arrêtée, état conservé                                                         | `packages/client/src/profile/preparation/PreparationTab.tsx:166`                |
+| Statut financier sans effet sur l'abonnement                                                                     | `packages/client/src/profile/payments/PaymentsTab.tsx:70`                       |
+| Paiement confirmé et réparti par ordre d'exigibilité                                                             | `packages/client/src/profile/payments/FinanceOperationDialog.tsx:156`           |
+| Pas de trop-perçu                                                                                                | `packages/shared/src/finance/contracts.ts:18`                                   |
+| Correction = écriture compensatoire                                                                              | `packages/client/src/profile/payments/PaymentsTab.tsx:262`                      |
+| Un seul reçu par paiement confirmé                                                                               | `packages/client/src/profile/payments/receipt-actions.tsx:44`                   |
+| Lien de reçu : 1 à 20 téléchargements                                                                            | `packages/client/src/profile/payments/receipt-actions.tsx:113`                  |
+| Annulation de reçu seulement si paiement entièrement corrigé                                                     | `packages/client/src/profile/payments/receipt-actions.tsx:176`                  |
+| Lien de dépôt : un seul dépôt réussi                                                                             | `packages/client/src/profile/payments/proof-actions.tsx:92`                     |
+| Confirmation complète = montant déclaré                                                                          | `packages/client/src/profile/payments/ProofReviewDialog.tsx:98`                 |
+| Lien affiché une seule fois                                                                                      | `packages/client/src/profile/payments/OneTimeLink.tsx:24`                       |
+| Justificatif : l'envoi ne confirme pas le paiement                                                               | `packages/client/src/payment-proofs/components/PublicPaymentProofPage.tsx:63`   |
+| Devis : version émise figée ; service/formule/durée figés                                                        | `packages/client/src/profile/payments/QuotesCard.tsx:197`                       |
+| Devis : application du montant après acceptation ; blocage si activité financière                                | `packages/shared/src/quotes/contracts.ts:5`                                     |
+| Devis public : Accepter / Demander un changement / Refuser                                                       | `packages/client/src/quotes/components/PublicQuotePage.tsx:13`                  |
+| Rendez-vous : abonnement actif pour planifier/reporter                                                           | `packages/client/src/profile/appointments/AppointmentsTab.tsx:150`              |
+| Séance déduite à la fin ou selon la règle d'absence / annulation tardive                                         | `packages/client/src/profile/appointments/AppointmentsTab.tsx:261`              |
+| Lien de rendez-vous expire au début                                                                              | `packages/client/src/profile/appointments/AppointmentsTab.tsx:255`              |
+| Rendez-vous public : une seule réponse par lien                                                                  | `packages/client/src/appointments/components/PublicAppointmentPage.tsx:121`     |
+| Suivi : abonnement actif seulement                                                                               | `packages/client/src/profile/follow-ups/FollowUpsTab.tsx:90`                    |
+| Suivi remet le rythme à zéro                                                                                     | `packages/client/src/profile/follow-ups/FollowUpsTab.tsx:205`                   |
+| Pause ne consomme pas le rythme                                                                                  | `packages/client/src/profile/follow-ups/FollowUpsTab.tsx:82`                    |
+| Conditions obligatoires / accords facultatifs                                                                    | `packages/shared/src/consents/contracts.ts:3`                                   |
+| Périodes de recueil des consentements                                                                            | `packages/shared/src/consents/contracts.ts:9`                                   |
+| Consentement public : refus sans effet sur l'accompagnement, aucune case pré-cochée                              | `packages/client/src/consents/components/PublicConsentPage.tsx:83`              |
+| Document : lien 24 h, 3 ouvertures                                                                               | `packages/client/src/profile/documents/DocumentsTab.tsx:35`                     |
+| Code envoyé séparément du lien                                                                                   | `packages/client/src/profile/documents/DocumentsTab.tsx:234`                    |
+| Photos privées, accord photos requis                                                                             | `packages/client/src/profile/documents/DocumentsTab.tsx:207`                    |
+| Mesure : actif ou en pause, consentement santé                                                                   | `packages/shared/src/progress/contracts.ts:16`                                  |
+| Objectif : la confirmation du coach fait foi                                                                     | `packages/client/src/profile/progress/GoalDecisionDialog.tsx:21`                |
+| Types de notifications                                                                                           | `packages/shared/src/notifications/contracts.ts:19`                             |
+| Notification résolue quand la situation est réglée ; e-mails sans montant ni santé                               | `packages/client/src/notifications/components/NotificationSettingsPage.tsx:116` |
+| Registre des réglages (défauts, plages)                                                                          | `packages/shared/src/notifications/contracts.ts:86`                             |
+| Délai de purge 30 j (1–365)                                                                                      | `packages/shared/src/notifications/contracts.ts:100`                            |
+| Menu confidentialité selon l'état                                                                                | `packages/shared/src/privacy/subject-view.ts:30`                                |
+| Archiver : tous les abonnements terminés ou annulés                                                              | `packages/client/src/privacy/components/SubjectPrivacyDialogs.tsx:36`           |
+| Archivage : lecture seule, liens publics désactivés                                                              | `packages/client/src/privacy/components/SubjectPrivacyDialogs.tsx:105`          |
+| Désarchiver ne rétablit pas les liens                                                                            | `packages/client/src/privacy/components/SubjectPrivacyDialogs.tsx:150`          |
+| Motifs de désarchivage                                                                                           | `packages/shared/src/privacy/contracts.ts:59`                                   |
+| Anonymisation irréversible ; paiements, devis, reçus conservés                                                   | `packages/client/src/privacy/components/SubjectPrivacyDialogs.tsx:221`          |
+| Types de blocage                                                                                                 | `packages/shared/src/privacy/contracts.ts:16`                                   |
+| Motif de blocage 3 à 500 caractères                                                                              | `packages/shared/src/privacy/contracts.ts:96`                                   |
+| Blocage : pas d'anonymisation ni de suppression de fichiers                                                      | `packages/client/src/privacy/components/CustomerHoldsCard.tsx:89`               |
+| Portée des blocages (client, prospect, document)                                                                 | `packages/shared/src/privacy/contracts.ts:9`                                    |
+| Purge quotidienne 03:00 Libreville                                                                               | `packages/server/src/modules/privacy/services/privacy.policy.ts:22`             |
+| Catalogue : onglets                                                                                              | `packages/client/src/catalogue/lib/catalogue-meta.ts:19`                        |
+| Catalogue : sections de l'offre                                                                                  | `packages/client/src/catalogue/components/ServiceSheet.tsx:160`                 |
+| Slug fixé après publication                                                                                      | `packages/client/src/catalogue/components/ServiceSheet.tsx:239`                 |
+| Contenu : nouvelles ventes seulement                                                                             | `packages/client/src/catalogue/components/ServiceSheet.tsx:280`                 |
+| Limites des règles (cadence 1–90 j, annulation 1–168 h)                                                          | `packages/shared/src/catalogue/contracts.ts:53`                                 |
+| Avis médical appliqué tout de suite aux clientes en préparation                                                  | `packages/client/src/catalogue/components/RulesEditor.tsx:67`                   |
+| Avant publication : 4 points                                                                                     | `packages/client/src/catalogue/components/DeliverabilityChecklist.tsx:9`        |
+| Offre archivée : hors page publique, lecture seule, abonnements inchangés                                        | `packages/client/src/catalogue/components/CataloguePage.tsx:301`                |
+| Textes : version publiée immuable, code OTP pour publier                                                         | `packages/client/src/consents/components/ConsentTextsPage.tsx:246`              |
+| « DÉMONSTRATION » bloque la production                                                                           | `packages/server/src/runtime/production-guards.ts:55`                           |
+| Questionnaires : versions figées, héritage variante → offre                                                      | `packages/client/src/questionnaires/components/QuestionnairesPage.tsx:235`      |
+| Rôle unique « Coach · administratrice »                                                                          | `packages/client/src/app/layout/UserMenu.tsx:5`                                 |
+| Données de test : dev uniquement, audit et comptes jamais supprimés                                              | `packages/client/src/dev/TestDataCard.tsx:134`                                  |
 
-### G4 — codes without a French message
+### G4 - codes without a French message
 
 62 codes sans message dédié dans docs/reference/codes-erreur.md : 27 atteignables par le coach / l'administrateur dans l'interface, 1 uniquement par un lien public (cliente), 34 internes ou inatteignables depuis l'interface.
 
-| Code | Module | Classe | Où il apparaît |
-| --- | --- | --- | --- |
-| `BOOTSTRAP_ALREADY_COMPLETED` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
-| `AUTH_BOOTSTRAP_INVALID_FORMAT` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
-| `AUTH_PASSWORD_POLICY_FAILED` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
-| `AUTH_INVALID_CREDENTIALS` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
-| `AUTH_ACCOUNT_UNAVAILABLE` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
-| `AUTH_LOGIN_INVALID_FORMAT` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
-| `AUTH_REFRESH_INVALID` | auth | interne / inatteignable | renouvellement de session en arrière-plan ; en cas d'échec l'écran revient à « Connexion » — À vérifier |
-| `AUTH_OTP_CODE_INVALID_FORMAT` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
-| `AUTH_OTP_REJECTED` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
-| `AUTH_RECOVERY_INVALID_FORMAT` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
-| `AUTH_RECOVERY_CODE_INVALID` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
-| `AUTH_RECOVERY_GRANT_INVALID` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
-| `AUTH_RATE_LIMITED` | auth | coach/admin (UI) | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles — message produit par une fonction (auth-errors.ts), non détecté par le générateur |
-| `CATALOGUE_ROUTE_UNEXPECTED_FAILURE` | catalogue | coach/admin (UI) | message générique du module : « L'action n'a pas pu être enregistrée. Réessaie dans un instant. » |
-| `CONSENT_ADMIN_FORBIDDEN` | consents | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès |
-| `CONSENT_HISTORY_INVALID` | consents | interne / inatteignable | incohérence d'historique côté serveur (intégrité des données) |
-| `CONSENT_ROUTE_UNEXPECTED_FAILURE` | consents | coach/admin (UI) | message générique du module : « Impossible de traiter les consentements. Actualise la page et vérifie l'état avant de réessayer. » |
-| `CUSTOMER_INVALID_INPUT` | customers | coach/admin (UI) | « Nouveau client » — message produit par un switch (customers-api.ts), non détecté par le générateur |
-| `CUSTOMER_DUPLICATE_WHATSAPP` | customers | coach/admin (UI) | « Nouveau client » — message produit par un switch (customers-api.ts), non détecté par le générateur |
-| `CUSTOMER_ADMIN_FORBIDDEN` | customers | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès |
-| `CUSTOMER_NOT_FOUND` | customers | coach/admin (UI) | message générique du module : « Impossible de joindre le service clients. Réessaie dans un instant. » |
-| `CUSTOMER_ROUTE_UNEXPECTED_FAILURE` | customers | coach/admin (UI) | message générique du module : « Impossible de joindre le service clients. Réessaie dans un instant. » |
-| `DASHBOARD_INVALID_INPUT` | dashboard | interne / inatteignable | paramètres construits par l'écran « Aujourd'hui » |
-| `DASHBOARD_ADMIN_FORBIDDEN` | dashboard | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès |
-| `DASHBOARD_ROUTE_UNEXPECTED_FAILURE` | dashboard | coach/admin (UI) | message générique du module : « Impossible de charger le tableau de bord. Réessaie dans un instant. » |
-| `DOCUMENT_NOT_FOUND` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
-| `DOCUMENT_VERSION_NOT_FOUND` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
-| `DOCUMENT_INVALID_INPUT` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
-| `DOCUMENT_TYPE_INVALID` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
-| `DOCUMENT_STORAGE_FAILURE` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
-| `DOCUMENT_MEASUREMENT_INVALID` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
-| `DOCUMENT_LINK_INVALID` | documents | public (cliente) | page « Document personnel » — message générique « Action impossible. Réessaie dans un instant. » |
-| `DOCUMENT_ADMIN_FORBIDDEN` | documents | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès |
-| `DOCUMENT_ROUTE_UNEXPECTED_FAILURE` | documents | coach/admin (UI) | message générique du module : « Action impossible. Réessaie dans un instant. » |
-| `QUESTIONNAIRE_ADMIN_FORBIDDEN` | questionnaires | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès |
-| `QUESTIONNAIRE_HISTORY_INVALID` | questionnaires | interne / inatteignable | incohérence d'historique côté serveur (intégrité des données) |
-| `QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE` | questionnaires | coach/admin (UI) | message générique du module : « Impossible de traiter le questionnaire. Actualise et vérifie l'état avant de réessayer. » |
-| `SECURITY_FLOOR` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `ENV_MISSING` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `ENV_WEAK_SECRET` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `APP_BASE_URL_NOT_HTTPS` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `DATABASE_TARGET_FORBIDDEN` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `PRIVACY_JOURNAL_UNAVAILABLE` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `PATH_NOT_ABSOLUTE` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `PRIVACY_JOBS_DISABLED` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `DEMO_CONSENT_PUBLISHED` | démarrage production (S7.4a) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `BACKUP_KEY_INVALID` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `PG_CLIENT_TOO_OLD` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `DUMP_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `ENCRYPT_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `VERIFY_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `SECONDARY_COPY_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `ROTATION_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `MANIFEST_INVALID` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `TARGET_FORBIDDEN` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `TARGET_NOT_EMPTY` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `RESTORE_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `REPLAY_FAILED` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `DRILL_MISMATCH` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `ENV_INVALID` | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `SECURITY_FLOOR_NOT_MET` | plancher de sécurité (SEC-01) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:*, security:check) — voir les runbooks |
-| `REQUEST_ENCODING_UNSUPPORTED` | requêtes HTTP (SEC-01) | interne / inatteignable | 415 : aucun écran K'FIT n'envoie de corps compressé |
+| Code                                     | Module                            | Classe                  | Où il apparaît                                                                                                                                                                     |
+| ---------------------------------------- | --------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BOOTSTRAP_ALREADY_COMPLETED`            | auth                              | coach/admin (UI)        | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles - message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_BOOTSTRAP_INVALID_FORMAT`          | auth                              | coach/admin (UI)        | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles - message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_PASSWORD_POLICY_FAILED`            | auth                              | coach/admin (UI)        | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles - message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_INVALID_CREDENTIALS`               | auth                              | coach/admin (UI)        | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles - message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_ACCOUNT_UNAVAILABLE`               | auth                              | coach/admin (UI)        | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles - message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_LOGIN_INVALID_FORMAT`              | auth                              | coach/admin (UI)        | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles - message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_REFRESH_INVALID`                   | auth                              | interne / inatteignable | renouvellement de session en arrière-plan ; en cas d'échec l'écran revient à « Connexion » - À vérifier                                                                            |
+| `AUTH_OTP_CODE_INVALID_FORMAT`           | auth                              | coach/admin (UI)        | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles - message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_OTP_REJECTED`                      | auth                              | coach/admin (UI)        | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles - message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_RECOVERY_INVALID_FORMAT`           | auth                              | coach/admin (UI)        | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles - message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_RECOVERY_CODE_INVALID`             | auth                              | coach/admin (UI)        | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles - message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_RECOVERY_GRANT_INVALID`            | auth                              | coach/admin (UI)        | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles - message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `AUTH_RATE_LIMITED`                      | auth                              | coach/admin (UI)        | écrans « Connexion », « Mot de passe oublié », « Initialisation » et code des actions sensibles - message produit par une fonction (auth-errors.ts), non détecté par le générateur |
+| `CATALOGUE_ROUTE_UNEXPECTED_FAILURE`     | catalogue                         | coach/admin (UI)        | message générique du module : « L'action n'a pas pu être enregistrée. Réessaie dans un instant. »                                                                                  |
+| `CONSENT_ADMIN_FORBIDDEN`                | consents                          | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès                                                                                                                        |
+| `CONSENT_HISTORY_INVALID`                | consents                          | interne / inatteignable | incohérence d'historique côté serveur (intégrité des données)                                                                                                                      |
+| `CONSENT_ROUTE_UNEXPECTED_FAILURE`       | consents                          | coach/admin (UI)        | message générique du module : « Impossible de traiter les consentements. Actualise la page et vérifie l'état avant de réessayer. »                                                 |
+| `CUSTOMER_INVALID_INPUT`                 | customers                         | coach/admin (UI)        | « Nouveau client » - message produit par un switch (customers-api.ts), non détecté par le générateur                                                                               |
+| `CUSTOMER_DUPLICATE_WHATSAPP`            | customers                         | coach/admin (UI)        | « Nouveau client » - message produit par un switch (customers-api.ts), non détecté par le générateur                                                                               |
+| `CUSTOMER_ADMIN_FORBIDDEN`               | customers                         | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès                                                                                                                        |
+| `CUSTOMER_NOT_FOUND`                     | customers                         | coach/admin (UI)        | message générique du module : « Impossible de joindre le service clients. Réessaie dans un instant. »                                                                              |
+| `CUSTOMER_ROUTE_UNEXPECTED_FAILURE`      | customers                         | coach/admin (UI)        | message générique du module : « Impossible de joindre le service clients. Réessaie dans un instant. »                                                                              |
+| `DASHBOARD_INVALID_INPUT`                | dashboard                         | interne / inatteignable | paramètres construits par l'écran « Aujourd'hui »                                                                                                                                  |
+| `DASHBOARD_ADMIN_FORBIDDEN`              | dashboard                         | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès                                                                                                                        |
+| `DASHBOARD_ROUTE_UNEXPECTED_FAILURE`     | dashboard                         | coach/admin (UI)        | message générique du module : « Impossible de charger le tableau de bord. Réessaie dans un instant. »                                                                              |
+| `DOCUMENT_NOT_FOUND`                     | documents                         | coach/admin (UI)        | message générique du module : « Action impossible. Réessaie dans un instant. »                                                                                                     |
+| `DOCUMENT_VERSION_NOT_FOUND`             | documents                         | coach/admin (UI)        | message générique du module : « Action impossible. Réessaie dans un instant. »                                                                                                     |
+| `DOCUMENT_INVALID_INPUT`                 | documents                         | coach/admin (UI)        | message générique du module : « Action impossible. Réessaie dans un instant. »                                                                                                     |
+| `DOCUMENT_TYPE_INVALID`                  | documents                         | coach/admin (UI)        | message générique du module : « Action impossible. Réessaie dans un instant. »                                                                                                     |
+| `DOCUMENT_STORAGE_FAILURE`               | documents                         | coach/admin (UI)        | message générique du module : « Action impossible. Réessaie dans un instant. »                                                                                                     |
+| `DOCUMENT_MEASUREMENT_INVALID`           | documents                         | coach/admin (UI)        | message générique du module : « Action impossible. Réessaie dans un instant. »                                                                                                     |
+| `DOCUMENT_LINK_INVALID`                  | documents                         | public (cliente)        | page « Document personnel » - message générique « Action impossible. Réessaie dans un instant. »                                                                                   |
+| `DOCUMENT_ADMIN_FORBIDDEN`               | documents                         | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès                                                                                                                        |
+| `DOCUMENT_ROUTE_UNEXPECTED_FAILURE`      | documents                         | coach/admin (UI)        | message générique du module : « Action impossible. Réessaie dans un instant. »                                                                                                     |
+| `QUESTIONNAIRE_ADMIN_FORBIDDEN`          | questionnaires                    | interne / inatteignable | un seul rôle (admin) : toute session authentifiée y a accès                                                                                                                        |
+| `QUESTIONNAIRE_HISTORY_INVALID`          | questionnaires                    | interne / inatteignable | incohérence d'historique côté serveur (intégrité des données)                                                                                                                      |
+| `QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE` | questionnaires                    | coach/admin (UI)        | message générique du module : « Impossible de traiter le questionnaire. Actualise et vérifie l'état avant de réessayer. »                                                          |
+| `SECURITY_FLOOR`                         | démarrage production (S7.4a)      | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `ENV_MISSING`                            | démarrage production (S7.4a)      | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `ENV_WEAK_SECRET`                        | démarrage production (S7.4a)      | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `APP_BASE_URL_NOT_HTTPS`                 | démarrage production (S7.4a)      | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `DATABASE_TARGET_FORBIDDEN`              | démarrage production (S7.4a)      | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `PRIVACY_JOURNAL_UNAVAILABLE`            | démarrage production (S7.4a)      | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `PATH_NOT_ABSOLUTE`                      | démarrage production (S7.4a)      | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `PRIVACY_JOBS_DISABLED`                  | démarrage production (S7.4a)      | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `DEMO_CONSENT_PUBLISHED`                 | démarrage production (S7.4a)      | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `BACKUP_KEY_INVALID`                     | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `PG_CLIENT_TOO_OLD`                      | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `DUMP_FAILED`                            | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `ENCRYPT_FAILED`                         | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `VERIFY_FAILED`                          | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `SECONDARY_COPY_FAILED`                  | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `ROTATION_FAILED`                        | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `MANIFEST_INVALID`                       | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `TARGET_FORBIDDEN`                       | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `TARGET_NOT_EMPTY`                       | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `RESTORE_FAILED`                         | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `REPLAY_FAILED`                          | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `DRILL_MISMATCH`                         | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `ENV_INVALID`                            | sauvegarde / restauration (S7.4b) | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `SECURITY_FLOOR_NOT_MET`                 | plancher de sécurité (SEC-01)     | interne / inatteignable | terminal d'exploitation (démarrage production, scripts ops:\*, security:check) - voir les runbooks                                                                                 |
+| `REQUEST_ENCODING_UNSUPPORTED`           | requêtes HTTP (SEC-01)            | interne / inatteignable | 415 : aucun écran K'FIT n'envoie de corps compressé                                                                                                                                |
 
 ### À vérifier
+
 1. Adding or removing an admin account: no screen exists.
 2. AUTH_REFRESH_INVALID: what the coach sees when the background session refresh fails.
 3. Consent type `publication` exists in the contract but has no label on the consent texts page or the health tab.
-4. Generator limit (not changed here): messages produced by functions or switch statements (auth-errors.ts, customers-api.ts) are shown « — » in codes-erreur.md.
+4. Generator limit (not changed here): messages produced by functions or switch statements (auth-errors.ts, customers-api.ts) are shown « - » in codes-erreur.md.
 
-## SEC-02 Gate 1 — approved 2026-10-27
+## SEC-02 Gate 1 - approved 2026-10-27
 
 Status: SEC-02a APPROVED_FOR_IMPLEMENTATION (trusted devices, server). SEC-02b = client.
 
 V1: OTP by e-mail only (Fred).
 
 ### Context (verified on main 4db73be)
+
 - Contract: docs/archive/sprint-1-auth-adaptation-contract.md § « Login and suspicious device » (password first; known active unexpired trusted device → no OTP; unknown/revoked/expired → OTP; pre-OTP response issues no session; trusting is an explicit choice; everything audited without secrets).
-- db/schema/auth.ts l.14 trusted_devices (user_id, device_fingerprint_hash, label, trusted_until, last_used_at, revoked_at; unique (user_id, device_fingerprint_hash)) — never written today. db/enums.ts otpPurposes includes "suspicious_device_login".
+- db/schema/auth.ts l.14 trusted_devices (user_id, device_fingerprint_hash, label, trusted_until, last_used_at, revoked_at; unique (user_id, device_fingerprint_hash)) - never written today. db/enums.ts otpPurposes includes "suspicious_device_login".
 - auth-route.service.ts l.133 login(): verifies password then createSession on any device. LoginResult l.66 = AuthSuccess | rejected. shared/src/auth/contracts.ts authApiRoutes (no verify-login route), LoginResponse = AuthenticatedSessionResponse.
 - otp-challenge.service.ts issue() l.86 / verify() l.123 (TTL AUTH_OTP_TTL_MS 5 min, AUTH_OTP_MAX_ATTEMPTS 5); auth-mail.delivery.ts sends auth e-mails (Mailpit in dev). sensitive-action-otp.service.ts = an existing OTP flow to mirror.
 - No rate limiter on the auth router (check and confirm); IpRateLimiter exists elsewhere; S7.4b counts RATE_LIMITED:<scope>.
 - Password reset revokes every session (contract § Sessions). Check whether a logout-all route exists.
 
 ### Decisions (Fred 2026-10-27)
+
 E1. POST /auth/login: invalid credentials / unavailable account unchanged. Valid password + trusted device → 200 session (unchanged shape). Otherwise → 202 { status: "otp_required", challengeId, expiresAt } with NO auth cookies (CSRF cookie unchanged policy). Shared contract: LoginResponse becomes a discriminated union; add route verifyLogin "/auth/login/verify" and resendLoginOtp "/auth/login/resend".
-E2. Device cookie kfit_device: 32 random bytes base64url, HttpOnly, Secure in production, SameSite=Lax, path /, Max-Age = 400 days (browser cap), issued on the first login attempt that lacks it (also on 202). DB stores device_fingerprint_hash = HMAC-SHA256(AUTH_DEVICE_PEPPER, value) — new env AUTH_DEVICE_PEPPER (≥32 chars) added to loadAuthConfig, PRODUCTION_REQUIRED_ENV, .env.example (dev placeholder that passes dev), .env.prod.example placeholder. No browser fingerprinting. Malformed cookie → treated as absent (new cookie issued).
-E3. OTP purpose suspicious_device_login, sent by e-mail to the account address (French subject/body: code, validity 5 min, « si ce n'est pas toi, change ton mot de passe »; no link). Existing TTL / attempts. challengeId binds user + device hash; verifying from another device cookie fails. Resend: invalidates the previous code, max 3 resends per challenge (named constant), new challengeId not needed if the service supports reissue — follow the sensitive-action pattern. Rate limits (named constants, IpRateLimiter + per-account counter): login 10/15 min per IP and 5/15 min per account for 202 issuance; verify 10/15 min per IP; resend 3/15 min per account → 429 AUTH_RATE_LIMITED, counted by the S7.4b security counters (scope auth_login, auth_verify, auth_resend).
-E4. POST /auth/login/verify { challengeId, code, trustDevice: boolean } (origin check + rate limit like login): success → session cookies (same as today's login) + if trustDevice: upsert trusted_devices (trusted_until = now + TRUSTED_DEVICE_TTL_DAYS 30, revoked_at null, label = short « Navigateur · Système » derived from User-Agent by a tiny pure parser — Chrome/Edge/Firefox/Safari/Autre × Windows/macOS/Linux/Android/iOS/Autre; never store the full UA). Failure codes: AUTH_OTP_INVALID, AUTH_OTP_EXPIRED, AUTH_OTP_LOCKED (reuse existing codes if present; list in report).
+E2. Device cookie kfit_device: 32 random bytes base64url, HttpOnly, Secure in production, SameSite=Lax, path /, Max-Age = 400 days (browser cap), issued on the first login attempt that lacks it (also on 202). DB stores device_fingerprint_hash = HMAC-SHA256(AUTH_DEVICE_PEPPER, value) - new env AUTH_DEVICE_PEPPER (≥32 chars) added to loadAuthConfig, PRODUCTION_REQUIRED_ENV, .env.example (dev placeholder that passes dev), .env.prod.example placeholder. No browser fingerprinting. Malformed cookie → treated as absent (new cookie issued).
+E3. OTP purpose suspicious_device_login, sent by e-mail to the account address (French subject/body: code, validity 5 min, « si ce n'est pas toi, change ton mot de passe »; no link). Existing TTL / attempts. challengeId binds user + device hash; verifying from another device cookie fails. Resend: invalidates the previous code, max 3 resends per challenge (named constant), new challengeId not needed if the service supports reissue - follow the sensitive-action pattern. Rate limits (named constants, IpRateLimiter + per-account counter): login 10/15 min per IP and 5/15 min per account for 202 issuance; verify 10/15 min per IP; resend 3/15 min per account → 429 AUTH_RATE_LIMITED, counted by the S7.4b security counters (scope auth_login, auth_verify, auth_resend).
+E4. POST /auth/login/verify { challengeId, code, trustDevice: boolean } (origin check + rate limit like login): success → session cookies (same as today's login) + if trustDevice: upsert trusted_devices (trusted_until = now + TRUSTED_DEVICE_TTL_DAYS 30, revoked_at null, label = short « Navigateur · Système » derived from User-Agent by a tiny pure parser - Chrome/Edge/Firefox/Safari/Autre × Windows/macOS/Linux/Android/iOS/Autre; never store the full UA). Failure codes: AUTH_OTP_INVALID, AUTH_OTP_EXPIRED, AUTH_OTP_LOCKED (reuse existing codes if present; list in report).
 E5. Trusted path: device hash matches an active row (revoked_at null, trusted_until > now) of THIS user → 200 session, last_used_at = now (no extension of trusted_until). Expired/revoked/unknown → OTP. A device trusted by user A gives nothing to user B.
 E6. Revocation: password reset revokes all trusted devices of the user; logout-all (if the route exists) does too; new authenticated endpoints GET /auth/devices (current user's devices: id, label, lastUsedAt, trustedUntil, current: boolean) , DELETE /auth/devices/:id, POST /auth/devices/revoke-all (CSRF + same-origin). Revoking does not end the current session (report if the contract says otherwise).
 E7. Audit (no codes, no cookie values, hashed IP/UA as today): auth.login.otp_required, auth.login.otp_succeeded, auth.login.otp_failed, auth.login.otp_locked, auth.login.otp_resent, auth.device.trusted, auth.device.used, auth.device.revoked (metadata: deviceId, reason: user|password_reset|logout_all).
-E8. (client — SEC-02b) not in this slice.
+E8. (client - SEC-02b) not in this slice.
 E9. No bypass flag in any environment. Integration/express tests read the OTP through the test mail double or the repository, never through a production code path.
-E10. Docs in this slice: docs/runbooks/premier-compte-administrateur.md (bootstrap in production via the existing BootstrapService/route — verify how it is reached and locked after first use; first login = OTP to the bootstrap e-mail; what to do if the e-mail is wrong); guide-administrateur « Comptes et sessions » (trusted devices, 30 days, revocation, password reset effect) and guide-coach « Se connecter » (new device → code par e-mail; la coach doit avoir accès à sa boîte mail sur tout nouvel appareil); demarrage-production (AUTH_DEVICE_PEPPER); docs:generate.
-No migration expected — if one is truly needed (e.g. index on trusted_until), stop and ask ONE yes/no question first.
+E10. Docs in this slice: docs/runbooks/premier-compte-administrateur.md (bootstrap in production via the existing BootstrapService/route - verify how it is reached and locked after first use; first login = OTP to the bootstrap e-mail; what to do if the e-mail is wrong); guide-administrateur « Comptes et sessions » (trusted devices, 30 days, revocation, password reset effect) and guide-coach « Se connecter » (new device → code par e-mail; la coach doit avoir accès à sa boîte mail sur tout nouvel appareil); demarrage-production (AUTH_DEVICE_PEPPER); docs:generate.
+No migration expected - if one is truly needed (e.g. index on trusted_until), stop and ask ONE yes/no question first.
 
-## SEC-02a execution — 2026-10-27 (Claude)
+## SEC-02a execution - 2026-10-27 (Claude)
 
 Status: delivered, uncommitted → Fred: validate (manual steps in the report; UI code screen = SEC-02b).
 
@@ -1946,38 +2078,41 @@ Status: delivered, uncommitted → Fred: validate (manual steps in the report; U
 - Limits: until SEC-02b, every UI login from an untrusted browser shows the generic error (no browser is trusted yet); the first code is verified from the browser console. Rate limits reset on restart. Rotating AUTH_DEVICE_PEPPER untrusts every device.
 - Docs: premier-compte-administrateur.md (new), guide-administrateur § 6, guide-coach § 1, demarrage-production, docs/README + runbooks/README, regenerated codes-erreur and variables-environnement.
 
-## SEC-02b scope — approved 2026-10-27
+## SEC-02b scope - approved 2026-10-27
 
 Status: SEC-02b (client) + BOOT-01 (server) APPROVED_FOR_IMPLEMENTATION.
 
-Contract deviation accepted (Fred 2026-10-27): device routes are /auth/devices (no /api prefix in K'FIT) and revoking a device needs session + CSRF + same-origin, no fresh OTP — revocation only removes trust; adding trust is what needs the OTP.
+Contract deviation accepted (Fred 2026-10-27): device routes are /auth/devices (no /api prefix in K'FIT) and revoking a device needs session + CSRF + same-origin, no fresh OTP - revocation only removes trust; adding trust is what needs the OTP.
 
 ### Context (verified on main e0d6158)
+
 - Server (SEC-02a): POST /auth/login → 200 session | 202 { status:"otp_required", challengeId, expiresAt }; POST /auth/login/verify { challengeId, code, trustDevice } (origin check) → 200 session; POST /auth/login/resend → 202 new challengeId (max 3 per challenge → 429); GET /auth/devices (id, label, lastUsedAt, trustedUntil, current); DELETE /auth/devices/:id; POST /auth/devices/revoke-all (session + CSRF + origin). Codes: AUTH_OTP_REJECTED with reason invalid 400 / expired 410 / locked 423 / not_found 404 / superseded|consumed 409; AUTH_RATE_LIMITED 429; AUTH_OTP_DELIVERY_FAILED 503; AUTH_DEVICE_NOT_FOUND 404; AUTH_OTP_CODE_INVALID_FORMAT. Shared helper isLoginOtpRequired.
 - Client: auth/api/auth-api.ts l.~80 throws LoginOtpNotSupportedError on 202 (temporary). Components: auth/components/LoginForm.tsx, OtpCodeInput.tsx (existing 6-digit input, used by recovery/sensitive OTP), AuthShell.tsx, BootstrapForm.tsx; auth/state/auth-context.tsx; auth/api/auth-errors.ts.
 - Réglages = route /admin/reglages → NotificationSettingsPage (sections: notifications, confidentialité, données de test in dev).
 - Bootstrap: POST /auth/bootstrap open (no session, no CSRF, no origin check) until the first account exists; closed with 409 BOOTSTRAP_ALREADY_COMPLETED; advisory-locked (docs/runbooks/premier-compte-administrateur.md).
 
-### Part A — client
-A1. Login step 2 « Nouvel appareil » inside AuthShell (same visual language as the recovery OTP step, board 09 intent): title « Nouvel appareil », text « Pour protéger ton compte, saisis le code à 6 chiffres envoyé à <e-mail masqué> » (mask: first letter + *** + @domain — computed client-side from the e-mail typed), OtpCodeInput (autofocus, paste of 6 digits auto-submits), checkbox « Faire confiance à cet appareil pendant 30 jours » unchecked by default with helper « Ne coche pas sur un ordinateur partagé. », buttons « Valider » and « Renvoyer le code » (disabled with countdown 30 s after each send; hidden after the 3rd resend with « Nombre maximum de renvois atteint. Recommence la connexion. »), link « Retour » to step 1 (clears the challenge). Expiry countdown from expiresAt (« Code valable encore m:ss »); at 0 show « Code expiré » + resend.
+### Part A - client
+
+A1. Login step 2 « Nouvel appareil » inside AuthShell (same visual language as the recovery OTP step, board 09 intent): title « Nouvel appareil », text « Pour protéger ton compte, saisis le code à 6 chiffres envoyé à <e-mail masqué> » (mask: first letter + \*\*\* + @domain - computed client-side from the e-mail typed), OtpCodeInput (autofocus, paste of 6 digits auto-submits), checkbox « Faire confiance à cet appareil pendant 30 jours » unchecked by default with helper « Ne coche pas sur un ordinateur partagé. », buttons « Valider » and « Renvoyer le code » (disabled with countdown 30 s after each send; hidden after the 3rd resend with « Nombre maximum de renvois atteint. Recommence la connexion. »), link « Retour » to step 1 (clears the challenge). Expiry countdown from expiresAt (« Code valable encore m:ss »); at 0 show « Code expiré » + resend.
 A2. auth-api / auth-context: login returns a discriminated result; verifyLogin and resendLogin added; on verify 200 the session is stored exactly like today's login 200; remove LoginOtpNotSupportedError. Password is never kept in state after step 1 (only email for the mask and challengeId).
 A3. French messages (auth-errors.ts, via commonApiErrorMessage where shared): invalid « Code incorrect. Vérifie et réessaie. » · expired « Ce code a expiré. Demande un nouveau code. » · locked « Trop d'essais. Recommence la connexion. » (→ back to step 1) · not_found / superseded / consumed « Ce code n'est plus valable. Recommence la connexion. » (→ step 1) · AUTH_RATE_LIMITED « Trop de tentatives. Réessaie dans quelques minutes. » · AUTH_OTP_DELIVERY_FAILED « Le code n'a pas pu être envoyé. Réessaie dans un instant ou contacte l'administrateur. » · format « Le code contient 6 chiffres. ».
-A4. Réglages › new section « Appareils de confiance » (admin and coach alike — every user manages their own): list (label, « Utilisé le … », « Confiance jusqu'au … », badge « Cet appareil » when current), empty state « Aucun appareil de confiance. Coche « Faire confiance à cet appareil » à ta prochaine connexion pour ne plus saisir de code sur ce navigateur. », button « Retirer » per row (confirm dialog: « Ce navigateur te redemandera un code à sa prochaine connexion. Ta session actuelle reste ouverte. »), button « Tout retirer » (confirm). Dates in fr-FR, Africa/Libreville like the rest of the app. Error: AUTH_DEVICE_NOT_FOUND → refresh list silently.
+A4. Réglages › new section « Appareils de confiance » (admin and coach alike - every user manages their own): list (label, « Utilisé le … », « Confiance jusqu'au … », badge « Cet appareil » when current), empty state « Aucun appareil de confiance. Coche « Faire confiance à cet appareil » à ta prochaine connexion pour ne plus saisir de code sur ce navigateur. », button « Retirer » per row (confirm dialog: « Ce navigateur te redemandera un code à sa prochaine connexion. Ta session actuelle reste ouverte. »), button « Tout retirer » (confirm). Dates in fr-FR, Africa/Libreville like the rest of the app. Error: AUTH_DEVICE_NOT_FOUND → refresh list silently.
 A5. Accessibility: focus moves to the code input on step 2, errors announced (aria-live polite), checkbox and buttons keyboard-reachable; mobile layout single column.
 A6. Docs: guide-coach « Se connecter » (real screen labels, what to do if the mail doesn't arrive: spam folder, resend, wait), guide-administrateur § 6 (remove « À venir (SEC-02b) », describe the Réglages section), docs:generate if codes/messages changed.
 
-### Part B — BOOT-01 (server, only if approved)
+### Part B - BOOT-01 (server, only if approved)
+
 B1. In production (createProductionRuntime), POST /auth/bootstrap requires header `x-kfit-bootstrap-token` equal to env KFIT_BOOTSTRAP_TOKEN (constant-time compare, ≥32 chars, no placeholder). Env absent in production → route answers 403 BOOTSTRAP_DISABLED (status endpoint returns { required: true, tokenRequired: true, enabled: false }). Development unchanged (no token).
 B2. Origin check (requireSameOrigin) on POST /auth/bootstrap in every mode; IpRateLimiter 5 / 15 min (scope auth_bootstrap, counted). Wrong token → 403 BOOTSTRAP_TOKEN_INVALID, audited (auth.bootstrap.rejected, reason token_invalid, no token value).
 B3. KFIT_BOOTSTRAP_TOKEN is NOT in PRODUCTION_REQUIRED_ENV (only needed once); production start logs one warning while users is empty and the token is set, and one warning if users is non-empty and the token is still set (« retire KFIT_BOOTSTRAP_TOKEN »).
 B4. Client BootstrapForm: when status says tokenRequired, show a « Jeton d'initialisation » field (password type, not stored) sent as the header; enabled:false → message « Initialisation désactivée : définis KFIT_BOOTSTRAP_TOKEN côté serveur (voir runbook). ». Runbook premier-compte-administrateur.md updated (generate token, set env, bootstrap, remove env, restart); .env.prod.example gains the commented key.
 
-## SEC-02b execution — 2026-10-27 (Claude)
+## SEC-02b execution - 2026-10-27 (Claude)
 
 Status: delivered, uncommitted → Fred: validate (then SEC-02 closed). UI acceptance is Fred's manual run (client has no test runner).
 
 - Counts: shared 78 → 78; server unit 692 → 698 (697 pass + 1 skipped on Windows, unchanged); integration on kfit_test 637 → 637. security:check ✔, tsc shared/server/client clean, client build ok, docs:check ok (322 codes: + BOOTSTRAP_DISABLED, BOOTSTRAP_TOKEN_INVALID). No migration, no new dependency.
-- Part A screens: « Nouvel appareil » (DeviceCodeStep.tsx, inside AuthShell after « Connexion »): masked e-mail (first letter + *** + @domain), OtpCodeInput (autofocus; a pasted full code submits), « Code valable encore m:ss » / « Code expiré », checkbox « Faire confiance à cet appareil pendant 30 jours » (unchecked) + « Ne coche pas sur un ordinateur partagé. », « Valider », « Renvoyer le code » (30 s cooldown after each send, hidden after 3 resends with « Nombre maximum de renvois atteint. Recommence la connexion. »), « Retour ». Réglages › « Appareils de confiance » (TrustedDevicesCard.tsx): label, « Utilisé le … », « Confiance jusqu'au … », badge « Cet appareil », « Retirer » / « Tout retirer » with confirmation, empty state; AUTH_DEVICE_NOT_FOUND refreshes silently.
+- Part A screens: « Nouvel appareil » (DeviceCodeStep.tsx, inside AuthShell after « Connexion »): masked e-mail (first letter + \*\*\* + @domain), OtpCodeInput (autofocus; a pasted full code submits), « Code valable encore m:ss » / « Code expiré », checkbox « Faire confiance à cet appareil pendant 30 jours » (unchecked) + « Ne coche pas sur un ordinateur partagé. », « Valider », « Renvoyer le code » (30 s cooldown after each send, hidden after 3 resends with « Nombre maximum de renvois atteint. Recommence la connexion. »), « Retour ». Réglages › « Appareils de confiance » (TrustedDevicesCard.tsx): label, « Utilisé le … », « Confiance jusqu'au … », badge « Cet appareil », « Retirer » / « Tout retirer » with confirmation, empty state; AUTH_DEVICE_NOT_FOUND refreshes silently.
 - Part A data: login returns 200 session or 202 challenge; the password stays inside LoginForm and is dropped when it unmounts; only { email, challengeId, expiresAt } reach step 2. Nothing in localStorage/sessionStorage. LoginOtpNotSupportedError removed. loginOtpMaxResends moved to shared (server LOGIN_OTP_MAX_RESENDS reads it).
 - Messages (auth-errors.ts loginOtpMessages / loginOtpFailure): invalid, expired stay on the step; locked, not_found, superseded, consumed and account unavailable go back to « Connexion » with the message; 429 via commonAuthMessage; 503 delivery message also on « Connexion ».
 - Part B (BOOT-01): BootstrapService tokenPolicy + allowAttempt; bootstrap-access.ts (BOOTSTRAP_ATTEMPTS_PER_IP 5 / 15 min, scope auth_bootstrap); production-guards.ts readBootstrapToken (≥ PRODUCTION_SECRET_MIN_LENGTH, no placeholder) and bootstrapTokenWarnings. Production: header x-kfit-bootstrap-token, SHA-256 + timingSafeEqual; absent/short/example token → 403 BOOTSTRAP_DISABLED, status { tokenRequired: true, enabled: false }; wrong token → 403 BOOTSTRAP_TOKEN_INVALID audited reason token_invalid. Origin check on POST /auth/bootstrap in every mode. Order: rate limit → already completed (409) → disabled → token → password policy. Start-up warnings from runProductionGuards (users empty + token set; account exists + token set « retire KFIT_BOOTSTRAP_TOKEN »; token ignored). Client BootstrapForm: « Jeton d'initialisation » (password field, header only) and the disabled message. .env.prod.example: commented KFIT_BOOTSTRAP_TOKEN.
@@ -1985,36 +2120,38 @@ Status: delivered, uncommitted → Fred: validate (then SEC-02 closed). UI accep
 - Limits: KFIT_BOOTSTRAP_TOKEN is not in docs/reference/variables-environnement.md (the generator reads .env.example; the key lives commented in .env.prod.example). UI not exercised by the agent (Fred runs the manual steps).
 - Docs: guide-coach § 1, guide-administrateur § 1 and § 6, premier-compte-administrateur (token procedure), demarrage-production checklist, docs/README, regenerated codes-erreur.
 
-## OPS-01 Gate 1 — approved 2026-10-27
+## OPS-01 Gate 1 - approved 2026-10-27
 
 Status: OPS-01a APPROVED_FOR_IMPLEMENTATION (supervision API, server). OPS-01b = client.
 
 Alerts admin only; menu shows a dot when an alert is active (Fred).
 
 ### Context (verified on main bb2e993)
-- scheduled_job_runs (job_key, run_key unique, status running|succeeded|failed, started/finished_at, attempt, result_json, error_code). API jobs: notifications.reconcile (*/15), notifications.email-delivery (*/5), privacy.purge (0 3 * * * Africa/Libreville; PURGE_JOB_KEY/CRON in privacy.policy.ts l.21). Runner: notifications/jobs/scheduled-job.runner.ts runScheduledJob(pool, db, jobKey, runKey, work) with advisory lock + idempotency; NotificationJobDefinition {jobKey, cron, windowMs, timezone?, runKey?}. Ops scripts: ops.backup / ops.restore / ops.restore_drill (result_json counts/sizes/durations, see docs/reference/jobs.md).
+
+- scheduled_job_runs (job_key, run_key unique, status running|succeeded|failed, started/finished_at, attempt, result_json, error_code). API jobs: notifications.reconcile (_/15), notifications.email-delivery (_/5), privacy.purge (0 3 \* \* \* Africa/Libreville; PURGE_JOB_KEY/CRON in privacy.policy.ts l.21). Runner: notifications/jobs/scheduled-job.runner.ts runScheduledJob(pool, db, jobKey, runKey, work) with advisory lock + idempotency; NotificationJobDefinition {jobKey, cron, windowMs, timezone?, runKey?}. Ops scripts: ops.backup / ops.restore / ops.restore_drill (result_json counts/sizes/durations, see docs/reference/jobs.md).
 - privacy-purge.job.ts uses repository.purgeDue + recordPurgeRun; no dry-run.
-- security_event_counters (day, code, count) — REQUEST_ENCODING_UNSUPPORTED, RATE_LIMITED:<scope> (auth_login, auth_verify, auth_resend, auth_bootstrap, public scopes).
+- security_event_counters (day, code, count) - REQUEST_ENCODING_UNSUPPORTED, RATE_LIMITED:<scope> (auth_login, auth_verify, auth_resend, auth_bootstrap, public scopes).
 - audit_events eventTypes include auth.login.rejected, auth.login.otp_failed/otp_locked (SEC-02a E7), auth.bootstrap.rejected, privacy.replay_run; external_access_events.result holds public-link outcomes (invalid/expired token codes per module).
 - notifications table: kind CHECK constraint (notifications_kind_known), severity CHECK warning|info, resource_type + resource_id uuid NOT NULL, dedupe_key, one open row per (recipient, dedupe_key), resolved_at. Kinds/settings in shared/src/notifications/contracts.ts (emailEnabledKey(kind) → notifications.<kind>.email_enabled). Reconcile job creates/resolves notifications; e-mail outbox delivers.
 - Security floor: security/security-floor.ts evaluateRuntimeFloor; production guards: runtime/production-guards.ts.
 
 ### Decisions
+
 O1. Admin only: every route requires an admin session (coach → 403 existing forbidden code); GET routes no CSRF; POST routes CSRF + same-origin.
-O2. GET /admin/supervision/overview → { generatedAt, alerts[], jobs[], backup, restoreCheck, privacy, runtime } (shared contract types). GET /admin/supervision/security?days=7|30 (else 400) → { days: [{ date (YYYY-MM-DD Libreville), series: { loginRejected, otpFailed, otpLocked, bootstrapRejected, rateLimited: {<scope>: n}, encodingRejected, publicLinkInvalid } }] } — zero-filled for every day, no IP, no user id.
-O3. Jobs: constant SUPERVISED_JOBS registry (jobKey, French label, cron, timezone, intervalMs, manual: "run"|"simulate"|null). Per job: last run (status, startedAt, durationMs, attempt, errorCode), lastSucceededAt, nextRunAt (pure function per known cron — */N minutes and daily HH:MM in a timezone; unit-tested, no new dependency), failureRate30d (failed / total runs in 30 days, attempts counted per run), late = now − lastSucceededAt > 2 × intervalMs (STALE_FACTOR = 2). In development where jobs may be off, a job with no run at all → state "never_run" (not an alert in development; alert in production).
-O4. POST /admin/supervision/jobs/:jobKey/run — only notifications.reconcile and notifications.email-delivery (others → 400 SUPERVISION_JOB_NOT_RUNNABLE). Uses runScheduledJob with runKey "manual:<uuid>" (same lock; if the lock is held → 409 SUPERVISION_JOB_BUSY). Rate limit 1/min per job (in-memory, 429 counted as RATE_LIMITED:supervision_run). Audit ops.job.manual_run (jobKey, outcome, durationMs). Response: run summary.
-    POST /admin/supervision/jobs/privacy.purge/simulate — new repository method that runs the same eligibility selection as purgeDue inside a READ ONLY transaction and returns counts only { subjectsDue, filesDue, bytesDue, heldBack (by holds) }; deletes nothing, writes no run row; audit ops.purge.simulated. Test proves zero writes (row counts + storage unchanged).
+O2. GET /admin/supervision/overview → { generatedAt, alerts[], jobs[], backup, restoreCheck, privacy, runtime } (shared contract types). GET /admin/supervision/security?days=7|30 (else 400) → { days: [{ date (YYYY-MM-DD Libreville), series: { loginRejected, otpFailed, otpLocked, bootstrapRejected, rateLimited: {<scope>: n}, encodingRejected, publicLinkInvalid } }] } - zero-filled for every day, no IP, no user id.
+O3. Jobs: constant SUPERVISED_JOBS registry (jobKey, French label, cron, timezone, intervalMs, manual: "run"|"simulate"|null). Per job: last run (status, startedAt, durationMs, attempt, errorCode), lastSucceededAt, nextRunAt (pure function per known cron - \*/N minutes and daily HH:MM in a timezone; unit-tested, no new dependency), failureRate30d (failed / total runs in 30 days, attempts counted per run), late = now − lastSucceededAt > 2 × intervalMs (STALE_FACTOR = 2). In development where jobs may be off, a job with no run at all → state "never_run" (not an alert in development; alert in production).
+O4. POST /admin/supervision/jobs/:jobKey/run - only notifications.reconcile and notifications.email-delivery (others → 400 SUPERVISION_JOB_NOT_RUNNABLE). Uses runScheduledJob with runKey "manual:<uuid>" (same lock; if the lock is held → 409 SUPERVISION_JOB_BUSY). Rate limit 1/min per job (in-memory, 429 counted as RATE_LIMITED:supervision_run). Audit ops.job.manual_run (jobKey, outcome, durationMs). Response: run summary.
+POST /admin/supervision/jobs/privacy.purge/simulate - new repository method that runs the same eligibility selection as purgeDue inside a READ ONLY transaction and returns counts only { subjectsDue, filesDue, bytesDue, heldBack (by holds) }; deletes nothing, writes no run row; audit ops.purge.simulated. Test proves zero writes (row counts + storage unchanged).
 O5. backup: from latest ops.backup rows → { lastSucceededAt, ageHours, bytes, durationMs, secondaryVerified, rotation {kept, deleted}, lastFailed?: {at, errorCode} }; alert BACKUP_STALE when ageHours > BACKUP_MAX_AGE_HOURS 26 or no backup ever in production; BACKUP_FAILED when the latest run failed.
 O6. restoreCheck: latest ops.restore_drill → { at, status, tablesMatched, filesMatched, replayEvents, errorCode? }; alerts RESTORE_CHECK_STALE (> RESTORE_CHECK_MAX_AGE_DAYS 8 or none in production), RESTORE_CHECK_FAILED.
 O7. privacy: { journal: { configured, writable } (fs access check, no write), lastPurge {at, status, filesDeleted}, lastReplay {at, events} (audit privacy.replay_run), activeHolds, purgesDue7d, anonymizedTotal }; alert PRIVACY_JOURNAL_UNAVAILABLE, PURGE_FAILED (latest purge run failed).
-O8. runtime: { nodeVersion, floor: evaluateRuntimeFloor result (ids only), mode: development|production, guards: production only — result of a cheap re-run of the pure guards (no DB demo-consent query on every call; cache that one 10 min) }; alert SECURITY_FLOOR_NOT_MET.
-    Security series sources (O2): audit_events by eventType per Libreville day; security_event_counters; external_access_events results ending in _TOKEN_INVALID / _LINK_INVALID / _EXPIRED (list the exact codes used, constant). Plus JOB_FAILING alert when failureRate over the last 10 runs ≥ 50 % or 3 consecutive failures; JOB_LATE alert per late job.
-O9. Alerts: pure function computeSupervisionAlerts(state, now, mode) → [{ code, severity: "critical"|"warning", jobKey?, message (French, short, action-oriented) }]. Notifications: new kind supervision_alert (shared contract + migration altering notifications_kind_known; next migration number), severity mapping critical/warning → "warning" (column allows warning|info only — keep critical only in the API), resource_type "supervision", resource_id = deterministic UUID v5-style derived from the alert code (node:crypto, constant namespace), dedupe_key "supervision:<code>[:<jobKey>]", deepLink "/admin/supervision", recipients = every active admin (never coach). The existing notifications.reconcile job computes alerts and opens/resolves these rows (resolved when the condition clears). E-mail: default enabled via setting notifications.supervision_alert.email_enabled (default true; registry + settings range); at most one e-mail per alert per Libreville day (dedupe through the existing outbox rules — verify and report how).
-    Menu dot support: GET /admin/supervision/overview is too heavy for the shell — add GET /admin/supervision/status → { level: "ok"|"warning"|"critical", alertCount } computed from open supervision_alert notifications of the current admin (cheap query).
-O10/O11 → OPS-01b (client) — not here. Server docs only: docs/reference/jobs.md (manual runs, simulate, alerts), runbooks/echec-job.md (read the Supervision page first), docs:generate.
+O8. runtime: { nodeVersion, floor: evaluateRuntimeFloor result (ids only), mode: development|production, guards: production only - result of a cheap re-run of the pure guards (no DB demo-consent query on every call; cache that one 10 min) }; alert SECURITY_FLOOR_NOT_MET.
+Security series sources (O2): audit_events by eventType per Libreville day; security_event_counters; external_access_events results ending in \_TOKEN_INVALID / \_LINK_INVALID / \_EXPIRED (list the exact codes used, constant). Plus JOB_FAILING alert when failureRate over the last 10 runs ≥ 50 % or 3 consecutive failures; JOB_LATE alert per late job.
+O9. Alerts: pure function computeSupervisionAlerts(state, now, mode) → [{ code, severity: "critical"|"warning", jobKey?, message (French, short, action-oriented) }]. Notifications: new kind supervision_alert (shared contract + migration altering notifications_kind_known; next migration number), severity mapping critical/warning → "warning" (column allows warning|info only - keep critical only in the API), resource_type "supervision", resource_id = deterministic UUID v5-style derived from the alert code (node:crypto, constant namespace), dedupe_key "supervision:<code>[:<jobKey>]", deepLink "/admin/supervision", recipients = every active admin (never coach). The existing notifications.reconcile job computes alerts and opens/resolves these rows (resolved when the condition clears). E-mail: default enabled via setting notifications.supervision_alert.email_enabled (default true; registry + settings range); at most one e-mail per alert per Libreville day (dedupe through the existing outbox rules - verify and report how).
+Menu dot support: GET /admin/supervision/overview is too heavy for the shell - add GET /admin/supervision/status → { level: "ok"|"warning"|"critical", alertCount } computed from open supervision_alert notifications of the current admin (cheap query).
+O10/O11 → OPS-01b (client) - not here. Server docs only: docs/reference/jobs.md (manual runs, simulate, alerts), runbooks/echec-job.md (read the Supervision page first), docs:generate.
 
-## OPS-01a execution — 2026-10-27 (Claude)
+## OPS-01a execution - 2026-10-27 (Claude)
 
 Status: delivered, uncommitted → Fred: validate (kfit_dev needs `npm run db:migrate` for 0018 before the dev API reconciles).
 
@@ -2024,11 +2161,54 @@ Status: delivered, uncommitted → Fred: validate (kfit_dev needs `npm run db:mi
 - Migration 0018_nasty_mephisto.sql: drops and re-adds notifications_kind_known with 'supervision_alert'. Nothing else. The setting notifications.supervision_alert.email_enabled lives in the shared registry (default true), no data migration.
 - Reconcile: NotificationJobsService gains extraCandidates; runtime passes supervisionCandidates(await supervisionService.alerts()), so supervision rows open and resolve in the same transaction as business notifications, for recipients() = active admins only.
 - E-mail dedupe finding: the existing reminder key is reminder:<notificationId>:<window>, and supervision_alert has no reminder_days, so window is always 0 → one e-mail per notification row, ever; an alert that resolves and reopens creates a new row and would e-mail again. To meet « at most one per alert per Libreville day », supervision reminders use the existing unique outbox dedupe_key with supervision:<recipient>:<alert dedupe key>:<YYYY-MM-DD> (onConflictDoNothing). Consequence: a lasting alert is re-sent once per day; a flapping alert is not re-sent the same day.
-- Simulate: DrizzlePrivacyRepository.simulatePurge — same selection and hold check as purgeDue, transaction { accessMode: "read only" }, counts only. Test: documents/versions/pending/purge-run counts and the storage directory listing identical before and after.
-- Security series sources: audit_events (auth.login.rejected, auth.login.otp_failed, auth.login.otp_locked, auth.bootstrap.rejected) by Libreville day; security_event_counters (REQUEST_ENCODING_UNSUPPORTED, RATE_LIMITED:<scope>); external_access_events.result in PUBLIC_LINK_REFUSAL_RESULTS (APPOINTMENT_TOKEN_INVALID/EXPIRED, CONSENT/DOCUMENT/PAYMENT_PROOF/QUESTIONNAIRE/QUOTE/RECEIPT _LINK_INVALID/_EXPIRED).
+- Simulate: DrizzlePrivacyRepository.simulatePurge - same selection and hold check as purgeDue, transaction { accessMode: "read only" }, counts only. Test: documents/versions/pending/purge-run counts and the storage directory listing identical before and after.
+- Security series sources: audit_events (auth.login.rejected, auth.login.otp_failed, auth.login.otp_locked, auth.bootstrap.rejected) by Libreville day; security_event_counters (REQUEST_ENCODING_UNSUPPORTED, RATE_LIMITED:<scope>); external_access_events.result in PUBLIC_LINK_REFUSAL_RESULTS (APPOINTMENT_TOKEN_INVALID/EXPIRED, CONSENT/DOCUMENT/PAYMENT_PROOF/QUESTIONNAIRE/QUOTE/RECEIPT \_LINK_INVALID/\_EXPIRED).
 - Runtime: floor ids + reason; production guards = evaluateProductionEnv (pure) + demo-consent query cached 10 min (GUARDS_DATABASE_CACHE_MS). Journal writable = fs.access W_OK (or writable parent when not created yet), never a write.
 - Backup « secondaryVerified » = a succeeded ops.backup row (backup.ts fails with SECONDARY_COPY_FAILED before recording success otherwise).
 - Client: NotificationCenter icon for supervision_alert (compile fix only); Réglages shows the new « Alertes de supervision » e-mail toggle automatically (kinds list). Page = OPS-01b.
-- Test hygiene finding: kfit_test holds 2 active synthetic admins (archive-…@example.invalid) leaked by an earlier suite; reconcile writes for every active admin, so the supervision test cleans every supervision_alert row and supervision:* outbox row it causes.
+- Test hygiene finding: kfit_test holds 2 active synthetic admins (archive-…@example.invalid) leaked by an earlier suite; reconcile writes for every active admin, so the supervision test cleans every supervision_alert row and supervision:\* outbox row it causes.
 - Limits: SUPERVISED_JOBS repeats the notification crons literally (runtime.ts keeps its own literals); overview runs ~20 small queries; manual-run limiter is in memory per process.
 - Docs: reference/jobs.md § Supervision (routes, job states, manual run, simulate, alerts, notifications/e-mail), runbooks/echec-job.md (start with Supervision, relaunch), docs/README rows, regenerated codes-erreur.
+
+## ROLE-01 Gate 1 - approved 2026-10-27
+
+Reason: 22 modules accept only role admin, so the coach must be admin; Supervision and its alerts must not reach her; and only one account can exist today (bootstrap), so Fred and the coach would share a login.
+
+### Context (verified on main 0a1c210)
+
+- db/schema/auth.ts users.role text NOT NULL default "coach", no CHECK constraint; db/enums.ts userRoles = ["admin","coach"]; password_hash NOT NULL.
+- shared/src/auth/contracts.ts l.74 AuthRole = "admin" | "coach" (session payloads l.102, l.120).
+- jwt.crypto.ts l.6/14 role union; l.74 claims validation accepts only admin|coach.
+- Inline checks `role !== "admin"` (or === "admin") in 23 files: follow-ups, quotes, supervision (l.16 SUPERVISION_ADMIN_FORBIDDEN), finance, progress, customers, payment-proofs, notifications, receipts, consents, dev-tools, admin-requests, request-conversion, onboarding, privacy, appointments, catalogue, analytics, today, subscriptions, documents, questionnaires controllers, + jwt.crypto.ts. Grep again for any other role comparison (server, shared, client) and list them.
+- bootstrap.service.ts l.141 role: options.defaultRole ("admin" from runtime).
+- Supervision (OPS-01a): routes in modules/supervision; reconcile opens supervision_alert notifications for every active admin; /admin/supervision/status for the menu dot.
+- Client: UserMenu.tsx l.27 roleLabels; nav-config.ts adminNav (Configuration group).
+- Password recovery flow exists (/auth/recovery/\*) and works for any active user e-mail (verify).
+
+### Decisions (Fred 2026-10-27)
+
+R1. Roles: userRoles = ["superadmin","admin","coach"]; AuthRole updated in shared; JWT validation accepts the three. French labels: superadmin « Super-administrateur », admin « Administrateur », coach « Coach ». Add a DB CHECK users_role_known (role in the three) in the migration.
+R2. One central helper in modules/auth (pure): hasRole(session, required: "admin" | "superadmin") - admin ⇐ superadmin|admin; superadmin ⇐ superadmin only. ROLE_RANK constant. Replace every inline comparison 1:1 with hasRole(…, "admin") (same error codes, same status) - mechanical; except Supervision → hasRole(…, "superadmin") (code becomes SUPERVISION_SUPERADMIN_FORBIDDEN 403; update contract + tests). Dev-tools stays admin (dev only). Add a unit test that greps the compiled controllers for `role !==`/`role ===` literals and fails if any remain outside the helper (guard against regressions).
+R3. Supervision alerts recipients: active users with role superadmin only (reconcile). Existing open supervision_alert rows of non-superadmins are resolved by the next reconcile (test it). /admin/supervision/status → superadmin only (others 403; the client hides the dot).
+R4. Bootstrap creates role superadmin (defaultRole). Migration (next number): add CHECK; promote the oldest active user (min created_at, the bootstrap account) to superadmin when no superadmin exists - idempotent, data-only, documented in the migration comment. Existing sessions: role in the access token refreshes on next refresh/login - verify refresh re-reads users.role; if not, make it do so (one line) and test.
+R5. CLI ops:create-user --email <e> --role admin|coach [--label <prénom>] (through scripts/ops/run.mjs like the other ops scripts): refuses superadmin (only bootstrap creates one - named constant SUPERADMIN_ONLY_VIA_BOOTSTRAP), refuses an existing e-mail (case-insensitive, canonicalEmail), creates status active with password_hash = hash of 64 random bytes never displayed (account unusable until the user sets a password via « Mot de passe oublié »), writes audit auth.user.created (actor "system:ops", role, no e-mail in metadata beyond the entity id), records a scheduled_job_runs row ops.create_user (counts only), prints « Compte créé. La personne doit choisir son mot de passe via « Mot de passe oublié » sur l'écran de connexion. ». Also ops:set-role --email <e> --role admin|coach (never to/from superadmin; refuses the last superadmin demotion) - audited. No HTTP route for user management in this slice.
+R6. Client: UserMenu roleLabels gain superadmin; nav item « Supervision » (Configuration group, icon Activity or similar) shown only when user.role === "superadmin" via the shared helper (export a pure hasRole in shared so client and server use the same rule; server helper wraps it). The route /admin/supervision exists as a placeholder page « Supervision - écran en cours de construction (OPS-01b) » for superadmin; others → existing not-found/forbidden handling.
+R7. Docs: runbooks/premier-compte-administrateur.md (bootstrap → superadmin; then create the coach with ops:create-user --role admin; she sets her password via « Mot de passe oublié »; trusted device on her first login), new section in guide-administrateur § 1 Rôles et accès (three roles, what each can do, Supervision = super-administrateur), reference/jobs.md (ops.create_user, ops.set_role), docs:generate.
+R8. Coach role stays as is (no business screens) - unchanged behaviour, documented as « réservé, non utilisé en V1 ».
+
+## ROLE-01 execution - 2026-10-27 (Claude)
+
+Status: delivered, uncommitted → Fred: validate (kfit_dev needs `npm run db:migrate` for 0018 and 0019).
+
+- Counts: shared 78 → 80; server unit 704 → 707 (706 pass + 1 skipped on Windows, unchanged); integration on kfit_test 643 → 648. security:check ✔, tsc shared/server/client clean, client build ok, db:check ok, db:generate after 0019 → « No schema changes », docs:check ok (332 codes).
+- R1: shared `auth/roles.ts` (authRoles, AuthRole, ROLE_RANK, authRoleLabels, isAuthRole, hasRole, rolesWith); db/enums userRoles = superadmin, admin, coach; JWT validation uses isAuthRole; every `"admin" | "coach"` type in the auth module is now AuthRole.
+- R2: server `modules/auth/services/roles.ts` re-exports the shared rule. Codemod replaced 24 inline checks in 22 controller files (catalogue and consents 2 each): appointments, catalogue, consents, customers, dashboard analytics, dashboard today, dev-tools, documents, finance, follow-ups, notifications, onboarding, payment-proofs, privacy, progress, questionnaires, quotes, receipts, admin-requests, request-conversion, subscriptions → hasRole(…, "admin"), same codes and statuses; supervision → hasRole(…, "superadmin"), code SUPERVISION_SUPERADMIN_FORBIDDEN (contract updated). jwt.crypto.ts → isAuthRole.
+- Other role comparisons found by the grep: notifications.repository recipients (`eq(users.role, "admin")` → `inArray(users.role, rolesWith("admin"))`, so a superadmin keeps receiving business notifications); dev/demo-admin.ts identity check (`role !== "admin"` → admin or superadmin, because 0019 may promote the demo account in kfit_dev); client UserMenu roleLabels. Test fixtures that insert role "admin" were left as is.
+- R3: reconcile filters candidates per recipient: supervision_alert only for superadmins, so an admin's open supervision row vanishes from its wanted set and is resolved on the next reconcile (tested). /admin/supervision/status is behind the same superadmin guard.
+- R4: BOOTSTRAP_ROLE = "superadmin" (bootstrap.service.ts), used by runtime and the bootstrap express tests (dev and production token path assert role superadmin). Refresh finding: `AuthRouteService.refresh` already re-reads the user (`users.findById`) and signs the new access token with `user.role`; no change needed. A role change applies at the next refresh (access token 15 min by default) or login.
+- Migration 0019_role_superadmin.sql: generated CHECK users_role_known, plus an appended data step (comment + idempotent UPDATE promoting the oldest active, non-archived user when no superadmin exists). A drizzle `--custom` migration was tried first and dropped: its snapshot lacked the CHECK, so db:generate drifted. Applied on kfit_test (its 2 leaked synthetic admins → one promoted). Test runs the data step from the file inside a rolled-back transaction.
+- R5: `src/ops/user-accounts.ts` + `scripts/ops/create-user.mjs`, `set-role.mjs` via run.mjs; npm scripts ops:create-user / ops:set-role (server + root). Error codes added to the ops list: SUPERADMIN_ONLY_VIA_BOOTSTRAP, USER_EMAIL_TAKEN, USER_NOT_FOUND, USER_WRITE_FAILED. Run rows ops.create_user ({created: 1}) / ops.set_role ({changed: 0|1}), run key = random UUID. Audit auth.user.created (actor system:ops, role, optional label) and auth.user.role_changed (from, to). Output: one French sentence on success, `✖ <job> failed: <code> (<detail>)` otherwise; never the e-mail or password. « Last superadmin » is covered by refusing any change from superadmin.
+- R6: client nav-config `requires` + navFor(user) (Supervision item, icon Activity, superadmin only); App route `supervision` → placeholder « Supervision - écran en cours de construction (OPS-01b) » for superadmin, AdminNotFound otherwise; UserMenu shows authRoleLabels (admin now reads « Administrateur » instead of « Coach · administratrice »). No supervision dot exists in the client yet (OPS-01b).
+- R7/R8: runbooks/premier-compte-administrateur.md § 3 Créer le compte de la coach (ops:create-user, Mot de passe oublié, trusted device, ops:set-role), guide-administrateur § 1 (three roles table, coach réservé non utilisé en V1) and § 8, reference/jobs.md (two script rows, Supervision → super-administrateur), runbooks/echec-job.md, regenerated codes-erreur and scripts-npm.
+- Tests added: shared roles matrix and labels; server roles.test (JWT superadmin / unknown role, table over 24 guarded entry points × 3 roles, compiled-controller grep); user-accounts.integration (create, refusals, set-role, migration); trusted-devices.integration (ops-created account → 401 until recovery → 202 device code → 200 admin); supervision.integration (superadmin 200, admin/coach 403, superadmin-only alerts, stale admin row resolved).
+- Limits: `--label` has no column (no migration allowed), so it is kept only in the audit metadata (40 chars max). The guard table calls controllers directly with stub services (not express); the per-module express tests are unchanged. Stale integration test data: kfit_test's oldest leaked synthetic admin is now its superadmin.

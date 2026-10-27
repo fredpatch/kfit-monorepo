@@ -1,3 +1,5 @@
+import type { AuthRole } from "./roles.js";
+
 export const authErrorCodes = [
   "BOOTSTRAP_ALREADY_COMPLETED",
   "AUTH_BOOTSTRAP_INVALID_FORMAT",
@@ -71,7 +73,6 @@ export const authApiRoutes = {
 
 export type AuthApiRoute = (typeof authApiRoutes)[keyof typeof authApiRoutes];
 
-export type AuthRole = "admin" | "coach";
 
 export type AuthErrorResponse = {
   error: AuthErrorCode;

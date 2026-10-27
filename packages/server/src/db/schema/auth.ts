@@ -1,4 +1,6 @@
-import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { userRoles } from "../enums.js";
 import { archivedAt, idColumn, timestamps } from "./_helpers.js";
 
 export const users = pgTable("users", {
@@ -9,7 +11,10 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("coach"),
   ...timestamps,
   archivedAt,
-}, (t) => [uniqueIndex("users_email_uq").on(t.email)]);
+}, (t) => [
+  uniqueIndex("users_email_uq").on(t.email),
+  check("users_role_known", sql.raw(`role in (${userRoles.map((role) => `'${role}'`).join(", ")})`)),
+]);
 
 export const trustedDevices = pgTable("trusted_devices", {
   id: idColumn(),

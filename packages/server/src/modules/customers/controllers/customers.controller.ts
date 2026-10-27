@@ -1,4 +1,5 @@
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/auth.http.types.js";
 import type { CustomersService } from "../services/customers.service.js";
 
@@ -10,7 +11,7 @@ export class CustomersController {
   async handle(context: AuthHttpRequestContext, action: CustomerAction, input?: unknown): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (auth.session.role !== "admin") return { status: 403, body: { error: "CUSTOMER_ADMIN_FORBIDDEN" } };
+    if (!hasRole(auth.session, "admin")) return { status: 403, body: { error: "CUSTOMER_ADMIN_FORBIDDEN" } };
     if (action === "list") return { status: 200, body: { customers: await this.service.listActive() } };
     if (action === "overview") return { status: 200, body: await this.service.getOverview() };
     if (action === "archived") return { status: 200, body: { customers: await this.service.listArchived() } };

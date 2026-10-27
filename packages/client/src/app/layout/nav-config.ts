@@ -1,4 +1,5 @@
-import { ClipboardList, FileCheck, Inbox, Layers, MessageCircle, Settings, Sun, Users, type LucideIcon } from "lucide-react";
+import { Activity, ClipboardList, FileCheck, Inbox, Layers, MessageCircle, Settings, Sun, Users, type LucideIcon } from "lucide-react";
+import { hasRole, type AuthRole, type RequiredRole } from "@kfit/shared";
 
 export type NavBadgeSource = "followUpsOverdue" | "requestsNew" | "todayTasks";
 
@@ -12,6 +13,8 @@ export type NavItem = {
   mobile?: boolean;
   /** Active only on this exact path (the /admin home). */
   end?: boolean;
+  /** ROLE-01 R6: hidden unless the user has this role (the server refuses the routes anyway). */
+  requires?: RequiredRole;
 };
 
 export type NavGroup = { title: string | null; items: NavItem[] };
@@ -32,8 +35,14 @@ export const adminNav: NavGroup[] = [
       { to: "/admin/questionnaires", label: "Questionnaires", icon: ClipboardList },
       { to: "/admin/consentements", label: "Textes de consentement", icon: FileCheck },
       { to: "/admin/reglages", label: "Réglages", icon: Settings },
+      { to: "/admin/supervision", label: "Supervision", icon: Activity, requires: "superadmin" },
     ],
   },
 ];
 
-export const allNavItems: NavItem[] = adminNav.flatMap((group) => group.items);
+/** The groups and items this user may see; an emptied group disappears. */
+export function navFor(user: { role: AuthRole } | null): NavGroup[] {
+  return adminNav
+    .map((group) => ({ ...group, items: group.items.filter((item) => !item.requires || hasRole(user, item.requires)) }))
+    .filter((group) => group.items.length > 0);
+}

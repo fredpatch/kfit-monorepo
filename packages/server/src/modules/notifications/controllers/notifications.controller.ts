@@ -1,5 +1,6 @@
 import { notificationListViews, parseNotificationSettingsUpdate, type NotificationErrorCode, type NotificationListView } from "@kfit/shared";
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/auth.http.types.js";
 import type { DrizzleNotificationsRepository } from "../repositories/notifications.repository.js";
 
@@ -22,7 +23,7 @@ export class NotificationsController {
   async handle(context: AuthHttpRequestContext, action: NotificationAction, input: { id?: string | undefined; query?: Record<string, unknown>; body?: unknown }): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (auth.session.role !== "admin") return fail(403, "NOTIFICATION_ADMIN_FORBIDDEN");
+    if (!hasRole(auth.session, "admin")) return fail(403, "NOTIFICATION_ADMIN_FORBIDDEN");
     const actor = { userId: auth.session.userId, requestId: context.requestId, ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null };
     switch (action) {
       case "list": {

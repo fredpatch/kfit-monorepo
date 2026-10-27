@@ -1,5 +1,6 @@
 import type { DocumentErrorCode } from "@kfit/shared";
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js";
 import type { DocumentsService, UploadPayload } from "../services/documents.service.js";
 
@@ -18,7 +19,7 @@ export class DocumentsController {
   private admin(context:AuthHttpRequestContext):DocumentControllerResult|null{
     const auth=requireAuthenticatedSession(context);
     if(!auth.ok) return auth.response;
-    if(auth.session.role!=="admin") return {status:403,body:{error:"DOCUMENT_ADMIN_FORBIDDEN"}};
+    if(!hasRole(auth.session,"admin")) return {status:403,body:{error:"DOCUMENT_ADMIN_FORBIDDEN"}};
     return null;
   }
   private map(result:any):DocumentControllerResult{return result.ok?{status:200,body:result.body}:{status:statusFor(result.error),body:{error:result.error}};}

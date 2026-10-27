@@ -11,6 +11,7 @@ import type {
 } from "@kfit/shared";
 import type { AuthHttpRequestContext } from "../../auth/types/auth.http.types.js";
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import type { CatalogueService } from "../services/catalogue.service.js";
 import type { CatalogueContentError } from "../repositories/catalogue-content.repository.js";
 import type { CatalogueContentAction, CatalogueContentParams, CatalogueContentService } from "../services/catalogue-content.service.js";
@@ -19,7 +20,7 @@ import type { HttpJsonResponse } from "../types/catalogue.http.types.js";
 function requireAdminSession(context: AuthHttpRequestContext): HttpJsonResponse<{ error: string }> | null {
   const auth = requireAuthenticatedSession(context);
   if (!auth.ok) return auth.response;
-  if (auth.session.role !== "admin") {
+  if (!hasRole(auth.session, "admin")) {
     return { status: 403, body: { error: "CATALOGUE_ADMIN_FORBIDDEN" } };
   }
   return null;
@@ -75,7 +76,7 @@ export class CatalogueController {
   async content(context: AuthHttpRequestContext, action: CatalogueContentAction, params: CatalogueContentParams, body: unknown): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (auth.session.role !== "admin" || !this.contentService) return { status: 403, body: { error: "CATALOGUE_ADMIN_FORBIDDEN" } };
+    if (!hasRole(auth.session, "admin") || !this.contentService) return { status: 403, body: { error: "CATALOGUE_ADMIN_FORBIDDEN" } };
     const result = await this.contentService.execute(action, params, body, { userId: auth.session.userId, requestId: context.requestId,
       ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null });
     if (result.ok) return { status: action === "variant_create" || action === "component_create" ? 201 : 200, body: result.value };

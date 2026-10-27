@@ -1,4 +1,5 @@
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/auth.http.types.js";
 import type { UploadPayload } from "../../documents/services/documents.service.js";
 import type { PaymentProofsService } from "../services/payment-proofs.service.js";
@@ -14,7 +15,7 @@ export class PaymentProofsController {
     return { status, body: { error: e } };
   }
   async execute(c: AuthHttpRequestContext, id: string, action: ProofAction, body: unknown): Promise<ProofControllerResult> {
-    if (action !== "metadata") { const auth = requireAuthenticatedSession(c); if (!auth.ok) return auth.response; if (auth.session.role !== "admin") return { status: 403, body: { error: "PAYMENT_PROOF_ADMIN_FORBIDDEN" } }; }
+    if (action !== "metadata") { const auth = requireAuthenticatedSession(c); if (!auth.ok) return auth.response; if (!hasRole(auth.session, "admin")) return { status: 403, body: { error: "PAYMENT_PROOF_ADMIN_FORBIDDEN" } }; }
     return this.map(await this.service.execute(id, action, body, this.actor(c, action === "metadata")));
   }
   async upload(c: AuthHttpRequestContext, id: string, body: unknown, payload: UploadPayload) { return this.map(await this.service.upload(id, body, payload, this.actor(c, true))); }

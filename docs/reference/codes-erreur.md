@@ -8,11 +8,11 @@ couvre: [DOC-01a]
 
 # Codes d'erreur
 
-> Fichier généré — ne pas modifier à la main (npm run docs:generate).
+> Fichier généré - ne pas modifier à la main (npm run docs:generate).
 
-Sources : tableaux `…ErrorCodes` de `packages/shared/src`, codes serveur listés dans `scripts/docs/generate-references.mjs`. Message affiché : texte des tables de messages du client (`packages/client/src`), « — » quand le client n'en a pas (code non affiché tel quel ou message générique).
+Sources : tableaux `…ErrorCodes` de `packages/shared/src`, codes serveur listés dans `scripts/docs/generate-references.mjs`. Message affiché : texte des tables de messages du client (`packages/client/src`), « - » quand le client n'en a pas (code non affiché tel quel ou message générique).
 
-328 codes, 25 modules.
+332 codes, 25 modules.
 
 ## appointments
 
@@ -46,27 +46,27 @@ Source : `packages/shared/src/auth/contracts.ts · authErrorCodes`
 
 | Code | Message affiché |
 | --- | --- |
-| `BOOTSTRAP_ALREADY_COMPLETED` | — |
-| `AUTH_BOOTSTRAP_INVALID_FORMAT` | — |
-| `AUTH_PASSWORD_POLICY_FAILED` | — |
-| `AUTH_INVALID_CREDENTIALS` | — |
-| `AUTH_ACCOUNT_UNAVAILABLE` | — |
-| `AUTH_LOGIN_INVALID_FORMAT` | — |
-| `AUTH_REFRESH_INVALID` | — |
+| `BOOTSTRAP_ALREADY_COMPLETED` | - |
+| `AUTH_BOOTSTRAP_INVALID_FORMAT` | - |
+| `AUTH_PASSWORD_POLICY_FAILED` | - |
+| `AUTH_INVALID_CREDENTIALS` | - |
+| `AUTH_ACCOUNT_UNAVAILABLE` | - |
+| `AUTH_LOGIN_INVALID_FORMAT` | - |
+| `AUTH_REFRESH_INVALID` | - |
 | `AUTH_SESSION_REQUIRED` | Ta session a expiré. Reconnecte-toi. |
 | `AUTH_CSRF_INVALID` | La vérification de sécurité a échoué. Recharge la page. |
 | `AUTH_FRESH_OTP_REQUIRED` | Confirme d’abord ton identité avec le code envoyé par e-mail. |
-| `AUTH_OTP_CODE_INVALID_FORMAT` | — |
-| `AUTH_OTP_REJECTED` | — |
-| `AUTH_RECOVERY_INVALID_FORMAT` | — |
-| `AUTH_RECOVERY_CODE_INVALID` | — |
-| `AUTH_RECOVERY_GRANT_INVALID` | — |
-| `AUTH_RATE_LIMITED` | — |
+| `AUTH_OTP_CODE_INVALID_FORMAT` | - |
+| `AUTH_OTP_REJECTED` | - |
+| `AUTH_RECOVERY_INVALID_FORMAT` | - |
+| `AUTH_RECOVERY_CODE_INVALID` | - |
+| `AUTH_RECOVERY_GRANT_INVALID` | - |
+| `AUTH_RATE_LIMITED` | - |
 | `AUTH_ORIGIN_INVALID` | La vérification de sécurité a échoué. Recharge la page. |
-| `AUTH_OTP_DELIVERY_FAILED` | — |
-| `AUTH_DEVICE_NOT_FOUND` | — |
-| `BOOTSTRAP_DISABLED` | — |
-| `BOOTSTRAP_TOKEN_INVALID` | — |
+| `AUTH_OTP_DELIVERY_FAILED` | - |
+| `AUTH_DEVICE_NOT_FOUND` | - |
+| `BOOTSTRAP_DISABLED` | - |
+| `BOOTSTRAP_TOKEN_INVALID` | - |
 
 ## catalogue
 
@@ -74,7 +74,7 @@ Source : `packages/shared/src/catalogue/contracts.ts · catalogueErrorCodes`
 
 | Code | Message affiché |
 | --- | --- |
-| `CATALOGUE_ROUTE_UNEXPECTED_FAILURE` | — |
+| `CATALOGUE_ROUTE_UNEXPECTED_FAILURE` | - |
 | `CATALOGUE_ADMIN_FORBIDDEN` | Cet espace est réservé à l'administrateur. |
 | `CATALOGUE_SERVICE_NOT_FOUND` | Cette offre est introuvable. Actualise la liste. |
 | `CATALOGUE_SERVICE_INVALID_INPUT` | Vérifie les champs saisis. |
@@ -98,13 +98,13 @@ Source : `packages/shared/src/consents/contracts.ts · consentErrorCodes`
 | --- | --- |
 | `CONSENT_INVALID_INPUT` | Vérifie les choix et la date d’expiration. |
 | `CONSENT_NOT_FOUND` | Abonnement ou lien introuvable. |
-| `CONSENT_ADMIN_FORBIDDEN` | — |
+| `CONSENT_ADMIN_FORBIDDEN` | - |
 | `CONSENT_INVALID_STATE` | Ce recueil n’est plus disponible dans l’état actuel de l’abonnement. |
 | `CONSENT_DEFINITIONS_MISSING` | Chaque texte demandé doit être publié avant tout recueil (Configuration › Textes de consentement). |
 | `CONSENT_DEFINITION_IMMUTABLE` | Ce texte est publié : il ne peut plus être modifié ni supprimé. Crée une nouvelle version. |
 | `CONSENT_VERSION_CONFLICT` | Une version plus récente de ce texte a déjà été publiée. Actualise la page. |
 | `CONSENT_DEFINITIONS_CHANGED` | Les documents ont changé. Relis les nouvelles versions avec le client avant de recueillir ses décisions. |
-| `CONSENT_HISTORY_INVALID` | — |
+| `CONSENT_HISTORY_INVALID` | - |
 | `CONSENT_LINK_INVALID` | Ce lien est invalide. Demande un nouveau lien au coach. |
 | `CONSENT_LINK_EXPIRED` | Ce lien a expiré. Demande un nouveau lien au coach. |
 | `CONSENT_LINK_REVOKED` | Ce lien a été révoqué. Demande un nouveau lien au coach. |
@@ -114,7 +114,7 @@ Source : `packages/shared/src/consents/contracts.ts · consentErrorCodes`
 | `CONSENT_DECISION_MISSING` | Aucun accord actuel ne peut être retiré pour ce consentement. |
 | `CONSENT_TYPE_NOT_REQUESTED` | Ce lien ne concerne pas ce consentement. Demande un nouveau lien au coach. |
 | `CONSENT_RATE_LIMITED` | Trop de tentatives. Réessaie dans une minute. |
-| `CONSENT_ROUTE_UNEXPECTED_FAILURE` | — |
+| `CONSENT_ROUTE_UNEXPECTED_FAILURE` | - |
 
 ## customers
 
@@ -122,11 +122,11 @@ Source : `packages/shared/src/customers/contracts.ts · customerErrorCodes`
 
 | Code | Message affiché |
 | --- | --- |
-| `CUSTOMER_INVALID_INPUT` | — |
-| `CUSTOMER_DUPLICATE_WHATSAPP` | — |
-| `CUSTOMER_ADMIN_FORBIDDEN` | — |
-| `CUSTOMER_NOT_FOUND` | — |
-| `CUSTOMER_ROUTE_UNEXPECTED_FAILURE` | — |
+| `CUSTOMER_INVALID_INPUT` | - |
+| `CUSTOMER_DUPLICATE_WHATSAPP` | - |
+| `CUSTOMER_ADMIN_FORBIDDEN` | - |
+| `CUSTOMER_NOT_FOUND` | - |
+| `CUSTOMER_ROUTE_UNEXPECTED_FAILURE` | - |
 
 ## dashboard
 
@@ -134,9 +134,9 @@ Source : `packages/shared/src/dashboard/contracts.ts · dashboardErrorCodes`
 
 | Code | Message affiché |
 | --- | --- |
-| `DASHBOARD_INVALID_INPUT` | — |
-| `DASHBOARD_ADMIN_FORBIDDEN` | — |
-| `DASHBOARD_ROUTE_UNEXPECTED_FAILURE` | — |
+| `DASHBOARD_INVALID_INPUT` | - |
+| `DASHBOARD_ADMIN_FORBIDDEN` | - |
+| `DASHBOARD_ROUTE_UNEXPECTED_FAILURE` | - |
 
 ## dev
 
@@ -156,10 +156,10 @@ Source : `packages/shared/src/documents/contracts.ts · documentErrorCodes`
 
 | Code | Message affiché |
 | --- | --- |
-| `DOCUMENT_NOT_FOUND` | — |
-| `DOCUMENT_VERSION_NOT_FOUND` | — |
-| `DOCUMENT_INVALID_INPUT` | — |
-| `DOCUMENT_TYPE_INVALID` | — |
+| `DOCUMENT_NOT_FOUND` | - |
+| `DOCUMENT_VERSION_NOT_FOUND` | - |
+| `DOCUMENT_INVALID_INPUT` | - |
+| `DOCUMENT_TYPE_INVALID` | - |
 | `DOCUMENT_STATUS_INVALID` | Cette action n'est plus disponible pour ce document. |
 | `DOCUMENT_FILE_TOO_LARGE` | Le fichier dépasse la limite de 10 Mo. |
 | `DOCUMENT_FILE_TYPE_UNSUPPORTED` | Format non pris en charge. Utilise PDF, JPG, PNG ou WebP. |
@@ -167,19 +167,19 @@ Source : `packages/shared/src/documents/contracts.ts · documentErrorCodes`
 | `DOCUMENT_FILE_INFECTED` | Le fichier a été bloqué par l'analyse antivirus. |
 | `DOCUMENT_FILE_SCAN_FAILED` | L'analyse antivirus est indisponible. Le fichier n'a pas été enregistré. |
 | `DOCUMENT_DUPLICATE_UPLOAD` | Ce fichier est déjà enregistré pour ce document. |
-| `DOCUMENT_STORAGE_FAILURE` | — |
+| `DOCUMENT_STORAGE_FAILURE` | - |
 | `DOCUMENT_HEALTH_CONSENT_REQUIRED` | Le consentement aux données de santé est requis pour générer un bilan. |
 | `DOCUMENT_PHOTO_CONSENT_REQUIRED` | Le consentement au stockage des photos de progression est requis. |
-| `DOCUMENT_MEASUREMENT_INVALID` | — |
-| `DOCUMENT_LINK_INVALID` | — |
+| `DOCUMENT_MEASUREMENT_INVALID` | - |
+| `DOCUMENT_LINK_INVALID` | - |
 | `DOCUMENT_LINK_EXPIRED` | Ce lien a expiré. |
 | `DOCUMENT_LINK_REVOKED` | Ce lien a été révoqué. |
 | `DOCUMENT_LINK_EXHAUSTED` | Ce lien a atteint son nombre maximal de téléchargements. |
 | `DOCUMENT_VERIFICATION_REQUIRED` | Saisis le code de vérification communiqué par le coach. |
 | `DOCUMENT_VERIFICATION_INVALID` | Code incorrect. |
 | `DOCUMENT_VERIFICATION_LOCKED` | Trop de tentatives incorrectes. Demande un nouveau lien au coach. |
-| `DOCUMENT_ADMIN_FORBIDDEN` | — |
-| `DOCUMENT_ROUTE_UNEXPECTED_FAILURE` | — |
+| `DOCUMENT_ADMIN_FORBIDDEN` | - |
+| `DOCUMENT_ROUTE_UNEXPECTED_FAILURE` | - |
 
 ## finance
 
@@ -330,7 +330,7 @@ Source : `packages/shared/src/questionnaires/contracts.ts · questionnaireErrorC
 | `QUESTIONNAIRE_TEMPLATE_INVALID` | Vérifie les questions, les choix, les limites et les règles de signalement. |
 | `QUESTIONNAIRE_ANSWERS_INVALID` | Vérifie les réponses obligatoires et les limites de chaque question. |
 | `QUESTIONNAIRE_NOT_FOUND` | Modèle, abonnement ou lien introuvable. |
-| `QUESTIONNAIRE_ADMIN_FORBIDDEN` | — |
+| `QUESTIONNAIRE_ADMIN_FORBIDDEN` | - |
 | `QUESTIONNAIRE_INVALID_STATE` | Ce questionnaire ne peut pas être modifié dans l’état actuel de l’abonnement. |
 | `QUESTIONNAIRE_TEMPLATE_IMMUTABLE` | Cette version est déjà publiée. Crée une nouvelle version pour la modifier. |
 | `QUESTIONNAIRE_VERSION_CONFLICT` | Cette référence ou version existe déjà. Actualise la liste des modèles. |
@@ -338,7 +338,7 @@ Source : `packages/shared/src/questionnaires/contracts.ts · questionnaireErrorC
 | `QUESTIONNAIRE_NOT_ASSIGNED` | Aucun questionnaire n’est prévu pour cet abonnement. |
 | `QUESTIONNAIRE_STALE_REVISION` | Une autre révision a été enregistrée. Actualise avant de corriger les réponses. |
 | `QUESTIONNAIRE_STALE_SCHEMA` | Le questionnaire a changé. Actualise avant de saisir les réponses. |
-| `QUESTIONNAIRE_HISTORY_INVALID` | — |
+| `QUESTIONNAIRE_HISTORY_INVALID` | - |
 | `QUESTIONNAIRE_HEALTH_CONSENT_REQUIRED` | L’accord actuel au traitement des données de santé est nécessaire. Recueille-le avec le lien client. |
 | `QUESTIONNAIRE_HEALTH_CONSENT_WITHDRAWN` | La cliente a retiré son accord au traitement des données de santé : ses réponses ne sont plus consultables. |
 | `QUESTIONNAIRE_HEALTH_DEFINITION_MISSING` | Un document de consentement aux données de santé doit être publié avant ce recueil. |
@@ -348,7 +348,7 @@ Source : `packages/shared/src/questionnaires/contracts.ts · questionnaireErrorC
 | `QUESTIONNAIRE_LINK_CONSUMED` | Ce lien a déjà été utilisé. Aucun nouvel envoi n’est possible avec ce lien. |
 | `QUESTIONNAIRE_LINK_STALE` | Le questionnaire ou le consentement a changé, ou une réponse a déjà été enregistrée. Demande un nouveau lien au coach. |
 | `QUESTIONNAIRE_RATE_LIMITED` | Trop de tentatives. Réessaie dans une minute. |
-| `QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE` | — |
+| `QUESTIONNAIRE_ROUTE_UNEXPECTED_FAILURE` | - |
 
 ## quotes
 
@@ -457,12 +457,12 @@ Source : `packages/shared/src/supervision/contracts.ts · supervisionErrorCodes`
 
 | Code | Message affiché |
 | --- | --- |
-| `SUPERVISION_ADMIN_FORBIDDEN` | — |
-| `SUPERVISION_INVALID_INPUT` | — |
-| `SUPERVISION_JOB_NOT_RUNNABLE` | — |
-| `SUPERVISION_JOB_BUSY` | — |
-| `SUPERVISION_RATE_LIMITED` | — |
-| `SUPERVISION_ROUTE_UNEXPECTED_FAILURE` | — |
+| `SUPERVISION_SUPERADMIN_FORBIDDEN` | - |
+| `SUPERVISION_INVALID_INPUT` | - |
+| `SUPERVISION_JOB_NOT_RUNNABLE` | - |
+| `SUPERVISION_JOB_BUSY` | - |
+| `SUPERVISION_RATE_LIMITED` | - |
+| `SUPERVISION_ROUTE_UNEXPECTED_FAILURE` | - |
 
 ## démarrage production (S7.4a)
 
@@ -470,15 +470,15 @@ Source : `packages/server/src/runtime/production-guards.ts · productionGuardCod
 
 | Code | Message affiché |
 | --- | --- |
-| `SECURITY_FLOOR` | — |
-| `ENV_MISSING` | — |
-| `ENV_WEAK_SECRET` | — |
-| `APP_BASE_URL_NOT_HTTPS` | — |
-| `DATABASE_TARGET_FORBIDDEN` | — |
-| `PRIVACY_JOURNAL_UNAVAILABLE` | — |
-| `PATH_NOT_ABSOLUTE` | — |
-| `PRIVACY_JOBS_DISABLED` | — |
-| `DEMO_CONSENT_PUBLISHED` | — |
+| `SECURITY_FLOOR` | - |
+| `ENV_MISSING` | - |
+| `ENV_WEAK_SECRET` | - |
+| `APP_BASE_URL_NOT_HTTPS` | - |
+| `DATABASE_TARGET_FORBIDDEN` | - |
+| `PRIVACY_JOURNAL_UNAVAILABLE` | - |
+| `PATH_NOT_ABSOLUTE` | - |
+| `PRIVACY_JOBS_DISABLED` | - |
+| `DEMO_CONSENT_PUBLISHED` | - |
 
 ## sauvegarde / restauration (S7.4b)
 
@@ -486,20 +486,24 @@ Source : `packages/server/src/ops/ops-errors.ts · opsErrorCodes`
 
 | Code | Message affiché |
 | --- | --- |
-| `BACKUP_KEY_INVALID` | — |
-| `PG_CLIENT_TOO_OLD` | — |
-| `DUMP_FAILED` | — |
-| `ENCRYPT_FAILED` | — |
-| `VERIFY_FAILED` | — |
-| `SECONDARY_COPY_FAILED` | — |
-| `ROTATION_FAILED` | — |
-| `MANIFEST_INVALID` | — |
-| `TARGET_FORBIDDEN` | — |
-| `TARGET_NOT_EMPTY` | — |
-| `RESTORE_FAILED` | — |
-| `REPLAY_FAILED` | — |
-| `DRILL_MISMATCH` | — |
-| `ENV_INVALID` | — |
+| `BACKUP_KEY_INVALID` | - |
+| `PG_CLIENT_TOO_OLD` | - |
+| `DUMP_FAILED` | - |
+| `ENCRYPT_FAILED` | - |
+| `VERIFY_FAILED` | - |
+| `SECONDARY_COPY_FAILED` | - |
+| `ROTATION_FAILED` | - |
+| `MANIFEST_INVALID` | - |
+| `TARGET_FORBIDDEN` | - |
+| `TARGET_NOT_EMPTY` | - |
+| `RESTORE_FAILED` | - |
+| `REPLAY_FAILED` | - |
+| `DRILL_MISMATCH` | - |
+| `ENV_INVALID` | - |
+| `SUPERADMIN_ONLY_VIA_BOOTSTRAP` | - |
+| `USER_EMAIL_TAKEN` | - |
+| `USER_NOT_FOUND` | - |
+| `USER_WRITE_FAILED` | - |
 
 ## plancher de sécurité (SEC-01)
 
@@ -507,7 +511,7 @@ Source : `packages/server/src/security/runtime-floor.startup.ts · SECURITY_FLOO
 
 | Code | Message affiché |
 | --- | --- |
-| `SECURITY_FLOOR_NOT_MET` | — |
+| `SECURITY_FLOOR_NOT_MET` | - |
 
 ## requêtes HTTP (SEC-01)
 
@@ -515,4 +519,4 @@ Source : `packages/server/src/security/reject-encoded-request-bodies.ts · REQUE
 
 | Code | Message affiché |
 | --- | --- |
-| `REQUEST_ENCODING_UNSUPPORTED` | — |
+| `REQUEST_ENCODING_UNSUPPORTED` | - |

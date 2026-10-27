@@ -8,6 +8,7 @@ import {
   type PrivacySubjectType,
 } from "@kfit/shared";
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import { isFreshOtp } from "../../auth/services/policies/session.policy.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/auth.http.types.js";
 import type { FreshOtpCheck } from "../../questionnaires/controllers/questionnaire.controller.js";
@@ -40,7 +41,7 @@ export class PrivacyController {
   async handle(context: AuthHttpRequestContext, action: PrivacyAction, input: { id?: string | undefined; query?: Record<string, unknown>; body?: unknown }): Promise<HttpJsonResponse> {
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (auth.session.role !== "admin") return fail("PRIVACY_ADMIN_FORBIDDEN");
+    if (!hasRole(auth.session, "admin")) return fail("PRIVACY_ADMIN_FORBIDDEN");
     const actor = { userId: auth.session.userId, requestId: context.requestId, ipAddress: context.ipAddress ?? null, userAgent: context.userAgent ?? null };
     switch (action) {
       case "archive_customer":

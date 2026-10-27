@@ -43,31 +43,51 @@ import {
   DrizzleSessionRepository,
   DrizzleTrustedDeviceRepository,
 } from "./modules/auth/repositories/auth.repositories.js";
-import { loadSmtpAuthMailConfig, NodemailerAuthMailDelivery } from "./modules/auth/services/auth-mail.delivery.js";
+import {
+  loadSmtpAuthMailConfig,
+  NodemailerAuthMailDelivery,
+} from "./modules/auth/services/auth-mail.delivery.js";
 import { DeviceLoginService } from "./modules/auth/services/device-login.service.js";
 import { resolveConfiguredPath } from "./config/paths.js";
 import { SupervisionController } from "./modules/supervision/controllers/supervision.controller.js";
 import { DrizzleSupervisionRepository } from "./modules/supervision/repositories/supervision.repository.js";
 import { SupervisionService } from "./modules/supervision/services/supervision.service.js";
 import { supervisionCandidates } from "./modules/supervision/services/supervision.policy.js";
-import { BOOTSTRAP_RATE_LIMIT_SCOPE, bootstrapTokenPolicy, createBootstrapRateLimiter } from "./modules/auth/services/bootstrap-access.js";
+import {
+  BOOTSTRAP_RATE_LIMIT_SCOPE,
+  bootstrapTokenPolicy,
+  createBootstrapRateLimiter,
+} from "./modules/auth/services/bootstrap-access.js";
 import { createLoginRateLimits } from "./modules/auth/services/login-rate-limits.js";
-import { InMemoryRecoveryRateLimiter, PasswordRecoveryService } from "./modules/auth/services/password-recovery.service.js";
+import {
+  InMemoryRecoveryRateLimiter,
+  PasswordRecoveryService,
+} from "./modules/auth/services/password-recovery.service.js";
 import { SensitiveActionOtpService } from "./modules/auth/services/sensitive-action-otp.service.js";
 import { createHttpLogger } from "./logging/http-logger.js";
 import { logger } from "./logging/logger.js";
 import { assertRuntimeSecurityFloor } from "./security/runtime-floor.startup.js";
-import { createSecurityEventCounter, drizzleSecurityCounterStore, rateLimitedCode } from "./security/security-event-counters.js";
+import {
+  createSecurityEventCounter,
+  drizzleSecurityCounterStore,
+  rateLimitedCode,
+} from "./security/security-event-counters.js";
 import { PrivacyController } from "./modules/privacy/controllers/privacy.controller.js";
 import { privacyPurgeJob } from "./modules/privacy/jobs/privacy-purge.job.js";
 import { DrizzlePrivacyRepository } from "./modules/privacy/repositories/privacy.repository.js";
-import { createPrivacyJournal, PRIVACY_JOURNAL_DIR_ENV } from "./modules/privacy/services/privacy-journal.js";
+import {
+  createPrivacyJournal,
+  PRIVACY_JOURNAL_DIR_ENV,
+} from "./modules/privacy/services/privacy-journal.js";
 import { PrivacyService } from "./modules/privacy/services/privacy.service.js";
 import { AccessTokenSessionResolver } from "./modules/auth/services/access-token-session.resolver.js";
 import { AuditService } from "./modules/auth/services/audit.service.js";
 import type { DevToolsController } from "./modules/dev-tools/controllers/dev-tools.controller.js";
 import { AuthRouteService } from "./modules/auth/services/auth-route.service.js";
-import { BootstrapService } from "./modules/auth/services/bootstrap.service.js";
+import {
+  BOOTSTRAP_ROLE,
+  BootstrapService,
+} from "./modules/auth/services/bootstrap.service.js";
 import { OtpChallengeService } from "./modules/auth/services/otp-challenge.service.js";
 import { PasswordService } from "./modules/auth/services/password.service.js";
 import { SessionService } from "./modules/auth/services/session.service.js";
@@ -96,17 +116,31 @@ import { DrizzleCustomersRepository } from "./modules/customers/repositories/cus
 /** S7.4 D1: the one composition of the API; the mode decides what differs between development and production. */
 export type RuntimeMode = "development" | "production";
 /** TEST-01 D4: built by the development wrapper only, so the production chain never loads the dev-tools services. */
-export type DevToolsControllerFactory = (context: { auditHashPepper: string; removePrivateFile: (key: string) => Promise<void>; warn: (line: string) => void }) => DevToolsController;
-export type RuntimeOptions = { mode: RuntimeMode; env: NodeJS.ProcessEnv; devToolsController?: DevToolsControllerFactory };
+export type DevToolsControllerFactory = (context: {
+  auditHashPepper: string;
+  removePrivateFile: (key: string) => Promise<void>;
+  warn: (line: string) => void;
+}) => DevToolsController;
+export type RuntimeOptions = {
+  mode: RuntimeMode;
+  env: NodeJS.ProcessEnv;
+  devToolsController?: DevToolsControllerFactory;
+};
 /** S7.4 D1: nginx runs on the same host (Sprint 9), so only a loopback proxy is trusted for the client address. */
 export const PRODUCTION_TRUST_PROXY = "loopback";
 
 /** App plus the S7.2 scheduled jobs (started by the dev or prod entry script, not by tests that only need the app). */
-export function createRuntime({ mode, env, devToolsController }: RuntimeOptions) {
+export function createRuntime({
+  mode,
+  env,
+  devToolsController,
+}: RuntimeOptions) {
   // SEC-01 D2: before anything else; refuses production below the runtime floor, warns once elsewhere.
   assertRuntimeSecurityFloor({ nodeEnv: env.NODE_ENV, log: logger });
   const authConfig = loadAuthConfig(env);
-  const audit = new AuditService(db, { auditHashPepper: authConfig.auditHashPepper });
+  const audit = new AuditService(db, {
+    auditHashPepper: authConfig.auditHashPepper,
+  });
   const passwords = new PasswordService();
 
   const sessionRepository = new DrizzleSessionRepository(db);
@@ -119,17 +153,22 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
   });
 
   const users = new DrizzleAuthUserRepository(db);
-  const recordSecurityEvent = createSecurityEventCounter(drizzleSecurityCounterStore(db), { warn: (line) => logger.warn(line) });
+  const recordSecurityEvent = createSecurityEventCounter(
+    drizzleSecurityCounterStore(db),
+    { warn: (line) => logger.warn(line) },
+  );
 
   const bootstrapService = new BootstrapService(
     new DrizzleBootstrapRepository(db),
     passwords,
     audit,
     {
-      defaultRole: "admin",
+      defaultRole: BOOTSTRAP_ROLE,
       // BOOT-01 B1/B2: production needs KFIT_BOOTSTRAP_TOKEN; every mode checks the origin and limits attempts per address.
       tokenPolicy: bootstrapTokenPolicy(mode, env),
-      allowAttempt: createBootstrapRateLimiter(() => recordSecurityEvent(rateLimitedCode(BOOTSTRAP_RATE_LIMIT_SCOPE))),
+      allowAttempt: createBootstrapRateLimiter(() =>
+        recordSecurityEvent(rateLimitedCode(BOOTSTRAP_RATE_LIMIT_SCOPE)),
+      ),
     },
   );
 
@@ -148,7 +187,9 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
    * Without SMTP_HOST the /auth/recovery/* routes keep answering 501 and the UI shows « Récupération indisponible ».
    * The sensitive-action OTP (UX-14c) is e-mailed through the same transport; without SMTP its request answers 501.
    */
-  const authMail = env.SMTP_HOST ? new NodemailerAuthMailDelivery(loadSmtpAuthMailConfig(env)) : undefined;
+  const authMail = env.SMTP_HOST
+    ? new NodemailerAuthMailDelivery(loadSmtpAuthMailConfig(env))
+    : undefined;
   const passwordRecoveryService = authMail
     ? new PasswordRecoveryService(
         new DrizzlePasswordRecoveryRepository(db),
@@ -162,7 +203,10 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
           verifyMax: authConfig.recoveryVerifyMax,
           resetMax: authConfig.recoveryResetMax,
         }),
-        { recoveryTokenSecret: authConfig.recoveryTokenSecret, recoveryGrantTtlMs: authConfig.recoveryGrantTtlMs },
+        {
+          recoveryTokenSecret: authConfig.recoveryTokenSecret,
+          recoveryGrantTtlMs: authConfig.recoveryGrantTtlMs,
+        },
       )
     : undefined;
   const sensitiveActionOtpService = authMail
@@ -180,8 +224,14 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
     users,
     authMail ?? null,
     audit,
-    createLoginRateLimits((scope) => recordSecurityEvent(rateLimitedCode(scope))),
-    { devicePepper: authConfig.devicePepper, trustedDeviceTtlMs: authConfig.trustedDeviceTtlMs, otpTtlMs: authConfig.otpTtlMs },
+    createLoginRateLimits((scope) =>
+      recordSecurityEvent(rateLimitedCode(scope)),
+    ),
+    {
+      devicePepper: authConfig.devicePepper,
+      trustedDeviceTtlMs: authConfig.trustedDeviceTtlMs,
+      otpTtlMs: authConfig.otpTtlMs,
+    },
   );
   const authRouteService = new AuthRouteService(
     users,
@@ -211,43 +261,84 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
     inactivityTimeoutMs: authConfig.inactivityTimeoutMs,
   });
 
-  const catalogueService = new CatalogueService(new DrizzleCatalogueRepository(db));
+  const catalogueService = new CatalogueService(
+    new DrizzleCatalogueRepository(db),
+  );
   const catalogueController = new CatalogueController(
     catalogueService,
-    new CatalogueContentService(new DrizzleCatalogueContentRepository(db, { auditHashPepper: authConfig.auditHashPepper })),
+    new CatalogueContentService(
+      new DrizzleCatalogueContentRepository(db, {
+        auditHashPepper: authConfig.auditHashPepper,
+      }),
+    ),
   );
 
   const requestsController = new RequestsController(
     new RequestsService(new DrizzleRequestsRepository(db), audit),
   );
 
-  const adminRequestsService = new AdminRequestsService(new DrizzleAdminRequestsRepository(db, { auditHashPepper: authConfig.auditHashPepper }));
-  const adminRequestsController = new AdminRequestsController(adminRequestsService);
-  const followUpsService = new FollowUpsService(new DrizzleFollowUpsRepository(db, { auditHashPepper: authConfig.auditHashPepper }));
-  const onboardingService = new OnboardingService(new DrizzleOnboardingRepository(db, { auditHashPepper: authConfig.auditHashPepper }));
-  const customersService = new CustomersService(new DrizzleCustomersRepository(db, { auditHashPepper: authConfig.auditHashPepper }));
+  const adminRequestsService = new AdminRequestsService(
+    new DrizzleAdminRequestsRepository(db, {
+      auditHashPepper: authConfig.auditHashPepper,
+    }),
+  );
+  const adminRequestsController = new AdminRequestsController(
+    adminRequestsService,
+  );
+  const followUpsService = new FollowUpsService(
+    new DrizzleFollowUpsRepository(db, {
+      auditHashPepper: authConfig.auditHashPepper,
+    }),
+  );
+  const onboardingService = new OnboardingService(
+    new DrizzleOnboardingRepository(db, {
+      auditHashPepper: authConfig.auditHashPepper,
+    }),
+  );
+  const customersService = new CustomersService(
+    new DrizzleCustomersRepository(db, {
+      auditHashPepper: authConfig.auditHashPepper,
+    }),
+  );
   // UX-9 « Aujourd'hui »: reuses each module's own service so every state is computed by its owner.
-  const dashboardFinance = new DrizzleFinanceRepository(db, { auditHashPepper: authConfig.auditHashPepper });
-  const dashboardAlertsRepository = new DrizzleDashboardAlertsRepository(db, dashboardFinance);
+  const dashboardFinance = new DrizzleFinanceRepository(db, {
+    auditHashPepper: authConfig.auditHashPepper,
+  });
+  const dashboardAlertsRepository = new DrizzleDashboardAlertsRepository(
+    db,
+    dashboardFinance,
+  );
   const todayService = new TodayService(new DrizzleTodayRepository(db), {
     async followUpQueue(actor) {
       const result = await followUpsService.execute("", "queue", {}, actor);
-      if (!result.ok || !("items" in result.body)) throw new Error("Follow-up queue unavailable");
+      if (!result.ok || !("items" in result.body))
+        throw new Error("Follow-up queue unavailable");
       return result.body;
     },
     customerOverview: () => customersService.getOverview(),
     catalogueOverview: () => catalogueService.listAdminOverview(),
     requests: () => adminRequestsService.listQueue({}),
     async onboarding(subscriptionId, actor) {
-      const result = await onboardingService.execute(subscriptionId, "read", {}, undefined, actor);
+      const result = await onboardingService.execute(
+        subscriptionId,
+        "read",
+        {},
+        undefined,
+        actor,
+      );
       return result.status === "ok" ? result.onboarding : null;
     },
     collections: (now) => dashboardAlertsRepository.snapshot(now),
   });
   const todayController = new TodayController(todayService);
-  const dashboardAlerts = new DashboardAlertsService(dashboardAlertsRepository, todayService);
+  const dashboardAlerts = new DashboardAlertsService(
+    dashboardAlertsRepository,
+    todayService,
+  );
   const dashboardAnalyticsController = new DashboardAnalyticsController(
-    new DashboardAnalyticsService(new DrizzleDashboardAnalyticsRepository(db, dashboardFinance)),
+    new DashboardAnalyticsService(
+      new DrizzleDashboardAnalyticsRepository(db, dashboardFinance),
+    ),
     dashboardAlerts,
   );
 
@@ -265,106 +356,268 @@ export function createRuntime({ mode, env, devToolsController }: RuntimeOptions)
     async () => {
       const [reader] = await notificationsRepository.recipients(db);
       if (!reader) return [];
-      return (await dashboardAlerts.alerts({ userId: reader.id, requestId: `job:notifications.reconcile:${randomUUID()}`, ipAddress: null, userAgent: null })).alerts;
+      return (
+        await dashboardAlerts.alerts({
+          userId: reader.id,
+          requestId: `job:notifications.reconcile:${randomUUID()}`,
+          ipAddress: null,
+          userAgent: null,
+        })
+      ).alerts;
     },
-    env.SMTP_HOST ? new NodemailerNotificationMailDelivery(loadSmtpAuthMailConfig(env)) : null,
+    env.SMTP_HOST
+      ? new NodemailerNotificationMailDelivery(loadSmtpAuthMailConfig(env))
+      : null,
     () => new Date(),
     // OPS-01 O9: supervision alerts open and resolve with the same reconcile (supervisionService is built below, used at run time).
     async () => supervisionCandidates(await supervisionService.alerts()),
   );
-  const startNotificationJobs = (log: (line: string) => void) => startScheduledJobs(pool, db, [
-    { jobKey: "notifications.reconcile", cron: "*/15 * * * *", windowMs: 15 * 60_000, work: () => notificationJobs.reconcile() },
-    { jobKey: "notifications.email-delivery", cron: "*/5 * * * *", windowMs: 5 * 60_000, work: () => notificationJobs.deliver() },
-  ], log);
+  const startNotificationJobs = (log: (line: string) => void) =>
+    startScheduledJobs(
+      pool,
+      db,
+      [
+        {
+          jobKey: "notifications.reconcile",
+          cron: "*/15 * * * *",
+          windowMs: 15 * 60_000,
+          work: () => notificationJobs.reconcile(),
+        },
+        {
+          jobKey: "notifications.email-delivery",
+          cron: "*/5 * * * *",
+          windowMs: 5 * 60_000,
+          work: () => notificationJobs.deliver(),
+        },
+      ],
+      log,
+    );
 
   /*
    * S7.3 privacy (Gate 1 approved 2026-10-25): archive, anonymize (fresh OTP + typed name), holds; daily purge job (D3, D12);
    * off-database journal when KFIT_PRIVACY_JOURNAL_DIR is set (D11), otherwise disabled with a startup warning.
    */
-  const privacyRepository = new DrizzlePrivacyRepository(db, { auditHashPepper: authConfig.auditHashPepper });
+  const privacyRepository = new DrizzlePrivacyRepository(db, {
+    auditHashPepper: authConfig.auditHashPepper,
+  });
   const privacyJournal = createPrivacyJournal(env[PRIVACY_JOURNAL_DIR_ENV]);
   const privacyController = new PrivacyController(
-    new PrivacyService(privacyRepository, privacyJournal, (errorType) => logger.error(`✖ privacy journal append failed (${errorType}); run npm run privacy:journal-sync`)),
-    { lastConsumedAt: createFreshOtpLookup(db), windowMs: authConfig.freshOtpWindowMs },
+    new PrivacyService(privacyRepository, privacyJournal, (errorType) =>
+      logger.error(
+        `✖ privacy journal append failed (${errorType}); run npm run privacy:journal-sync`,
+      ),
+    ),
+    {
+      lastConsumedAt: createFreshOtpLookup(db),
+      windowMs: authConfig.freshOtpWindowMs,
+    },
   );
   const privacyStorage = new PrivateDocumentStorage();
-  const startPrivacyJobs = (log: (line: string) => void) => startScheduledJobs(pool, db, [privacyPurgeJob(privacyRepository, (key) => privacyStorage.remove(key))], log);
+  const startPrivacyJobs = (log: (line: string) => void) =>
+    startScheduledJobs(
+      pool,
+      db,
+      [privacyPurgeJob(privacyRepository, (key) => privacyStorage.remove(key))],
+      log,
+    );
 
-  /* OPS-01 (Gate 1 approved 2026-10-27): admin « Supervision » — job health, backups, restore checks, privacy, runtime, security series. */
+  /* OPS-01 (Gate 1 approved 2026-10-27): admin « Supervision » - job health, backups, restore checks, privacy, runtime, security series. */
   const supervisionService: SupervisionService = new SupervisionService({
-    repository: new DrizzleSupervisionRepository(db, { auditHashPepper: authConfig.auditHashPepper }),
+    repository: new DrizzleSupervisionRepository(db, {
+      auditHashPepper: authConfig.auditHashPepper,
+    }),
     privacy: privacyRepository,
-    pool, db, mode, env,
+    pool,
+    db,
+    mode,
+    env,
     journalDir: resolveConfiguredPath(env[PRIVACY_JOURNAL_DIR_ENV]),
-    manualRunners: { "notifications.reconcile": () => notificationJobs.reconcile(), "notifications.email-delivery": () => notificationJobs.deliver() },
-    onManualRunRateLimited: () => recordSecurityEvent(rateLimitedCode("supervision_run")),
+    manualRunners: {
+      "notifications.reconcile": () => notificationJobs.reconcile(),
+      "notifications.email-delivery": () => notificationJobs.deliver(),
+    },
+    onManualRunRateLimited: () =>
+      recordSecurityEvent(rateLimitedCode("supervision_run")),
   });
 
-  const documentsController = new DocumentsController(new DocumentsService(
-    new DrizzleDocumentsRepository(db, {
-      auditHashPepper: authConfig.auditHashPepper,
-      tokenPepper: authConfig.otpPepper,
-      verificationPepper: authConfig.otpPepper,
-    }),
-    new PrivateDocumentStorage(),
-    new PuppeteerProgressSummaryRenderer(),
-  ));
+  const documentsController = new DocumentsController(
+    new DocumentsService(
+      new DrizzleDocumentsRepository(db, {
+        auditHashPepper: authConfig.auditHashPepper,
+        tokenPepper: authConfig.otpPepper,
+        verificationPepper: authConfig.otpPepper,
+      }),
+      new PrivateDocumentStorage(),
+      new PuppeteerProgressSummaryRenderer(),
+    ),
+  );
 
   const proofStorage = new PrivateDocumentStorage();
-  const receiptStorage = new PrivateDocumentStorage(), receiptRenderer = new PuppeteerReceiptRenderer();
+  const receiptStorage = new PrivateDocumentStorage(),
+    receiptRenderer = new PuppeteerReceiptRenderer();
   const app = createServerApp({
     requestLogger: createHttpLogger(),
     recordSecurityEvent,
-    receiptsController: new ReceiptsController(new ReceiptsService(new DrizzleReceiptsRepository(db,
-      { auditHashPepper: authConfig.auditHashPepper, tokenPepper: authConfig.otpPepper }, {
-        render: snapshot => receiptRenderer.render(snapshot), persist: input => receiptStorage.persist(input), read: key => receiptStorage.read(key), remove: key => receiptStorage.remove(key),
-      }))),
-    paymentProofsController: new PaymentProofsController(new PaymentProofsService(new DrizzlePaymentProofsRepository(db,
-      { auditHashPepper: authConfig.auditHashPepper, tokenPepper: authConfig.otpPepper }, proofStorage), proofStorage)),
-    financeController: new FinanceController(new FinanceService(new DrizzleFinanceRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
-    quotesController: new QuotesController(new QuotesService(new DrizzleQuotesRepository(db,
-      { auditHashPepper: authConfig.auditHashPepper, tokenPepper: authConfig.otpPepper }, {
-        render: snapshot => new PuppeteerQuoteRenderer().render(snapshot),
-        persist: input => new PrivateDocumentStorage().persist(input),
-        read: key => new PrivateDocumentStorage().read(key),
-        remove: key => new PrivateDocumentStorage().remove(key),
-      }))),
+    receiptsController: new ReceiptsController(
+      new ReceiptsService(
+        new DrizzleReceiptsRepository(
+          db,
+          {
+            auditHashPepper: authConfig.auditHashPepper,
+            tokenPepper: authConfig.otpPepper,
+          },
+          {
+            render: (snapshot) => receiptRenderer.render(snapshot),
+            persist: (input) => receiptStorage.persist(input),
+            read: (key) => receiptStorage.read(key),
+            remove: (key) => receiptStorage.remove(key),
+          },
+        ),
+      ),
+    ),
+    paymentProofsController: new PaymentProofsController(
+      new PaymentProofsService(
+        new DrizzlePaymentProofsRepository(
+          db,
+          {
+            auditHashPepper: authConfig.auditHashPepper,
+            tokenPepper: authConfig.otpPepper,
+          },
+          proofStorage,
+        ),
+        proofStorage,
+      ),
+    ),
+    financeController: new FinanceController(
+      new FinanceService(
+        new DrizzleFinanceRepository(db, {
+          auditHashPepper: authConfig.auditHashPepper,
+        }),
+      ),
+    ),
+    quotesController: new QuotesController(
+      new QuotesService(
+        new DrizzleQuotesRepository(
+          db,
+          {
+            auditHashPepper: authConfig.auditHashPepper,
+            tokenPepper: authConfig.otpPepper,
+          },
+          {
+            render: (snapshot) => new PuppeteerQuoteRenderer().render(snapshot),
+            persist: (input) => new PrivateDocumentStorage().persist(input),
+            read: (key) => new PrivateDocumentStorage().read(key),
+            remove: (key) => new PrivateDocumentStorage().remove(key),
+          },
+        ),
+      ),
+    ),
     documentsController,
-    progressController: new ProgressController(new ProgressService(new DrizzleProgressRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
+    progressController: new ProgressController(
+      new ProgressService(
+        new DrizzleProgressRepository(db, {
+          auditHashPepper: authConfig.auditHashPepper,
+        }),
+      ),
+    ),
     followUpsController: new FollowUpsController(followUpsService),
-    appointmentsController: new AppointmentsController(new AppointmentsService(new DrizzleAppointmentsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
-    subscriptionsController: new SubscriptionsController(new SubscriptionsService(new DrizzleSubscriptionsRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
-    questionnaireController: new QuestionnaireController(new QuestionnaireService(new DrizzleQuestionnaireRepository(db, { auditHashPepper: authConfig.auditHashPepper })), new QuestionnaireTemplateService(new DrizzleQuestionnaireTemplateRepository(db, { auditHashPepper: authConfig.auditHashPepper })),
-      { lastConsumedAt: createFreshOtpLookup(db), windowMs: authConfig.freshOtpWindowMs }),
-    consentController: new ConsentController(new ConsentService(new DrizzleConsentRepository(db, { auditHashPepper: authConfig.auditHashPepper })),
-      new ConsentDefinitionService(new DrizzleConsentRepository(db, { auditHashPepper: authConfig.auditHashPepper })),
-      { lastConsumedAt: createFreshOtpLookup(db), windowMs: authConfig.freshOtpWindowMs }),
+    appointmentsController: new AppointmentsController(
+      new AppointmentsService(
+        new DrizzleAppointmentsRepository(db, {
+          auditHashPepper: authConfig.auditHashPepper,
+        }),
+      ),
+    ),
+    subscriptionsController: new SubscriptionsController(
+      new SubscriptionsService(
+        new DrizzleSubscriptionsRepository(db, {
+          auditHashPepper: authConfig.auditHashPepper,
+        }),
+      ),
+    ),
+    questionnaireController: new QuestionnaireController(
+      new QuestionnaireService(
+        new DrizzleQuestionnaireRepository(db, {
+          auditHashPepper: authConfig.auditHashPepper,
+        }),
+      ),
+      new QuestionnaireTemplateService(
+        new DrizzleQuestionnaireTemplateRepository(db, {
+          auditHashPepper: authConfig.auditHashPepper,
+        }),
+      ),
+      {
+        lastConsumedAt: createFreshOtpLookup(db),
+        windowMs: authConfig.freshOtpWindowMs,
+      },
+    ),
+    consentController: new ConsentController(
+      new ConsentService(
+        new DrizzleConsentRepository(db, {
+          auditHashPepper: authConfig.auditHashPepper,
+        }),
+      ),
+      new ConsentDefinitionService(
+        new DrizzleConsentRepository(db, {
+          auditHashPepper: authConfig.auditHashPepper,
+        }),
+      ),
+      {
+        lastConsumedAt: createFreshOtpLookup(db),
+        windowMs: authConfig.freshOtpWindowMs,
+      },
+    ),
     authController,
     resolveAuthSession: (request) => resolver.resolveFromRequest(request),
     catalogueController,
     requestsController,
     adminRequestsController,
     onboardingController: new OnboardingController(onboardingService),
-    requestConversionController: new RequestConversionController(new RequestConversionService(new DrizzleRequestConversionRepository(db, { auditHashPepper: authConfig.auditHashPepper }))),
+    requestConversionController: new RequestConversionController(
+      new RequestConversionService(
+        new DrizzleRequestConversionRepository(db, {
+          auditHashPepper: authConfig.auditHashPepper,
+        }),
+      ),
+    ),
     customersController: new CustomersController(customersService),
     todayController,
     dashboardAnalyticsController,
-    notificationsController: new NotificationsController(notificationsRepository),
+    notificationsController: new NotificationsController(
+      notificationsRepository,
+    ),
     privacyController,
     supervisionController: new SupervisionController(supervisionService),
     // TEST-01 D4 / S7.4 D1: « Données de test » cleanup, never mounted in production.
     ...(mode === "development" && devToolsController
-      ? { devToolsController: devToolsController({ auditHashPepper: authConfig.auditHashPepper, removePrivateFile: (key) => privacyStorage.remove(key), warn: (line) => logger.warn(line) }) }
+      ? {
+          devToolsController: devToolsController({
+            auditHashPepper: authConfig.auditHashPepper,
+            removePrivateFile: (key) => privacyStorage.remove(key),
+            warn: (line) => logger.warn(line),
+          }),
+        }
       : {}),
   });
   if (mode === "production") app.set("trust proxy", PRODUCTION_TRUST_PROXY);
-  return { app, startNotificationJobs, startPrivacyJobs, privacyJournalEnabled: privacyJournal !== null };
+  return {
+    app,
+    startNotificationJobs,
+    startPrivacyJobs,
+    privacyJournalEnabled: privacyJournal !== null,
+  };
 }
 import { ConsentController } from "./modules/consents/controllers/consent.controller.js";
-import { ConsentDefinitionService, ConsentService } from "./modules/consents/services/consent.service.js";
+import {
+  ConsentDefinitionService,
+  ConsentService,
+} from "./modules/consents/services/consent.service.js";
 import { DrizzleConsentRepository } from "./modules/consents/repositories/consent.repository.js";
 import { QuestionnaireController } from "./modules/questionnaires/controllers/questionnaire.controller.js";
-import { QuestionnaireService, QuestionnaireTemplateService } from "./modules/questionnaires/services/questionnaire.service.js";
+import {
+  QuestionnaireService,
+  QuestionnaireTemplateService,
+} from "./modules/questionnaires/services/questionnaire.service.js";
 import { DrizzleQuestionnaireRepository } from "./modules/questionnaires/repositories/questionnaire.repository.js";
 import { DrizzleQuestionnaireTemplateRepository } from "./modules/questionnaires/repositories/template.repository.js";
 import { SubscriptionsController } from "./modules/subscriptions/controllers/subscriptions.controller.js";

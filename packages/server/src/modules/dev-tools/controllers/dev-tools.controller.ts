@@ -1,5 +1,6 @@
 import { parseTestDataPurgeInput, type DevToolsErrorCode } from "@kfit/shared";
 import { requireAuthenticatedSession } from "../../auth/middleware/auth.middleware.js";
+import { hasRole } from "../../auth/services/roles.js";
 import type { AuthHttpRequestContext, HttpJsonResponse } from "../../auth/types/auth.http.types.js";
 import { devToolsAvailable } from "../services/dev-tools.guard.js";
 import type { TestDataService } from "../services/test-data.service.js";
@@ -18,7 +19,7 @@ export class DevToolsController {
     if (!this.available()) return fail(403, "DEV_TOOLS_UNAVAILABLE");
     const auth = requireAuthenticatedSession(context);
     if (!auth.ok) return auth.response;
-    if (auth.session.role !== "admin") return fail(403, "DEV_TOOLS_ADMIN_FORBIDDEN");
+    if (!hasRole(auth.session, "admin")) return fail(403, "DEV_TOOLS_ADMIN_FORBIDDEN");
     if (action === "test_data_analyse") return { status: 200, body: await this.service.analyse() };
     const parsed = parseTestDataPurgeInput(input.body);
     if (!parsed) return fail(400, "DEV_TOOLS_INVALID_INPUT");

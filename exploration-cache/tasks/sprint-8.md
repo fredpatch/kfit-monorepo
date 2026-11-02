@@ -210,7 +210,7 @@ Not Sprint 8 blockers, but production blockers for Sprint 9:
 
 ## Current task
 
-S0 - local UAT preflight. After S0 is green, continue sequentially with S1.
+S4 - active coaching, appointments, follow-ups and progress. S3 is validated green.
 
 ## Architecture rule during UAT
 
@@ -278,3 +278,21 @@ Must prove:
 - capacity blocker remains independent;
 - `ready_to_start` becomes possible only when every other blocker + capacity rule is satisfied;
 - risk/policy trigger history remains unchanged.
+
+
+### S3 validation - 2026-11-02
+
+Fred confirmed the complete onboarding scenario green after UAT-001 resolution.
+
+Validated:
+- preparation/checklist;
+- required/optional consents;
+- health-data boundary;
+- questionnaire revision/history;
+- medical risk blocker;
+- dedicated medical clearance command;
+- audit/privacy evidence;
+- capacity independence;
+- explicit Ready transition.
+
+Next scenario: S4 - active coaching, appointments, follow-ups and progress.

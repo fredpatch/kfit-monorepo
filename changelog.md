@@ -2,6 +2,11 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-11-02 - Sprint 8 S4 active coaching UAT validated
+
+- Fred confirmed all S4 checks green: subscription activation, appointments and replay protection, component consumption, structured follow-ups and cadence, pause/resume, progression and health-consent boundaries.
+- Recorded the completed S4 checklist and advanced local UAT to S5 finance and documents. No application code or schema changes.
+
 ## 2026-11-02 - UAT-001 medical clearance workflow
 
 - Implementation: `a28b7e1` - `fix(onboarding): add explicit medical clearance workflow`.

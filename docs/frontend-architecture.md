@@ -494,6 +494,9 @@ Local React state remains the default for local UI state.
   - reference authenticated mutation client migrated: notifications.
 - FE-ARCH-01c: router extraction - validated by Fred.
 - FE-ARCH-01d: first pages/ reference migration (/admin/offres) - validated by Fred.
+- FE-ARCH-01e: catalogue query keys + query hooks reference pattern - validated by Fred.
+
+Reference foundation is complete. Remaining domains migrate progressively when touched by Sprint 8 UAT fixes or later feature work; no big-bang migration.
 
 ## Definition of done for the architecture initiative
 

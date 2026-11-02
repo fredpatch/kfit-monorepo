@@ -24,7 +24,7 @@ const NotificationSettingsPage = lazy(() =>
   ),
 );
 const CataloguePage = lazy(() =>
-  import("../../catalogue/components/CataloguePage.js").then((m) => ({
+  import("../../pages/admin/catalogue/CataloguePage.js").then((m) => ({
     default: m.CataloguePage,
   })),
 );

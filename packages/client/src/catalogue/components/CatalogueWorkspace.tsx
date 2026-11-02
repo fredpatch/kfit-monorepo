@@ -97,7 +97,7 @@ function CapacityCell({ s }: { s: CatalogueAdminServiceOverview }) {
 }
 
 /** Catalogue (board 06). Data: GET /admin/catalogue/services/overview + existing catalogue mutations. */
-export function CataloguePage() {
+export function CatalogueWorkspace() {
   const [params, setParams] = useSearchParams();
   const refresh = useCatalogueRefresh();
   const query = useQuery({

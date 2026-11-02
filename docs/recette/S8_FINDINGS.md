@@ -1,8 +1,8 @@
 ---
 titre: Sprint 8 - Journal des anomalies UAT
 public: développeur
-statut: à revoir
-vérifié-sur: a5fedc1
+statut: à jour
+vérifié-sur: a28b7e1
 couvre: [Sprint 8, UAT-001]
 ---
 
@@ -31,7 +31,7 @@ Alternative non bloquante : `DEFERRED` avec cible explicite.
 
 - Scénario : S3 - onboarding
 - Sévérité : P1
-- Statut : RETEST
+- Statut : RESOLVED
 - Commit testé : 376399e61d2bdb8f50d86eca829047e69394d619
 - Étape : lever le bloqueur `medical_clearance` avant `ready_to_start`
 - Résultat attendu : un parcours dédié permet à l'admin/coach d'enregistrer la validation médicale, conserver sa preuve structurelle et lever atomiquement le bloqueur.
@@ -40,12 +40,12 @@ Alternative non bloquante : `DEFERRED` avec cible explicite.
 - Règle / owner : onboarding + medical clearance; Explicit State Transitions / Atomic Business Operation / Audit Event System.
 - Cause : workflow de résolution partiellement modélisé en base mais jamais implémenté.
 - Correctif : commande dédiée `clear_medical` dans la transaction onboarding, audit structurel et action de confirmation dans Préparation. Capacité et Ready restent indépendants ; aucun complete/waive générique médical.
-- Commit correctif : -
-- Retest Fred : -
-- Décision : RETEST, validation locale de Fred requise avant RESOLVED.
+- Commit correctif : a28b7e1
+- Retest Fred : tous les contrôles du parcours UAT-001 confirmés verts le 2026-11-02 ; commit/push autorisés.
+- Décision : RESOLVED, validation locale confirmée par Fred.
 - Cible si différé : non différable pour V1 Core; P1 bloquant.
 
-Le scénario S3 médical est bloqué tant que UAT-001 n'est pas résolu. Ne pas contourner via réponses questionnaire, changement de policy, complete/waive générique.
+Le scénario S3 médical peut reprendre. La levée du bloqueur passe par la commande médicale dédiée ; ne pas contourner via réponses questionnaire, changement de policy ou complete/waive générique.
 
 ## Modèle
 

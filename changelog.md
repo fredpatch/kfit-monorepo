@@ -2,6 +2,13 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-11-02 - UAT-001 medical clearance workflow
+
+- Implementation: `a28b7e1` - `fix(onboarding): add explicit medical clearance workflow`.
+- Dedicated `clear_medical` command and Preparation confirmation atomically clear the medical record, complete the blocker and append structural audit evidence. Optional notes stay out of generic audit. Generic medical complete/waive remain forbidden; capacity reservation and Ready remain separate commands. No migration.
+- Agent checks: typecheck/build/schema/format/dashes/diff green; server unit tests 724 passed, one Windows-specific skip; shared 90/90; local kfit_test integration 668/668. Additional docs:check reports 12 existing metadata problems in untouched documents.
+- Fred confirmed all UAT-001 local checks green and authorized commit/push on 2026-11-02. Finding RESOLVED; Sprint 8 UAT continues from S3.
+
 ## 2026-10-25 - TEST-01 integration test database + test-data cleanup
 
 - Integration tests run only on local `kfit_test` (root `.env.test`, `npm run db:test:prepare`: create + migrate + catalogue seed); one guard `assertLocalTestDatabase` in all 30 integration files; the dev API refuses to start on kfit_test.

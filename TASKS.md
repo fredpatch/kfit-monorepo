@@ -47,8 +47,8 @@ ROLE-01           superadmin role, hasRole guard, migration 0019, ops:create-use
 PRETTY-01         Prettier 3.8.5 + format/format:check/lint:dashes in CI - validated by Fred, committed 2026-10-27
 OPS-01b           Supervision page, menu dot, 14 messages, generator fix - validated by Fred, committed 482f843
 RET-01            retention steps in privacy.purge, inactive prospects alert, 4 settings - validated by Fred live, committed 0457409
-Next action       Codex IDE: implement FE-ARCH-01e from claude/fe-arch-01e-brief.md; Fred validates catalogue admin/public
-FE-ARCH-01         progressive frontend architecture migration - En cours; 01a/01b/01c/01d validated; 01e next
+Next action       Sprint 8 Gate 1 - plan V1 Core UAT; apply FE-ARCH-01 architecture opportunistically to frontend fixes
+FE-ARCH-01         reference foundation validated: 01a/01b/01c/01d/01e green; remaining migrations opportunistic during Sprint 8+
 Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »
 Backlog           « Flaky express unit tests (fetch failed, random test) - diagnose with the pgErrorInfo fix »
 Backlog           « OPS-01 Supervision (jobs, sauvegardes, contrôle de restauration, confidentialité, sécurité) - après SEC-02, avant UAT »

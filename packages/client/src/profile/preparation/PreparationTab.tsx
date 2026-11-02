@@ -63,6 +63,7 @@ const done = (i: OnboardingItem) =>
 type Dialogs =
   | { kind: "waive"; item: OnboardingItem }
   | { kind: "reserve" }
+  | { kind: "clear_medical" }
   | { kind: "ready" };
 
 export function PreparationTab({
@@ -287,7 +288,18 @@ export function PreparationTab({
                       ) : null}
                     </div>
                     <StatusPill size="sm" status={status} />
-                    {i.canComplete ? (
+                    {editable &&
+                    i.itemType === "medical_clearance" &&
+                    i.owner === "medical" &&
+                    !done(i) ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => open({ kind: "clear_medical" })}
+                      >
+                        Valider l'avis médical
+                      </Button>
+                    ) : i.canComplete ? (
                       <Button
                         size="sm"
                         variant="secondary"
@@ -489,6 +501,7 @@ function PreparationDialog({
   restoreFocus,
 }: DialogProps) {
   const [reason, setReason] = useState("");
+  const [note, setNote] = useState("");
   const [until, setUntil] = useState(() =>
     toLocalInput(
       new Date(
@@ -509,6 +522,9 @@ function PreparationDialog({
       run = () =>
         onboardingApi.waive(subscriptionId, dialog.item.id, reason.trim());
       success = "Dispense enregistrée.";
+    } else if (dialog.kind === "clear_medical") {
+      run = () => onboardingApi.clearMedical(subscriptionId, note);
+      success = "Validation médicale enregistrée.";
     } else if (dialog.kind === "reserve") {
       const iso = fromLocalInput(until);
       if (!iso || Date.parse(iso) <= Date.now())
@@ -539,7 +555,9 @@ function PreparationDialog({
         ? reservedUntil
           ? "Prolonger la réservation"
           : "Réserver la place"
-        : "Confirmer « Prêt à démarrer »";
+        : dialog.kind === "clear_medical"
+          ? "Valider l'avis médical"
+          : "Confirmer « Prêt à démarrer »";
   return (
     <Dialog
       open
@@ -590,6 +608,28 @@ function PreparationDialog({
                 )}
               </Field>
             ) : null}
+            {dialog.kind === "clear_medical" ? (
+              <>
+                <p className="text-sm">
+                  Confirme uniquement après avoir reçu la validation médicale
+                  nécessaire. Cette action sera enregistrée dans l'historique.
+                </p>
+                <Field
+                  label="Note interne facultative"
+                  hint="Évite les détails médicaux inutiles. Cette note reste dans le dossier de validation médicale."
+                >
+                  {(p) => (
+                    <Textarea
+                      {...p}
+                      rows={3}
+                      maxLength={2000}
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                    />
+                  )}
+                </Field>
+              </>
+            ) : null}
             {dialog.kind === "ready" ? (
               <p className="text-sm">
                 Toutes les exigences bloquantes et la place sont validées.
@@ -610,7 +650,11 @@ function PreparationDialog({
                 Retour
               </Button>
               <Button type="submit">
-                {busy ? "Enregistrement…" : "Confirmer"}
+                {busy
+                  ? "Enregistrement…"
+                  : dialog.kind === "clear_medical"
+                    ? "Confirmer la validation"
+                    : "Confirmer"}
               </Button>
             </div>
           </fieldset>

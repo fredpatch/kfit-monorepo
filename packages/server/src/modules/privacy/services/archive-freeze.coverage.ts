@@ -89,6 +89,7 @@ export const ARCHIVE_FREEZE_GUARDED_ROUTES = {
     "onboardingApiRoutes.waive",
     "onboardingApiRoutes.reservation",
     "onboardingApiRoutes.ready",
+    "onboardingApiRoutes.medicalClearance",
   ],
   subscriptions: ["subscriptionApiRoutes[action]"],
   requests: [

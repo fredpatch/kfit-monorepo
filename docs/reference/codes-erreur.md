@@ -12,7 +12,7 @@ couvre: [DOC-01a]
 
 Sources : tableaux `…ErrorCodes` de `packages/shared/src`, codes serveur listés dans `scripts/docs/generate-references.mjs`. Message affiché : texte des tables de messages du client (`packages/client/src`), « - » quand le client n'en a pas (code non affiché tel quel ou message générique).
 
-338 codes, 25 modules.
+340 codes, 25 modules.
 
 ## appointments
 
@@ -256,6 +256,8 @@ Source : `packages/shared/src/onboarding/contracts.ts · onboardingErrorCodes`
 | `ONBOARDING_CAPACITY_REQUIRED` | Définis ou prolonge la réservation avant de confirmer le démarrage. |
 | `ONBOARDING_CAPACITY_EXHAUSTED` | La capacité disponible est épuisée. Aucune place supplémentaire n’a été réservée. |
 | `ONBOARDING_CAPACITY_INVALID` | Vérifie la capacité du service et choisis une échéance future. |
+| `ONBOARDING_MEDICAL_CLEARANCE_NOT_REQUIRED` | Aucune validation médicale en attente sur cet abonnement. |
+| `ONBOARDING_MEDICAL_CLEARANCE_HISTORY_INVALID` | L'historique médical de préparation est incohérent. Actualise puis contacte l'administrateur technique. |
 | `ONBOARDING_ROUTE_UNEXPECTED_FAILURE` | Impossible d’effectuer cette action. Actualise la fiche avant de réessayer. |
 
 ## payment-proofs

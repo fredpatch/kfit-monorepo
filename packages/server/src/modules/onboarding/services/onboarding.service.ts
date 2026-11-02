@@ -9,6 +9,7 @@ export type OnboardingCommand =
   | { action: "read" | "initialize" | "ready" }
   | { action: "complete"; itemId: string }
   | { action: "waive"; itemId: string; reason: string }
+  | { action: "clear_medical"; note: string | null }
   | { action: "reserve"; until: Date };
 export type OnboardingFailure =
   | "not_found"
@@ -22,6 +23,8 @@ export type OnboardingFailure =
   | "policy_invalid"
   | "capacity_required"
   | "capacity_exhausted"
+  | "medical_clearance_not_required"
+  | "medical_clearance_history_invalid"
   | "capacity_invalid";
 export type OnboardingResult =
   | { status: "ok"; onboarding: OnboardingDetail }
@@ -262,6 +265,7 @@ export class OnboardingService {
   ): Promise<OnboardingResult> {
     if (
       !uuid.test(subscriptionId) ||
+      (action === "clear_medical" && itemId !== undefined) ||
       ((action === "complete" || action === "waive") &&
         (!itemId || !uuid.test(itemId)))
     )
@@ -274,7 +278,9 @@ export class OnboardingService {
         ? "reason"
         : action === "reserve"
           ? "capacityReservedUntil"
-          : null;
+          : action === "clear_medical"
+            ? "note"
+            : null;
     if (Object.keys(input).some((key) => key !== allowed))
       return { status: "invalid" };
     let command: OnboardingCommand;
@@ -301,6 +307,12 @@ export class OnboardingService {
       )
         return { status: "invalid" };
       command = { action, until };
+    } else if (action === "clear_medical") {
+      if (input.note != null && typeof input.note !== "string")
+        return { status: "invalid" };
+      const note = typeof input.note === "string" ? input.note.trim() : "";
+      if (note.length > 2000) return { status: "invalid" };
+      command = { action, note: note || null };
     } else if (action === "complete") command = { action, itemId: itemId! };
     else command = { action };
     return this.repository.execute(subscriptionId, command, actor);

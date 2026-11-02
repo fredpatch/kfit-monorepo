@@ -170,7 +170,15 @@ test("onboarding HTTP commands serialize shared responses and authenticated acto
   );
   assert.deepEqual(
     actions.sort(),
-    ["read", "initialize", "complete", "waive", "reserve", "ready"].sort(),
+    [
+      "read",
+      "initialize",
+      "complete",
+      "waive",
+      "reserve",
+      "ready",
+      "clear_medical",
+    ].sort(),
   );
 });
 for (const [status, code, expected] of [
@@ -179,11 +187,24 @@ for (const [status, code, expected] of [
   ["capacity_exhausted", "ONBOARDING_CAPACITY_EXHAUSTED", 409],
   ["not_found", "ONBOARDING_NOT_FOUND", 404],
   ["invalid_state", "ONBOARDING_INVALID_STATE", 409],
+  [
+    "medical_clearance_not_required",
+    "ONBOARDING_MEDICAL_CLEARANCE_NOT_REQUIRED",
+    409,
+  ],
+  [
+    "medical_clearance_history_invalid",
+    "ONBOARDING_MEDICAL_CLEARANCE_HISTORY_INVALID",
+    409,
+  ],
 ] as const) {
   test(`onboarding HTTP maps ${status} to a stable error`, async () => {
     await withServer(
       async (base) => {
-        const response = await fetch(base + routes[1]!.path, {
+        const route = status.startsWith("medical_clearance")
+          ? routes.find((route) => route.action === "medicalClearance")!
+          : routes[1]!;
+        const response = await fetch(base + route.path, {
           method: "POST",
           headers,
           body: "{}",

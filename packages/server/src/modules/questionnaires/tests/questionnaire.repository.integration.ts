@@ -717,6 +717,18 @@ test("PostgreSQL safe later revision does not clear or alter existing medical re
   await coach(id, true);
   assert.deepEqual(await medical(id), before);
   assert.deepEqual(await item(id, "medical_clearance"), beforeItem);
+  const result = await onboarding.execute(
+    id,
+    { action: "clear_medical", note: "Synthetic risk clearance" },
+    actor,
+  );
+  assert.equal(result.status, "ok");
+  const [cleared] = await medical(id);
+  assert.equal(cleared?.id, before[0]?.id);
+  assert.equal(cleared?.status, "cleared");
+  assert.equal(cleared?.clearedByUserId, userId);
+  assert.ok(cleared?.clearedAt);
+  assert.equal((await item(id, "medical_clearance"))?.status, "completed");
 });
 test("PostgreSQL public GET is non-consuming and returns only the exact schema and safe reference", async () => {
   const { id } = await setup({ category: "health" });

@@ -223,6 +223,69 @@ test("onboarding service rejects bad identifiers, unknown fields, invalid deadli
       "invalid",
     );
 });
+test("medical clearance normalizes only the caller-owned optional note", async () => {
+  const calls: unknown[] = [];
+  const service = new OnboardingService({
+    async execute(subscriptionId, command, context) {
+      assert.equal(subscriptionId, id);
+      assert.equal(context, actor);
+      calls.push(command);
+      return { status: "medical_clearance_not_required" };
+    },
+  });
+  for (const body of [
+    {},
+    { note: null },
+    { note: "" },
+    { note: " \n " },
+    { note: " Synthetic note " },
+    { note: "x".repeat(2000) },
+  ])
+    assert.equal(
+      (await service.execute(id, "clear_medical", body, undefined, actor))
+        .status,
+      "medical_clearance_not_required",
+    );
+  assert.deepEqual(calls, [
+    { action: "clear_medical", note: null },
+    { action: "clear_medical", note: null },
+    { action: "clear_medical", note: null },
+    { action: "clear_medical", note: null },
+    { action: "clear_medical", note: "Synthetic note" },
+    { action: "clear_medical", note: "x".repeat(2000) },
+  ]);
+});
+
+test("medical clearance rejects invalid bodies and client-owned medical identifiers", async () => {
+  const service = new OnboardingService({
+    async execute() {
+      assert.fail("invalid medical input reached DB");
+    },
+  });
+  for (const body of [
+    null,
+    [],
+    "note",
+    { note: 1 },
+    { note: false },
+    { note: {} },
+    { note: "x".repeat(2001) },
+    { itemId: id },
+    { recordId: id },
+    { status: "cleared" },
+    { note: "ok", unrelated: true },
+  ])
+    assert.equal(
+      (await service.execute(id, "clear_medical", body, undefined, actor))
+        .status,
+      "invalid",
+    );
+  assert.equal(
+    (await service.execute(id, "clear_medical", {}, id, actor)).status,
+    "invalid",
+  );
+});
+
 test("onboarding service trims waiver reason, preserves explicit deadline and propagates failure", async () => {
   const calls: unknown[] = [];
   const service = new OnboardingService({

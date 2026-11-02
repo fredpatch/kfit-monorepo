@@ -4,10 +4,11 @@ import {
   onboardingApiRoutes,
   onboardingErrorCodes,
   type CapacityReservationInput,
+  type ClearMedicalOnboardingInput,
   type WaiveOnboardingInput,
 } from "./contracts.js";
 
-test("onboarding contracts expose only the six approved admin commands", () => {
+test("onboarding contracts expose only the seven approved admin commands", () => {
   assert.deepEqual(onboardingApiRoutes, {
     detail: "/admin/subscriptions/:subscriptionId/onboarding",
     initialize: "/admin/subscriptions/:subscriptionId/onboarding/initialize",
@@ -18,9 +19,19 @@ test("onboarding contracts expose only the six approved admin commands", () => {
     reservation:
       "/admin/subscriptions/:subscriptionId/onboarding/capacity-reservation",
     ready: "/admin/subscriptions/:subscriptionId/onboarding/ready",
+    medicalClearance:
+      "/admin/subscriptions/:subscriptionId/onboarding/medical-clearance/clear",
   });
   assert.equal(new Set(onboardingErrorCodes).size, onboardingErrorCodes.length);
   assert.ok(onboardingErrorCodes.includes("ONBOARDING_CAPACITY_EXHAUSTED"));
+  assert.ok(
+    onboardingErrorCodes.includes("ONBOARDING_MEDICAL_CLEARANCE_NOT_REQUIRED"),
+  );
+  assert.ok(
+    onboardingErrorCodes.includes(
+      "ONBOARDING_MEDICAL_CLEARANCE_HISTORY_INVALID",
+    ),
+  );
 });
 test("onboarding transport inputs contain only caller-owned values", () => {
   const waiver: WaiveOnboardingInput = {
@@ -31,4 +42,6 @@ test("onboarding transport inputs contain only caller-owned values", () => {
   };
   assert.deepEqual(Object.keys(waiver), ["reason"]);
   assert.deepEqual(Object.keys(hold), ["capacityReservedUntil"]);
+  const medical: ClearMedicalOnboardingInput = { note: "Synthetic note" };
+  assert.deepEqual(Object.keys(medical), ["note"]);
 });

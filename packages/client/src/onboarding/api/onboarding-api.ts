@@ -4,6 +4,7 @@ import {
   authCsrfHeaderName,
   type OnboardingResponse,
   type OnboardingErrorCode,
+  type ClearMedicalOnboardingInput,
 } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
 import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
@@ -65,6 +66,16 @@ export const onboardingApi = {
       )
     ).data;
   },
+  async clearMedical(id: string, note?: string) {
+    const trimmed = note?.trim();
+    const input: ClearMedicalOnboardingInput = trimmed ? { note: trimmed } : {};
+    return (
+      await http.post<OnboardingResponse>(
+        route(onboardingApiRoutes.medicalClearance, id),
+        input,
+      )
+    ).data;
+  },
   async ready(id: string) {
     return (
       await http.post<OnboardingResponse>(
@@ -99,6 +110,10 @@ const messages: Record<OnboardingErrorCode, string> = {
     "La capacité disponible est épuisée. Aucune place supplémentaire n’a été réservée.",
   ONBOARDING_CAPACITY_INVALID:
     "Vérifie la capacité du service et choisis une échéance future.",
+  ONBOARDING_MEDICAL_CLEARANCE_NOT_REQUIRED:
+    "Aucune validation médicale en attente sur cet abonnement.",
+  ONBOARDING_MEDICAL_CLEARANCE_HISTORY_INVALID:
+    "L'historique médical de préparation est incohérent. Actualise puis contacte l'administrateur technique.",
   ONBOARDING_ROUTE_UNEXPECTED_FAILURE:
     "Impossible d’effectuer cette action. Actualise la fiche avant de réessayer.",
 };

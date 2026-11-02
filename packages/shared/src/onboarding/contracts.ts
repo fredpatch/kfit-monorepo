@@ -7,6 +7,8 @@ export const onboardingApiRoutes = {
   reservation:
     "/admin/subscriptions/:subscriptionId/onboarding/capacity-reservation",
   ready: "/admin/subscriptions/:subscriptionId/onboarding/ready",
+  medicalClearance:
+    "/admin/subscriptions/:subscriptionId/onboarding/medical-clearance/clear",
 } as const;
 
 export const onboardingErrorCodes = [
@@ -24,6 +26,8 @@ export const onboardingErrorCodes = [
   "ONBOARDING_CAPACITY_REQUIRED",
   "ONBOARDING_CAPACITY_EXHAUSTED",
   "ONBOARDING_CAPACITY_INVALID",
+  "ONBOARDING_MEDICAL_CLEARANCE_NOT_REQUIRED",
+  "ONBOARDING_MEDICAL_CLEARANCE_HISTORY_INVALID",
   "ONBOARDING_ROUTE_UNEXPECTED_FAILURE",
 ] as const;
 export type OnboardingErrorCode = (typeof onboardingErrorCodes)[number];
@@ -82,3 +86,4 @@ export type OnboardingDetail = {
 export type OnboardingResponse = { onboarding: OnboardingDetail };
 export type WaiveOnboardingInput = { reason?: unknown };
 export type CapacityReservationInput = { capacityReservedUntil?: unknown };
+export type ClearMedicalOnboardingInput = { note?: unknown };

@@ -1,5 +1,5 @@
 import { assertCustomerWritable } from "../../privacy/repositories/subject-freeze.js";
-import { and, count, eq, isNull, ne, or } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, ne, or } from "drizzle-orm";
 import type { OnboardingDetail } from "@kfit/shared";
 import type { db as appDb } from "../../../db/client.js";
 import {
@@ -11,7 +11,10 @@ import {
   subscriptions,
   subscriptionStatusHistory,
 } from "../../../db/schema/customers.js";
-import { onboardingItems } from "../../../db/schema/onboarding.js";
+import {
+  medicalClearanceRecords,
+  onboardingItems,
+} from "../../../db/schema/onboarding.js";
 import { capacityClaimCondition } from "./capacity-claims.js";
 import {
   lockConsentDefinitions,
@@ -21,7 +24,10 @@ import {
   AuditService,
   type AuditMetadata,
 } from "../../auth/services/audit.service.js";
-import { syncPolicyMedicalRequirement } from "./medical-requirement.js";
+import {
+  activeMedicalStatuses,
+  syncPolicyMedicalRequirement,
+} from "./medical-requirement.js";
 import {
   checklistDefinition,
   deriveOnboarding,
@@ -330,6 +336,59 @@ export class DrizzleOnboardingRepository implements OnboardingRepository {
                 : "subscription.onboarding_item_waived",
               { itemType: item.itemType, fromStatus: item.status, toStatus },
             );
+            break;
+          }
+          case "clear_medical": {
+            const openCondition = and(
+              eq(medicalClearanceRecords.subscriptionId, subscriptionId),
+              inArray(medicalClearanceRecords.status, [
+                ...activeMedicalStatuses,
+              ]),
+            );
+            const open = await tx
+              .select()
+              .from(medicalClearanceRecords)
+              .where(openCondition)
+              .for("update");
+            if (open.length === 0)
+              return { status: "medical_clearance_not_required" };
+            if (open.length !== 1)
+              return { status: "medical_clearance_history_invalid" };
+            const record = open[0]!;
+            const now = new Date();
+            await tx
+              .update(medicalClearanceRecords)
+              .set({
+                status: "cleared",
+                note: command.note,
+                clearedAt: now,
+                clearedByUserId: actor.userId,
+              })
+              .where(eq(medicalClearanceRecords.id, record.id));
+            const remaining = await tx
+              .select({ id: medicalClearanceRecords.id })
+              .from(medicalClearanceRecords)
+              .where(openCondition);
+            if (remaining.length === 0)
+              await tx
+                .update(onboardingItems)
+                .set({
+                  status: "completed",
+                  completedAt: now,
+                  waivedAt: null,
+                  waiverReason: null,
+                  updatedAt: now,
+                })
+                .where(
+                  and(
+                    eq(onboardingItems.subscriptionId, subscriptionId),
+                    eq(onboardingItems.itemType, "medical_clearance"),
+                  ),
+                );
+            await audit("medical_clearance.cleared", {
+              medicalClearanceRecordId: record.id,
+              triggerSource: record.triggerSource,
+            });
             break;
           }
           case "reserve": {

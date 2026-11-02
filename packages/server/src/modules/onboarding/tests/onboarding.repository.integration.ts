@@ -20,6 +20,7 @@ import {
   onboardingItems,
   consentDefinitions,
   consentRecords,
+  medicalClearanceRecords,
 } from "../../../db/schema/onboarding.js";
 import { DrizzleConsentRepository } from "../../consents/repositories/consent.repository.js";
 import { DrizzleOnboardingRepository } from "../repositories/onboarding.repository.js";
@@ -90,6 +91,11 @@ after(async () => {
     if (!safeTarget) return;
     await db.delete(auditEvents).where(eq(auditEvents.actorUserId, userId));
     if (subscriptionIds.length) {
+      await db
+        .delete(medicalClearanceRecords)
+        .where(
+          inArray(medicalClearanceRecords.subscriptionId, subscriptionIds),
+        );
       await db
         .delete(consentRecords)
         .where(inArray(consentRecords.subscriptionId, subscriptionIds));
@@ -270,6 +276,166 @@ async function satisfy(id: string) {
 async function events(id: string) {
   return db.select().from(auditEvents).where(eq(auditEvents.entityId, id));
 }
+
+async function medicalRecords(id: string) {
+  return db
+    .select()
+    .from(medicalClearanceRecords)
+    .where(eq(medicalClearanceRecords.subscriptionId, id))
+    .orderBy(medicalClearanceRecords.id);
+}
+
+test("PostgreSQL explicit medical clearance records evidence, safe audit and completed blocker; capacity and Ready remain separate", async () => {
+  const id = await makeSubscription(
+    await makePool({ medical: "required", limited: true }),
+  );
+  await satisfy(id);
+  const before = await medicalRecords(id);
+  assert.equal(before.length, 1);
+  assert.equal(before[0]?.status, "required");
+  assert.equal(before[0]?.triggerSource, "service_policy");
+  const pending = (await detail(id)).items.find(
+    (i) => i.itemType === "medical_clearance",
+  );
+  assert.equal(pending?.status, "pending");
+  assert.equal(pending?.isBlocking, true);
+  const note = "Synthetic medical clearance evidence";
+  assert.equal(
+    (await execute(id, { action: "clear_medical", note })).status,
+    "ok",
+  );
+  const [record] = await medicalRecords(id);
+  assert.equal(record?.status, "cleared");
+  assert.ok(record?.clearedAt);
+  assert.equal(record?.clearedByUserId, userId);
+  assert.equal(record?.note, note);
+  assert.equal(record?.documentId, before[0]?.documentId);
+  const after = await detail(id);
+  const completed = after.items.find((i) => i.itemType === "medical_clearance");
+  assert.equal(completed?.status, "completed");
+  assert.equal(completed?.completedAt, record.clearedAt.toISOString());
+  assert.equal(completed?.canComplete, false);
+  assert.equal(completed?.canWaive, false);
+  assert.equal(after.subscription.status, "onboarding");
+  assert.equal(after.subscription.capacityReservedUntil, null);
+  assert.equal(after.canReady, false);
+  assert.equal(
+    (await execute(id, { action: "ready" })).status,
+    "capacity_required",
+  );
+  const audits = await events(id);
+  const cleared = audits.filter(
+    (e) => e.eventType === "medical_clearance.cleared",
+  );
+  assert.equal(cleared.length, 1);
+  assert.deepEqual(cleared[0]?.metadataJson, {
+    medicalClearanceRecordId: record.id,
+    triggerSource: "service_policy",
+  });
+  assert.ok(!JSON.stringify(audits).includes(note));
+  assert.deepEqual(
+    await execute(id, { action: "clear_medical", note: "duplicate" }),
+    { status: "medical_clearance_not_required" },
+  );
+  assert.deepEqual(await medicalRecords(id), [record]);
+  assert.deepEqual(await events(id), audits);
+  await execute(id, { action: "reserve", until: future() });
+  assert.equal((await detail(id)).canReady, true);
+  assert.equal((await detail(id)).subscription.status, "onboarding");
+  assert.equal((await execute(id, { action: "ready" })).status, "ok");
+});
+
+test("PostgreSQL medical clearance rejects absent and ambiguous open history without writes", async () => {
+  const id = await makeSubscription(await makePool());
+  await initialize(id);
+  const before = await detail(id);
+  const auditBefore = await events(id);
+  assert.deepEqual(await execute(id, { action: "clear_medical", note: null }), {
+    status: "medical_clearance_not_required",
+  });
+  assert.deepEqual(await detail(id), before);
+  assert.deepEqual(await events(id), auditBefore);
+  await db.insert(medicalClearanceRecords).values([
+    { subscriptionId: id, status: "pending", triggerSource: "synthetic-a" },
+    {
+      subscriptionId: id,
+      status: "under_review",
+      triggerSource: "synthetic-b",
+    },
+  ]);
+  const records = await medicalRecords(id);
+  assert.deepEqual(await execute(id, { action: "clear_medical", note: null }), {
+    status: "medical_clearance_history_invalid",
+  });
+  assert.deepEqual(await medicalRecords(id), records);
+  assert.deepEqual(await detail(id), before);
+  assert.deepEqual(await events(id), auditBefore);
+});
+
+test("PostgreSQL medical clearance rejects every state except onboarding", async () => {
+  for (const status of [
+    "awaiting_payment",
+    "medical_clearance_required",
+    "ready_to_start",
+    "active",
+    "paused",
+    "completion_due",
+    "completed",
+    "cancelled",
+  ]) {
+    const id = await makeSubscription(await makePool({ medical: "required" }));
+    await initialize(id);
+    await db
+      .update(subscriptions)
+      .set({ status })
+      .where(eq(subscriptions.id, id));
+    const before = await medicalRecords(id);
+    const auditBefore = await events(id);
+    assert.deepEqual(
+      await execute(id, { action: "clear_medical", note: null }),
+      { status: "invalid_state" },
+    );
+    assert.deepEqual(await medicalRecords(id), before);
+    assert.deepEqual(await events(id), auditBefore);
+  }
+});
+
+test("PostgreSQL concurrent medical clearance commits exactly one event", async () => {
+  const id = await makeSubscription(await makePool({ medical: "required" }));
+  await initialize(id);
+  const results = await Promise.all([
+    execute(id, { action: "clear_medical", note: null }),
+    execute(id, { action: "clear_medical", note: null }),
+  ]);
+  assert.deepEqual(results.map((r) => r.status).sort(), [
+    "medical_clearance_not_required",
+    "ok",
+  ]);
+  assert.equal(
+    (await events(id)).filter(
+      (e) => e.eventType === "medical_clearance.cleared",
+    ).length,
+    1,
+  );
+});
+
+test("PostgreSQL medical clearance audit failure rolls back record and blocker", async () => {
+  const id = await makeSubscription(await makePool({ medical: "required" }));
+  await initialize(id);
+  const before = await medicalRecords(id);
+  const view = await detail(id);
+  const auditBefore = await events(id);
+  await assert.rejects(
+    execute(
+      id,
+      { action: "clear_medical", note: "Synthetic rollback note" },
+      auditFailureRepository(),
+    ),
+  );
+  assert.deepEqual(await medicalRecords(id), before);
+  assert.deepEqual(await detail(id), view);
+  assert.deepEqual(await events(id), auditBefore);
+});
 
 test("PostgreSQL checklist initializes correct blocking rows and system-owned completed start, without speculative medical item", async () => {
   const id = await makeSubscription(await makePool());

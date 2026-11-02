@@ -25,6 +25,9 @@ const errors: Record<OnboardingFailure | "invalid", OnboardingErrorCode> = {
   capacity_required: "ONBOARDING_CAPACITY_REQUIRED",
   capacity_exhausted: "ONBOARDING_CAPACITY_EXHAUSTED",
   capacity_invalid: "ONBOARDING_CAPACITY_INVALID",
+  medical_clearance_not_required: "ONBOARDING_MEDICAL_CLEARANCE_NOT_REQUIRED",
+  medical_clearance_history_invalid:
+    "ONBOARDING_MEDICAL_CLEARANCE_HISTORY_INVALID",
 };
 export class OnboardingController {
   constructor(private readonly service: Pick<OnboardingService, "execute">) {}

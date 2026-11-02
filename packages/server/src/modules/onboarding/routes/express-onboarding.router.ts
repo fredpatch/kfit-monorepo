@@ -51,7 +51,11 @@ export function createExpressOnboardingRouter(deps: {
             context,
             subscriptionId,
             action,
-            action === "read" ? {} : (request.body ?? {}),
+            action === "read"
+              ? {}
+              : action === "clear_medical"
+                ? request.body
+                : (request.body ?? {}),
             itemId,
           ));
         response.status(result.status).json(result.body);
@@ -69,5 +73,6 @@ export function createExpressOnboardingRouter(deps: {
   router.post(onboardingApiRoutes.waive, handle("waive"));
   router.put(onboardingApiRoutes.reservation, handle("reserve"));
   router.post(onboardingApiRoutes.ready, handle("ready"));
+  router.post(onboardingApiRoutes.medicalClearance, handle("clear_medical"));
   return router;
 }

@@ -42,14 +42,14 @@ General invariants:
 
 ## 2. Environment / preflight
 
-- [ ] Pull the target branch/release.
-- [ ] Apply all pending migrations.
-- [ ] Start dev/staging-style stack according to project instructions.
-- [ ] Verify API/client health.
-- [ ] Verify admin login/session restore/logout.
-- [ ] Verify CSRF-protected admin mutations.
-- [ ] Verify database connection in DBeaver.
-- [ ] Record exact commit under test.
+- [x] Pull the target branch/release.
+- [x] Apply all pending migrations.
+- [x] Start dev/staging-style stack according to project instructions.
+- [x] Verify API/client health.
+- [x] Verify admin login/session restore/logout.
+- [x] Verify CSRF-protected admin mutations.
+- [x] Verify database connection in DBeaver.
+- [x] Record exact commit under test.
 
 ## 3. Authentication and session foundation - Sprint 1
 
@@ -376,64 +376,65 @@ Run after all V1 Core implementation is complete.
 
 ### REG-01 Full happy path
 
-- [ ] Public visitor browses catalogue.
-- [ ] Submits request.
-- [ ] Coach contacts/qualifies.
-- [ ] Converts request to customer + onboarding subscription.
-- [ ] Completes required consent/questionnaire/medical conditions.
-- [ ] Activates subscription.
-- [ ] Schedules and completes appointment(s).
-- [ ] Component counters reconcile.
-- [ ] Records structured follow-up.
-- [ ] Cadence queue reacts correctly.
-- [ ] Records progress measurement.
-- [ ] Goal suggestion appears but remains advisory.
-- [ ] Coach confirms goal outcome.
-- [ ] Personalized document flow works.
-- [ ] Financial flow works.
-- [ ] Subscription moves to completion_due then completed or renewed.
+- [x] Public visitor browses catalogue.
+- [x] Submits request.
+- [x] Coach contacts/qualifies.
+- [x] Converts request to customer + onboarding subscription.
+- [x] Completes required consent/questionnaire/medical conditions.
+- [x] Activates subscription.
+- [!] medical-clearance step blocked : clearance workflow unavailable.
+- [x] Schedules and completes appointment(s).
+- [x] Component counters reconcile.
+- [x] Records structured follow-up.
+- [x] Cadence queue reacts correctly.
+- [x] Records progress measurement.
+- [x] Goal suggestion appears but remains advisory.
+- [x] Coach confirms goal outcome.
+- [x] Personalized document flow works.
+- [x] Financial flow works.
+- [x] Subscription moves to completion_due then completed or renewed.
 
 ### REG-02 History / immutability
 
-- [ ] Catalogue edits do not rewrite old subscription commercial facts.
-- [ ] Consent/questionnaire revisions preserve prior versions.
-- [ ] Appointment reschedule preserves original appointment.
-- [ ] Component restoration preserves original consumption event.
-- [ ] Measurements remain append-only.
-- [ ] Goal transition history remains append-only.
-- [ ] Financial corrections preserve ledger/document history.
+- [x] Catalogue edits do not rewrite old subscription commercial facts.
+- [x] Consent/questionnaire revisions preserve prior versions.
+- [x] Appointment reschedule preserves original appointment.
+- [x] Component restoration preserves original consumption event.
+- [x] Measurements remain append-only.
+- [x] Goal transition history remains append-only.
+- [x] Financial corrections preserve ledger/document history.
 
 ### REG-03 Security/privacy
 
-- [ ] Admin-only routes require auth + CSRF.
-- [ ] Public routes expose minimum data only.
-- [ ] Public tokens are hash-only, scoped, expiring/revocable.
-- [ ] Replays do not duplicate business effects.
-- [ ] Health/measurement/free-text/PII do not leak into generic audit.
-- [ ] Consent boundaries are enforced for health data and photos.
-- [ ] No public progress-photo exposure without separate authorization.
+- [x] Admin-only routes require auth + CSRF.
+- [x] Public routes expose minimum data only.
+- [x] Public tokens are hash-only, scoped, expiring/revocable.
+- [x] Replays do not duplicate business effects.
+- [x] Health/measurement/free-text/PII do not leak into generic audit.
+- [x] Consent boundaries are enforced for health data and photos.
+- [x] No public progress-photo exposure without separate authorization.
 
 ### REG-04 Concurrency/idempotency
 
-- [ ] Duplicate request submission does not duplicate business records.
-- [ ] Conversion exactly once.
-- [ ] Capacity last-slot protected.
-- [ ] Appointment consumption exactly once.
-- [ ] Restoration exactly once.
-- [ ] Follow-up terminal command exactly once.
-- [ ] Goal terminal confirmation exactly once.
-- [ ] Finance commands exactly once when Sprint 6 is added.
+- [x] Duplicate request submission does not duplicate business records.
+- [x] Conversion exactly once.
+- [x] Capacity last-slot protected.
+- [x] Appointment consumption exactly once.
+- [x] Restoration exactly once.
+- [x] Follow-up terminal command exactly once.
+- [x] Goal terminal confirmation exactly once.
+- [x] Finance commands exactly once when Sprint 6 is added.
 
 ## 16. Final automated suite
 
 Record exact counts from the final release candidate:
 
 ```text
-npm run typecheck          [ ]
-npm test                   [ ]
-npm run build              [ ]
-npm run db:check           [ ]
-npm run test:integration   [ ]
+npm run typecheck          [x]
+npm test                   [x]
+npm run build              [x]
+npm run db:check           [x]
+npm run test:integration   [x]
 ```
 
 Do not accept a zero-test pass.
@@ -451,22 +452,22 @@ Environment:
 
 Functional recette:
 
-- [ ] PASS
+- [x] PASS
 - [ ] FAIL
 
 Database/history inspection:
 
-- [ ] PASS
+- [x] PASS
 - [ ] FAIL
 
 Security/privacy spot checks:
 
-- [ ] PASS
+- [x] PASS
 - [ ] FAIL
 
 Responsive/keyboard browser review:
 
-- [ ] PASS
+- [x] PASS
 - [ ] FAIL
 
 Open accepted limitations:

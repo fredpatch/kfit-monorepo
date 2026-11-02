@@ -223,7 +223,7 @@ After Sprint 8 closes, resume the broader ARCH migration before Sprint 9 deploym
 
 ## UAT-001 - medical clearance workflow missing
 
-Status: P1 / OPEN / Gate 1 correction decisions proposed.
+Status: P1 / RESOLVED - Fred validated locally on 2026-11-02. Implementation a28b7e1; docs/closure 15476f3.
 
 ### Observed
 
@@ -244,7 +244,7 @@ Missing: the named command that clears the medical requirement.
 - Atomic Business Operation (KNW-24): requirement record + onboarding blocker + audit update in one transaction.
 - Audit Event System (KNW-32): actor/action/target/outcome structural evidence; no sensitive medical detail in generic audit metadata.
 
-### Proposed decisions
+### Approved and implemented decisions
 
 1. Add one named admin command: `clear medical clearance`.
 2. It is valid only while the subscription is in onboarding/pre-start state and has exactly one open medical requirement.

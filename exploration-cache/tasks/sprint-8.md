@@ -63,7 +63,7 @@ Sprint 8 can close only when:
 2. S8.2 - Fred technical end-to-end pass and findings log.
 3. S8.3 - Fix/retest loop, one defect at a time.
 4. S8.4 - Final regression and Fred sign-off.
-5. S8.5 - Sprint 8 closure and Sprint 9 handoff.
+5. S8.5 - Sprint 8 closure and ARCH-resume handoff.
 
 ## S8.1 - UAT baseline and scenario pack
 
@@ -159,7 +159,7 @@ Fred reruns the critical integrated flow after all P0/P1 fixes and records the f
 
 Coach hands-on acceptance is explicitly deferred to Sprint 9 because the app is not yet hosted in an environment the coach can access.
 
-## S8.5 - Sprint 8 closure and Sprint 9 handoff
+## S8.5 - Sprint 8 closure and ARCH-resume handoff
 
 Run final release-candidate checks and record exact results:
 
@@ -179,7 +179,8 @@ Then:
 - update exploration-cache;
 - update changelog.md with validated Sprint 8 changes only;
 - record accepted P2/P3 deferrals;
-- identify exact first Sprint 9 task.
+- identify the exact first post-UAT ARCH migration slice;
+- Sprint 9 starts only after the agreed ARCH migration checkpoint is reached.
 
 ## Acceptance criteria
 
@@ -217,4 +218,4 @@ Broader FE-ARCH migration remains paused.
 
 If a UAT fix touches frontend code, apply the validated FE-ARCH rules to that touched area where practical without expanding the defect scope.
 
-After Sprint 8 closes, resume the broader ARCH migration.
+After Sprint 8 closes, resume the broader ARCH migration before Sprint 9 deployment/staging work.

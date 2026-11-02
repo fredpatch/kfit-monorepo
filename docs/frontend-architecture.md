@@ -487,7 +487,7 @@ Local React state remains the default for local UI state.
 ## Migration status
 
 - FE-ARCH-01a: architecture rules and manual code map - approved by Fred.
-- FE-ARCH-01b: shared HTTP transport foundation - implemented, awaiting local validation.
+- FE-ARCH-01b: shared HTTP transport foundation - validated by Fred.
   - canonical transport: `shared/api/http-client.ts`;
   - compatibility re-export: `auth/api/csrf.ts`;
   - reference read client migrated: dashboard;

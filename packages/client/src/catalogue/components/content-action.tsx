@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { catalogueErrorMessage } from "../api/catalogue-api.js";
+import { catalogueKeys } from "../queries/catalogue-keys.js";
 
 /** One catalogue mutation at a time: busy flag, French error, refresh of every catalogue query (lists, deliverability). */
 export function useContentAction() {
@@ -17,7 +18,7 @@ export function useContentAction() {
     setError(null);
     try {
       await work();
-      await client.invalidateQueries({ queryKey: ["catalogue"] });
+      await client.invalidateQueries({ queryKey: catalogueKeys.all });
       toast.success(success);
       return true;
     } catch (failure) {

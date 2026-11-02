@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
-import { useQuery } from "@tanstack/react-query";
 import { Check, MessageCircle } from "lucide-react";
 import type {
   CataloguePublicService,
@@ -19,7 +18,7 @@ import {
   type OfferFamily,
 } from "../../lib/families.js";
 import { publicLinks } from "../../lib/public-links.js";
-import { catalogueApiClient } from "../api/catalogue-api.js";
+import { useCataloguePublicServices } from "../queries/catalogue-queries.js";
 import { OfferCover } from "./OfferCover.js";
 import { BrandMark } from "../../components/brand-mark.js";
 
@@ -284,10 +283,7 @@ function OfferCard({ service }: { service: CataloguePublicService }) {
 /** Public landing page (board 10). Text-only brand until the coach onboarding provides name, logo and photo. */
 export function PublicCataloguePage() {
   useNoReferrer();
-  const catalogue = useQuery({
-    queryKey: ["catalogue", "public-services"],
-    queryFn: () => catalogueApiClient.listPublicServices(),
-  });
+  const catalogue = useCataloguePublicServices();
   const [filter, setFilter] = useState<OfferFamily | "all">("all");
   const services = catalogue.data?.services ?? [];
   const families = useMemo(

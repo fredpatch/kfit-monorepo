@@ -1,5 +1,4 @@
 import { useMemo, useState, type DragEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { NavLink, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import {
@@ -27,10 +26,11 @@ import {
 } from "../lib/catalogue-meta.js";
 import { ServiceSheet, useCatalogueRefresh } from "./ServiceSheet.js";
 import { NewServiceSheet } from "./NewServiceSheet.js";
+import { DeliverabilityChecklist } from "./DeliverabilityChecklist.js";
 import {
-  DeliverabilityChecklist,
-  deliverabilityQueryKey,
-} from "./DeliverabilityChecklist.js";
+  useCatalogueAdminOverview,
+  useCatalogueDeliverability,
+} from "../queries/catalogue-queries.js";
 import { AdminPage } from "../../app/layout/AdminPage.js";
 import { Button } from "../../components/ui/button.js";
 import {
@@ -100,10 +100,7 @@ function CapacityCell({ s }: { s: CatalogueAdminServiceOverview }) {
 export function CatalogueWorkspace() {
   const [params, setParams] = useSearchParams();
   const refresh = useCatalogueRefresh();
-  const query = useQuery({
-    queryKey: ["catalogue", "admin-overview"],
-    queryFn: () => catalogueApiClient.listAdminOverview(),
-  });
+  const query = useCatalogueAdminOverview();
   const tab =
     catalogueTabs.find((t) => tabParam[t] === params.get("vue")) ?? "published";
   const [openId, setOpenId] = useState<string | null>(null);
@@ -111,9 +108,7 @@ export function CatalogueWorkspace() {
   const [confirm, setConfirm] = useState<Confirm>(null);
   // Same query key as the checklist inside the dialog: one request, and « Publier » waits for a deliverable offer (D6).
   const publishingId = confirm?.kind === "publish" ? confirm.service.id : null;
-  const readiness = useQuery({
-    queryKey: deliverabilityQueryKey(publishingId ?? ""),
-    queryFn: () => catalogueApiClient.deliverability(publishingId!),
+  const readiness = useCatalogueDeliverability(publishingId, {
     enabled: publishingId !== null,
   });
   const [busy, setBusy] = useState(false);

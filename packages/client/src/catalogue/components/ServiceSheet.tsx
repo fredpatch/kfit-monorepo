@@ -37,12 +37,13 @@ import { DeliverabilityChecklist } from "./DeliverabilityChecklist.js";
 import { RulesEditor } from "./RulesEditor.js";
 import { ServicePhoto } from "./ServicePhoto.js";
 import { VariantsEditor } from "./VariantsEditor.js";
+import { catalogueKeys } from "../queries/catalogue-keys.js";
 
 /** Refresh admin lists and the public catalogue after any change. */
 export function useCatalogueRefresh() {
   const client = useQueryClient();
   return () =>
-    Promise.all([client.invalidateQueries({ queryKey: ["catalogue"] })]);
+    Promise.all([client.invalidateQueries({ queryKey: catalogueKeys.all })]);
 }
 
 type SheetTab = "availability" | "content" | "variants" | "rules" | "checklist";

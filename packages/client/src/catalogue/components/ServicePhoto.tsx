@@ -22,6 +22,7 @@ import { Button } from "../../components/ui/button.js";
 import { Field } from "../../components/ui/field.js";
 import { Input } from "../../components/ui/input.js";
 import { dateFr } from "../../lib/format.js";
+import { catalogueKeys } from "../queries/catalogue-keys.js";
 
 /* CAT-04 board 3 (« Photo de l'offre », states A and B) and board 4 (upload dialog). The server re-checks everything. */
 
@@ -85,7 +86,8 @@ export function ServicePhoto({
 }) {
   const client = useQueryClient();
   // Admin lists, the sheet, « Avant publication » and the public catalogue.
-  const refresh = () => client.invalidateQueries({ queryKey: ["catalogue"] });
+  const refresh = () =>
+    client.invalidateQueries({ queryKey: catalogueKeys.all });
   const input = useRef<HTMLInputElement>(null);
   const [picked, setPicked] = useState<Picked | null>(null);
   const [alt, setAlt] = useState("");

@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { Check, TriangleAlert, X } from "lucide-react";
 import {
   catalogueMissingRecommendations,
@@ -6,10 +5,8 @@ import {
   type CatalogueServiceImage,
   type CatalogueServiceVariant,
 } from "@kfit/shared";
-import {
-  catalogueApiClient,
-  catalogueErrorMessage,
-} from "../api/catalogue-api.js";
+import { catalogueErrorMessage } from "../api/catalogue-api.js";
+import { useCatalogueDeliverability } from "../queries/catalogue-queries.js";
 import { deliverabilityLabels } from "../lib/catalogue-meta.js";
 import { cn } from "../../lib/utils.js";
 
@@ -26,9 +23,6 @@ const checks: Array<{ title: string; rules: CatalogueDeliverabilityRule[] }> = [
   { title: "Durée connue pour chaque formule", rules: ["duration_missing"] },
 ];
 
-export const deliverabilityQueryKey = (serviceId: string) =>
-  ["catalogue", "deliverability", serviceId] as const;
-
 /** « Avant publication » (CAT-03 D6): the server's deliverability report, the same check the publish guard runs. */
 export function DeliverabilityChecklist({
   serviceId,
@@ -41,10 +35,7 @@ export function DeliverabilityChecklist({
   published: boolean;
   image: CatalogueServiceImage | null;
 }) {
-  const query = useQuery({
-    queryKey: deliverabilityQueryKey(serviceId),
-    queryFn: () => catalogueApiClient.deliverability(serviceId),
-  });
+  const query = useCatalogueDeliverability(serviceId);
   if (query.isPending)
     return (
       <p role="status" className="text-[13px] text-muted-foreground">

@@ -8,9 +8,9 @@ Sprint 8 validates the integrated product. It does not introduce new product sco
 
 ## Status
 
-Planning / Gate 1 proposed on 2026-11-02.
+Gate 1 approved by Fred on 2026-11-02. S8.1 scenario pack generated; S0 preflight is current.
 
-Implementation/correction work is not authorized beyond defects found by UAT until Fred approves Gate 1.
+Correction work is authorized only for defects discovered by UAT, one active finding at a time.
 
 ## Dependencies
 
@@ -19,7 +19,7 @@ Implementation/correction work is not authorized beyond defects found by UAT unt
 - Existing UAT source: `docs/recette/RECETTE_V1_CORE.md`.
 - Production legal review and encrypted off-server backup remain Sprint 9 blockers, not Sprint 8 blockers.
 
-## Gate 1 - proposed decisions
+## Gate 1 - approved decisions
 
 ### D1 - Fred-only Sprint 8 UAT
 
@@ -210,7 +210,7 @@ Not Sprint 8 blockers, but production blockers for Sprint 9:
 
 ## Current task
 
-Gate 1 approval, then S8.1 UAT baseline/scenario pack for Fred's local execution.
+S0 - local UAT preflight. After S0 is green, continue sequentially with S1.
 
 ## Architecture rule during UAT
 

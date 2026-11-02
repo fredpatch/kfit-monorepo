@@ -589,7 +589,7 @@ async function seed(
       notificationId: notification!.id,
       recipientUserId: userId,
       toEmail: "coach@example.invalid",
-      subject: "Rappel",
+      subject: `K'FIT - Rappel : ${name}`,
       bodyText: `Rappel ${name}`,
       bodyHtml: `<p>${name}</p>`,
       messageKind: "reminder",
@@ -601,7 +601,7 @@ async function seed(
       notificationId: notification!.id,
       recipientUserId: userId,
       toEmail: "coach@example.invalid",
-      subject: "Rappel",
+      subject: `K'FIT - Rappel : ${name}`,
       bodyText: `Rappel ${name}`,
       messageKind: "reminder",
       dedupeKey: `privacy-${tag}-2`,
@@ -695,7 +695,7 @@ const subjectState = async (f: Fixture) =>
       .where(eq(notifications.customerId, f.customerId)),
     outbox: await db
       .execute(
-        sql`select body_text, body_html, status from notification_email_outbox where dedupe_key like ${`privacy-${f.tag}-%`} order by dedupe_key`,
+        sql`select subject, body_text, body_html, status from notification_email_outbox where dedupe_key like ${`privacy-${f.tag}-%`} order by dedupe_key`,
       )
       .then((r) => r.rows),
     documents: await db
@@ -773,6 +773,7 @@ test("PostgreSQL anonymize refuses unarchived subjects and a wrong confirmation 
 
 test("PostgreSQL anonymize wipes identity, health and notes, keeps finance byte-identical, cascades to the source prospect (D2, D8)", async () => {
   const f = await seed();
+  const other = await seed();
   const financeBefore = await financialSnapshot(f);
   const now = Date.now();
   const result = await anonymize(f);
@@ -871,15 +872,34 @@ test("PostgreSQL anonymize wipes identity, health and notes, keeps finance byte-
   assert.equal(notification?.customerDisplayName, pseudonymFor(f.customerId));
   const outbox = (
     await db.execute(
-      sql`select body_text, body_html, status, last_error_code from notification_email_outbox where dedupe_key like ${`privacy-${f.tag}-%`} order by dedupe_key`,
+      sql`select subject, to_email, body_text, body_html, status, last_error_code from notification_email_outbox where dedupe_key like ${`privacy-${f.tag}-%`} order by dedupe_key`,
     )
   ).rows;
   assert.deepEqual(
-    outbox.map((r) => [r.body_text, r.body_html, r.status]),
+    outbox.map((r) => [r.subject, r.body_text, r.body_html, r.status]),
     [
-      [REDACTED_TEXT, null, "dead_letter"],
-      [REDACTED_TEXT, null, "sent"],
+      [REDACTED_TEXT, REDACTED_TEXT, null, "dead_letter"],
+      [REDACTED_TEXT, REDACTED_TEXT, null, "sent"],
     ],
+    "FIX-04: the subject (client name) is redacted with the body",
+  );
+  assert.deepEqual(
+    outbox.map((r) => r.to_email),
+    ["coach@example.invalid", "coach@example.invalid"],
+    "the coach's address is kept",
+  );
+  const otherOutbox = (
+    await db.execute(
+      sql`select subject, body_text, status from notification_email_outbox where dedupe_key like ${`privacy-${other.tag}-%`} order by dedupe_key`,
+    )
+  ).rows;
+  assert.deepEqual(
+    otherOutbox.map((r) => [r.subject, r.body_text, r.status]),
+    [
+      [`K'FIT - Rappel : ${other.name}`, `Rappel ${other.name}`, "pending"],
+      [`K'FIT - Rappel : ${other.name}`, `Rappel ${other.name}`, "sent"],
+    ],
+    "another customer's e-mails are untouched",
   );
 
   const [privateDoc] = await db
@@ -1207,7 +1227,10 @@ test("PostgreSQL replay after a simulated restore re-applies the plan; twice = s
     .where(eq(documents.id, f.privateDocId));
   await db
     .update(notificationEmailOutbox)
-    .set({ bodyText: `Rappel ${f.name}` })
+    .set({
+      subject: `K'FIT - Rappel : ${f.name}`,
+      bodyText: `Rappel ${f.name}`,
+    })
     .where(eq(notificationEmailOutbox.dedupeKey, `privacy-${f.tag}-2`));
   await db
     .delete(anonymizationEvents)

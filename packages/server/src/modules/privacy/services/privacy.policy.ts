@@ -319,7 +319,12 @@ export const ANONYMIZATION_PLAN: readonly PlanStep[] = [
     table: "notification_email_outbox",
     link: "outbox",
     appliesTo: both,
-    columns: { body_text: "redacted_text", body_html: "null" },
+    // FIX-04: the subject embeds the client's display name (notification.policy.ts); to_email is the coach's address, kept.
+    columns: {
+      subject: "redacted_text",
+      body_text: "redacted_text",
+      body_html: "null",
+    },
   },
 ];
 
@@ -367,6 +372,7 @@ export const PRIVACY_INVENTORY_NON_KEEP: readonly string[] = [
   "notifications.customer_display_name",
   "notifications.title",
   "notifications.summary",
+  "notification_email_outbox.subject",
   "notification_email_outbox.body_text",
   "notification_email_outbox.body_html",
 ];

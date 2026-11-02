@@ -493,6 +493,7 @@ Local React state remains the default for local UI state.
   - reference read client migrated: dashboard;
   - reference authenticated mutation client migrated: notifications.
 - FE-ARCH-01c: router extraction - validated by Fred.
+- FE-ARCH-01d: first pages/ reference migration (/admin/offres) - validated by Fred.
 
 ## Definition of done for the architecture initiative
 

@@ -10,8 +10,8 @@ Sprint 6 S6.1-S6.4 are validated and Sprint 6 is closed on `main`. The former `s
 ```text
 Branch            main
 Sprint            8 - V1 Core UAT et corrections
-Active slice      Sprint 8 Gate 1
-Workflow state    Sprint 8 planning opened; Gate 1 D1-D4 proposed, not yet approved; existing recette found and will be updated after approval
+Active slice      S8.2 - Fred local UAT / S0 preflight
+Workflow state    Sprint 8 Gate 1 approved; S8.1 scenario pack generated; Fred starts S0 preflight
 S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) - validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
 Last validated    S7.2 - validated by Fred 2026-10-25
 Implementation    2dc7c43 (S7.2a server) + 0eac6d4 (S7.2b client, UX-16)
@@ -47,7 +47,7 @@ ROLE-01           superadmin role, hasRole guard, migration 0019, ops:create-use
 PRETTY-01         Prettier 3.8.5 + format/format:check/lint:dashes in CI - validated by Fred, committed 2026-10-27
 OPS-01b           Supervision page, menu dot, 14 messages, generator fix - validated by Fred, committed 482f843
 RET-01            retention steps in privacy.purge, inactive prospects alert, 4 settings - validated by Fred live, committed 0457409
-Next action       Fred approves revised Sprint 8 Gate 1 D1-D4 (Fred-only local UAT); then S8.1 scenario pack
+Next action       Fred runs docs/recette/scenarios/S0-preflight.md and returns output/result
 FE-ARCH-01         reference foundation validated: 01a/01b/01c/01d/01e green; during Sprint 8 only touched frontend files follow the new architecture; broader ARCH migration resumes after UAT closes
 ARCH resume        immediately after Sprint 8 UAT closure and before Sprint 9 staging/deployment - continue remaining pages/features/shared/query migrations progressively
 Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »

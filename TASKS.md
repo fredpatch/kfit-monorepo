@@ -9,9 +9,9 @@ Sprint 6 S6.1-S6.4 are validated and Sprint 6 is closed on `main`. The former `s
 
 ```text
 Branch            main
-Sprint            7 - Dashboard, notifications, rétention, sauvegardes et durcissement
-Active slice      CAT-04 + FIX-04
-Workflow state    CAT-04 + FIX-04 reviewed (passed with notes, 4 MINOR fixed), QA passed with limitations, validated live by Fred and committed 2026-11-02 (sprint-7.md § CAT-04 + FIX-04 execution); min photo size kept at 1200 × 750 (Fred); brand logo in use; next Sprint 8 - V1 Core UAT; next Sprint 8 - V1 Core UAT
+Sprint            8 - V1 Core UAT et corrections
+Active slice      Sprint 8 Gate 1
+Workflow state    Sprint 8 planning opened; Gate 1 D1-D4 proposed, not yet approved; existing recette found and will be updated after approval
 S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) - validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
 Last validated    S7.2 - validated by Fred 2026-10-25
 Implementation    2dc7c43 (S7.2a server) + 0eac6d4 (S7.2b client, UX-16)
@@ -47,7 +47,7 @@ ROLE-01           superadmin role, hasRole guard, migration 0019, ops:create-use
 PRETTY-01         Prettier 3.8.5 + format/format:check/lint:dashes in CI - validated by Fred, committed 2026-10-27
 OPS-01b           Supervision page, menu dot, 14 messages, generator fix - validated by Fred, committed 482f843
 RET-01            retention steps in privacy.purge, inactive prospects alert, 4 settings - validated by Fred live, committed 0457409
-Next action       Sprint 8 Gate 1 - plan V1 Core UAT; apply FE-ARCH-01 architecture opportunistically to frontend fixes
+Next action       Fred approves Sprint 8 Gate 1 decisions D1-D4; then S8.1 scenario pack
 FE-ARCH-01         reference foundation validated: 01a/01b/01c/01d/01e green; during Sprint 8 only touched frontend files follow the new architecture; broader ARCH migration resumes after UAT closes
 ARCH resume        after Sprint 8 UAT closure - continue remaining pages/features/shared/query migrations progressively
 Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »

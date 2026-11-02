@@ -21,14 +21,13 @@ Implementation/correction work is not authorized beyond defects found by UAT unt
 
 ## Gate 1 - proposed decisions
 
-### D1 - Two-pass UAT
+### D1 - Fred-only Sprint 8 UAT
 
-Run UAT in two passes:
+Sprint 8 UAT is executed by Fred only because K'FIT is currently available only on Fred's local machine.
 
-1. Fred technical/full pass first.
-2. Coach acceptance pass after all blocking technical findings are resolved.
-
-Reason: the coach should validate the business workflow, not rediscover technical defects that Fred can catch first.
+- Fred performs the complete technical and functional V1 Core acceptance.
+- No coach hands-on UAT is required to close Sprint 8.
+- Coach hands-on acceptance moves to Sprint 9, once a staging/hosted environment is accessible, together with training and deployment acceptance.
 
 ### D2 - Controlled UAT data
 
@@ -55,7 +54,6 @@ Sprint 8 can close only when:
 - all P0/P1 findings are fixed and retested;
 - no finding remains untriaged;
 - Fred's critical end-to-end pass is green;
-- coach acceptance pass is completed;
 - any remaining P2/P3 is explicitly deferred with owner and target sprint;
 - final automated suite is green or any known flake is explicitly identified and accepted according to the existing retry rule.
 
@@ -64,8 +62,8 @@ Sprint 8 can close only when:
 1. S8.1 - UAT baseline and scenario pack.
 2. S8.2 - Fred technical end-to-end pass and findings log.
 3. S8.3 - Fix/retest loop, one defect at a time.
-4. S8.4 - Coach acceptance pass.
-5. S8.5 - Final regression, sign-off evidence and Sprint 8 closure.
+4. S8.4 - Final regression and Fred sign-off.
+5. S8.5 - Sprint 8 closure and Sprint 9 handoff.
 
 ## S8.1 - UAT baseline and scenario pack
 
@@ -155,24 +153,13 @@ Rules:
 - P2/P3 may be deferred only explicitly;
 - changelog records validated fixes only.
 
-## S8.4 - coach acceptance
+## S8.4 - final regression and Fred sign-off
 
-Coach validates the user-facing business flow after Fred's P0/P1 gate is green.
+Fred reruns the critical integrated flow after all P0/P1 fixes and records the final technical/functional acceptance.
 
-Focus:
+Coach hands-on acceptance is explicitly deferred to Sprint 9 because the app is not yet hosted in an environment the coach can access.
 
-- catalogue clarity;
-- request/qualification workflow;
-- client onboarding;
-- daily client management;
-- appointments/follow-ups/progression;
-- finance/document workflow;
-- dashboard/notifications;
-- understandable privacy/archive actions.
-
-Coach acceptance is not a legal compliance review.
-
-## S8.5 - final regression and closure
+## S8.5 - Sprint 8 closure and Sprint 9 handoff
 
 Run final release-candidate checks and record exact results:
 
@@ -206,7 +193,7 @@ Sprint 8 is accepted when:
 - responsive/keyboard spot checks pass;
 - P0/P1 = 0 open;
 - no untriaged finding;
-- coach acceptance completed;
+- Fred final acceptance completed;
 - final automated suite recorded.
 
 ## Blockers
@@ -222,7 +209,7 @@ Not Sprint 8 blockers, but production blockers for Sprint 9:
 
 ## Current task
 
-Gate 1 approval, then S8.1 UAT baseline/scenario pack.
+Gate 1 approval, then S8.1 UAT baseline/scenario pack for Fred's local execution.
 
 ## Architecture rule during UAT
 

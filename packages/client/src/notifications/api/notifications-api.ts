@@ -1,6 +1,4 @@
-import axios, { AxiosHeaders } from "axios";
 import {
-  authCsrfHeaderName,
   notificationApiRoutes,
   type NotificationErrorCode,
   type NotificationListResponse,
@@ -11,23 +9,8 @@ import {
   type NotificationSettingsResponse,
   type NotificationUnreadCountResponse,
 } from "@kfit/shared";
-import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import { apiErrorCode, apiHttpClient } from "../../shared/api/http-client.js";
 import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
-
-const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? "",
-  withCredentials: true,
-  headers: { accept: "application/json" },
-});
-http.interceptors.request.use((config) => {
-  if (requiresCsrfHeader(config.method)) {
-    const headers = AxiosHeaders.from(config.headers),
-      token = buildCsrfHeaders(config.method)[authCsrfHeaderName];
-    if (token) headers.set(authCsrfHeaderName, token);
-    config.headers = headers;
-  }
-  return config;
-});
 
 /** S7.2 in-app notifications. The server only ever returns the session user's own rows. */
 export const notificationsApi = {
@@ -36,21 +19,21 @@ export const notificationsApi = {
     cursor?: string | null,
   ): Promise<NotificationListResponse> {
     return (
-      await http.get<NotificationListResponse>(notificationApiRoutes.list, {
+      await apiHttpClient.getNotificationListResponse>(notificationApiRoutes.list, {
         params: { vue: view, ...(cursor ? { curseur: cursor } : {}) },
       })
     ).data;
   },
   async unreadCount(): Promise<NotificationUnreadCountResponse> {
     return (
-      await http.get<NotificationUnreadCountResponse>(
+      await apiHttpClient.getNotificationUnreadCountResponse>(
         notificationApiRoutes.unreadCount,
       )
     ).data;
   },
   async read(id: string): Promise<NotificationReadResponse> {
     return (
-      await http.post<NotificationReadResponse>(
+      await apiHttpClient.postNotificationReadResponse>(
         notificationApiRoutes.read.replace(
           ":notificationId",
           encodeURIComponent(id),
@@ -61,7 +44,7 @@ export const notificationsApi = {
   },
   async readAll(): Promise<NotificationReadAllResponse> {
     return (
-      await http.post<NotificationReadAllResponse>(
+      await apiHttpClient.postNotificationReadAllResponse>(
         notificationApiRoutes.readAll,
         {},
       )
@@ -69,7 +52,7 @@ export const notificationsApi = {
   },
   async settings(): Promise<NotificationSettingsResponse> {
     return (
-      await http.get<NotificationSettingsResponse>(
+      await apiHttpClient.getNotificationSettingsResponse>(
         notificationApiRoutes.settings,
       )
     ).data;
@@ -78,7 +61,7 @@ export const notificationsApi = {
     settings: Partial<NotificationSettings>,
   ): Promise<NotificationSettingsResponse> {
     return (
-      await http.put<NotificationSettingsResponse>(
+      await apiHttpClient.putNotificationSettingsResponse>(
         notificationApiRoutes.settings,
         { settings },
       )
@@ -106,9 +89,7 @@ const messages: Record<NotificationErrorCode, string> = {
 };
 
 export function notificationErrorMessage(error: unknown): string {
-  const code: unknown = axios.isAxiosError<{ error?: unknown }>(error)
-    ? error.response?.data?.error
-    : undefined;
+  const code = apiErrorCode(error);
   const common = commonApiErrorMessage(code);
   if (common) return common;
   return typeof code === "string" && code in messages

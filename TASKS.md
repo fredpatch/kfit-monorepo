@@ -49,7 +49,7 @@ OPS-01b           Supervision page, menu dot, 14 messages, generator fix - valid
 RET-01            retention steps in privacy.purge, inactive prospects alert, 4 settings - validated by Fred live, committed 0457409
 Next action       Fred approves revised Sprint 8 Gate 1 D1-D4 (Fred-only local UAT); then S8.1 scenario pack
 FE-ARCH-01         reference foundation validated: 01a/01b/01c/01d/01e green; during Sprint 8 only touched frontend files follow the new architecture; broader ARCH migration resumes after UAT closes
-ARCH resume        after Sprint 8 UAT closure - continue remaining pages/features/shared/query migrations progressively
+ARCH resume        immediately after Sprint 8 UAT closure and before Sprint 9 staging/deployment - continue remaining pages/features/shared/query migrations progressively
 Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »
 Backlog           « Flaky express unit tests (fetch failed, random test) - diagnose with the pgErrorInfo fix »
 Backlog           « OPS-01 Supervision (jobs, sauvegardes, contrôle de restauration, confidentialité, sécurité) - après SEC-02, avant UAT »

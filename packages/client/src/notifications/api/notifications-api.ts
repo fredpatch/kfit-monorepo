@@ -19,21 +19,21 @@ export const notificationsApi = {
     cursor?: string | null,
   ): Promise<NotificationListResponse> {
     return (
-      await apiHttpClient.getNotificationListResponse>(notificationApiRoutes.list, {
+      await apiHttpClient.get<NotificationListResponse>(notificationApiRoutes.list, {
         params: { vue: view, ...(cursor ? { curseur: cursor } : {}) },
       })
     ).data;
   },
   async unreadCount(): Promise<NotificationUnreadCountResponse> {
     return (
-      await apiHttpClient.getNotificationUnreadCountResponse>(
+      await apiHttpClient.get<NotificationUnreadCountResponse>(
         notificationApiRoutes.unreadCount,
       )
     ).data;
   },
   async read(id: string): Promise<NotificationReadResponse> {
     return (
-      await apiHttpClient.postNotificationReadResponse>(
+      await apiHttpClient.post<NotificationReadResponse>(
         notificationApiRoutes.read.replace(
           ":notificationId",
           encodeURIComponent(id),
@@ -44,7 +44,7 @@ export const notificationsApi = {
   },
   async readAll(): Promise<NotificationReadAllResponse> {
     return (
-      await apiHttpClient.postNotificationReadAllResponse>(
+      await apiHttpClient.post<NotificationReadAllResponse>(
         notificationApiRoutes.readAll,
         {},
       )
@@ -52,7 +52,7 @@ export const notificationsApi = {
   },
   async settings(): Promise<NotificationSettingsResponse> {
     return (
-      await apiHttpClient.getNotificationSettingsResponse>(
+      await apiHttpClient.get<NotificationSettingsResponse>(
         notificationApiRoutes.settings,
       )
     ).data;
@@ -61,7 +61,7 @@ export const notificationsApi = {
     settings: Partial<NotificationSettings>,
   ): Promise<NotificationSettingsResponse> {
     return (
-      await apiHttpClient.putNotificationSettingsResponse>(
+      await apiHttpClient.put<NotificationSettingsResponse>(
         notificationApiRoutes.settings,
         { settings },
       )

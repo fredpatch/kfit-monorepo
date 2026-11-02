@@ -26,7 +26,25 @@ Alternative non bloquante : `DEFERRED` avec cible explicite.
 
 ## Findings actifs
 
-Aucun pour le moment.
+### UAT-001 - Aucun workflow pour lever une exigence d'avis médical
+
+- Scénario : S3 - onboarding
+- Sévérité : P1
+- Statut : OPEN
+- Commit testé : 376399e61d2bdb8f50d86eca829047e69394d619
+- Étape : lever le bloqueur `medical_clearance` avant `ready_to_start`
+- Résultat attendu : un parcours dédié permet à l'admin/coach d'enregistrer la validation médicale, conserver sa preuve structurelle et lever atomiquement le bloqueur.
+- Résultat observé : le système crée `medical_clearance_records` + l'item bloquant mais n'expose aucune commande API/UI de clearance; le generic complete/waive est volontairement interdit.
+- Preuve : `onboarding.service.ts` retourne `owner: "medical", canComplete: false, canWaive: false`; aucune route onboarding ne gère une commande médicale.
+- Règle / owner : onboarding + medical clearance; Explicit State Transitions / Atomic Business Operation / Audit Event System.
+- Cause : workflow de résolution partiellement modélisé en base mais jamais implémenté.
+- Correctif : tranche dédiée UAT-001, server-first.
+- Commit correctif : -
+- Retest Fred : -
+- Décision : OPEN
+- Cible si différé : non différable pour V1 Core; P1 bloquant.
+
+Le scénario S3 médical est bloqué tant que UAT-001 n'est pas résolu. Ne pas contourner via réponses questionnaire, changement de policy, complete/waive générique.
 
 ## Modèle
 

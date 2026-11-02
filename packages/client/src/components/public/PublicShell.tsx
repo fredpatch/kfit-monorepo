@@ -2,6 +2,7 @@ import { useLayoutEffect, type ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "../../lib/utils.js";
 import { Button } from "../ui/button.js";
+import { BrandMark } from "../brand-mark.js";
 
 /**
  * Bearer-token pages must not leak their URL through the Referer header (S5.5/S6 rule).
@@ -70,12 +71,7 @@ export function PublicShell({
                 <ArrowLeft aria-hidden="true" className="size-5" />
               </button>
             ) : (
-              <span
-                aria-hidden="true"
-                className="flex size-8 items-center justify-center rounded-[10px] bg-brand-950 text-[13px] font-extrabold text-lime"
-              >
-                K
-              </span>
+              <BrandMark className="rounded-[10px]" />
             )}
             <span className="min-w-0 flex-1 truncate text-[15px] font-extrabold">
               {title ?? "K'FIT"}

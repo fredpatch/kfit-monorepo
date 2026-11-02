@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router";
+import { BrandMark } from "../../components/brand-mark.js";
 import { cn } from "../../lib/utils.js";
 import { useAuth } from "../../auth/state/auth-context.js";
 import {
@@ -23,12 +24,7 @@ import { NotificationCenter } from "../../notifications/components/NotificationC
 function Brand() {
   return (
     <div className="flex items-center gap-2.5 px-2 py-1">
-      <span
-        aria-hidden="true"
-        className="flex size-[34px] items-center justify-center rounded-[10px] bg-lime text-[15px] font-extrabold text-brand-950"
-      >
-        K
-      </span>
+      <BrandMark className="size-8.5 rounded-[10px]" />
       <span className="flex flex-col leading-tight">
         <span className="text-base font-extrabold tracking-tight text-white">
           K'FIT
@@ -214,12 +210,7 @@ export function AdminLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-card/95 px-4 backdrop-blur sm:px-8">
           <span className="flex items-center gap-2 md:hidden">
-            <span
-              aria-hidden="true"
-              className="flex size-8 items-center justify-center rounded-[9px] bg-brand-950 text-sm font-extrabold text-lime"
-            >
-              K
-            </span>
+            <BrandMark />
             <span className="font-extrabold tracking-tight">K'FIT</span>
           </span>
           <div className="flex-1" />

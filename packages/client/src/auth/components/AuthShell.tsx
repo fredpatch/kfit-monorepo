@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { BrandMark } from "../../components/brand-mark.js";
 
 /**
  * Board 09 layout: brand panel + form panel. The brand panel is text-only until brand assets
@@ -12,9 +13,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
         className="hidden flex-1 flex-col justify-between gap-8 bg-sidebar px-12 py-10 lg:flex"
       >
         <div className="flex items-center gap-2.5">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-lime text-[17px] font-extrabold text-brand-950">
-            K
-          </span>
+          <BrandMark className="size-10 rounded-xl" />
           <span className="text-xl font-extrabold tracking-tight text-white">
             K'FIT
           </span>
@@ -36,12 +35,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <main className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
         <div className="flex w-full max-w-[400px] flex-col gap-6">
           <div className="flex items-center gap-2 lg:hidden">
-            <span
-              aria-hidden="true"
-              className="flex size-8 items-center justify-center rounded-[9px] bg-brand-950 text-sm font-extrabold text-lime"
-            >
-              K
-            </span>
+            <BrandMark />
             <span className="font-extrabold tracking-tight">K'FIT</span>
           </div>
           {children}

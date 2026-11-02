@@ -21,6 +21,7 @@ import {
 import { publicLinks } from "../../lib/public-links.js";
 import { catalogueApiClient } from "../api/catalogue-api.js";
 import { OfferCover } from "./OfferCover.js";
+import { BrandMark } from "../../components/brand-mark.js";
 
 const durationUnits = {
   day: ["jour", "jours"],
@@ -314,12 +315,7 @@ export function PublicCataloguePage() {
             href="/"
             className="flex items-center gap-2.5 text-foreground no-underline"
           >
-            <span
-              aria-hidden="true"
-              className="flex size-[34px] items-center justify-center rounded-[10px] bg-brand-950 text-[15px] font-extrabold text-lime"
-            >
-              K
-            </span>
+            <BrandMark className="size-8.5 rounded-[10px]" />
             <span className="text-lg font-extrabold tracking-tight">K'FIT</span>
           </a>
           <nav
@@ -410,9 +406,7 @@ export function PublicCataloguePage() {
             aria-hidden="true"
             className="hidden min-w-0 flex-[1_1_380px] flex-col justify-between gap-10 rounded-[28px] bg-brand-950 p-10 text-white lg:flex lg:min-h-[420px]"
           >
-            <span className="flex size-16 items-center justify-center rounded-2xl bg-lime text-3xl font-extrabold text-brand-950">
-              K
-            </span>
+            <BrandMark className="size-24 rounded-2xl" />
             <div className="flex flex-col gap-3">
               {families.map((f) => (
                 <span

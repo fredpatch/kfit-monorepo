@@ -492,7 +492,7 @@ Local React state remains the default for local UI state.
   - compatibility re-export: `auth/api/csrf.ts`;
   - reference read client migrated: dashboard;
   - reference authenticated mutation client migrated: notifications.
-- FE-ARCH-01c: router extraction - not started.
+- FE-ARCH-01c: router extraction - validated by Fred.
 
 ## Definition of done for the architecture initiative
 

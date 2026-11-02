@@ -210,7 +210,7 @@ Not Sprint 8 blockers, but production blockers for Sprint 9:
 
 ## Current task
 
-S4 - active coaching, appointments, follow-ups and progress. S3 is validated green.
+S5 - finance, payment proofs, quotes, receipts and personalized documents. S4 is validated green.
 
 ## Architecture rule during UAT
 
@@ -296,3 +296,22 @@ Validated:
 - explicit Ready transition.
 
 Next scenario: S4 - active coaching, appointments, follow-ups and progress.
+
+
+### S4 validation - 2026-11-02
+
+Fred confirmed the complete active-coaching scenario green.
+
+Validated:
+- activation and lifecycle dates;
+- appointments, response link, replay safety and component consumption;
+- rescheduling;
+- structured follow-ups and next actions;
+- cadence behavior through pause/resume;
+- progress measurements and deltas;
+- goals and explicit outcomes;
+- health_data consent boundary preserving history.
+
+Validation/docs commit: `26e8087`.
+
+Next scenario: S5 - finance and documents.

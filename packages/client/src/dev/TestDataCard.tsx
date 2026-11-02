@@ -88,6 +88,7 @@ const labels: Record<TestDataKeptKind, string> = {
   customers: "Clientes",
   prospects: "Prospects",
   consent_definitions: "Textes de consentement",
+  service_images: "Photos d'offre",
   service_policies: "Règles d'offre",
   service_components: "Prestations d'offre",
   service_variants: "Formules",

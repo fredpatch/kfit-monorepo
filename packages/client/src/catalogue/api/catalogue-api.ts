@@ -16,6 +16,11 @@ import {
   type CatalogueAdminRulesResponse,
   type CatalogueRulesOverrideRemovedResponse,
   type CatalogueDeliverabilityResponse,
+  type CatalogueServiceImageResponse,
+  type CatalogueServiceImageRemovedResponse,
+  catalogueImageAltHeader,
+  catalogueImageRightsHeader,
+  encodeCatalogueImageAlt,
 } from "@kfit/shared";
 import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
 import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
@@ -88,6 +93,13 @@ export type CatalogueApiClient = {
     variantId: string,
   ): Promise<CatalogueRulesOverrideRemovedResponse>;
   deliverability(serviceId: string): Promise<CatalogueDeliverabilityResponse>;
+  /* CAT-04: the photo bytes go raw; the description and the rights confirmation in headers (never in the URL). */
+  uploadImage(
+    serviceId: string,
+    file: Blob,
+    altText: string,
+  ): Promise<CatalogueServiceImageResponse>;
+  removeImage(serviceId: string): Promise<CatalogueServiceImageRemovedResponse>;
 };
 
 function resolveBaseUrl(baseUrl: string | undefined): string {
@@ -292,6 +304,28 @@ export function createCatalogueApiClient(
         )
       ).data;
     },
+    async uploadImage(serviceId, file, altText) {
+      return (
+        await adminHttp.put<CatalogueServiceImageResponse>(
+          serviceRoute(catalogueApiRoutes.adminServiceImage, serviceId),
+          file,
+          {
+            headers: {
+              "content-type": file.type,
+              [catalogueImageAltHeader]: encodeCatalogueImageAlt(altText),
+              [catalogueImageRightsHeader]: "confirmed",
+            },
+          },
+        )
+      ).data;
+    },
+    async removeImage(serviceId) {
+      return (
+        await adminHttp.delete<CatalogueServiceImageRemovedResponse>(
+          serviceRoute(catalogueApiRoutes.adminServiceImage, serviceId),
+        )
+      ).data;
+    },
   };
 }
 
@@ -324,6 +358,28 @@ const catalogueMessages: Record<string, string> = {
     "Cette variante a son propre questionnaire : retire d'abord l'affectation dans Questionnaires.",
   CATALOGUE_ROUTE_UNEXPECTED_FAILURE:
     "Le catalogue n'a pas pu être enregistré. Réessaie dans un instant.",
+  CATALOGUE_IMAGE_TOO_SMALL: "Photo trop petite : 1200 × 750 px minimum.",
+  CATALOGUE_IMAGE_TOO_LARGE_PIXELS:
+    "Photo trop grande : 40 millions de pixels maximum. Réduis-la avant de l'envoyer.",
+  CATALOGUE_IMAGE_ALT_REQUIRED:
+    "Décris la photo en une phrase (150 caractères max).",
+  CATALOGUE_IMAGE_RIGHTS_REQUIRED:
+    "Coche la case pour confirmer que tu as le droit d'utiliser cette photo.",
+  CATALOGUE_IMAGE_NOT_FOUND:
+    "Cette offre n'a plus de photo. Actualise la page.",
+  CATALOGUE_RATE_LIMITED:
+    "Trop d'envois en peu de temps. Réessaie dans une minute.",
+  /* CAT-04 K1: the photo upload reuses the document storage checks and their codes. */
+  DOCUMENT_FILE_TOO_LARGE: "La photo dépasse 10 Mo.",
+  DOCUMENT_FILE_TYPE_UNSUPPORTED:
+    "Format non pris en charge. Utilise une photo JPG, PNG ou WebP.",
+  DOCUMENT_FILE_SIGNATURE_INVALID:
+    "Ce fichier n'est pas une photo lisible. Choisis une photo JPG, PNG ou WebP.",
+  DOCUMENT_FILE_INFECTED: "La photo a été bloquée par l'analyse antivirus.",
+  DOCUMENT_FILE_SCAN_FAILED:
+    "L'analyse antivirus est indisponible. La photo n'a pas été enregistrée.",
+  DOCUMENT_STORAGE_FAILURE:
+    "La photo n'a pas pu être enregistrée. Réessaie dans un instant.",
 };
 const reasonMessages: Record<string, string> = {
   name_required: "Renseigne le nom de l'offre.",

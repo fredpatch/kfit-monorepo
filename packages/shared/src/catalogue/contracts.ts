@@ -23,6 +23,12 @@ export const catalogueApiRoutes = {
     "/admin/catalogue/services/:serviceId/variants/:variantId/rules",
   adminServiceDeliverability:
     "/admin/catalogue/services/:serviceId/deliverability",
+  /* CAT-04: one cover photo per offer. PUT = raw image bytes, DELETE = « Retirer ». */
+  adminServiceImage: "/admin/catalogue/services/:serviceId/image",
+  /** `:file` is `<imageId>-<card|large>.webp`; only published, public, non-archived offers. */
+  publicImage: "/public/catalogue/images/:file",
+  /** Admin preview of any active image, drafts included. */
+  adminImage: "/admin/catalogue/images/:file",
 } as const;
 
 export type CatalogueApiRoute =
@@ -44,6 +50,12 @@ export const catalogueErrorCodes = [
   "CATALOGUE_COMPONENT_ARCHIVED",
   "CATALOGUE_RULES_OVERRIDE_NOT_FOUND",
   "CATALOGUE_RULES_OVERRIDE_HAS_QUESTIONNAIRE",
+  "CATALOGUE_IMAGE_TOO_SMALL",
+  "CATALOGUE_IMAGE_TOO_LARGE_PIXELS",
+  "CATALOGUE_IMAGE_ALT_REQUIRED",
+  "CATALOGUE_IMAGE_RIGHTS_REQUIRED",
+  "CATALOGUE_IMAGE_NOT_FOUND",
+  "CATALOGUE_RATE_LIMITED",
 ] as const;
 
 export type CatalogueErrorCode = (typeof catalogueErrorCodes)[number];
@@ -207,6 +219,42 @@ export type CatalogueServiceVariant = {
   policy: CatalogueServicePolicy | null;
 };
 
+/*
+ * CAT-04 (Gate 1 approved 2026-11-02). File type, size, signature and antivirus refusals reuse the document storage codes
+ * (DOCUMENT_FILE_*), the same checks run on the original bytes.
+ */
+export const catalogueImageRules = {
+  maxBytes: 10 * 1024 * 1024,
+  minWidth: 1200,
+  minHeight: 750,
+  maxInputPixels: 40_000_000,
+  altMaxLength: 150,
+} as const;
+/** Every stored photo is a 16:10 WebP at these two widths. */
+export const catalogueImageSizes = {
+  card: { width: 640, height: 400 },
+  large: { width: 1600, height: 1000 },
+} as const;
+export type CatalogueImageSize = keyof typeof catalogueImageSizes;
+export const catalogueImageMimeTypes = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
+/** K2: the description travels base64url-encoded (UTF-8 safe), the rights confirmation as "confirmed". */
+export const catalogueImageAltHeader = "x-kfit-image-alt";
+export const catalogueImageRightsHeader = "x-kfit-image-rights";
+export type CatalogueServiceImage = {
+  id: string;
+  altText: string;
+  width: number;
+  height: number;
+  urls: Record<CatalogueImageSize, string>;
+  updatedAt: string;
+};
+export type CatalogueServiceImageResponse = { image: CatalogueServiceImage };
+export type CatalogueServiceImageRemovedResponse = { removed: true };
+
 export type CataloguePublicService = {
   id: string;
   name: string;
@@ -225,6 +273,7 @@ export type CataloguePublicService = {
   components: CatalogueServiceComponent[];
   policy: CatalogueServicePolicy | null;
   variants: CatalogueServiceVariant[];
+  image: CatalogueServiceImage | null;
 };
 
 export type CataloguePublicServicesResponse = {
@@ -322,6 +371,8 @@ export type CatalogueAdminServiceOverview = CatalogueAdminService & {
   components: CatalogueServiceComponent[];
   policy: CatalogueServicePolicy | null;
   variants: CatalogueServiceVariant[];
+  /** CAT-04: URLs point to the admin preview route, so drafts show their photo. */
+  image: CatalogueServiceImage | null;
 };
 export type CatalogueAdminServicesOverviewResponse = {
   asOf: string;

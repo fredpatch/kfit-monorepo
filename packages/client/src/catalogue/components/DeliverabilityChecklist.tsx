@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { Check, X } from "lucide-react";
-import type {
-  CatalogueDeliverabilityRule,
-  CatalogueServiceVariant,
+import { Check, TriangleAlert, X } from "lucide-react";
+import {
+  catalogueMissingRecommendations,
+  type CatalogueDeliverabilityRule,
+  type CatalogueServiceImage,
+  type CatalogueServiceVariant,
 } from "@kfit/shared";
 import {
   catalogueApiClient,
@@ -32,10 +34,12 @@ export function DeliverabilityChecklist({
   serviceId,
   variants,
   published,
+  image,
 }: {
   serviceId: string;
   variants: CatalogueServiceVariant[];
   published: boolean;
+  image: CatalogueServiceImage | null;
 }) {
   const query = useQuery({
     queryKey: deliverabilityQueryKey(serviceId),
@@ -57,6 +61,7 @@ export function DeliverabilityChecklist({
       </p>
     );
   const { deliverable, failures } = query.data;
+  const photoMissing = catalogueMissingRecommendations({ image }).length > 0;
   const nameOf = (variantId: string | null) =>
     variantId
       ? (variants.find((v) => v.id === variantId)?.name ?? "Variante")
@@ -117,6 +122,35 @@ export function DeliverabilityChecklist({
             </li>
           );
         })}
+        {/* CAT-04 C2: recommended, never part of the publish guard. */}
+        <li className="flex gap-2.5 text-[13px]">
+          <span
+            aria-hidden="true"
+            className={cn(
+              "mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-full",
+              photoMissing
+                ? "bg-warning-soft text-warning"
+                : "bg-success-soft text-success",
+            )}
+          >
+            {photoMissing ? (
+              <TriangleAlert className="size-3" />
+            ) : (
+              <Check className="size-3" />
+            )}
+          </span>
+          <span className="font-semibold">
+            Photo de l'offre
+            {photoMissing ? (
+              <span className="font-bold text-warning">
+                {" "}
+                · recommandée, non bloquante
+              </span>
+            ) : (
+              <span className="sr-only"> : fait</span>
+            )}
+          </span>
+        </li>
       </ul>
     </div>
   );

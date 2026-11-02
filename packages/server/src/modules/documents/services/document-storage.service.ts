@@ -57,7 +57,7 @@ export class DocumentStorageError extends Error {
 export const resolvePrivateStorageRoot = (root: string | undefined) =>
   resolveConfiguredPath(root, { fallback: DEFAULT_PRIVATE_STORAGE_DIR });
 export class PrivateDocumentStorage {
-  private readonly root: string;
+  readonly root: string;
   constructor(
     private readonly options: {
       root?: string;
@@ -92,7 +92,8 @@ export class PrivateDocumentStorage {
     }
     return mime;
   }
-  private scan(bytes: Buffer): Promise<void> {
+  /** ClamAV INSTREAM; CAT-04 scans the original photo bytes before decoding them. */
+  scan(bytes: Buffer): Promise<void> {
     const host =
       this.options.clamavHost ?? process.env.CLAMAV_HOST ?? "127.0.0.1";
     const port =

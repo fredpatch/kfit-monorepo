@@ -2,8 +2,8 @@
 titre: Guide de l'administrateur
 public: administrateur
 statut: brouillon
-vérifié-sur: 482f843
-couvre: [DOC-01a, DOC-01b, SEC-02a, SEC-02b, ROLE-01, OPS-01b, RET-01]
+vérifié-sur: 0457409
+couvre: [DOC-01a, DOC-01b, SEC-02a, SEC-02b, ROLE-01, OPS-01b, RET-01, CAT-04]
 ---
 
 # Guide de l'administrateur
@@ -61,7 +61,7 @@ Menu « Catalogue ». Onglets : « Publiées », « Brouillons », « Archivées
 **Une offre** a cinq sections :
 
 - « Disponibilité » : état commercial (« Demandes directes », « Liste d'attente », « Fermée »), « Capacité limitée » avec un « Nombre de places », « Autoriser la liste d'attente », « Visible sur la page publique ».
-- « Contenu » : nom, « Adresse (slug) », « Prix fixe » ou « Sur devis », « Prix de base (XAF) », type de prestation et « Durée par défaut », « Prestations incluses dans l'offre ».
+- « Contenu » : « Photo de l'offre » (voir le [guide du coach](guide-coach.md#15-photo-dune-offre)), nom, « Adresse (slug) », « Prix fixe » ou « Sur devis », « Prix de base (XAF) », type de prestation et « Durée par défaut », « Prestations incluses dans l'offre ».
 - « Variantes » : les formules de l'offre. Chacune peut avoir son prix, sa capacité, sa durée et ses règles ; sinon, elle suit l'offre.
 - « Règles » : « Cadence de suivi (jours) », « Annulation tardive (heures avant) », « Une annulation tardive consomme la séance », « Une absence consomme la séance », « Avis médical » (« Non requis », « Requis en cas de risque », « Toujours requis »).
 - « Avant publication » : la liste de ce qui manque pour vendre l'offre.
@@ -69,7 +69,7 @@ Menu « Catalogue ». Onglets : « Publiées », « Brouillons », « Archivées
 **Étapes pour publier une offre.**
 
 1. Crée l'offre (brouillon), puis complète « Contenu », « Variantes » et « Règles ».
-2. Ouvre « Avant publication » : chaque point doit être validé (« Chaque formule contient au moins une prestation », « Règles de l'offre et avis médical définis », « Prix connu pour chaque formule », « Durée connue pour chaque formule »).
+2. Ouvre « Avant publication » : chaque point doit être validé (« Chaque formule contient au moins une prestation », « Règles de l'offre et avis médical définis », « Prix connu pour chaque formule », « Durée connue pour chaque formule »). « Photo de l'offre » est recommandée, non bloquante.
 3. Publie l'offre : elle devient visible sur la page publique avec sa disponibilité actuelle.
 4. Ordonne les offres de la page publique par glisser-déposer (ou avec les flèches).
 

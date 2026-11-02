@@ -10,6 +10,7 @@ import {
 } from "../services/catalogue.service.js";
 
 const snapshot: CatalogueSnapshot = {
+  images: [],
   services: [
     {
       id: "service-2",
@@ -164,6 +165,7 @@ class FakeCatalogueRepository implements CatalogueRepository {
       variants: snapshot.variants,
       components: snapshot.components,
       policies: snapshot.policies,
+      images: snapshot.images,
       claims: this.claims,
       waitlist: this.waitlist,
     };
@@ -246,6 +248,7 @@ test("CatalogueService returns public services with variants, components and pol
         variants: [],
         components: [],
         policies: [],
+        images: [],
         claims: [],
         waitlist: [],
       };

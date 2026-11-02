@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { archivedAt, idColumn, timestamps } from "./_helpers.js";
+import { users } from "./auth.js";
 
 export const services = pgTable(
   "services",
@@ -125,5 +126,49 @@ export const servicePolicies = pgTable(
     unique("service_policies_scope_uq")
       .on(t.serviceId, t.variantId)
       .nullsNotDistinct(),
+  ],
+);
+
+/*
+ * CAT-04 (Gate 1 approved 2026-11-02): one cover photo per offer. Files live under the private storage root in
+ * `catalogue/`; the original upload is never stored. Replace or « Retirer » sets removed_at, so at most one active row.
+ */
+export const serviceImages = pgTable(
+  "service_images",
+  {
+    id: uuid("id").primaryKey(),
+    serviceId: uuid("service_id")
+      .notNull()
+      .references(() => services.id, { onDelete: "restrict" }),
+    cardStorageKey: text("card_storage_key").notNull(),
+    largeStorageKey: text("large_storage_key").notNull(),
+    cardSizeBytes: integer("card_size_bytes").notNull(),
+    largeSizeBytes: integer("large_size_bytes").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    /** sha256 of the stored large WebP file. */
+    sha256: text("sha256").notNull(),
+    altText: text("alt_text").notNull(),
+    rightsConfirmedBy: uuid("rights_confirmed_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    rightsConfirmedAt: timestamp("rights_confirmed_at", {
+      withTimezone: true,
+    }).notNull(),
+    ...timestamps,
+    removedAt: timestamp("removed_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("service_images_one_active_uq")
+      .on(t.serviceId)
+      .where(sql`${t.removedAt} is null`),
+    check(
+      "service_images_alt_length",
+      sql`char_length(${t.altText}) between 1 and 150`,
+    ),
+    check(
+      "service_images_sizes_positive",
+      sql`${t.cardSizeBytes} > 0 and ${t.largeSizeBytes} > 0 and ${t.width} > 0 and ${t.height} > 0`,
+    ),
   ],
 );

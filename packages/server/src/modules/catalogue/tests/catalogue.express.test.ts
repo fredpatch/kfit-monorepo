@@ -71,6 +71,7 @@ function makeService(
             components: [],
             policy: null,
             variants: [],
+            image: null,
           },
         ],
       };
@@ -93,6 +94,7 @@ function makeService(
             components: [],
             policy: null,
             variants: [],
+            image: null,
           },
         ],
       };

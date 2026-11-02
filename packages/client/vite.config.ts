@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         "/auth": apiProxy,
         "/catalogue": apiProxy,
+        "/public/catalogue": apiProxy,
         "/admin/catalogue": apiProxy,
         "/admin/requests": apiProxy,
         "/admin/customers": apiProxy,

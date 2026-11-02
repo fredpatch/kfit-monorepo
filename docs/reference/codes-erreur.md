@@ -12,7 +12,7 @@ couvre: [DOC-01a]
 
 Sources : tableaux `…ErrorCodes` de `packages/shared/src`, codes serveur listés dans `scripts/docs/generate-references.mjs`. Message affiché : texte des tables de messages du client (`packages/client/src`), « - » quand le client n'en a pas (code non affiché tel quel ou message générique).
 
-332 codes, 25 modules.
+338 codes, 25 modules.
 
 ## appointments
 
@@ -89,6 +89,12 @@ Source : `packages/shared/src/catalogue/contracts.ts · catalogueErrorCodes`
 | `CATALOGUE_COMPONENT_ARCHIVED` | Cette prestation est retirée et ne peut plus être modifiée. |
 | `CATALOGUE_RULES_OVERRIDE_NOT_FOUND` | Cette variante suit déjà les règles de l'offre. |
 | `CATALOGUE_RULES_OVERRIDE_HAS_QUESTIONNAIRE` | Cette variante a son propre questionnaire : retire d'abord l'affectation dans Questionnaires. |
+| `CATALOGUE_IMAGE_TOO_SMALL` | Photo trop petite : 1200 × 750 px minimum. |
+| `CATALOGUE_IMAGE_TOO_LARGE_PIXELS` | Photo trop grande : 40 millions de pixels maximum. Réduis-la avant de l'envoyer. |
+| `CATALOGUE_IMAGE_ALT_REQUIRED` | Décris la photo en une phrase (150 caractères max). |
+| `CATALOGUE_IMAGE_RIGHTS_REQUIRED` | Coche la case pour confirmer que tu as le droit d'utiliser cette photo. |
+| `CATALOGUE_IMAGE_NOT_FOUND` | Cette offre n'a plus de photo. Actualise la page. |
+| `CATALOGUE_RATE_LIMITED` | Trop d'envois en peu de temps. Réessaie dans une minute. |
 
 ## consents
 
@@ -161,13 +167,13 @@ Source : `packages/shared/src/documents/contracts.ts · documentErrorCodes`
 | `DOCUMENT_INVALID_INPUT` | Vérifie les informations saisies. |
 | `DOCUMENT_TYPE_INVALID` | Choisis un type de document valide. |
 | `DOCUMENT_STATUS_INVALID` | Cette action n'est plus disponible pour ce document. |
-| `DOCUMENT_FILE_TOO_LARGE` | Le fichier dépasse la limite de 10 Mo. |
-| `DOCUMENT_FILE_TYPE_UNSUPPORTED` | Format non pris en charge. Utilise PDF, JPG, PNG ou WebP. |
-| `DOCUMENT_FILE_SIGNATURE_INVALID` | Le contenu du fichier ne correspond pas à son format. |
-| `DOCUMENT_FILE_INFECTED` | Le fichier a été bloqué par l'analyse antivirus. |
-| `DOCUMENT_FILE_SCAN_FAILED` | L'analyse antivirus est indisponible. Le fichier n'a pas été enregistré. |
+| `DOCUMENT_FILE_TOO_LARGE` | La photo dépasse 10 Mo. / Le fichier dépasse la limite de 10 Mo. |
+| `DOCUMENT_FILE_TYPE_UNSUPPORTED` | Format non pris en charge. Utilise une photo JPG, PNG ou WebP. / Format non pris en charge. Utilise PDF, JPG, PNG ou WebP. |
+| `DOCUMENT_FILE_SIGNATURE_INVALID` | Ce fichier n'est pas une photo lisible. Choisis une photo JPG, PNG ou WebP. / Le contenu du fichier ne correspond pas à son format. |
+| `DOCUMENT_FILE_INFECTED` | La photo a été bloquée par l'analyse antivirus. / Le fichier a été bloqué par l'analyse antivirus. |
+| `DOCUMENT_FILE_SCAN_FAILED` | L'analyse antivirus est indisponible. La photo n'a pas été enregistrée. / L'analyse antivirus est indisponible. Le fichier n'a pas été enregistré. |
 | `DOCUMENT_DUPLICATE_UPLOAD` | Ce fichier est déjà enregistré pour ce document. |
-| `DOCUMENT_STORAGE_FAILURE` | Le fichier n'a pas pu être enregistré. Réessaie dans un instant. |
+| `DOCUMENT_STORAGE_FAILURE` | La photo n'a pas pu être enregistrée. Réessaie dans un instant. / Le fichier n'a pas pu être enregistré. Réessaie dans un instant. |
 | `DOCUMENT_HEALTH_CONSENT_REQUIRED` | Le consentement aux données de santé est requis pour générer un bilan. |
 | `DOCUMENT_PHOTO_CONSENT_REQUIRED` | Le consentement au stockage des photos de progression est requis. |
 | `DOCUMENT_MEASUREMENT_INVALID` | Cette mesure est introuvable. Actualise l'onglet Progression. |

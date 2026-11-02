@@ -2,8 +2,8 @@
 titre: Guide du coach
 public: coach
 statut: brouillon
-vérifié-sur: e0d6158
-couvre: [DOC-01a, DOC-01b, SEC-02a, SEC-02b]
+vérifié-sur: 0457409
+couvre: [DOC-01a, DOC-01b, SEC-02a, SEC-02b, CAT-04]
 ---
 
 # Guide du coach
@@ -120,7 +120,7 @@ S'il n'y a rien : « Rien d'urgent à traiter aujourd'hui. »
 
 **Ce que voit la cliente.** La page « Ma demande » de l'offre : « Nom complet », « Numéro WhatsApp », « Ton objectif », « Quand veux-tu commencer ? » (« Dès que possible » ou une date), un message libre, puis « Envoyer ma demande ». Elle lit : « Aucun paiement n'est demandé ici. » Si l'offre est complète ou fermée, elle le voit et ne peut pas envoyer.
 
-**Erreurs fréquentes.** Voir la [FAQ](#15-faq--pourquoi-je-ne-peux-pas).
+**Erreurs fréquentes.** Voir la [FAQ](#16-faq--pourquoi-je-ne-peux-pas).
 
 ## 4. Clients et fiche client
 
@@ -354,7 +354,31 @@ S'il n'y a rien : « Rien d'urgent à traiter aujourd'hui. »
 - Un blocage de conservation actif empêche l'anonymisation (voir le [guide de l'administrateur](guide-administrateur.md)).
 - Une demande de prospect s'archive et s'anonymise depuis son détail, quand toutes ses demandes sont clôturées.
 
-## 15. FAQ - Pourquoi je ne peux pas…
+## 15. Photo d'une offre
+
+**À quoi ça sert.** Montrer chaque offre avec une photo sur la page publique (cartes des offres, en-tête de la page « Ma demande »). Une offre a une seule photo. Sans photo, la carte affiche la couleur et l'icône de la famille de l'offre.
+
+**Ajouter une photo.**
+
+1. « Catalogue », ouvre l'offre, onglet « Contenu », bloc « Photo de l'offre ».
+2. « Ajouter une photo » : choisis une photo JPG, PNG ou WebP de 10 Mo au plus, d'au moins 1200 × 750 px.
+3. La fenêtre « Ajouter une photo » montre un aperçu. « Choisir une autre photo » si elle ne convient pas.
+4. Écris la « Description de la photo » : ce qu'on voit, en une phrase (150 caractères au plus). Elle est lue par les lecteurs d'écran.
+5. Coche la case : « J'ai le droit d'utiliser cette photo pour promouvoir K'FIT (photo prise par moi, ou achetée sous licence). Aucune cliente n'y est reconnaissable. »
+6. « Enregistrer la photo » (le bouton s'active quand la description est remplie et la case cochée).
+
+**Ce que fait K'FIT.** La photo est redressée, recadrée au format 16:10 (sur la partie la plus intéressante), compressée en WebP en deux tailles (1600 et 640 px de large) et nettoyée : la position GPS et les infos de l'appareil sont supprimées. La photo d'origine n'est pas conservée. Sous l'aperçu, la ligne « WebP · 1600 × 1000 · ajoutée le … · droits confirmés » le confirme.
+
+**Remplacer ou retirer.** « Remplacer » envoie une nouvelle photo (avec une nouvelle description) ; l'ancienne est supprimée. « Retirer la photo » la supprime : la carte reprend la couleur et l'icône de la famille. Pour changer seulement la description, remplace la photo.
+
+**Règles.**
+
+- La photo est facultative. Dans « Avant publication », « Photo de l'offre » est recommandée, non bloquante : une offre sans photo se publie.
+- La photo d'une offre en brouillon n'est visible que dans l'espace coach. Elle apparaît sur la page publique quand l'offre est publiée.
+- Une offre archivée n'affiche plus sa photo ; la photo est gardée, mais ne peut plus être remplacée ni retirée.
+- N'utilise jamais une photo où une cliente est reconnaissable, ni une photo trouvée sur Internet sans licence.
+
+## 16. FAQ - Pourquoi je ne peux pas…
 
 | Situation                                  | Message affiché                                                                                                                      | Code                                                   |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
@@ -385,4 +409,6 @@ S'il n'y a rien : « Rien d'urgent à traiter aujourd'hui. »
 | …créer une fiche avec ce numéro            | « Un client actif utilise déjà ce numéro WhatsApp. Relance la recherche pour retrouver sa fiche. »                                   | `CUSTOMER_DUPLICATE_WHATSAPP`                          |
 | …ouvrir un document (côté cliente)         | « Ce lien a expiré. » / « Ce lien a atteint son nombre maximal de téléchargements. »                                                 | `DOCUMENT_LINK_EXPIRED` / `DOCUMENT_LINK_EXHAUSTED`    |
 | …ouvrir un reçu (côté cliente)             | « Ce lien a expiré. Demande un nouveau lien à ton coach. »                                                                           | `RECEIPT_LINK_EXPIRED`                                 |
+| …ajouter une photo (trop petite)           | « Photo trop petite : 1200 × 750 px minimum. »                                                                                       | `CATALOGUE_IMAGE_TOO_SMALL`                            |
+| …ajouter une photo (fichier)               | « Ce fichier n'est pas une photo lisible. Choisis une photo JPG, PNG ou WebP. »                                                      | `DOCUMENT_FILE_SIGNATURE_INVALID`                      |
 | …faire autre chose (erreur inattendue)     | Message générique du module, par exemple « Action impossible. Réessaie dans un instant. »                                            | codes `…_ROUTE_UNEXPECTED_FAILURE`                     |

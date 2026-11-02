@@ -20,6 +20,7 @@ import {
 } from "../../lib/families.js";
 import { publicLinks } from "../../lib/public-links.js";
 import { catalogueApiClient } from "../api/catalogue-api.js";
+import { OfferCover } from "./OfferCover.js";
 
 const durationUnits = {
   day: ["jour", "jours"],
@@ -143,23 +144,16 @@ function OfferCard({ service }: { service: CataloguePublicService }) {
   const askHref = publicLinks.whatsappAbout(service.name);
 
   return (
-    <article className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6">
-      <div className="flex items-center justify-between gap-2.5">
-        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
-          <span
-            aria-hidden="true"
-            className={cn("size-2.5 rounded-[3px]", meta.dotClass)}
-          />
-          {meta.label}
-        </span>
+    <article className="flex flex-col overflow-hidden rounded-3xl border border-border bg-card">
+      <OfferCover
+        image={service.image}
+        slug={service.slug}
+        sizes="(min-width: 768px) 560px, 100vw"
+      >
         <span
           className={cn(
-            "inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-bold",
-            open
-              ? "bg-success-soft text-success"
-              : waitlist
-                ? "bg-waitlist-soft text-waitlist"
-                : "bg-neutral-soft text-neutral",
+            "absolute top-3.5 right-3.5 inline-flex h-6.5 items-center gap-1.5 rounded-full bg-card px-2.5 text-xs font-bold shadow-sm",
+            open ? "text-success" : waitlist ? "text-waitlist" : "text-neutral",
           )}
         >
           <span
@@ -172,103 +166,116 @@ function OfferCard({ service }: { service: CataloguePublicService }) {
               ? "Complet pour le moment"
               : "Fermé temporairement"}
         </span>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <h3 className="text-[22px] font-extrabold tracking-tight">
-          {service.name}
-        </h3>
-        {service.description ? (
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {service.description}
-          </p>
-        ) : null}
-      </div>
-      <div className="flex flex-wrap items-baseline gap-1.5">
-        {price.from ? (
-          <span className="text-[13px] text-muted-foreground">dès</span>
-        ) : null}
-        <span className="text-[26px] font-extrabold tracking-tight tabular-nums">
-          {price.amount === null ? "Sur devis" : moneyFcfa(price.amount)}
+      </OfferCover>
+      <div className="flex flex-1 flex-col gap-4 p-6">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+          <span
+            aria-hidden="true"
+            className={cn("size-2.5 rounded-[3px]", meta.dotClass)}
+          />
+          {meta.label}
         </span>
-        {length && price.amount !== null ? (
-          <span className="text-[13px] text-muted-foreground">· {length}</span>
-        ) : null}
-      </div>
-      {items.length ? (
-        <ul className="flex flex-col gap-2">
-          {items.map((item) => (
-            <li key={item} className="flex gap-2.5 text-sm">
-              <Check
-                aria-hidden="true"
-                className="mt-0.5 size-4 shrink-0 text-primary"
-              />
-              {item}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {open && service.variants.length > 1 ? (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="pb-1.5 text-[13px] font-semibold">Formule</legend>
-          <div className="flex flex-wrap gap-2">
-            {service.variants.map((v: CatalogueServiceVariant) => {
-              const disabled = v.availabilityStatus !== "open";
-              return (
-                <label
-                  key={v.id}
-                  className={cn(
-                    "flex min-w-[120px] flex-1 cursor-pointer flex-col gap-0.5 rounded-xl border px-3 py-2.5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-                    variantId === v.id
-                      ? "border-[1.5px] border-primary bg-accent"
-                      : "border-input bg-card",
-                    disabled && "cursor-not-allowed opacity-50",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name={`formule-${service.id}`}
-                    value={v.id}
-                    checked={variantId === v.id}
-                    disabled={disabled}
-                    onChange={() => setVariantId(v.id)}
-                    className="sr-only"
-                  />
-                  <span className="text-[13px] font-bold">{v.name}</span>
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    {disabled
-                      ? "Indisponible"
-                      : v.priceXaf !== null
-                        ? moneyFcfa(v.priceXaf)
-                        : "Sur devis"}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
-      ) : null}
-      <div className="flex-1" />
-      {open ? (
-        <Button asChild className="h-12 rounded-[14px] text-[15px] font-bold">
-          <Link to={requestHref}>Faire une demande</Link>
-        </Button>
-      ) : (
-        <>
-          <p className="text-center text-xs text-muted-foreground">
-            {waitlist
-              ? "Plus de place pour le moment. Écris à ta coach pour être prévenue dès qu'une place se libère."
-              : "Les nouvelles demandes sont fermées pour le moment."}
-          </p>
-          {askHref ? (
-            <WhatsAppButton
-              href={askHref}
-              className="h-12 rounded-[14px] text-[15px] font-bold"
-            >
-              Écrire à ta coach
-            </WhatsAppButton>
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-[22px] font-extrabold tracking-tight">
+            {service.name}
+          </h3>
+          {service.description ? (
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {service.description}
+            </p>
           ) : null}
-        </>
-      )}
+        </div>
+        <div className="flex flex-wrap items-baseline gap-1.5">
+          {price.from ? (
+            <span className="text-[13px] text-muted-foreground">dès</span>
+          ) : null}
+          <span className="text-[26px] font-extrabold tracking-tight tabular-nums">
+            {price.amount === null ? "Sur devis" : moneyFcfa(price.amount)}
+          </span>
+          {length && price.amount !== null ? (
+            <span className="text-[13px] text-muted-foreground">
+              · {length}
+            </span>
+          ) : null}
+        </div>
+        {items.length ? (
+          <ul className="flex flex-col gap-2">
+            {items.map((item) => (
+              <li key={item} className="flex gap-2.5 text-sm">
+                <Check
+                  aria-hidden="true"
+                  className="mt-0.5 size-4 shrink-0 text-primary"
+                />
+                {item}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {open && service.variants.length > 1 ? (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="pb-1.5 text-[13px] font-semibold">
+              Formule
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {service.variants.map((v: CatalogueServiceVariant) => {
+                const disabled = v.availabilityStatus !== "open";
+                return (
+                  <label
+                    key={v.id}
+                    className={cn(
+                      "flex min-w-[120px] flex-1 cursor-pointer flex-col gap-0.5 rounded-xl border px-3 py-2.5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                      variantId === v.id
+                        ? "border-[1.5px] border-primary bg-accent"
+                        : "border-input bg-card",
+                      disabled && "cursor-not-allowed opacity-50",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name={`formule-${service.id}`}
+                      value={v.id}
+                      checked={variantId === v.id}
+                      disabled={disabled}
+                      onChange={() => setVariantId(v.id)}
+                      className="sr-only"
+                    />
+                    <span className="text-[13px] font-bold">{v.name}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {disabled
+                        ? "Indisponible"
+                        : v.priceXaf !== null
+                          ? moneyFcfa(v.priceXaf)
+                          : "Sur devis"}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        ) : null}
+        <div className="flex-1" />
+        {open ? (
+          <Button asChild className="h-12 rounded-[14px] text-[15px] font-bold">
+            <Link to={requestHref}>Faire une demande</Link>
+          </Button>
+        ) : (
+          <>
+            <p className="text-center text-xs text-muted-foreground">
+              {waitlist
+                ? "Plus de place pour le moment. Écris à ta coach pour être prévenue dès qu'une place se libère."
+                : "Les nouvelles demandes sont fermées pour le moment."}
+            </p>
+            {askHref ? (
+              <WhatsAppButton
+                href={askHref}
+                className="h-12 rounded-[14px] text-[15px] font-bold"
+              >
+                Écrire à ta coach
+              </WhatsAppButton>
+            ) : null}
+          </>
+        )}
+      </div>
     </article>
   );
 }

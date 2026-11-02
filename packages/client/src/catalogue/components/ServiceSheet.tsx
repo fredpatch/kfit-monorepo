@@ -35,6 +35,7 @@ import { dateFr } from "../../lib/format.js";
 import { ComponentsEditor } from "./ComponentsEditor.js";
 import { DeliverabilityChecklist } from "./DeliverabilityChecklist.js";
 import { RulesEditor } from "./RulesEditor.js";
+import { ServicePhoto } from "./ServicePhoto.js";
 import { VariantsEditor } from "./VariantsEditor.js";
 
 /** Refresh admin lists and the public catalogue after any change. */
@@ -495,6 +496,11 @@ export function ServiceSheet({
           </TabsContent>
 
           <TabsContent value="content" className="flex flex-col gap-4">
+            <ServicePhoto
+              key={service.id}
+              service={service}
+              disabled={archived}
+            />
             <fieldset disabled={archived} className="flex flex-col gap-4">
               <Field label="Nom" error={content.formState.errors.name?.message}>
                 {(p) => (
@@ -649,6 +655,7 @@ export function ServiceSheet({
               serviceId={service.id}
               variants={service.variants}
               published={service.publishedAt !== null}
+              image={service.image}
             />
           </TabsContent>
         </Tabs>

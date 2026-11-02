@@ -35,6 +35,9 @@ test("catalogue shared contracts expose stable public and admin routes", () => {
       "/admin/catalogue/services/:serviceId/variants/:variantId/rules",
     adminServiceDeliverability:
       "/admin/catalogue/services/:serviceId/deliverability",
+    adminServiceImage: "/admin/catalogue/services/:serviceId/image",
+    publicImage: "/public/catalogue/images/:file",
+    adminImage: "/admin/catalogue/images/:file",
   });
 
   assert.deepEqual(catalogueErrorCodes, [
@@ -53,6 +56,12 @@ test("catalogue shared contracts expose stable public and admin routes", () => {
     "CATALOGUE_COMPONENT_ARCHIVED",
     "CATALOGUE_RULES_OVERRIDE_NOT_FOUND",
     "CATALOGUE_RULES_OVERRIDE_HAS_QUESTIONNAIRE",
+    "CATALOGUE_IMAGE_TOO_SMALL",
+    "CATALOGUE_IMAGE_TOO_LARGE_PIXELS",
+    "CATALOGUE_IMAGE_ALT_REQUIRED",
+    "CATALOGUE_IMAGE_RIGHTS_REQUIRED",
+    "CATALOGUE_IMAGE_NOT_FOUND",
+    "CATALOGUE_RATE_LIMITED",
   ]);
 });
 
@@ -95,6 +104,7 @@ test("catalogue shared contracts type-check public service response shape", () =
         components: [],
         policy: null,
         variants: [],
+        image: null,
       },
     ],
   };

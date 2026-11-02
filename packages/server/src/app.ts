@@ -24,6 +24,8 @@ import {
 } from "./modules/auth/routes/express-auth.router.js";
 import type { CatalogueController } from "./modules/catalogue/controllers/catalogue.controller.js";
 import { createExpressCatalogueRouter } from "./modules/catalogue/routes/express-catalogue.router.js";
+import type { CatalogueImagesController } from "./modules/catalogue/controllers/catalogue-images.controller.js";
+import { createExpressCatalogueImagesRouter } from "./modules/catalogue/routes/express-catalogue-images.router.js";
 import type { AdminRequestsController } from "./modules/requests/controllers/admin-requests.controller.js";
 import type { RequestConversionController } from "./modules/requests/controllers/request-conversion.controller.js";
 import type { RequestsController } from "./modules/requests/controllers/requests.controller.js";
@@ -76,6 +78,8 @@ export type ServerAppDeps = {
   authController: AuthController;
   resolveAuthSession: ExpressAuthSessionResolver;
   catalogueController?: CatalogueController;
+  /** CAT-04: offer cover photos (upload, « Retirer », public and admin image routes). */
+  catalogueImagesController?: CatalogueImagesController;
   requestsController?: RequestsController;
   adminRequestsController?: AdminRequestsController;
   requestConversionController?: RequestConversionController;
@@ -131,6 +135,15 @@ export function createServerApp(deps: ServerAppDeps): Express {
       }),
     );
   }
+
+  if (deps.catalogueImagesController)
+    app.use(
+      createExpressCatalogueImagesRouter({
+        controller: deps.catalogueImagesController,
+        resolveSession: deps.resolveAuthSession,
+        onRateLimited: rateLimited("catalogue_images"),
+      }),
+    );
 
   if (deps.requestsController) {
     app.use(

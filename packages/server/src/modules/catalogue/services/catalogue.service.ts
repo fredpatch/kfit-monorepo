@@ -19,6 +19,8 @@ import type {
   CatalogueServicePolicy,
   CatalogueServiceVariant,
 } from "@kfit/shared";
+import type { CatalogueImageRecord } from "../repositories/catalogue-image.repository.js";
+import { catalogueImageDto } from "./catalogue-image.service.js";
 
 export type CatalogueServiceComponentRecord = CatalogueServiceComponent & {
   serviceId: string;
@@ -76,12 +78,14 @@ export type CatalogueSnapshot = {
   variants: CatalogueServiceVariantRecord[];
   components: CatalogueServiceComponentRecord[];
   policies: CatalogueServicePolicyRecord[];
+  /** CAT-04: the active cover photo of each listed service. */
+  images: CatalogueImageRecord[];
 };
 
 /** Raw rows for the admin overview (UX-7). Claims follow capacityClaimCondition (S4). */
 export type CatalogueAdminOverviewSnapshot = Pick<
   CatalogueSnapshot,
-  "variants" | "components" | "policies"
+  "variants" | "components" | "policies" | "images"
 > & {
   services: CatalogueAdminServiceRecord[];
   claims: Array<{
@@ -495,6 +499,16 @@ function validatePublishable(
   return null;
 }
 
+/** CAT-04 C5: public URLs on the public list, admin preview URLs (drafts included) on the overview. */
+function imageOf(
+  images: CatalogueImageRecord[],
+  serviceId: string,
+  scope: "public" | "admin",
+) {
+  const record = images.find((image) => image.serviceId === serviceId);
+  return record ? catalogueImageDto(record, scope) : null;
+}
+
 /** Groups a snapshot by service / variant scope. Shared by the public list and the admin overview (UX-7). */
 function assembleSnapshot(
   snapshot: Pick<CatalogueSnapshot, "variants" | "components" | "policies">,
@@ -576,6 +590,7 @@ export class CatalogueService {
         components: componentsOf(service.id),
         policy: policyOf(service.id),
         variants: variantsOf(service.id),
+        image: imageOf(snapshot.images, service.id, "public"),
       }));
 
     return { services };
@@ -624,6 +639,7 @@ export class CatalogueService {
           components: componentsOf(service.id),
           policy: policyOf(service.id),
           variants,
+          image: imageOf(snapshot.images, service.id, "admin"),
         };
       });
     return { asOf: now.toISOString(), services };

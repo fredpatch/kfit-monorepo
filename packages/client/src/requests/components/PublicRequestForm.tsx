@@ -21,6 +21,7 @@ import {
 import { cn } from "../../lib/utils.js";
 import { familyMeta, familyOfSlug } from "../../lib/families.js";
 import { catalogueApiClient } from "../../catalogue/api/catalogue-api.js";
+import { OfferCover } from "../../catalogue/components/OfferCover.js";
 import { requestsApiClient } from "../api/requests-api.js";
 import {
   classifyRequestError,
@@ -261,28 +262,38 @@ function RequestForm({ service }: { service: CataloguePublicService }) {
         Ma demande : {service.name}
         {variant ? ` · ${variant.name}` : ""}
       </h1>
-      <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5">
-        <span
-          aria-hidden="true"
-          className={cn(
-            "flex size-10 shrink-0 items-center justify-center rounded-xl",
-            family.softClass,
-          )}
-        >
-          <span className={cn("size-3.5 rounded", family.dotClass)} />
-        </span>
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-[15px] font-extrabold">
-            {service.name}
-            {variant ? ` · ${variant.name}` : ""}
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        {service.image ? (
+          <OfferCover
+            image={service.image}
+            slug={service.slug}
+            sizes="(min-width: 640px) 560px, 100vw"
+            eager
+          />
+        ) : null}
+        <div className="flex items-center gap-3 p-3.5">
+          <span
+            aria-hidden="true"
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-xl",
+              family.softClass,
+            )}
+          >
+            <span className={cn("size-3.5 rounded", family.dotClass)} />
           </span>
-          <span className="text-[13px] text-muted-foreground tabular-nums">
-            {price === null ? "Sur devis" : moneyFcfa(price)}
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-[15px] font-extrabold">
+              {service.name}
+              {variant ? ` · ${variant.name}` : ""}
+            </span>
+            <span className="text-[13px] text-muted-foreground tabular-nums">
+              {price === null ? "Sur devis" : moneyFcfa(price)}
+            </span>
           </span>
-        </span>
-        <Link to="/#offres" className="shrink-0 text-[13px] font-bold">
-          Changer
-        </Link>
+          <Link to="/#offres" className="shrink-0 text-[13px] font-bold">
+            Changer
+          </Link>
+        </div>
       </div>
 
       <form id="request-form" noValidate onSubmit={handleSubmit}>

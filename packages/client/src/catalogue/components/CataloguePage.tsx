@@ -50,7 +50,7 @@ import { StatusPill } from "../../components/ui/status-pill.js";
 import { Switch } from "../../components/ui/switch.js";
 import { cn } from "../../lib/utils.js";
 import { availabilityStatus } from "../../lib/status-map.js";
-import { familyMeta, familyOfSlug } from "../../lib/families.js";
+import { OfferThumb } from "./OfferCover.js";
 
 const tabParam: Record<CatalogueTab, string> = {
   published: "publiees",
@@ -445,13 +445,7 @@ export function CataloguePage() {
                         ) : null}
                         <td className="px-4 py-3">
                           <span className="flex items-center gap-3">
-                            <span
-                              aria-hidden="true"
-                              className={cn(
-                                "size-2.5 shrink-0 rounded-[3px]",
-                                familyMeta[familyOfSlug(s.slug)].dotClass,
-                              )}
-                            />
+                            <OfferThumb image={s.image} slug={s.slug} />
                             <span className="flex min-w-0 flex-col">
                               <span className="font-bold">{s.name}</span>
                               <span className="text-xs text-muted-foreground">
@@ -531,13 +525,7 @@ export function CataloguePage() {
                     >
                       <span className="flex items-start justify-between gap-2">
                         <span className="flex min-w-0 items-center gap-2.5">
-                          <span
-                            aria-hidden="true"
-                            className={cn(
-                              "size-2.5 shrink-0 rounded-[3px]",
-                              familyMeta[familyOfSlug(s.slug)].dotClass,
-                            )}
-                          />
+                          <OfferThumb image={s.image} slug={s.slug} />
                           <span className="flex min-w-0 flex-col">
                             <span className="truncate text-[15px] font-bold">
                               {s.name}
@@ -638,6 +626,7 @@ export function CataloguePage() {
                 serviceId={confirm.service.id}
                 variants={confirm.service.variants}
                 published={false}
+                image={confirm.service.image}
               />
             ) : null}
           </DialogContent>

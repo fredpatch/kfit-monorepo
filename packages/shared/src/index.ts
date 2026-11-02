@@ -2,6 +2,7 @@ export * from "./auth/contracts.js";
 export * from "./auth/roles.js";
 export * from "./auth/password-policy.js";
 export * from "./catalogue/contracts.js";
+export * from "./catalogue/images.js";
 export * from "./requests/contracts.js";
 export * from "./customers/contracts.js";
 export * from "./customers/client-status.js";

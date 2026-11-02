@@ -98,6 +98,10 @@ import { DrizzleCatalogueRepository } from "./modules/catalogue/repositories/cat
 import { CatalogueService } from "./modules/catalogue/services/catalogue.service.js";
 import { CatalogueContentService } from "./modules/catalogue/services/catalogue-content.service.js";
 import { DrizzleCatalogueContentRepository } from "./modules/catalogue/repositories/catalogue-content.repository.js";
+import { CatalogueImagesController } from "./modules/catalogue/controllers/catalogue-images.controller.js";
+import { DrizzleCatalogueImageRepository } from "./modules/catalogue/repositories/catalogue-image.repository.js";
+import { CatalogueImageFiles } from "./modules/catalogue/services/catalogue-image-files.js";
+import { CatalogueImageService } from "./modules/catalogue/services/catalogue-image.service.js";
 import { AdminRequestsController } from "./modules/requests/controllers/admin-requests.controller.js";
 import { RequestConversionController } from "./modules/requests/controllers/request-conversion.controller.js";
 import { OnboardingController } from "./modules/onboarding/controllers/onboarding.controller.js";
@@ -271,6 +275,19 @@ export function createRuntime({
       new DrizzleCatalogueContentRepository(db, {
         auditHashPepper: authConfig.auditHashPepper,
       }),
+    ),
+  );
+
+  const catalogueImagesController = new CatalogueImagesController(
+    new CatalogueImageService(
+      new DrizzleCatalogueImageRepository(db, {
+        auditHashPepper: authConfig.auditHashPepper,
+      }),
+      new CatalogueImageFiles(new PrivateDocumentStorage()),
+      (imageId) =>
+        logger.error(
+          `✖ catalogue image ${imageId}: old files not deleted (catalogue/ under the private storage root)`,
+        ),
     ),
   );
 
@@ -577,6 +594,7 @@ export function createRuntime({
     authController,
     resolveAuthSession: (request) => resolver.resolveFromRequest(request),
     catalogueController,
+    catalogueImagesController,
     requestsController,
     adminRequestsController,
     onboardingController: new OnboardingController(onboardingService),

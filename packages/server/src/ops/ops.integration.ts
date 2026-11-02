@@ -72,13 +72,18 @@ before(async () => {
   assertLocalTestDatabase();
   safe = true;
   work = await mkdtemp(path.join(tmpdir(), "kfit-ops-it-"));
-  for (const dir of ["storage/customer-docs", "journal"])
+  for (const dir of ["storage/customer-docs", "storage/catalogue", "journal"])
     await mkdir(path.join(work, dir), { recursive: true });
   await writeFile(
     path.join(work, "storage/customer-docs", `${randomUUID()}.pdf`),
     Buffer.concat([Buffer.from("%PDF-"), randomBytes(2048)]),
   );
   await writeFile(path.join(work, "storage", "second.bin"), randomBytes(300));
+  // CAT-04 C4: offer photos live in catalogue/ under the same root.
+  await writeFile(
+    path.join(work, "storage/catalogue", `${randomUUID()}-card.webp`),
+    Buffer.concat([Buffer.from("RIFF0000WEBP"), randomBytes(512)]),
+  );
   config = loadOpsConfig(
     {
       BACKUP_ENCRYPTION_KEY: randomBytes(32).toString("hex"),
@@ -189,7 +194,7 @@ test(`S7.4 D10 / B4-B8 (${pgMode} mode): backup, anonymize after it, restore →
   const backup = succeeded(await runBackup(config, new Date()));
   bundle = String(backup.bundle);
   runKeys.push(bundle);
-  assert.equal(backup.files, 2);
+  assert.equal(backup.files, 3);
   assert.ok(Number(backup.tables) > 30 && Number(backup.rows) > 0);
   for (const dir of [config.backupDir!, config.secondaryDir!]) {
     assert.deepEqual(
@@ -299,14 +304,21 @@ test(`S7.4 D10 / B4-B8 (${pgMode} mode): backup, anonymize after it, restore →
   );
   assert.equal(
     (await readdir(filesTarget, { recursive: true })).filter((entry) =>
-      /\.(pdf|bin)$/.test(String(entry)),
+      /\.(pdf|bin|webp)$/.test(String(entry)),
     ).length,
-    2,
+    3,
+  );
+  assert.equal(
+    (await readdir(path.join(filesTarget, "catalogue"))).filter((entry) =>
+      entry.endsWith("-card.webp"),
+    ).length,
+    1,
+    "CAT-04: the catalogue/ photo is restored",
   );
 
   const drill = succeeded(await runRestoreDrill(config, { auditHashPepper }));
   assert.equal(drill.bundle, bundle);
-  assert.equal(drill.files, 2);
+  assert.equal(drill.files, 3);
   assert.equal(drill.replayFromJournalOnly, 1);
   assert.equal(
     await databaseExists(process.env.DATABASE_URL!, String(drill.targetDb)),

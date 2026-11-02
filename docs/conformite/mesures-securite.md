@@ -2,8 +2,8 @@
 titre: Mesures de sécurité (brouillon technique)
 public: juriste
 statut: brouillon
-vérifié-sur: d2fc5df
-couvre: [S7.3, S7.4a, S7.4b, SEC-01, ARCH-01, DOC-01a]
+vérifié-sur: 0457409
+couvre: [S7.3, S7.4a, S7.4b, SEC-01, ARCH-01, DOC-01a, CAT-04]
 ---
 
 > **Brouillon technique - à faire valider par un juriste avant toute mise en production. Ne constitue pas un avis juridique.**
@@ -29,6 +29,7 @@ Mesures **implémentées dans le code** à la date de vérification. Le détail 
 
 - Taille maximale, contrôle de la signature du fichier par rapport à son type, analyse antivirus (ClamAV) avant enregistrement.
 - Fichiers stockés hors du dossier public.
+- Photos des offres (CAT-04) : mêmes contrôles sur le fichier d'origine, puis décodage limité à 40 millions de pixels, réencodage en WebP sans aucune métadonnée (EXIF, GPS, appareil) ; l'original n'est pas conservé. Elles sont servies avec un type fixe (`image/webp`), `X-Content-Type-Options: nosniff`, et seulement pour une offre publiée, publique et non archivée ; l'adresse ne contient que l'identifiant de la photo et sa taille.
 
 ## Journalisation et audit
 

@@ -2,8 +2,8 @@
 titre: Sauvegarde et restauration
 public: exploitation
 statut: à jour
-vérifié-sur: 7b1d467
-couvre: [S7.4b, S7.4c, FIX-03]
+vérifié-sur: 0457409
+couvre: [S7.4b, S7.4c, FIX-03, CAT-04]
 ---
 
 # Sauvegarde et restauration
@@ -16,12 +16,12 @@ Sources : `packages/server/scripts/ops/*.mjs`, `packages/server/src/ops/*`. Code
 
 **Contenu d'une sauvegarde.** Chaque exécution produit un dossier `kfit-backup-<AAAAMMJJTHHMMSSZ>` (heure UTC, à la seconde), par exemple `kfit-backup-20261026T020000Z`. Il contient quatre fichiers :
 
-| Fichier             | Contenu                                                                                                           |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `db.dump.enc`       | La base PostgreSQL complète (`pg_dump` au format custom), chiffrée.                                               |
-| `files.tar.enc`     | Tous les fichiers privés (`PRIVATE_STORAGE_ROOT` : documents, photos, justificatifs), en archive `tar`, chiffrée. |
-| `journal.jsonl.enc` | Une copie du journal de confidentialité (`KFIT_PRIVACY_JOURNAL_DIR/privacy-journal.jsonl`), chiffrée.             |
-| `manifest.json`     | La description signée de la sauvegarde (en clair, sans donnée client).                                            |
+| Fichier             | Contenu                                                                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `db.dump.enc`       | La base PostgreSQL complète (`pg_dump` au format custom), chiffrée.                                                                                    |
+| `files.tar.enc`     | Tous les fichiers privés (`PRIVATE_STORAGE_ROOT` : documents, photos, justificatifs, photos des offres dans `catalogue/`), en archive `tar`, chiffrée. |
+| `journal.jsonl.enc` | Une copie du journal de confidentialité (`KFIT_PRIVACY_JOURNAL_DIR/privacy-journal.jsonl`), chiffrée.                                                  |
+| `manifest.json`     | La description signée de la sauvegarde (en clair, sans donnée client).                                                                                 |
 
 **Chiffrement.** Chaque fichier est chiffré en AES-256-GCM avec la clé `BACKUP_ENCRYPTION_KEY`, en flux, avec un vecteur d'initialisation aléatoire propre à chaque fichier. Sans la clé, une sauvegarde est illisible et ne peut pas être restaurée.
 

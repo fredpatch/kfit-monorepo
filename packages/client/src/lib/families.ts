@@ -1,3 +1,12 @@
+import {
+  Apple,
+  Gift,
+  PersonStanding,
+  Sparkles,
+  Video,
+  type LucideIcon,
+} from "lucide-react";
+
 /**
  * Offer families and their fixed colours (board 01b).
  * Order is fixed; colours were validated for colour-blind separation and ≥ 3:1 contrast.
@@ -16,37 +25,49 @@ export type OfferFamily = (typeof offerFamilies)[number];
 
 export const familyMeta: Record<
   OfferFamily | "unknown",
-  { label: string; colorVar: string; softClass: string; dotClass: string }
+  {
+    label: string;
+    colorVar: string;
+    softClass: string;
+    dotClass: string;
+    /** CAT-04 C2: shown with the family colour when an offer has no photo. */
+    icon: LucideIcon;
+  }
 > = {
   transpitime: {
     label: "Transpitime",
     colorVar: "var(--family-transpitime)",
     softClass: "bg-info-soft",
     dotClass: "bg-family-transpitime",
+    icon: Video,
   },
   nutrition: {
     label: "Nutrition",
     colorVar: "var(--family-nutrition)",
     softClass: "bg-success-soft",
     dotClass: "bg-family-nutrition",
+    icon: Apple,
   },
   pilates: {
     label: "Pilates",
     colorVar: "var(--family-pilates)",
     softClass: "bg-waitlist-soft",
     dotClass: "bg-family-pilates",
+    icon: PersonStanding,
   },
   pack: {
     label: "Packs premium",
     colorVar: "var(--family-pack)",
     softClass: "bg-warning-soft",
     dotClass: "bg-family-pack",
+    icon: Gift,
   },
   unknown: {
     label: "Autre",
     colorVar: "var(--family-unknown)",
     softClass: "bg-muted",
     dotClass: "bg-family-unknown",
+    icon: Sparkles,
   },
 };
 

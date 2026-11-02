@@ -60,6 +60,7 @@ export const testDataKinds = [
   "customers",
   "prospects",
   "consent_definitions",
+  "service_images",
   "service_policies",
   "service_components",
   "service_variants",

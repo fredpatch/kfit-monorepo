@@ -22,6 +22,7 @@ import { waitlistEntries } from "../../../db/schema/prospects.js";
 import { capacityClaimCondition } from "../../onboarding/repositories/capacity-claims.js";
 import { evaluateDeliverability } from "../services/catalogue-content.policy.js";
 import { loadDeliverabilityInput } from "./catalogue-content.repository.js";
+import { activeImageRecords } from "./catalogue-image.repository.js";
 import type {
   CatalogueAdminServiceRecord,
   CatalogueRepository,
@@ -189,10 +190,11 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
         variants: [],
         components: [],
         policies: [],
+        images: [],
       };
     }
 
-    const [variantRows, componentRows, policyRows] = await Promise.all([
+    const [variantRows, componentRows, policyRows, images] = await Promise.all([
       this.database
         .select()
         .from(serviceVariants)
@@ -217,6 +219,7 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
         .select()
         .from(servicePolicies)
         .where(inArray(servicePolicies.serviceId, serviceIds)),
+      activeImageRecords(this.database, serviceIds),
     ]);
 
     return {
@@ -224,6 +227,7 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
       variants: variantRows.map(mapVariant),
       components: componentRows.map(mapComponent),
       policies: policyRows.map(mapPolicy),
+      images,
     };
   }
 
@@ -242,6 +246,7 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
             variants: [],
             components: [],
             policies: [],
+            images: [],
             claims: [],
             waitlist: [],
           };
@@ -305,11 +310,13 @@ export class DrizzleCatalogueRepository implements CatalogueRepository {
             ),
           )
           .groupBy(waitlistEntries.serviceId);
+        const images = await activeImageRecords(tx, serviceIds);
         return {
           services: serviceRows.map(mapAdminService),
           variants: variantRows.map(mapVariant),
           components: componentRows.map(mapComponent),
           policies: policyRows.map(mapPolicy),
+          images,
           claims: claimRows.map((row) => ({
             serviceId: row.serviceId,
             variantId: row.variantId,

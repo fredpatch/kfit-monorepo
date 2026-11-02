@@ -22,6 +22,7 @@ export const RATE_LIMIT_SCOPES = [
   "auth_resend",
   "auth_bootstrap",
   "supervision_run",
+  "catalogue_images",
 ] as const;
 export type RateLimitScope = (typeof RATE_LIMIT_SCOPES)[number];
 export type SecurityEventCode =

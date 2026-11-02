@@ -2,8 +2,8 @@
 titre: Registre des traitements (brouillon technique)
 public: juriste
 statut: brouillon
-vérifié-sur: d2fc5df
-couvre: [S7.3, DOC-01a]
+vérifié-sur: 0457409
+couvre: [S7.3, DOC-01a, CAT-04]
 ---
 
 > **Brouillon technique - à faire valider par un juriste avant toute mise en production. Ne constitue pas un avis juridique.**
@@ -30,11 +30,14 @@ Source : schéma `packages/server/src/db/schema/` et fonctionnalités en place.
 | Photos et documents       | `documents`, `document_versions`, `progress_photos` ; fichiers dans `PRIVATE_STORAGE_ROOT`                                              | Photos de progression et documents marqués `sensitive_health` ; autres documents privés ; nom d'origine, type et empreinte de chaque fichier.        |
 | Suivi du coaching         | `subscriptions` et tables liées, `appointments`, `follow_ups`, `goals`, `onboarding_items`                                              | Abonnements, pauses (avec motif), rendez-vous, suivis et notes, objectifs.                                                                           |
 | Paiements                 | `payment_plans`, `installments`, `payment_events`, `payment_allocations`, `payment_proofs`, `quotes`, `receipts`                        | Montants, moyens et références de paiement, justificatifs déposés, devis, reçus.                                                                     |
+| Photos des offres         | `service_images` ; fichiers dans `PRIVATE_STORAGE_ROOT/catalogue/`                                                                      | Photo de présentation de chaque offre, sa description, qui a confirmé les droits d'utilisation et quand (voir ci-dessous).                           |
 | Consentements             | `consent_definitions`, `consent_records`                                                                                                | Textes versionnés et décisions (accepté / refusé, canal, date, nom saisi en confirmation).                                                           |
 | Notifications             | `notifications`, `notification_email_outbox`                                                                                            | Notifications du coach (avec nom du client affiché), e-mails en file d'envoi.                                                                        |
 | Comptes et sécurité       | `users`, `auth_sessions`, `otp_challenges`, `trusted_devices`                                                                           | E-mail et mot de passe haché des administrateurs, sessions, codes à usage unique (hachés).                                                           |
 | Audit                     | `audit_events`, `external_access_events`                                                                                                | Acteur, action, résultat, identifiant de requête ; IP et user-agent **sous forme d'empreinte uniquement**.                                           |
 | Confidentialité           | `anonymization_events`, `retention_holds`, journal de confidentialité (fichier hors base)                                               | Identifiants des personnes anonymisées, motifs de blocage de conservation. Le journal ne contient que des identifiants.                              |
+
+**Photos des offres (CAT-04).** Avant tout enregistrement, l'auteur coche : « J'ai le droit d'utiliser cette photo pour promouvoir K'FIT (photo prise par moi, ou achetée sous licence). Aucune cliente n'y est reconnaissable. » Le compte et la date de cette confirmation sont enregistrés avec la photo ; l'audit `catalogue.image_set` / `catalogue.image_removed` ne garde que des identifiants, tailles et dimensions. Les métadonnées (EXIF, position GPS, appareil) sont supprimées et la photo d'origine n'est pas conservée. Une photo remplacée ou retirée est supprimée du disque ; celle d'une offre archivée est gardée mais n'est plus publiée. **À valider par le juriste** : la case suffit-elle comme preuve des droits, et faut-il une durée de conservation des photos d'offres archivées.
 
 ## Finalités telles qu'implémentées
 

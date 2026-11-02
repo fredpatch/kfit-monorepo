@@ -1,7 +1,7 @@
 ---
 titre: Recette V1 cœur
 public: coach, développeur
-statut: à revoir
+statut: Sprint 8 - en cours
 vérifié-sur: d2fc5df
 couvre: [Sprint 8]
 ---
@@ -345,28 +345,30 @@ General invariants:
 
 ## 13. Personalized documents - Sprint 5.5
 
-Status: NOT IMPLEMENTED YET.
+Status: IMPLEMENTED AND PREVIOUSLY VALIDATED.
 
-Scenarios will be added after S5.5 planning/validation.
+- [x] Documents are private and versioned.
+- [x] Exact-version public sharing uses scoped temporary links.
+- [x] Sensitive documents require a separate verification challenge.
+- [x] Expiry/revocation/max-use behavior was validated.
+- [x] Progress photos remain private and consent-scoped.
+- [x] Storage names are opaque and stored file evidence matched DB metadata.
 
-Required future coverage at minimum:
+Sprint 8 executable coverage: `scenarios/S5-finance-documents.md`.
 
-- [ ] immutable/versioned personalized document records;
-- [ ] private storage;
-- [ ] secure temporary delivery token;
-- [ ] expiry/revocation/replay behavior;
-- [ ] public link exposes only intended document;
-- [ ] audit/access evidence;
-- [ ] progress-photo private-storage boundary if implemented here.
+## 14. Remaining V1 Core acceptance areas
 
-## 14. Future V1 Core areas
+Sprint 6 and Sprint 7 are implemented and previously validated.
 
-These sections must be appended as they are validated:
+Sprint 8 executable coverage is split into:
 
-- [ ] Sprint 6 - payment plans, payment proof/reconciliation, financial documents.
-- [ ] Sprint 7 - dashboard, notifications/jobs, retention/anonymization operational controls.
-- [ ] Sprint 8 - formal V1 Core UAT/regression.
-- [ ] Sprint 9 - staging/production deployment and operating/training acceptance.
+- `scenarios/S5-finance-documents.md` - Sprint 6 finance/documents.
+- `scenarios/S6-notifications-dashboard.md` - dashboard, notifications and Supervision.
+- `scenarios/S7-privacy-operations.md` - privacy/retention/operations.
+- `scenarios/S8-completion-renewal.md` - lifecycle closure.
+- `scenarios/S9-final-regression.md` - final cross-cutting regression.
+
+Sprint 9 remains staging/hosting, coach acceptance/training and production readiness, after the agreed post-UAT ARCH migration checkpoint.
 
 ## 15. Cross-cutting final regression
 

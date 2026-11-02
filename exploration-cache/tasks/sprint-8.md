@@ -219,3 +219,62 @@ Broader FE-ARCH migration remains paused.
 If a UAT fix touches frontend code, apply the validated FE-ARCH rules to that touched area where practical without expanding the defect scope.
 
 After Sprint 8 closes, resume the broader ARCH migration before Sprint 9 deployment/staging work.
+
+
+## UAT-001 - medical clearance workflow missing
+
+Status: P1 / OPEN / Gate 1 correction decisions proposed.
+
+### Observed
+
+The product can create one open `medical_clearance_records` requirement per subscription from either:
+
+- offer policy `required`; or
+- questionnaire risk when policy is `required_if_risk_flag`.
+
+The same open requirement is reused. More than one open medical requirement is treated as invalid history.
+
+The onboarding item mirrors that requirement and is intentionally not generic-completable or waivable.
+
+Missing: the named command that clears the medical requirement.
+
+### Reusable patterns
+
+- Explicit State Transitions (KNW-9): named command, current-state validation, no generic status patch.
+- Atomic Business Operation (KNW-24): requirement record + onboarding blocker + audit update in one transaction.
+- Audit Event System (KNW-32): actor/action/target/outcome structural evidence; no sensitive medical detail in generic audit metadata.
+
+### Proposed decisions
+
+1. Add one named admin command: `clear medical clearance`.
+2. It is valid only while the subscription is in onboarding/pre-start state and has exactly one open medical requirement.
+3. Command clears the existing open record; it never creates a clearance record from nothing.
+4. Persist atomically:
+   - medical record `status = cleared`;
+   - `clearedAt = now`;
+   - `clearedByUserId = actor`;
+   - optional medical note stays on the medical record only, never generic audit;
+   - remove/resolve the mirrored onboarding medical blocker only when no open medical requirement remains;
+   - append structural audit `medical_clearance.cleared` with record id + trigger source only.
+5. No generic complete/waive permission change.
+6. No policy/questionnaire mutation as a clearance mechanism.
+7. No document-upload workflow in this corrective slice. Existing nullable `documentId` remains untouched; document evidence can be a later explicitly scoped enhancement.
+8. Client adds a dedicated action on the medical checklist row, with explicit confirmation and optional note.
+9. After success, refresh onboarding/customer lifecycle data; `ready_to_start` remains a separate explicit command and still requires capacity reservation where applicable.
+10. No schema migration is expected unless implementation proves an existing DB constraint is missing.
+
+### Validation gate
+
+Must prove:
+
+- no open requirement -> typed conflict/not-found;
+- exactly one open requirement -> cleared once;
+- repeat clearance -> no duplicate effect;
+- wrong subscription state rejected;
+- archived customer freeze preserved;
+- medical record actor/time persisted;
+- note absent from generic audit;
+- onboarding blocker resolves atomically;
+- capacity blocker remains independent;
+- `ready_to_start` becomes possible only when every other blocker + capacity rule is satisfied;
+- risk/policy trigger history remains unchanged.

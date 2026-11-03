@@ -2,7 +2,7 @@
 titre: Sprint 8 - Journal des anomalies UAT
 public: développeur
 statut: à jour
-vérifié-sur: ba48ab9
+vérifié-sur: e5880e7
 couvre: [Sprint 8, UAT-001, UAT-002]
 ---
 
@@ -31,7 +31,7 @@ Alternative non bloquante : `DEFERRED` avec cible explicite.
 
 - Scénario : S8 - fin d'abonnement ; régression S9 concernée.
 - Sévérité : P1 - majeur. Le signalement décrit un contournement d'un garde-fou de clôture autoritatif, sans override explicite ni motif, pour superadmin et admin/coach.
-- Statut : RETEST
+- Statut : RESOLVED
 - Mise à jour du signalement : 2026-11-03, sans nouvelle investigation à la demande explicite de Fred.
 - Étape : `completion_due -> completed`, case de dérogation décochée et aucun motif.
 - Résultat attendu selon le signalement de Fred : le blocage empêche de terminer l'abonnement tant que la case de dérogation n'est pas cochée et qu'une raison n'est pas fournie.
@@ -40,8 +40,8 @@ Alternative non bloquante : `DEFERRED` avec cible explicite.
 - Cause : non conclue dans cette mise à jour. L'interprétation technique du commit 1536ff3 est conservée dans l'historique, mais ne vaut pas diagnostic accepté du problème signalé.
 - Correctif implémenté : le serveur verrouille les composants pour la clôture et refuse toute prestation restante (`quantityConsumed < quantityEntitled`) sans override strictement égal à `true`, puis exige un motif non vide. `quantityOwedByCoach` ne définit pas ce blocage. La raison seule ne vaut jamais dérogation. L'UI applique la même lecture et désactive la confirmation jusqu'à sélection explicite et motif non vide. Aucun bypass de rôle.
 - Historique/audit : le motif reste dans l'historique de statut ; l'audit générique conserve le booléen structurel `completionOverride`, sans copier le motif. Les quantités, la finance et le renouvellement ne sont pas modifiés par ce correctif. Un `remainingXaf > 0` produit uniquement un avertissement dans la clôture et ne la bloque pas à lui seul.
-- Retest Fred : matrice complète à exécuter dans S8 pour les comptes autorisés, avec et sans blocage ; le gate S9 reste décoché.
-- Décision : RETEST / P1 bloquant Sprint 8 jusqu'au retest vert confirmé par Fred. Ne pas marquer RESOLVED avant sa confirmation.
+- Retest Fred : matrice fonctionnelle confirmée entièrement verte par Fred le 2026-11-03 sur le correctif `e5880e7`, incluant prestations restantes, dérogation explicite + motif, comptes autorisés, persistance, audit/historique, finance warning-only et conservation des quantités.
+- Décision : RESOLVED. UAT-002 ne bloque plus Sprint 8.
 - Rapport : [S8_UAT_REVIEW.md](S8_UAT_REVIEW.md).
 
 ### UAT-001 - Aucun workflow pour lever une exigence d'avis médical

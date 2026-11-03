@@ -1,16 +1,14 @@
 ---
 titre: S8 - Fin d'abonnement et renouvellement
 public: développeur
-statut: à revoir
-vérifié-sur: ba48ab9
+statut: validé
+vérifié-sur: e5880e7
 couvre: [Sprint 8, UAT-002]
 ---
 
 # S8 - Fin d'abonnement et renouvellement
 
-> Revue du 2026-11-03 : les coches ci-dessous sont conservées comme saisies par Fred. Les assertions de blocage/dérogation sont contestées par UAT-002 et restent à retester ; elles ne constituent pas une validation finale de cette règle. Voir [le rapport](../S8_UAT_REVIEW.md).
-
-> UAT-002 : correctif implémenté, statut RETEST. Le signalement accepté est conservé dans le journal ; seul le retest de Fred valide le correctif. Sprint 8 et le gate S9 restent ouverts.
+> Validation locale du 2026-11-03 : Fred confirme la matrice UAT-002 entièrement verte sur `e5880e7`. Le bloqueur de service, la dérogation explicite, l'avertissement financier non bloquant et les invariants d'historique/finance/composants sont validés.
 
 ## Retest UAT-002 - blocage et dérogation de clôture
 
@@ -23,8 +21,8 @@ Le bloqueur autoritatif est au moins un composant avec `quantityConsumed < quant
 - [x] Prestation restante + case cochée + motif non vide : clôture réussie exactement une fois.
 - [x] Décocher efface le motif et la validation spécifique ; la case n'est jamais cochée automatiquement.
 - [x] Refaire les quatre combinaisons avec le compte admin/coach normalement autorisé.
-- [ ] Refaire le parcours bloqué avec superadmin : aucun bypass implicite.
-- [ ] Tous les composants entièrement consommés + case décochée : clôture normale réussie sans motif, même si un ancien `quantityOwedByCoach > 0` subsiste seul.
+- [x] Refaire le parcours bloqué avec superadmin : aucun bypass implicite.
+- [x] Tous les composants entièrement consommés + case décochée : clôture normale réussie sans motif, même si un ancien `quantityOwedByCoach > 0` subsiste seul.
 - [x] Un override explicitement demandé sans blocage reste accepté avec un motif non vide, comme auparavant ; il est audité comme tel.
 - [x] Solde impayé ou partiellement payé sans prestation restante : avertissement financier visible, clôture normale toujours autorisée.
 - [x] Solde impayé ou partiellement payé avec prestation restante : avertissement financier et blocage de service visibles ; seule la règle de dérogation de service bloque.

@@ -5,22 +5,22 @@ import type {
   CataloguePublicService,
   CatalogueServiceVariant,
 } from "@kfit/shared";
-import { Button } from "../../components/ui/button.js";
+import { Button } from "../../../components/ui/button.js";
 import {
   moneyFcfa,
   useNoReferrer,
-} from "../../components/public/PublicShell.js";
-import { cn } from "../../lib/utils.js";
+} from "../../../components/public/PublicShell.js";
+import { cn } from "../../../lib/utils.js";
 import {
   familyMeta,
   familyOfSlug,
   offerFamilies,
   type OfferFamily,
-} from "../../lib/families.js";
-import { publicLinks } from "../../lib/public-links.js";
+} from "../../../lib/families.js";
+import { publicLinks } from "../../../lib/public-links.js";
 import { useCataloguePublicServices } from "../queries/catalogue-queries.js";
 import { OfferCover } from "./OfferCover.js";
-import { BrandMark } from "../../components/brand-mark.js";
+import { BrandMark } from "../../../components/brand-mark.js";
 
 const durationUnits = {
   day: ["jour", "jours"],
@@ -281,7 +281,7 @@ function OfferCard({ service }: { service: CataloguePublicService }) {
 }
 
 /** Public landing page (board 10). Text-only brand until the coach onboarding provides name, logo and photo. */
-export function PublicCataloguePage() {
+export function PublicCatalogueView() {
   useNoReferrer();
   const catalogue = useCataloguePublicServices();
   const [filter, setFilter] = useState<OfferFamily | "all">("all");

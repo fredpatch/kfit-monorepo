@@ -12,10 +12,14 @@ import {
 } from "../api/catalogue-api.js";
 import { slugify } from "../lib/catalogue-meta.js";
 import { useCatalogueRefresh } from "./ServiceSheet.js";
-import { Sheet, SheetClose, SheetContent } from "../../components/ui/dialog.js";
-import { Button } from "../../components/ui/button.js";
-import { Field } from "../../components/ui/field.js";
-import { Input, NativeSelect, Textarea } from "../../components/ui/input.js";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+} from "../../../components/ui/dialog.js";
+import { Button } from "../../../components/ui/button.js";
+import { Field } from "../../../components/ui/field.js";
+import { Input, NativeSelect, Textarea } from "../../../components/ui/input.js";
 
 type Values = {
   name: string;

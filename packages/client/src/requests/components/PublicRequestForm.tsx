@@ -20,8 +20,8 @@ import {
 } from "../../components/public/PublicShell.js";
 import { cn } from "../../lib/utils.js";
 import { familyMeta, familyOfSlug } from "../../lib/families.js";
-import { catalogueApiClient } from "../../catalogue/api/catalogue-api.js";
-import { OfferCover } from "../../catalogue/components/OfferCover.js";
+import { catalogueApiClient } from "../../features/catalogue/api/catalogue-api.js";
+import { OfferCover } from "../../features/catalogue/components/OfferCover.js";
 import { requestsApiClient } from "../api/requests-api.js";
 import {
   classifyRequestError,

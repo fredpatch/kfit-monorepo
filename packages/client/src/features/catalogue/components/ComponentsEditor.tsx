@@ -6,10 +6,10 @@ import {
 } from "@kfit/shared";
 import { catalogueApiClient } from "../api/catalogue-api.js";
 import { componentTypeLabels } from "../lib/catalogue-meta.js";
-import { Button } from "../../components/ui/button.js";
-import { Field } from "../../components/ui/field.js";
-import { Input, NativeSelect } from "../../components/ui/input.js";
-import { Switch } from "../../components/ui/switch.js";
+import { Button } from "../../../components/ui/button.js";
+import { Field } from "../../../components/ui/field.js";
+import { Input, NativeSelect } from "../../../components/ui/input.js";
+import { Switch } from "../../../components/ui/switch.js";
 import { ActionError, useContentAction } from "./content-action.js";
 
 type Draft = {

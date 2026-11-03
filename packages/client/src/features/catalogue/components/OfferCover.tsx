@@ -4,8 +4,8 @@ import {
   catalogueImageSrcSet,
   type CatalogueServiceImage,
 } from "@kfit/shared";
-import { familyMeta, familyOfSlug } from "../../lib/families.js";
-import { cn } from "../../lib/utils.js";
+import { familyMeta, familyOfSlug } from "../../../lib/families.js";
+import { cn } from "../../../lib/utils.js";
 
 /** CAT-04 C1/C2: the offer photo at 16:10, or the family colour, icon and label when there is none. */
 export function OfferCover({

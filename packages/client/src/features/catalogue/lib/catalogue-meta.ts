@@ -35,7 +35,7 @@ export const deliverabilityLabels: Record<CatalogueDeliverabilityRule, string> =
     duration_missing:
       "Indique une durée : durée par défaut de l'offre ou durée de cette variante.",
   };
-import { moneyXaf } from "../../lib/format.js";
+import { moneyXaf } from "../../../lib/format.js";
 
 export const catalogueTabs = ["published", "drafts", "archived"] as const;
 export type CatalogueTab = (typeof catalogueTabs)[number];

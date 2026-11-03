@@ -8,7 +8,7 @@ import {
 import { catalogueErrorMessage } from "../api/catalogue-api.js";
 import { useCatalogueDeliverability } from "../queries/catalogue-queries.js";
 import { deliverabilityLabels } from "../lib/catalogue-meta.js";
-import { cn } from "../../lib/utils.js";
+import { cn } from "../../../lib/utils.js";
 
 const checks: Array<{ title: string; rules: CatalogueDeliverabilityRule[] }> = [
   {

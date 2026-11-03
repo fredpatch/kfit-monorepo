@@ -1,5 +1,5 @@
 export * from "./auth/api/auth-api.js";
 export * from "./auth/api/csrf.js";
 export * from "./auth/state/auth-context.js";
-export * from "./catalogue/api/catalogue-api.js";
-export * from "./catalogue/components/PublicCataloguePage.js";
+export * from "./features/catalogue/api/catalogue-api.js";
+export * from "./pages/public/catalogue/PublicCataloguePage.js";

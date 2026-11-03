@@ -31,25 +31,25 @@ import {
   useCatalogueAdminOverview,
   useCatalogueDeliverability,
 } from "../queries/catalogue-queries.js";
-import { AdminPage } from "../../app/layout/AdminPage.js";
-import { Button } from "../../components/ui/button.js";
+import { AdminPage } from "../../../app/layout/AdminPage.js";
+import { Button } from "../../../components/ui/button.js";
 import {
   Dialog,
   DialogClose,
   DialogContent,
-} from "../../components/ui/dialog.js";
+} from "../../../components/ui/dialog.js";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu.js";
-import { EmptyState } from "../../components/ui/empty-state.js";
-import { StatusPill } from "../../components/ui/status-pill.js";
-import { Switch } from "../../components/ui/switch.js";
-import { cn } from "../../lib/utils.js";
-import { availabilityStatus } from "../../lib/status-map.js";
+} from "../../../components/ui/dropdown-menu.js";
+import { EmptyState } from "../../../components/ui/empty-state.js";
+import { StatusPill } from "../../../components/ui/status-pill.js";
+import { Switch } from "../../../components/ui/switch.js";
+import { cn } from "../../../lib/utils.js";
+import { availabilityStatus } from "../../../lib/status-map.js";
 import { OfferThumb } from "./OfferCover.js";
 
 const tabParam: Record<CatalogueTab, string> = {

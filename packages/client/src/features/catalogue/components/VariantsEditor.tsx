@@ -11,12 +11,12 @@ import {
   medicalPolicyLabels,
   slugify,
 } from "../lib/catalogue-meta.js";
-import { Button } from "../../components/ui/button.js";
-import { Field } from "../../components/ui/field.js";
-import { Input, NativeSelect } from "../../components/ui/input.js";
-import { StatusPill } from "../../components/ui/status-pill.js";
-import { availabilityStatus } from "../../lib/status-map.js";
-import { moneyXaf } from "../../lib/format.js";
+import { Button } from "../../../components/ui/button.js";
+import { Field } from "../../../components/ui/field.js";
+import { Input, NativeSelect } from "../../../components/ui/input.js";
+import { StatusPill } from "../../../components/ui/status-pill.js";
+import { availabilityStatus } from "../../../lib/status-map.js";
+import { moneyXaf } from "../../../lib/format.js";
 import { ActionError, useContentAction } from "./content-action.js";
 import { ComponentsEditor } from "./ComponentsEditor.js";
 import { RulesEditor } from "./RulesEditor.js";

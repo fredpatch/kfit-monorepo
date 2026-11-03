@@ -19,19 +19,23 @@ import {
   isArchived,
   sinceDays,
 } from "../lib/catalogue-meta.js";
-import { Sheet, SheetClose, SheetContent } from "../../components/ui/dialog.js";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+} from "../../../components/ui/dialog.js";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "../../components/ui/tabs.js";
-import { Button } from "../../components/ui/button.js";
-import { Field } from "../../components/ui/field.js";
-import { Input, NativeSelect, Textarea } from "../../components/ui/input.js";
-import { Switch } from "../../components/ui/switch.js";
-import { cn } from "../../lib/utils.js";
-import { dateFr } from "../../lib/format.js";
+} from "../../../components/ui/tabs.js";
+import { Button } from "../../../components/ui/button.js";
+import { Field } from "../../../components/ui/field.js";
+import { Input, NativeSelect, Textarea } from "../../../components/ui/input.js";
+import { Switch } from "../../../components/ui/switch.js";
+import { cn } from "../../../lib/utils.js";
+import { dateFr } from "../../../lib/format.js";
 import { ComponentsEditor } from "./ComponentsEditor.js";
 import { DeliverabilityChecklist } from "./DeliverabilityChecklist.js";
 import { RulesEditor } from "./RulesEditor.js";

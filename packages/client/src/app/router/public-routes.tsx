@@ -1,6 +1,6 @@
 import { Suspense, lazy } from "react";
 import { Route } from "react-router";
-import { PublicCataloguePage } from "../../catalogue/components/PublicCataloguePage.js";
+import { PublicCataloguePage } from "../../pages/public/catalogue/PublicCataloguePage.js";
 
 /* Screens load on demand: keeps the first load small (charts, tables, public pages). */
 const PublicAppointmentPage = lazy(() =>

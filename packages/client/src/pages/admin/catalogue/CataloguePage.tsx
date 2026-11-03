@@ -1,4 +1,4 @@
-import { CatalogueWorkspace } from "../../../catalogue/components/CatalogueWorkspace.js";
+import { CatalogueWorkspace } from "../../../features/catalogue/components/CatalogueWorkspace.js";
 
 export function CataloguePage() {
   return <CatalogueWorkspace />;

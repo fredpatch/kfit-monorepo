@@ -1,6 +1,5 @@
-import axios, { AxiosHeaders, type AxiosInstance } from "axios";
+import type { AxiosInstance } from "axios";
 import {
-  authCsrfHeaderName,
   catalogueApiRoutes,
   type CatalogueAdminServiceResponse,
   type CatalogueAdminServicesResponse,
@@ -22,8 +21,11 @@ import {
   catalogueImageRightsHeader,
   encodeCatalogueImageAlt,
 } from "@kfit/shared";
-import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
-import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
+import {
+  apiErrorData,
+  createApiHttpClient,
+} from "../../../shared/api/http-client.js";
+import { commonApiErrorMessage } from "../../../lib/api-error-messages.js";
 
 export type CatalogueApiClientOptions = {
   baseUrl?: string;
@@ -102,37 +104,18 @@ export type CatalogueApiClient = {
   removeImage(serviceId: string): Promise<CatalogueServiceImageRemovedResponse>;
 };
 
-function resolveBaseUrl(baseUrl: string | undefined): string {
-  return baseUrl ?? import.meta.env.VITE_API_BASE_URL ?? "";
-}
-
 function createDefaultHttpClient(baseUrl: string | undefined): AxiosInstance {
-  return axios.create({
-    baseURL: resolveBaseUrl(baseUrl),
-    headers: { accept: "application/json" },
+  return createApiHttpClient({
+    ...(baseUrl === undefined ? {} : { baseUrl }),
+    withCsrf: false,
+    config: { withCredentials: false },
   });
 }
 
 function createDefaultAdminHttpClient(
   baseUrl: string | undefined,
 ): AxiosInstance {
-  const client = axios.create({
-    baseURL: resolveBaseUrl(baseUrl),
-    withCredentials: true,
-    headers: { accept: "application/json" },
-  });
-
-  client.interceptors.request.use((config) => {
-    if (!requiresCsrfHeader(config.method)) return config;
-
-    const headers = AxiosHeaders.from(config.headers);
-    const csrf = buildCsrfHeaders(config.method)[authCsrfHeaderName];
-    if (csrf) headers.set(authCsrfHeaderName, csrf);
-    config.headers = headers;
-    return config;
-  });
-
-  return client;
+  return createApiHttpClient(baseUrl === undefined ? {} : { baseUrl });
 }
 
 function serviceRoute(
@@ -409,16 +392,11 @@ const reasonMessages: Record<string, string> = {
 
 /** French message for a catalogue API failure; never shows a raw code. */
 export function catalogueErrorMessage(error: unknown): string {
-  const data: unknown = axios.isAxiosError<{
+  const data = apiErrorData<{
     error?: unknown;
     reason?: unknown;
-  }>(error)
-    ? error.response?.data
-    : undefined;
-  const { error: code, reason } = (data ?? {}) as {
-    error?: unknown;
-    reason?: unknown;
-  };
+  }>(error);
+  const { error: code, reason } = data ?? {};
   const common = commonApiErrorMessage(code);
   if (common) return common;
   if (typeof reason === "string" && reasonMessages[reason])

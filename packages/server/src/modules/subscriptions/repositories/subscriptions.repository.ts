@@ -256,10 +256,14 @@ export class DrizzleSubscriptionsRepository implements SubscriptionsRepository {
           .from(subscriptionPauses)
           .where(eq(subscriptionPauses.subscriptionId, id));
         const open = pauses.filter((p) => p.endedAt === null);
-        const components = await tx
+        const componentsQuery = tx
           .select()
           .from(subscriptionComponents)
           .where(eq(subscriptionComponents.subscriptionId, id));
+        const components =
+          command.action === "complete"
+            ? await componentsQuery.for("update")
+            : await componentsQuery;
         const now = new Date(); // authoritative time after all blocking locks
         const update: Partial<typeof subscriptions.$inferInsert> = {
           updatedAt: now,
@@ -334,21 +338,25 @@ export class DrizzleSubscriptionsRepository implements SubscriptionsRepository {
             toStatus = "completion_due";
             event = "subscription.completion_due";
             break;
-          case "complete":
+          case "complete": {
+            const hasOutstandingComponents = components.some(
+              (c) => c.quantityOwedByCoach > 0,
+            );
             if (
-              command.overrideOutstandingComponents &&
+              hasOutstandingComponents &&
+              command.overrideOutstandingComponents !== true
+            )
+              return failure("SUBSCRIPTION_COMPONENTS_OUTSTANDING");
+            if (
+              command.overrideOutstandingComponents === true &&
               !command.reason?.trim()
             )
               return failure("SUBSCRIPTION_COMPLETION_REASON_REQUIRED");
-            if (
-              components.some((c) => c.quantityOwedByCoach > 0) &&
-              !command.overrideOutstandingComponents
-            )
-              return failure("SUBSCRIPTION_COMPONENTS_OUTSTANDING");
             Object.assign(update, { actualEndDate: now, completedAt: now });
             toStatus = "completed";
             event = "subscription.completed";
             break;
+          }
           case "resume-active": {
             if (!command.reason?.trim())
               return failure("SUBSCRIPTION_INVALID_INPUT");

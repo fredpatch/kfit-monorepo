@@ -507,17 +507,37 @@ test("PostgreSQL early review and punctual review require a reason", async () =>
 });
 test("PostgreSQL owed snapshot blocks ordinary completion", async () => {
   const id = await make("completion_due", { owed: 2 });
-  assert.deepEqual(
-    await run(id, { action: "complete", overrideOutstandingComponents: false }),
-    fail("SUBSCRIPTION_COMPONENTS_OUTSTANDING"),
-  );
+  const before = await view(id),
+    audits = await events(id);
+  for (const reason of [undefined, "Synthetic reason is not an override"]) {
+    assert.deepEqual(
+      await run(id, {
+        action: "complete",
+        overrideOutstandingComponents: false,
+        ...(reason === undefined ? {} : { reason }),
+      }),
+      fail("SUBSCRIPTION_COMPONENTS_OUTSTANDING"),
+    );
+    assert.deepEqual(await view(id), before);
+    assert.deepEqual(await events(id), audits);
+  }
 });
 test("PostgreSQL completion override without reason rejects safely", async () => {
   const id = await make("completion_due", { owed: 2 });
-  assert.deepEqual(
-    await run(id, { action: "complete", overrideOutstandingComponents: true }),
-    fail("SUBSCRIPTION_COMPLETION_REASON_REQUIRED"),
-  );
+  const before = await view(id),
+    audits = await events(id);
+  for (const reason of [undefined, "", " \n "]) {
+    assert.deepEqual(
+      await run(id, {
+        action: "complete",
+        overrideOutstandingComponents: true,
+        ...(reason === undefined ? {} : { reason }),
+      }),
+      fail("SUBSCRIPTION_COMPLETION_REASON_REQUIRED"),
+    );
+    assert.deepEqual(await view(id), before);
+    assert.deepEqual(await events(id), audits);
+  }
 });
 test("PostgreSQL completion override preserves all balances and sets both end timestamps", async () => {
   const id = await make("completion_due", { owed: 2 }),
@@ -537,6 +557,111 @@ test("PostgreSQL completion override preserves all balances and sets both end ti
   assert.equal(detail.status, "completed");
   assert.ok(detail.completedAt);
   assert.equal(detail.completedAt, detail.actualEndDate);
+  assert.equal(detail.history.at(-1)?.reason, "Synthetic private override");
+  const audits = await events(id);
+  const completed = audits.filter(
+    (e) => e.eventType === "subscription.completed",
+  );
+  assert.equal(completed.length, 1);
+  assert.deepEqual(completed[0]?.metadataJson, {
+    subscriptionId: id,
+    fromStatus: "completion_due",
+    toStatus: "completed",
+    occurredAt: detail.completedAt,
+    completionOverride: true,
+  });
+  assert.ok(
+    !JSON.stringify(completed[0]?.metadataJson).includes(
+      "Synthetic private override",
+    ),
+  );
+  assert.deepEqual(
+    await run(id, {
+      action: "complete",
+      overrideOutstandingComponents: true,
+      reason: "Synthetic repeat",
+    }),
+    fail("SUBSCRIPTION_TRANSITION_INVALID"),
+  );
+  assert.deepEqual(await view(id), detail);
+  assert.deepEqual(await events(id), audits);
+});
+
+test("PostgreSQL explicit override with reason remains allowed when no blocker exists", async () => {
+  const id = await make("completion_due");
+  const before = (await view(id)).components;
+  assert.equal(
+    (
+      await run(id, {
+        action: "complete",
+        overrideOutstandingComponents: true,
+        reason: "Synthetic explicit override",
+      })
+    ).status,
+    "ok",
+  );
+  const after = await view(id);
+  assert.deepEqual(after.components, before);
+  assert.equal(after.history.at(-1)?.reason, "Synthetic explicit override");
+  assert.deepEqual(
+    (await events(id)).find((e) => e.eventType === "subscription.completed")
+      ?.metadataJson,
+    {
+      subscriptionId: id,
+      fromStatus: "completion_due",
+      toStatus: "completed",
+      occurredAt: after.completedAt,
+      completionOverride: true,
+    },
+  );
+});
+
+test("PostgreSQL concurrent explicit completion overrides write one history and audit", async () => {
+  const id = await make("completion_due", { owed: 2 });
+  const before = (await view(id)).components;
+  const command: LifecycleCommand = {
+    action: "complete",
+    overrideOutstandingComponents: true,
+    reason: "Synthetic concurrent override",
+  };
+  const results = await Promise.all([run(id, command), run(id, command)]);
+  assert.equal(results.filter((r) => r.status === "ok").length, 1);
+  assert.ok(
+    results.some(
+      (r) =>
+        r.status === "error" && r.error === "SUBSCRIPTION_TRANSITION_INVALID",
+    ),
+  );
+  const after = await view(id);
+  assert.deepEqual(after.components, before);
+  assert.equal(
+    after.history.filter((h) => h.toStatus === "completed").length,
+    1,
+  );
+  assert.equal(
+    (await events(id)).filter((e) => e.eventType === "subscription.completed")
+      .length,
+    1,
+  );
+});
+
+test("PostgreSQL failed audit rolls back explicit completion override and preserves all balances", async () => {
+  const id = await make("completion_due", { owed: 2 });
+  const before = await view(id),
+    audits = await events(id);
+  await assert.rejects(
+    run(
+      id,
+      {
+        action: "complete",
+        overrideOutstandingComponents: true,
+        reason: "Synthetic failed override",
+      },
+      auditFailureRepository(),
+    ),
+  );
+  assert.deepEqual(await view(id), before);
+  assert.deepEqual(await events(id), audits);
 });
 test("PostgreSQL settled completion succeeds without overriding", async () => {
   const id = await make("completion_due");

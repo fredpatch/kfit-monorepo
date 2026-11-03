@@ -56,16 +56,33 @@ export function DecisionDialog({
 }: DecisionDialogProps) {
   const client = useQueryClient();
   const [serverError, setServerError] = useState<string | null>(null);
-  const { register, handleSubmit, watch, reset, setError, formState } =
-    useForm<Values>({
-      defaultValues: { reason: "", date: "", overrideOutstanding: false },
-    });
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    setError,
+    clearErrors,
+    setValue,
+    formState,
+  } = useForm<Values>({
+    defaultValues: { reason: "", date: "", overrideOutstanding: false },
+  });
   const override = watch("overrideOutstanding");
+  const reasonValue = watch("reason");
 
   useEffect(() => {
     reset({ reason: "", date: "", overrideOutstanding: false });
     setServerError(null);
   }, [command, reset]);
+
+  useEffect(() => {
+    if (command === "complete" && !override) {
+      clearErrors(["reason", "overrideOutstanding"]);
+      setValue("reason", "");
+      setServerError(null);
+    }
+  }, [command, override, clearErrors, setValue]);
 
   if (!command) return null;
   const needsReason = reasonRequired(command, view, override);
@@ -74,9 +91,18 @@ export function DecisionDialog({
   const takesDate =
     command === "resume" || command === "resume-active" || command === "renew";
   const outstanding = outstandingComponents(view);
+  const blockedCompletion = command === "complete" && outstanding > 0;
+  const completionIntentInvalid =
+    command === "complete" &&
+    ((blockedCompletion && !override) || (override && !reasonValue.trim()));
   const destructive = command === "cancel";
 
   const submit = handleSubmit(async (values) => {
+    if (blockedCompletion && values.overrideOutstanding !== true)
+      return setError("overrideOutstanding", {
+        message:
+          "Sélectionne explicitement la dérogation pour terminer malgré le blocage.",
+      });
     const reason = values.reason.trim();
     if (needsReason && !reason)
       return setError("reason", { message: "Renseigne un motif." });
@@ -143,7 +169,7 @@ export function DecisionDialog({
               type="submit"
               form="decision-form"
               variant={destructive ? "destructive-solid" : "default"}
-              disabled={formState.isSubmitting}
+              disabled={formState.isSubmitting || completionIntentInvalid}
             >
               {formState.isSubmitting
                 ? "Enregistrement…"
@@ -160,18 +186,27 @@ export function DecisionDialog({
           className="flex flex-col gap-4"
           noValidate
         >
-          {command === "complete" && outstanding > 0 ? (
-            <label className="flex items-start gap-2.5 rounded-md bg-warning-soft p-3 text-[13px] text-warning">
-              <input
-                type="checkbox"
-                className="mt-0.5 size-4 accent-primary"
-                {...register("overrideOutstanding")}
-              />
-              <span>
-                <strong>{outstanding} prestation(s) non consommée(s).</strong>{" "}
-                Terminer quand même (motif obligatoire).
-              </span>
-            </label>
+          {blockedCompletion ? (
+            <div className="flex flex-col gap-2.5 rounded-md bg-warning-soft p-3 text-[13px] text-warning">
+              <p>
+                Des prestations restent dues par le coach. Pour terminer malgré
+                ce blocage, sélectionne explicitement la dérogation et renseigne
+                un motif.
+              </p>
+              <label className="flex items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 accent-primary"
+                  {...register("overrideOutstanding")}
+                />
+                <span>Terminer malgré le blocage</span>
+              </label>
+              {formState.errors.overrideOutstanding ? (
+                <p role="alert">
+                  {formState.errors.overrideOutstanding.message}
+                </p>
+              ) : null}
+            </div>
           ) : null}
           {takesDate ? (
             <Field
@@ -190,12 +225,21 @@ export function DecisionDialog({
           ) : null}
           {takesReason && (needsReason || command === "completion-due") ? (
             <Field
-              label="Motif"
+              label={
+                command === "complete" && override
+                  ? "Motif de la dérogation"
+                  : "Motif"
+              }
               {...(needsReason ? {} : { optionalHint: "(facultatif)" })}
               error={formState.errors.reason?.message}
             >
               {(p) => (
-                <Textarea {...p} maxLength={2000} {...register("reason")} />
+                <Textarea
+                  {...p}
+                  required={needsReason}
+                  maxLength={2000}
+                  {...register("reason")}
+                />
               )}
             </Field>
           ) : null}

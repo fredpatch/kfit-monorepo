@@ -83,7 +83,7 @@ export class SubscriptionsService {
         return failure("SUBSCRIPTION_INVALID_INPUT");
       command.overrideOutstandingComponents =
         input.overrideOutstandingComponents;
-      if (input.overrideOutstandingComponents && !command.reason)
+      if (input.overrideOutstandingComponents === true && !command.reason)
         return failure("SUBSCRIPTION_COMPLETION_REASON_REQUIRED");
     }
     if (input.revisedEndDate !== undefined && input.revisedEndDate !== null) {

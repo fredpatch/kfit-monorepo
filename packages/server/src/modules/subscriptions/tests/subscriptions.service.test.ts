@@ -103,3 +103,97 @@ test("service forwards only named fields and trims reasons", async () => {
   });
   await service.execute(id, "pause", { reason: " Synthetic " }, actor);
 });
+
+for (const [body, expected] of [
+  [
+    { overrideOutstandingComponents: false },
+    { action: "complete", overrideOutstandingComponents: false },
+  ],
+  [
+    {
+      overrideOutstandingComponents: false,
+      overrideReason: " Synthetic reason only ",
+    },
+    {
+      action: "complete",
+      overrideOutstandingComponents: false,
+      reason: "Synthetic reason only",
+    },
+  ],
+  [
+    {
+      overrideOutstandingComponents: true,
+      overrideReason: " Synthetic override ",
+    },
+    {
+      action: "complete",
+      overrideOutstandingComponents: true,
+      reason: "Synthetic override",
+    },
+  ],
+] as const) {
+  test(`completion forwards explicit boolean and normalized reason: ${JSON.stringify(body)}`, async () => {
+    let calls = 0;
+    const service = new SubscriptionsService({
+      async execute(subscriptionId, command, who) {
+        calls++;
+        assert.equal(subscriptionId, id);
+        assert.equal(who, actor);
+        assert.deepEqual(command, expected);
+        return {
+          status: "error",
+          error: "SUBSCRIPTION_COMPONENTS_OUTSTANDING",
+        };
+      },
+    });
+    assert.deepEqual(await service.execute(id, "complete", body, actor), {
+      status: "error",
+      error: "SUBSCRIPTION_COMPONENTS_OUTSTANDING",
+    });
+    assert.equal(calls, 1);
+  });
+}
+
+for (const [body, error] of [
+  [
+    { overrideOutstandingComponents: true },
+    "SUBSCRIPTION_COMPLETION_REASON_REQUIRED",
+  ],
+  [
+    { overrideOutstandingComponents: true, overrideReason: " \n " },
+    "SUBSCRIPTION_COMPLETION_REASON_REQUIRED",
+  ],
+  [
+    { overrideOutstandingComponents: "true", overrideReason: "Synthetic" },
+    "SUBSCRIPTION_INVALID_INPUT",
+  ],
+  [
+    { overrideOutstandingComponents: 1, overrideReason: "Synthetic" },
+    "SUBSCRIPTION_INVALID_INPUT",
+  ],
+  [{ overrideReason: "Synthetic" }, "SUBSCRIPTION_INVALID_INPUT"],
+  [
+    { overrideOutstandingComponents: false, unknown: true },
+    "SUBSCRIPTION_INVALID_INPUT",
+  ],
+  [
+    { overrideOutstandingComponents: true, overrideReason: 123 },
+    "SUBSCRIPTION_INVALID_INPUT",
+  ],
+  [
+    { overrideOutstandingComponents: true, overrideReason: "x".repeat(2001) },
+    "SUBSCRIPTION_INVALID_INPUT",
+  ],
+] as const) {
+  test(`completion rejects invalid intent before persistence (${error}, ${JSON.stringify(body).slice(0, 130)})`, async () => {
+    const service = new SubscriptionsService({
+      async execute() {
+        assert.fail("invalid completion reached repository");
+      },
+    });
+    assert.deepEqual(await service.execute(id, "complete", body, actor), {
+      status: "error",
+      error,
+    });
+  });
+}

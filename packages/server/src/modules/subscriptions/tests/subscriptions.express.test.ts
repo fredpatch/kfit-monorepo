@@ -8,6 +8,7 @@ import {
   authCookieNames,
   subscriptionApiRoutes,
   subscriptionCommands,
+  type SubscriptionDetail,
 } from "@kfit/shared";
 import type { AuthenticatedSessionContext } from "../../auth/types/auth.http.types.js";
 import { SubscriptionsController } from "../controllers/subscriptions.controller.js";
@@ -176,3 +177,115 @@ test("HTTP forbids mass assignment and has no generic PATCH status route", async
     },
   );
 });
+
+const completed: SubscriptionDetail = {
+  id,
+  reference: "SUB-SYNTHETIC-COMPLETED",
+  customerId: id,
+  serviceId: id,
+  serviceName: "Synthetic service",
+  variantId: null,
+  variantName: null,
+  status: "completed",
+  agreedPriceXaf: 1000,
+  currency: "XAF",
+  plannedStartDate: null,
+  actualStartDate: null,
+  plannedEndDate: null,
+  actualEndDate: "2026-11-03T00:00:00.000Z",
+  durationValueSnapshot: null,
+  durationUnitSnapshot: null,
+  cancelledAt: null,
+  completedAt: "2026-11-03T00:00:00.000Z",
+  renewedFromSubscriptionId: null,
+  renewalChild: null,
+  pauses: [],
+  history: [],
+  components: [],
+  availableCommands: [],
+};
+for (const role of ["admin", "superadmin"] as const) {
+  test(`HTTP ${role} uses the same explicit completion intent and typed conflicts`, async () => {
+    const commands: unknown[] = [];
+    await server(
+      async (base) => {
+        const path = subscriptionApiRoutes.complete.replace(
+          ":subscriptionId",
+          id,
+        );
+        for (const [body, status, error] of [
+          [
+            { overrideOutstandingComponents: false },
+            409,
+            "SUBSCRIPTION_COMPONENTS_OUTSTANDING",
+          ],
+          [
+            {
+              overrideOutstandingComponents: false,
+              overrideReason: "Synthetic reason only",
+            },
+            409,
+            "SUBSCRIPTION_COMPONENTS_OUTSTANDING",
+          ],
+          [
+            { overrideOutstandingComponents: true, overrideReason: " " },
+            400,
+            "SUBSCRIPTION_COMPLETION_REASON_REQUIRED",
+          ],
+          [
+            {
+              overrideOutstandingComponents: "true",
+              overrideReason: "Synthetic",
+            },
+            400,
+            "SUBSCRIPTION_INVALID_INPUT",
+          ],
+          [
+            {
+              overrideOutstandingComponents: true,
+              overrideReason: " Synthetic override ",
+            },
+            200,
+            null,
+          ],
+        ] as const) {
+          const response = await fetch(base + path, {
+            method: "POST",
+            headers: { ...headers, origin: base },
+            body: JSON.stringify(body),
+          });
+          assert.equal(response.status, status);
+          assert.deepEqual(
+            await response.json(),
+            error ? { error } : { subscription: completed },
+          );
+        }
+      },
+      {
+        async execute(subscriptionId, command, who) {
+          assert.equal(subscriptionId, id);
+          assert.equal(who.userId, session.userId);
+          commands.push(command);
+          // This harness checks routing/normalization; integration tests exercise the real DB guard.
+          return command.overrideOutstandingComponents === true
+            ? { status: "ok", subscription: completed }
+            : { status: "error", error: "SUBSCRIPTION_COMPONENTS_OUTSTANDING" };
+        },
+      },
+      { ...session, role },
+    );
+    assert.deepEqual(commands, [
+      { action: "complete", overrideOutstandingComponents: false },
+      {
+        action: "complete",
+        overrideOutstandingComponents: false,
+        reason: "Synthetic reason only",
+      },
+      {
+        action: "complete",
+        overrideOutstandingComponents: true,
+        reason: "Synthetic override",
+      },
+    ]);
+  });
+}

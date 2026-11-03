@@ -2,6 +2,15 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-11-03 - FE-ARCH-03 requests feature migration
+
+- Implementation: `5f76fb0` - `refactor(requests): migrate frontend capability to feature layer`.
+- Moved Requests under `features/requests/` and removed the old top-level `src/requests/` directory.
+- Added route composition through `pages/admin/requests/RequestsPage.tsx` and `pages/public/request/PublicRequestPage.tsx`.
+- Requests API clients now reuse canonical shared HTTP transport while preserving public unauthenticated submission and admin credential/CSRF semantics.
+- Request query keys/hooks are centralized with the existing cache identities, invalidation behavior and 60-second refresh behavior preserved.
+- Fred validated public request submission, admin request queue/detail/actions/conversion, sidebar badge and direct reload behavior green on 2026-11-03.
+
 ## 2026-11-03 - FE-ARCH-02 catalogue feature migration
 
 - Implementation: `da91b4f` - `refactor(catalogue): migrate frontend capability to feature layer`.

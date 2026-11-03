@@ -30,7 +30,7 @@ Alternative non bloquante : `DEFERRED` avec cible explicite.
 ### UAT-002 - Clôture possible malgré le blocage, sans case cochée ni motif
 
 - Scénario : S8 - fin d'abonnement ; régression S9 concernée.
-- Sévérité : à confirmer par GPT/Fred ; la classification précédente P2 reposait sur une interprétation que Fred n'a pas acceptée.
+- Sévérité : P1 - majeur. Le signalement décrit un contournement d'un garde-fou de clôture autoritatif, sans override explicite ni motif, pour superadmin et admin/coach.
 - Statut : OPEN
 - Mise à jour du signalement : 2026-11-03, sans nouvelle investigation à la demande explicite de Fred.
 - Étape : `completion_due -> completed`, case de dérogation décochée et aucun motif.
@@ -38,9 +38,9 @@ Alternative non bloquante : `DEFERRED` avec cible explicite.
 - Signalement exact de Fred : « I could complete completion_due even if there was a blocage. Investigate the matter. Il ya un blocage pour terminier l'abonnement, mais meme si je ne coche pas le blocage (en super admin) pour doonner une raison, jarrive quand meme a terminer labonement. The goes for admin / coach account. so this rule seems to be overriden. »
 - Règle / owner : abonnement ; `exploration-cache/tasks/sprint-5.md` S5.1 Completion et `exploration-cache/project/state-machines.md` règles Subscription.
 - Cause : non conclue dans cette mise à jour. L'interprétation technique du commit 1536ff3 est conservée dans l'historique, mais ne vaut pas diagnostic accepté du problème signalé.
-- Correctif : non implémenté ; analyse du signalement et décision GPT/Fred avant tranche dédiée. Aucune nouvelle vérification technique effectuée.
+- Correctif : tranche dédiée UAT-002 requise. Sans refaire le diagnostic technique, le comportement cible est verrouillé : un bloqueur de clôture empêche `completion_due -> completed` pour tous les rôles tant qu'un override explicite n'est pas sélectionné et accompagné d'un motif non vide. Superadmin n'a pas de bypass implicite.
 - Retest Fred : à planifier après décision ; revalider les assertions blocage/dérogation de S8.
-- Décision : OPEN ; aucune clôture globale de Sprint 8 n'est enregistrée.
+- Décision : OPEN / P1 bloquant Sprint 8 jusqu'au correctif et retest Fred.
 - Rapport : [S8_UAT_REVIEW.md](S8_UAT_REVIEW.md).
 
 ### UAT-001 - Aucun workflow pour lever une exigence d'avis médical

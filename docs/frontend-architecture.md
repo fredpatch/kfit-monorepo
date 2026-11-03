@@ -507,6 +507,16 @@ Reference foundation is complete. Remaining domains migrate progressively; no bi
   - validated implementation commit: `da91b4f`;
   - known remaining debt: `CatalogueWorkspace` still imports `app/layout/AdminPage` and will be addressed separately.
 
+- FE-ARCH-03: requests feature migration - validated by Fred.
+  - requests now lives under `features/requests/`;
+  - admin/public request routes compose through `pages/`;
+  - public request implementation is `PublicRequestView`;
+  - requests transport uses `shared/api/http-client.ts`;
+  - request query keys/hooks are centralized with cache identities preserved;
+  - old top-level `src/requests/` removed;
+  - validated implementation commit: `5f76fb0`;
+  - known remaining debt: `RequestsWorkspace` still imports `app/layout/AdminPage`; explicit privacy/catalogue/customer cache dependencies remain documented.
+
 ## Definition of done for the architecture initiative
 
 FE-ARCH-01 is complete when:

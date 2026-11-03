@@ -11,7 +11,7 @@ Sprint 6 S6.1-S6.4 are validated and Sprint 6 is closed on `main`. The former `s
 Branch            main
 Sprint            8 - V1 Core UAT et corrections
 Active slice      UAT-002 - completion blocker override bypass (P1)
-Workflow state    UAT-002 OPEN/P1: Fred reports completion succeeds despite blocker with override unchecked and no reason for superadmin and admin/coach; no repeat diagnosis requested
+Workflow state    UAT-002 OPEN/P1: blocker semantics clarified — remaining subscribed service (consumed < entitled) blocks completion; unpaid money is warning-only; prior override-only fix is insufficient
 UAT review        169 checked / 62 unchecked; S7 journal/replay evidence and S9 exit gate remain pending; UAT-002 blocks closure
 UAT-001           Dedicated medical clearance command + Preparation confirmation; no migration; generic medical complete/waive forbidden; capacity and Ready remain explicit
 S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) - validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
@@ -49,7 +49,7 @@ ROLE-01           superadmin role, hasRole guard, migration 0019, ops:create-use
 PRETTY-01         Prettier 3.8.5 + format/format:check/lint:dashes in CI - validated by Fred, committed 2026-10-27
 OPS-01b           Supervision page, menu dot, 14 messages, generator fix - validated by Fred, committed 482f843
 RET-01            retention steps in privacy.purge, inactive prospects alert, 4 settings - validated by Fred live, committed 0457409
-Next action       Codex IDE implements claude/uat-002-completion-override-brief.md; then Fred retests blocker/override matrix
+Next action       Amend UAT-002 implementation to derive blocker from remaining entitlement, add financial warning UI, then Fred retests completion matrix
 FE-ARCH-01         reference foundation validated: 01a/01b/01c/01d/01e green; during Sprint 8 only touched frontend files follow the new architecture; broader ARCH migration resumes after UAT closes
 ARCH resume        immediately after Sprint 8 UAT closure and before Sprint 9 staging/deployment - continue remaining pages/features/shared/query migrations progressively
 Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »

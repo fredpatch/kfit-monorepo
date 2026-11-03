@@ -496,7 +496,16 @@ Local React state remains the default for local UI state.
 - FE-ARCH-01d: first pages/ reference migration (/admin/offres) - validated by Fred.
 - FE-ARCH-01e: catalogue query keys + query hooks reference pattern - validated by Fred.
 
-Reference foundation is complete. Remaining domains migrate progressively when touched by Sprint 8 UAT fixes or later feature work; no big-bang migration.
+Reference foundation is complete. Remaining domains migrate progressively; no big-bang migration.
+
+- FE-ARCH-02: catalogue feature migration - validated by Fred.
+  - catalogue now lives under `features/catalogue/`;
+  - admin and public catalogue routes compose through `pages/`;
+  - public catalogue implementation is `PublicCatalogueView`;
+  - catalogue transport uses `shared/api/http-client.ts`;
+  - old top-level `src/catalogue/` removed;
+  - validated implementation commit: `da91b4f`;
+  - known remaining debt: `CatalogueWorkspace` still imports `app/layout/AdminPage` and will be addressed separately.
 
 ## Definition of done for the architecture initiative
 

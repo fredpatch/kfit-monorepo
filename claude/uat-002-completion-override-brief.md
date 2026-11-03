@@ -48,25 +48,29 @@ No schema migration is expected.
 ## Locked business rules
 
 1. Only `completion_due -> completed` is in scope.
-2. The authoritative blocker for this slice is any `subscription_component.quantityOwedByCoach > 0`.
-3. If no blocker exists:
+2. The authoritative service blocker for this slice is any snapshotted subscription component where:
+   `quantityConsumed < quantityEntitled`.
+3. `quantityOwedByCoach` is NOT the authoritative remaining-service signal for completion.
+4. If no service blocker exists:
    - `overrideOutstandingComponents=false` must complete normally;
    - no override reason is required.
-4. If a blocker exists:
+5. If a service blocker exists:
    - override=false + no reason -> reject;
    - override=false + reason -> reject;
    - override=true + blank/missing reason -> reject;
    - override=true + non-empty reason -> allow completion.
-5. Same result for admin/coach and superadmin.
-6. Role must never alter the blocker rule.
-7. UI checkbox state is advisory/input only; server decides from current locked DB state.
-8. A reason alone must never act as override.
-9. A truthy/string-like value must never act as override; input remains strict boolean.
-10. Successful override must be explicit in durable history/audit evidence.
-11. Balances/components are preserved exactly; no automatic settlement.
-12. Finance remains independent.
-13. Renewal behavior is regression-only.
-14. No unrelated frontend ARCH migration.
+6. Same result for admin/coach and superadmin.
+7. Role must never alter the blocker rule.
+8. UI checkbox state is advisory/input only; server decides from current locked DB state.
+9. A reason alone must never act as override.
+10. A truthy/string-like value must never act as override; input remains strict boolean.
+11. Successful override must be explicit in durable history/audit evidence.
+12. Component balances are preserved exactly; no automatic consumption/settlement.
+13. Finance remains independent.
+14. Unpaid or partially-paid finance must NOT block operational completion.
+15. The completion UI must surface a strong financial warning when remainingXaf > 0, but completion remains allowed if there is no service blocker.
+16. Renewal behavior is regression-only.
+17. No unrelated frontend ARCH migration.
 
 ## Server service validation
 
@@ -99,9 +103,12 @@ Inside the existing transaction and after the subscription/components are locked
 For `complete` compute:
 
 ```ts
-const hasOutstandingComponents =
-  components.some((c) => c.quantityOwedByCoach > 0);
+const hasOutstandingComponents = components.some(
+  (c) => c.quantityConsumed < c.quantityEntitled,
+);
 ```
+
+Do not use `quantityOwedByCoach` to derive the completion blocker.
 
 Then enforce in this logical order:
 
@@ -122,7 +129,8 @@ if blocker does not exist AND override === true
 The critical invariant is:
 
 ```text
-blocker + override=false
+any component with consumed < entitled
++ override=false
 MUST NEVER reach completed
 ```
 
@@ -157,7 +165,8 @@ Add tests proving identical business outcome across available roles if the curre
 Files:
 
 - `packages/client/src/profile/overview/DecisionDialog.tsx`
-- related command helpers only if needed.
+- related command helpers only if needed;
+- existing finance query/API consumer for the selected subscription, but do not redesign finance transport.
 
 Current UI already sends:
 
@@ -170,7 +179,7 @@ Current UI already sends:
 
 Preserve that model.
 
-Required UX behavior when `outstandingComponents(view) > 0`:
+Required UX behavior when the selected subscription has remaining service entitlement (`quantityConsumed < quantityEntitled`):
 
 - show the warning/override checkbox;
 - leave it unchecked by default;
@@ -195,6 +204,27 @@ Reason label when override selected:
 `Motif de la dérogation`
 
 Keep server errors as final authority.
+
+### Financial warning
+
+The dialog must also surface current finance status when the subscription has remaining client balance.
+
+Source of truth:
+- existing finance read model for the same subscription;
+- `remainingXaf > 0` means a financial balance remains.
+
+Behavior:
+- show a visually strong warning;
+- do NOT disable completion because of finance alone;
+- do NOT auto-check service override because of finance;
+- do NOT send any finance mutation from the completion dialog;
+- wording:
+
+`Solde financier restant : {amount} FCFA. L'abonnement peut être terminé, mais ce solde restera dû après la clôture.`
+
+If finance detail cannot be loaded, do not invent a zero balance. Preserve current lifecycle behavior and report the load limitation; server completion remains independent from finance.
+
+Do not couple completion transaction to finance.
 
 ## Shared/API contract
 
@@ -225,18 +255,20 @@ Prove exact transport matrix:
 
 ### Repository integration
 
-Using a `completion_due` subscription with `quantityOwedByCoach > 0`:
+Using a `completion_due` subscription with at least one component where `quantityConsumed < quantityEntitled`:
 
 1. override=false + no reason -> `SUBSCRIPTION_COMPONENTS_OUTSTANDING`; status unchanged.
 2. override=false + reason -> same failure; status unchanged.
 3. override=true + blank/missing reason -> `SUBSCRIPTION_COMPLETION_REASON_REQUIRED`; status unchanged.
 4. override=true + valid reason -> completed exactly once.
 5. component balances unchanged after override.
-6. normal completion with no outstanding components still succeeds with override=false.
-7. repeat complete after success -> transition-invalid; no duplicate history/audit.
-8. audit failure rolls back status/history as before.
-9. overridden history/audit contains the approved structural distinction.
-10. no role-specific repository bypass exists.
+6. a component with `quantityOwedByCoach = 0` but `quantityConsumed < quantityEntitled` still blocks completion.
+7. a fully consumed component with `quantityOwedByCoach > 0` does not define the remaining-service blocker by itself unless another explicit rule already requires it; report exact behavior.
+8. normal completion with all components fully consumed still succeeds with override=false.
+9. repeat complete after success -> transition-invalid; no duplicate history/audit.
+10. audit failure rolls back status/history as before.
+11. overridden history/audit contains the approved structural distinction.
+12. no role-specific repository bypass exists.
 
 ### HTTP/role coverage
 
@@ -254,11 +286,14 @@ Add focused tests if current client test infrastructure exists for this componen
 
 At minimum statically prove:
 
-- blocked completion shows checkbox;
-- unchecked checkbox cannot submit successful client intent;
+- remaining entitlement (for example 0/1 or 1/4) shows service blocker checkbox;
+- fully consumed entitlement does not show service blocker checkbox;
+- unchecked checkbox cannot submit successful blocked client intent;
 - checked without reason is rejected client-side;
 - checked + reason sends true + reason;
-- reason alone never sends true.
+- reason alone never sends true;
+- remaining finance balance shows the financial warning;
+- finance warning alone does not disable normal completion.
 
 ## UAT docs
 
@@ -274,18 +309,20 @@ After implementation, not before:
 
 Fred must run:
 
-1. blocker + override unchecked + no reason -> refused;
-2. blocker + override unchecked + reason typed -> refused;
-3. blocker + override checked + blank reason -> refused;
-4. blocker + override checked + valid reason -> succeeds exactly once;
-5. repeat 1-4 with admin/coach;
-6. repeat blocker-path checks with superadmin;
-7. no blocker + override unchecked -> normal completion succeeds;
-8. refresh page and verify persisted state;
-9. DBeaver: status/history correct;
-10. component quantities unchanged;
-11. audit/history distinguishes overridden completion;
-12. finance remains unchanged.
+1. subscription with 0/1 or equivalent remaining service -> blocker visible;
+2. remaining service + override unchecked + no reason -> refused;
+3. remaining service + override unchecked + reason typed -> refused;
+4. remaining service + override checked + blank reason -> refused;
+5. remaining service + override checked + valid reason -> succeeds exactly once;
+6. repeat blocker-path checks with admin/coach and superadmin;
+7. all components fully consumed + override unchecked -> normal completion succeeds;
+8. unpaid/partially-paid balance with no service blocker -> financial warning visible, completion still allowed;
+9. unpaid/partially-paid balance + service blocker -> both warning and blocker shown; service override rules still apply;
+10. refresh and verify persisted state;
+11. DBeaver: status/history correct;
+12. component quantities unchanged;
+13. audit/history distinguishes overridden completion;
+14. finance balances/events unchanged.
 
 Only Fred's confirmation closes UAT-002.
 

@@ -1,3 +1,11 @@
+---
+titre: S9 - Régression finale Sprint 8
+public: développeur
+statut: à revoir
+vérifié-sur: da0eee3
+couvre: [Sprint 8, UAT review]
+---
+
 # S9 - Régression finale Sprint 8
 
 ## But
@@ -12,35 +20,35 @@ Rejouer les frontières critiques après résolution de tous les P0/P1.
 
 ## Parcours critique
 
-- [ ] Public catalogue -> demande.
-- [ ] Qualification -> conversion exactement une fois.
-- [ ] Onboarding -> consentements/questionnaire -> activation.
-- [ ] RDV -> consommation composant.
-- [ ] Suivi -> cadence.
-- [ ] Progression -> objectif consultatif.
-- [ ] Paiement -> allocation -> reçu.
-- [ ] Document/version/lien sécurisé.
-- [ ] Completion ou renouvellement.
-- [ ] Privacy spot-check sur sujet secondaire.
+- [x] Public catalogue -> demande.
+- [x] Qualification -> conversion exactement une fois.
+- [x] Onboarding -> consentements/questionnaire -> activation.
+- [x] RDV -> consommation composant.
+- [x] Suivi -> cadence.
+- [x] Progression -> objectif consultatif.
+- [x] Paiement -> allocation -> reçu.
+- [x] Document/version/lien sécurisé.
+- [x] Completion ou renouvellement.
+- [x] Privacy spot-check sur sujet secondaire.
 
 ## Sécurité / confidentialité
 
-- [ ] Admin sans session refusé.
-- [ ] CSRF mutation protégé.
-- [ ] Trusted-device/OTP spot-check.
-- [ ] Public bearer replay ne duplique pas d'effet.
-- [ ] Health consent boundary.
-- [ ] Données sensibles absentes des audits génériques spot-checkés.
-- [ ] Supervision inaccessible à non-superadmin.
+- [x] Admin sans session refusé.
+- [x] CSRF mutation protégé.
+- [x] Trusted-device/OTP spot-check.
+- [x] Public bearer replay ne duplique pas d'effet.
+- [x] Health consent boundary.
+- [x] Données sensibles absentes des audits génériques spot-checkés.
+- [x] Supervision inaccessible à non-superadmin.
 
 ## Responsive / clavier
 
-- [ ] Landing mobile.
-- [ ] Demande mobile.
-- [ ] Dashboard mobile.
-- [ ] Fiche client mobile.
-- [ ] Navigation admin clavier.
-- [ ] Notification panel/sheet clavier + Escape/focus.
+- [x] Landing mobile.
+- [x] Demande mobile.
+- [x] Dashboard mobile.
+- [x] Fiche client mobile.
+- [x] Navigation admin clavier.
+- [x] Notification panel/sheet clavier + Escape/focus.
 
 ## Suite automatisée finale
 
@@ -52,12 +60,12 @@ npm run db:check
 npm run test:integration
 ```
 
-- [ ] Typecheck vert.
-- [ ] Tests verts et nombre de tests non nul.
-- [ ] Build vert.
-- [ ] DB check vert.
-- [ ] Integration verts.
-- [ ] Toute flake connue est identifiée explicitement avant un retry accepté.
+- [x] Typecheck vert.
+- [x] Tests verts et nombre de tests non nul.
+- [x] Build vert.
+- [x] DB check vert.
+- [x] Integration verts.
+- [x] Toute flake connue est identifiée explicitement avant un retry accepté.
 
 ## Gate de sortie
 

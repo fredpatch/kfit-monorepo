@@ -2,8 +2,8 @@
 titre: Sprint 8 - Journal des anomalies UAT
 public: développeur
 statut: à jour
-vérifié-sur: a28b7e1
-couvre: [Sprint 8, UAT-001]
+vérifié-sur: da0eee3
+couvre: [Sprint 8, UAT-001, UAT-002]
 ---
 
 # Sprint 8 - Findings
@@ -26,6 +26,26 @@ couvre: [Sprint 8, UAT-001]
 Alternative non bloquante : `DEFERRED` avec cible explicite.
 
 ## Findings actifs
+
+### UAT-002 - Avertissement de clôture incohérent avec le blocage serveur
+
+- Scénario : S8 - fin d'abonnement ; régression S9 concernée.
+- Sévérité : P2 pour l'incohérence UI confirmée ; P1 à réévaluer si un solde `quantityOwedByCoach > 0` a réellement été contourné.
+- Statut : OPEN
+- Commit inspecté : da0eee3
+- Étape : `completion_due -> completed`, case de dérogation décochée et aucun motif.
+- Résultat attendu : les prestations réellement dues par la coach bloquent la clôture sans dérogation explicite motivée ; l'interface décrit la même règle.
+- Résultat observé par Fred : clôture possible malgré l'avertissement, en superadmin et avec un compte décrit comme admin/coach.
+- Preuve confirmée : `outstandingComponents()` compte les prestations non consommées (`entitled - consumed`) ; le serveur vérifie `quantityOwedByCoach > 0`. Un solde non consommé peut donc afficher l'avertissement sans constituer le blocage serveur.
+- Autorisation : aucune exception superadmin trouvée dans la règle de clôture. Le rôle réel `coach` est refusé par le contrôleur ; vérifier le rôle effectif de la session signalée.
+- Règle / owner : abonnement ; `exploration-cache/tasks/sprint-5.md` S5.1 Completion et `exploration-cache/project/state-machines.md` règles Subscription.
+- Cas fourni par Fred : le lien sélectionne le renouvellement `48b39acc-c0fc-4e84-9561-2d2dbc3bca16`, encore onboarding. Sa source `24a4060c-3bd7-4168-bb62-60c1ad58b705` est completed ; deux prestations entitled=1, consumed=0, owed=0, sans mise à jour après clôture ; historique sans motif et audit `completionOverride=false`.
+- Cause établie : prédicats et message UI incohérents. Ce cas ne montre pas de contournement du blocage serveur : aucune quantité due par la coach n'est positive.
+- Correctif : non implémenté ; investigation et décision GPT/Fred avant tranche dédiée.
+- Preuves restantes : payload/réponse et rôle effectif pour tout nouveau cas avec solde coach positif ou rôle réel coach ; le compte acteur de la source inspectée est actuellement superadmin.
+- Retest Fred : à planifier après décision ; revalider les assertions blocage/dérogation de S8.
+- Décision : OPEN ; aucune clôture globale de Sprint 8 n'est enregistrée.
+- Rapport : [S8_UAT_REVIEW.md](S8_UAT_REVIEW.md).
 
 ### UAT-001 - Aucun workflow pour lever une exigence d'avis médical
 

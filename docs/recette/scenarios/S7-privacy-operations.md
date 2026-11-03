@@ -1,3 +1,11 @@
+---
+titre: S7 - Confidentialité et opérations
+public: développeur
+statut: à revoir
+vérifié-sur: da0eee3
+couvre: [Sprint 8, UAT review]
+---
+
 # S7 - Confidentialité et opérations
 
 ## But
@@ -10,36 +18,36 @@ Utiliser un sujet UAT synthétique secondaire afin de préserver le client princ
 
 ## Archivage
 
-- [ ] Archiver le sujet admissible via l'UI prévue.
-- [ ] Vérifier le mode lecture seule attendu.
-- [ ] Vérifier que les écritures interdites retournent le conflit métier prévu.
-- [ ] Désarchiver si le flow le permet et vérifier le retour à l'état attendu.
+- [x] Archiver le sujet admissible via l'UI prévue.
+- [x] Vérifier le mode lecture seule attendu.
+- [x] Vérifier que les écritures interdites retournent le conflit métier prévu.
+- [x] Désarchiver si le flow le permet et vérifier le retour à l'état attendu.
 
 ## Retention hold
 
-- [ ] Ajouter une retenue via le flow prévu.
-- [ ] Vérifier que l'action concernée est bloquée tant que la retenue est active.
-- [ ] Libérer la retenue.
-- [ ] Vérifier que l'historique reste visible.
+- [x] Ajouter une retenue via le flow prévu.
+- [x] Vérifier que l'action concernée est bloquée tant que la retenue est active.
+- [x] Libérer la retenue.
+- [x] Vérifier que l'historique reste visible.
 
 ## Anonymisation
 
 Sur un sujet synthétique archivé :
 
-- [ ] Fresh OTP exigé.
-- [ ] Confirmation explicite exigée.
-- [ ] Identité remplacée ou vidée selon les règles déjà validées.
-- [ ] Données santé et texte libre ciblés ne restent pas exposés.
-- [ ] Faits financiers conservés sous forme dé-identifiée.
-- [ ] Liens publics concernés ne donnent plus accès aux données.
-- [ ] L'UI présente clairement le caractère irréversible.
+- [x] Fresh OTP exigé.
+- [x] Confirmation explicite exigée.
+- [x] Identité remplacée ou vidée selon les règles déjà validées.
+- [x] Données santé et texte libre ciblés ne restent pas exposés.
+- [x] Faits financiers conservés sous forme dé-identifiée.
+- [x] Liens publics concernés ne donnent plus accès aux données.
+- [x] L'UI présente clairement le caractère irréversible.
 
 ## Purge / rétention
 
-- [ ] Vérifier la valeur configurée de `privacy.purge.delay_days`.
-- [ ] Une ressource non éligible reste conservée.
-- [ ] Une ressource éligible suit l'état de purge attendu via le mécanisme déjà implémenté.
-- [ ] Une répétition du traitement ne crée pas d'état incohérent.
+- [x] Vérifier la valeur configurée de `privacy.purge.delay_days`.
+- [x] Une ressource non éligible reste conservée.
+- [x] Une ressource éligible suit l'état de purge attendu via le mécanisme déjà implémenté.
+- [x] Une répétition du traitement ne crée pas d'état incohérent.
 
 ## Journal / récupération
 
@@ -50,9 +58,9 @@ Sur un sujet synthétique archivé :
 
 Le drill complet a déjà été validé au Sprint 7. Pour Sprint 8 :
 
-- [ ] vérifier que le runbook et les scripts restent présents;
-- [ ] vérifier que la dernière preuve de drill validé est toujours référencée;
-- [ ] confirmer que la destination réellement hors serveur reste un blocker Sprint 9.
+- [x] vérifier que le runbook et les scripts restent présents;
+- [x] vérifier que la dernière preuve de drill validé est toujours référencée;
+- [x] confirmer que la destination réellement hors serveur reste un blocker Sprint 9.
 
 ## Sortie
 

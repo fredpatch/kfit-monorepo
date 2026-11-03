@@ -10,8 +10,9 @@ Sprint 6 S6.1-S6.4 are validated and Sprint 6 is closed on `main`. The former `s
 ```text
 Branch            main
 Sprint            8 - V1 Core UAT et corrections
-Active slice      S8.2 - S5 finance and documents UAT
-Workflow state    S4 active coaching UAT validated green by Fred on 2026-11-02; S3 remains validated and UAT-001 resolved; move to S5
+Active slice      S8.2 - UAT results review and UAT-002 completion warning investigation
+Workflow state    Fred reviewed S0-S9; saved results reviewed 2026-11-03; UAT-002 OPEN (UI mismatch, P2; supplied completed source has owed=0 and no override); Sprint 8 closure not established
+UAT review        docs/recette/S8_UAT_REVIEW.md; 165 checked / 66 unchecked; S8 blocker/override assertions require retest despite saved checks
 UAT-001           Dedicated medical clearance command + Preparation confirmation; no migration; generic medical complete/waive forbidden; capacity and Ready remain explicit
 S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) - validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
 Last validated    S7.2 - validated by Fred 2026-10-25
@@ -48,7 +49,7 @@ ROLE-01           superadmin role, hasRole guard, migration 0019, ops:create-use
 PRETTY-01         Prettier 3.8.5 + format/format:check/lint:dashes in CI - validated by Fred, committed 2026-10-27
 OPS-01b           Supervision page, menu dot, 14 messages, generator fix - validated by Fred, committed 482f843
 RET-01            retention steps in privacy.purge, inactive prospects alert, 4 settings - validated by Fred live, committed 0457409
-Next action       Fred runs docs/recette/scenarios/S5-finance-documents.md; stop and log the next finding if one appears
+Next action       GPT/Fred review UAT-002 and remaining checklist evidence; approve narrow warning alignment/retest if appropriate; no server bypass demonstrated on supplied source
 FE-ARCH-01         reference foundation validated: 01a/01b/01c/01d/01e green; during Sprint 8 only touched frontend files follow the new architecture; broader ARCH migration resumes after UAT closes
 ARCH resume        immediately after Sprint 8 UAT closure and before Sprint 9 staging/deployment - continue remaining pages/features/shared/query migrations progressively
 Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »

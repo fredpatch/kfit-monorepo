@@ -2,6 +2,15 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-11-03 - UAT-002 completion blocker semantics
+
+- Implementation: `e5880e7` - `fix(subscriptions): derive completion blocker from entitlement`.
+- Completion now treats any remaining subscribed service (`quantityConsumed < quantityEntitled`) as the authoritative blocker; `quantityOwedByCoach` is not used as the remaining-service signal.
+- Blocked completion requires an explicit override plus a non-empty reason for all authorized roles, including superadmin; no implicit role bypass exists.
+- Unpaid/partially-paid finance remains independent: the UI shows a strong warning, but financial balance alone does not block operational completion and remains outstanding afterward.
+- Component quantities and finance events/balances are not mutated by completion. History preserves override reason; generic audit stores structural override evidence only.
+- Fred confirmed the full browser/database retest matrix green on 2026-11-03. UAT-002 is RESOLVED.
+
 ## 2026-11-02 - Sprint 8 S4 active coaching UAT validated
 
 - Fred confirmed all S4 checks green: subscription activation, appointments and replay protection, component consumption, structured follow-ups and cadence, pause/resume, progression and health-consent boundaries.

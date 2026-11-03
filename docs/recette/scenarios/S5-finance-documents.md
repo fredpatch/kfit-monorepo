@@ -1,8 +1,8 @@
 ---
 titre: S5 - Finance, justificatifs, devis, reçus et documents
 public: développeur
-statut: à revoir
-vérifié-sur: da0eee3
+statut: à jour
+vérifié-sur: 1536ff3
 couvre: [Sprint 8, UAT review]
 ---
 
@@ -14,10 +14,10 @@ Valider le sous-système financier et documentaire sans coupler paiement et stat
 
 ## Plan de paiement
 
-- [ ] Ouvrir l'onglet Paiements.
-- [ ] Créer/inspecter le plan d'échéances prévu.
-- [ ] Vérifier total, dû, futur, en retard et encaissé.
-- [ ] Vérifier qu'un paiement ne change pas automatiquement le statut de l'abonnement.
+- [x] Ouvrir l'onglet Paiements.
+- [x] Créer/inspecter le plan d'échéances prévu.
+- [x] Vérifier total, dû, futur, en retard et encaissé.
+- [x] Vérifier qu'un paiement ne change pas automatiquement le statut de l'abonnement.
 
 ## Paiement / allocation
 

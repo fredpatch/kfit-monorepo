@@ -336,21 +336,23 @@ Rationale: the report concerns an authoritative lifecycle safeguard. If completi
 ### Locked correction behavior
 
 1. If a completion blocker exists, normal completion must be rejected.
-2. Completion is allowed only through an explicit override path.
-3. Override requires:
+2. A completion blocker exists when any snapshotted subscription component has `quantityConsumed < quantityEntitled`. `quantityOwedByCoach` alone is not the authoritative completion-blocker signal.
+3. Unpaid client money is not a completion blocker. It remains a separate finance state and should be surfaced as a strong warning only.
+4. Completion with a service blocker is allowed only through an explicit override path.
+5. Override requires:
    - explicit user selection/intent;
    - a non-empty reason.
-4. This rule applies equally to:
+6. This rule applies equally to:
    - admin/coach;
    - superadmin.
-5. Superadmin has no implicit bypass.
-6. Leaving the override unchecked must never be interpreted as override permission.
-7. Missing/blank reason must never authorize override.
-8. Successful override must preserve audit/history evidence sufficient to show that the completion was exceptional and why.
-9. Normal completion without blocker remains unchanged.
-10. Finance/component/history invariants from S5.1 remain unchanged.
-11. Renewal behavior is out of scope except for regression safety.
-12. No unrelated frontend ARCH migration in this fix.
+7. Superadmin has no implicit bypass.
+8. Leaving the override unchecked must never be interpreted as override permission.
+9. Missing/blank reason must never authorize override.
+10. Successful override must preserve audit/history evidence sufficient to show that the completion was exceptional and why.
+11. Normal completion without service blocker remains unchanged.
+12. Finance/component/history invariants from S5.1 remain unchanged. Completion never auto-settles finance or component counters.
+13. Renewal behavior is out of scope except for regression safety.
+14. No unrelated frontend ARCH migration in this fix.
 
 ### Required retest
 
@@ -366,3 +368,35 @@ Fred must retest at minimum:
 - balances/components/finance remain unchanged by the correction.
 
 Sprint 8 cannot close while UAT-002 remains OPEN.
+
+
+### UAT-002 clarification - remaining entitlement vs finance
+
+Fred clarified the intended business rule on 2026-11-03 using a real UAT subscription showing 0/1 and 0/1 prestations delivered while completion presented no blocker.
+
+Current model facts:
+
+- subscription components snapshot `quantityEntitled` and `quantityConsumed`;
+- normal runtime increments `quantityConsumed`;
+- `quantityOwedByCoach` initializes to 0 and is not the normal remaining-service counter;
+- catalogue `isMandatory` is not currently snapshotted into `subscription_components`, so completion must not consult mutable catalogue data to reinterpret an existing subscription.
+
+Approved V1 completion blocker:
+
+```text
+serviceRemaining =
+  any subscription component where quantityConsumed < quantityEntitled
+```
+
+If `serviceRemaining` is true:
+- completion is blocked by default;
+- explicit override + non-empty reason can force completion;
+- same rule for admin/coach and superadmin.
+
+Financial balance is a separate axis:
+- unpaid/partially-paid does not block operational completion;
+- UI should show a strong financial warning;
+- debt remains outstanding after completion;
+- completion never mutates finance.
+
+The prior UAT-002 implementation attempt that only hardened `quantityOwedByCoach > 0` is insufficient for final retest and must be amended before UAT-002 can move to RESOLVED.

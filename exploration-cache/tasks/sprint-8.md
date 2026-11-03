@@ -210,7 +210,7 @@ Not Sprint 8 blockers, but production blockers for Sprint 9:
 
 ## Current task
 
-UAT-002 - P1 completion blocker/override correction. S8/S9 exit gate remains blocked pending Fred retest.
+S7 privacy/operations evidence: complete the two remaining durable journal + synchronization/replay checks. UAT-002 is resolved.
 
 ## Architecture rule during UAT
 
@@ -319,7 +319,7 @@ Next scenario: S5 - finance and documents.
 
 ## UAT-002 - completion blocker override bypass
 
-Status: P1 / OPEN.
+Status: P1 / RESOLVED - Fred validated corrected behavior on `e5880e7` on 2026-11-03.
 
 ### Fred's accepted problem statement
 
@@ -400,3 +400,23 @@ Financial balance is a separate axis:
 - completion never mutates finance.
 
 The prior UAT-002 implementation attempt that only hardened `quantityOwedByCoach > 0` is insufficient for final retest and must be amended before UAT-002 can move to RESOLVED.
+
+
+### UAT-002 validation - 2026-11-03
+
+Fred confirmed the amended completion behavior fully green on `e5880e7`.
+
+Validated:
+- remaining entitlement (`quantityConsumed < quantityEntitled`) is the service completion blocker;
+- explicit override + non-empty reason required;
+- no implicit superadmin bypass;
+- fully consumed service completes normally;
+- unpaid/partially-paid finance is warning-only and remains outstanding after completion;
+- service blocker + finance warning can coexist;
+- component quantities remain unchanged;
+- history/audit distinguish normal vs overridden completion;
+- finance events/balances remain unchanged.
+
+UAT-002 is RESOLVED.
+
+Next Sprint 8 task: complete the two remaining S7 privacy journal/replay evidence checks, then reconcile S9 exit gate.

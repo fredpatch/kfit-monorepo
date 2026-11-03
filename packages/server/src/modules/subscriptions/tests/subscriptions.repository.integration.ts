@@ -180,7 +180,13 @@ after(async () => {
 });
 async function make(
   status = "active",
-  config: { punctual?: boolean; end?: Date | null; owed?: number } = {},
+  config: {
+    punctual?: boolean;
+    end?: Date | null;
+    owed?: number;
+    consumed?: number;
+    entitled?: number;
+  } = {},
 ) {
   const id = randomUUID();
   ids.push(id);
@@ -207,8 +213,8 @@ async function make(
     subscriptionId: id,
     componentType: "appointment",
     labelSnapshot: "Historical synthetic entitlement",
-    quantityEntitled: 4,
-    quantityConsumed: 2,
+    quantityEntitled: config.entitled ?? 4,
+    quantityConsumed: config.consumed ?? 2,
     quantityOwedByCoach: config.owed ?? 0,
   });
   await db.insert(subscriptionStatusHistory).values({
@@ -505,8 +511,8 @@ test("PostgreSQL early review and punctual review require a reason", async () =>
     );
   }
 });
-test("PostgreSQL owed snapshot blocks ordinary completion", async () => {
-  const id = await make("completion_due", { owed: 2 });
+test("PostgreSQL remaining entitlement blocks ordinary completion even when coach-owed is zero", async () => {
+  const id = await make("completion_due", { owed: 0 });
   const before = await view(id),
     audits = await events(id);
   for (const reason of [undefined, "Synthetic reason is not an override"]) {
@@ -523,7 +529,7 @@ test("PostgreSQL owed snapshot blocks ordinary completion", async () => {
   }
 });
 test("PostgreSQL completion override without reason rejects safely", async () => {
-  const id = await make("completion_due", { owed: 2 });
+  const id = await make("completion_due", { owed: 0 });
   const before = await view(id),
     audits = await events(id);
   for (const reason of [undefined, "", " \n "]) {
@@ -540,7 +546,7 @@ test("PostgreSQL completion override without reason rejects safely", async () =>
   }
 });
 test("PostgreSQL completion override preserves all balances and sets both end timestamps", async () => {
-  const id = await make("completion_due", { owed: 2 }),
+  const id = await make("completion_due", { owed: 0 }),
     before = (await view(id)).components;
   assert.equal(
     (
@@ -588,7 +594,7 @@ test("PostgreSQL completion override preserves all balances and sets both end ti
 });
 
 test("PostgreSQL explicit override with reason remains allowed when no blocker exists", async () => {
-  const id = await make("completion_due");
+  const id = await make("completion_due", { consumed: 4 });
   const before = (await view(id)).components;
   assert.equal(
     (
@@ -616,8 +622,23 @@ test("PostgreSQL explicit override with reason remains allowed when no blocker e
   );
 });
 
+test("PostgreSQL fully consumed entitlement completes normally despite coach-owed snapshot", async () => {
+  const id = await make("completion_due", { consumed: 4, owed: 2 });
+  const before = (await view(id)).components;
+  assert.equal(
+    (
+      await run(id, {
+        action: "complete",
+        overrideOutstandingComponents: false,
+      })
+    ).status,
+    "ok",
+  );
+  assert.deepEqual((await view(id)).components, before);
+});
+
 test("PostgreSQL concurrent explicit completion overrides write one history and audit", async () => {
-  const id = await make("completion_due", { owed: 2 });
+  const id = await make("completion_due", { owed: 0 });
   const before = (await view(id)).components;
   const command: LifecycleCommand = {
     action: "complete",
@@ -646,7 +667,7 @@ test("PostgreSQL concurrent explicit completion overrides write one history and 
 });
 
 test("PostgreSQL failed audit rolls back explicit completion override and preserves all balances", async () => {
-  const id = await make("completion_due", { owed: 2 });
+  const id = await make("completion_due", { owed: 0 });
   const before = await view(id),
     audits = await events(id);
   await assert.rejects(
@@ -664,7 +685,7 @@ test("PostgreSQL failed audit rolls back explicit completion override and preser
   assert.deepEqual(await events(id), audits);
 });
 test("PostgreSQL settled completion succeeds without overriding", async () => {
-  const id = await make("completion_due");
+  const id = await make("completion_due", { consumed: 4 });
   assert.equal(
     (
       await run(id, {
@@ -1053,6 +1074,7 @@ for (const action of [
               ["complete", "resume-active", "renew"].includes(action)
                 ? "completion_due"
                 : "active",
+              action === "complete" ? { consumed: 4 } : {},
             );
     const before = await view(id),
       beforeRow = await row(id),

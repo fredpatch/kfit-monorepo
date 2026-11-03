@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type {
   SubscriptionCommand,
@@ -19,6 +19,7 @@ import {
 import { Button } from "../../components/ui/button.js";
 import { Field } from "../../components/ui/field.js";
 import { Input, Textarea } from "../../components/ui/input.js";
+import { financeApi } from "../../finance/api/finance-api.js";
 import { fromLocalInput } from "../../lib/format.js";
 import {
   commandDescriptions,
@@ -70,6 +71,11 @@ export function DecisionDialog({
   });
   const override = watch("overrideOutstanding");
   const reasonValue = watch("reason");
+  const financeQuery = useQuery({
+    queryKey: ["finance", view.id],
+    queryFn: () => financeApi.get(view.id),
+    enabled: command === "complete",
+  });
 
   useEffect(() => {
     reset({ reason: "", date: "", overrideOutstanding: false });
@@ -92,6 +98,7 @@ export function DecisionDialog({
     command === "resume" || command === "resume-active" || command === "renew";
   const outstanding = outstandingComponents(view);
   const blockedCompletion = command === "complete" && outstanding > 0;
+  const remainingXaf = financeQuery.data?.finance.remainingXaf;
   const completionIntentInvalid =
     command === "complete" &&
     ((blockedCompletion && !override) || (override && !reasonValue.trim()));
@@ -186,6 +193,18 @@ export function DecisionDialog({
           className="flex flex-col gap-4"
           noValidate
         >
+          {command === "complete" &&
+          remainingXaf !== undefined &&
+          remainingXaf > 0 ? (
+            <p
+              role="note"
+              className="rounded-md border border-warning/40 bg-warning-soft p-3 text-[13px] font-semibold text-warning"
+            >
+              Solde financier restant : {remainingXaf.toLocaleString("fr-FR")}{" "}
+              FCFA. L'abonnement peut être terminé, mais ce solde restera dû
+              après la clôture.
+            </p>
+          ) : null}
           {blockedCompletion ? (
             <div className="flex flex-col gap-2.5 rounded-md bg-warning-soft p-3 text-[13px] text-warning">
               <p>

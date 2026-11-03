@@ -74,7 +74,7 @@ export function reasonRequired(
 
 export function outstandingComponents(view: SubscriptionDetail): number {
   return view.components.reduce(
-    (sum, c) => sum + Math.max(0, c.quantityOwedByCoach),
+    (sum, c) => sum + Math.max(0, c.quantityEntitled - c.quantityConsumed),
     0,
   );
 }

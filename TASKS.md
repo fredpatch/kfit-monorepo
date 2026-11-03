@@ -11,7 +11,7 @@ Sprint 6 S6.1-S6.4 are validated and Sprint 6 is closed on `main`. The former `s
 Branch            main
 Sprint            8 - V1 Core UAT et corrections
 Active slice      UAT-002 - completion blocker override bypass (P1)
-Workflow state    UAT-002 OPEN/P1: blocker semantics clarified — remaining subscribed service (consumed < entitled) blocks completion; unpaid money is warning-only; prior override-only fix is insufficient
+Workflow state    UAT-002 OPEN/P1: blocker semantics clarified - remaining subscribed service (consumed < entitled) blocks completion; unpaid money is warning-only; prior override-only fix is insufficient
 UAT review        169 checked / 62 unchecked; S7 journal/replay evidence and S9 exit gate remain pending; UAT-002 blocks closure
 UAT-001           Dedicated medical clearance command + Preparation confirmation; no migration; generic medical complete/waive forbidden; capacity and Ready remain explicit
 S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) - validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written

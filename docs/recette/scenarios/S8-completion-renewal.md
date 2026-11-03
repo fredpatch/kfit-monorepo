@@ -14,22 +14,25 @@ couvre: [Sprint 8, UAT-002]
 
 ## Retest UAT-002 - blocage et dérogation de clôture
 
-Le bloqueur autoritatif est au moins un composant avec `quantityOwedByCoach > 0`. Le serveur relit/verrouille l'état courant et ne déduit jamais l'override d'un motif ou du rôle. Utiliser des données synthétiques.
+Le bloqueur autoritatif est au moins un composant avec `quantityConsumed < quantityEntitled`. `quantityOwedByCoach` ne définit pas les prestations restantes. Le serveur relit/verrouille l'état courant et ne déduit jamais l'override d'un motif ou du rôle. La finance reste indépendante et produit un avertissement non bloquant. Utiliser des données synthétiques.
 
-- [ ] Blocage + case décochée + aucun motif : confirmation UI indisponible ; appel direct refusé avec `SUBSCRIPTION_COMPONENTS_OUTSTANDING`.
-- [ ] Blocage + case décochée + motif fourni : refus identique ; le motif seul n'autorise rien.
-- [ ] Blocage + case cochée + motif absent/vide/espaces : UI refuse et serveur retourne `SUBSCRIPTION_COMPLETION_REASON_REQUIRED`.
-- [ ] Blocage + case cochée + motif non vide : clôture réussie exactement une fois.
-- [ ] Décocher efface le motif et la validation spécifique ; la case n'est jamais cochée automatiquement.
-- [ ] Refaire les quatre combinaisons avec le compte admin/coach normalement autorisé.
+- [x] Prestation restante, par exemple 0/1 ou 1/4 : blocage et case de dérogation visibles.
+- [x] Prestation restante + case décochée + aucun motif : confirmation UI indisponible ; appel direct refusé avec `SUBSCRIPTION_COMPONENTS_OUTSTANDING`.
+- [x] Prestation restante + case décochée + motif fourni : refus identique ; le motif seul n'autorise rien.
+- [x] Prestation restante + case cochée + motif absent/vide/espaces : UI refuse et serveur retourne `SUBSCRIPTION_COMPLETION_REASON_REQUIRED`.
+- [x] Prestation restante + case cochée + motif non vide : clôture réussie exactement une fois.
+- [x] Décocher efface le motif et la validation spécifique ; la case n'est jamais cochée automatiquement.
+- [x] Refaire les quatre combinaisons avec le compte admin/coach normalement autorisé.
 - [ ] Refaire le parcours bloqué avec superadmin : aucun bypass implicite.
-- [ ] Sans blocage + case décochée : clôture normale possible sans motif de dérogation.
-- [ ] Un override explicitement demandé sans blocage reste accepté avec un motif non vide, comme auparavant ; il est audité comme tel.
-- [ ] Recharger : l'état et l'historique persistent.
-- [ ] DBeaver : `completed`, dates de fin et historique corrects ; une répétition ne crée aucun nouvel historique/audit.
-- [ ] Les quantités de tous les composants sont conservées exactement.
-- [ ] La clôture dérogatoire conserve son motif dans l'historique ; audit `completionOverride=true`, sans motif en metadata générique. Une clôture normale porte `completionOverride=false`.
-- [ ] La finance reste inchangée ; renouvellement en régression seulement.
+- [ ] Tous les composants entièrement consommés + case décochée : clôture normale réussie sans motif, même si un ancien `quantityOwedByCoach > 0` subsiste seul.
+- [x] Un override explicitement demandé sans blocage reste accepté avec un motif non vide, comme auparavant ; il est audité comme tel.
+- [x] Solde impayé ou partiellement payé sans prestation restante : avertissement financier visible, clôture normale toujours autorisée.
+- [x] Solde impayé ou partiellement payé avec prestation restante : avertissement financier et blocage de service visibles ; seule la règle de dérogation de service bloque.
+- [x] Recharger : l'état et l'historique persistent.
+- [x] DBeaver : `completed`, dates de fin et historique corrects ; une répétition ne crée aucun nouvel historique/audit.
+- [x] Les quantités de tous les composants sont conservées exactement.
+- [x] La clôture dérogatoire conserve son motif dans l'historique ; audit `completionOverride=true`, sans motif en metadata générique. Une clôture normale porte `completionOverride=false`.
+- [x] La finance, ses soldes et ses événements restent inchangés ; renouvellement en régression seulement.
 
 ## But
 

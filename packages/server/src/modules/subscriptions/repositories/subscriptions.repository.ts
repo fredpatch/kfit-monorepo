@@ -340,7 +340,7 @@ export class DrizzleSubscriptionsRepository implements SubscriptionsRepository {
             break;
           case "complete": {
             const hasOutstandingComponents = components.some(
-              (c) => c.quantityOwedByCoach > 0,
+              (c) => c.quantityConsumed < c.quantityEntitled,
             );
             if (
               hasOutstandingComponents &&

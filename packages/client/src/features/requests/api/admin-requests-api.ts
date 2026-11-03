@@ -1,7 +1,6 @@
-import axios, { AxiosHeaders, type AxiosInstance } from "axios";
+import type { AxiosInstance } from "axios";
 import {
   adminRequestsApiRoutes,
-  authCsrfHeaderName,
   type AdminRequestDetailResponse,
   type AdminRequestsQueueResponse,
   type ConvertRequestInput,
@@ -16,7 +15,7 @@ import {
   type ServiceRequestStatus,
   type WithdrawWaitlistEntryResponse,
 } from "@kfit/shared";
-import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import { createApiHttpClient } from "../../../shared/api/http-client.js";
 
 export type AdminRequestsApiClientOptions = {
   baseUrl?: string;
@@ -51,28 +50,8 @@ export type AdminRequestsApiClient = {
   ): Promise<RequestConversionResponse>;
 };
 
-function resolveBaseUrl(baseUrl: string | undefined): string {
-  return baseUrl ?? import.meta.env.VITE_API_BASE_URL ?? "";
-}
-
 function createDefaultHttpClient(baseUrl: string | undefined): AxiosInstance {
-  const client = axios.create({
-    baseURL: resolveBaseUrl(baseUrl),
-    withCredentials: true,
-    headers: { accept: "application/json" },
-  });
-
-  client.interceptors.request.use((config) => {
-    if (!requiresCsrfHeader(config.method)) return config;
-
-    const headers = AxiosHeaders.from(config.headers);
-    const csrf = buildCsrfHeaders(config.method)[authCsrfHeaderName];
-    if (csrf) headers.set(authCsrfHeaderName, csrf);
-    config.headers = headers;
-    return config;
-  });
-
-  return client;
+  return createApiHttpClient(baseUrl === undefined ? {} : { baseUrl });
 }
 
 function detailRoute(requestId: string): string {

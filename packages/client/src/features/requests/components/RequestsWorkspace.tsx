@@ -1,9 +1,7 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
 import { Search } from "lucide-react";
 import type { AdminServiceRequestSummary } from "@kfit/shared";
-import { adminRequestsApiClient } from "../api/admin-requests-api.js";
 import { requestErrorMessage } from "../lib/request-error-messages.js";
 import {
   requestViewLabels,
@@ -11,15 +9,19 @@ import {
   requestViews,
   type RequestView,
 } from "../lib/request-labels.js";
+import { useAdminRequestsQueue } from "../queries/request-queries.js";
 import { RequestDetail } from "./RequestDetail.js";
-import { AdminPage } from "../../app/layout/AdminPage.js";
-import { Avatar } from "../../components/ui/avatar.js";
-import { Button } from "../../components/ui/button.js";
-import { EmptyState } from "../../components/ui/empty-state.js";
-import { StatusPill } from "../../components/ui/status-pill.js";
-import { cn } from "../../lib/utils.js";
-import { requestStatus, type StatusDescriptor } from "../../lib/status-map.js";
-import { familyMeta, familyOfSlug } from "../../lib/families.js";
+import { AdminPage } from "../../../app/layout/AdminPage.js";
+import { Avatar } from "../../../components/ui/avatar.js";
+import { Button } from "../../../components/ui/button.js";
+import { EmptyState } from "../../../components/ui/empty-state.js";
+import { StatusPill } from "../../../components/ui/status-pill.js";
+import { cn } from "../../../lib/utils.js";
+import {
+  requestStatus,
+  type StatusDescriptor,
+} from "../../../lib/status-map.js";
+import { familyMeta, familyOfSlug } from "../../../lib/families.js";
 
 /** "il y a 2 h" style age, compact for the queue. */
 function age(iso: string, now = Date.now()): string {
@@ -124,14 +126,10 @@ function QueueItem({
 }
 
 /** Demandes (board 05). Data: existing S3 endpoints; queue views filtered client-side in V1. Funnel hidden until S7. */
-export function RequestsPage() {
+export function RequestsWorkspace() {
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const query = useQuery({
-    queryKey: ["requests", "admin-queue", "all"],
-    queryFn: () => adminRequestsApiClient.listQueue(),
-    refetchInterval: 60_000,
-  });
+  const query = useAdminRequestsQueue();
   const view =
     requestViews.find((v) => viewParam[v] === params.get("vue")) ?? "todo";
   const selectedId = params.get("demande");

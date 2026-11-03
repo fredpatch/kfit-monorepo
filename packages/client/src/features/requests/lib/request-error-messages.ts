@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { RequestErrorCode, RequestErrorResponse } from "@kfit/shared";
-import { commonApiErrorMessage } from "../../lib/api-error-messages.js";
+import { commonApiErrorMessage } from "../../../lib/api-error-messages.js";
 
 const requestErrorMessages: Record<RequestErrorCode, string> = {
   REQUEST_ROUTE_UNEXPECTED_FAILURE:

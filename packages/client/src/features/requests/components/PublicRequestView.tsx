@@ -1,14 +1,14 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import type {
   CataloguePublicService,
   RequestSubmissionRecord,
 } from "@kfit/shared";
-import { Button } from "../../components/ui/button.js";
-import { Field } from "../../components/ui/field.js";
-import { Input, Textarea } from "../../components/ui/input.js";
+import { Button } from "../../../components/ui/button.js";
+import { Field } from "../../../components/ui/field.js";
+import { Input, Textarea } from "../../../components/ui/input.js";
 import {
   PublicChoice,
   PublicLoading,
@@ -17,11 +17,11 @@ import {
   PublicUnavailable,
   moneyFcfa,
   publicPrimaryClass,
-} from "../../components/public/PublicShell.js";
-import { cn } from "../../lib/utils.js";
-import { familyMeta, familyOfSlug } from "../../lib/families.js";
-import { catalogueApiClient } from "../../features/catalogue/api/catalogue-api.js";
-import { OfferCover } from "../../features/catalogue/components/OfferCover.js";
+} from "../../../components/public/PublicShell.js";
+import { cn } from "../../../lib/utils.js";
+import { familyMeta, familyOfSlug } from "../../../lib/families.js";
+import { OfferCover } from "../../catalogue/components/OfferCover.js";
+import { useCataloguePublicServices } from "../../catalogue/queries/catalogue-queries.js";
 import { requestsApiClient } from "../api/requests-api.js";
 import {
   classifyRequestError,
@@ -30,12 +30,9 @@ import {
 } from "../lib/request-error-messages.js";
 
 /** Request page (board 11a) at /demande/:offre?formule=<variantId>. Loads the public catalogue to find the offer. */
-export function PublicRequestPage() {
+export function PublicRequestView() {
   const { offre = "" } = useParams();
-  const catalogue = useQuery({
-    queryKey: ["catalogue", "public-services"],
-    queryFn: () => catalogueApiClient.listPublicServices(),
-  });
+  const catalogue = useCataloguePublicServices();
   if (catalogue.isPending)
     return <PublicLoading label="Chargement de l'offre…" tag="Ma demande" />;
   if (catalogue.isError)

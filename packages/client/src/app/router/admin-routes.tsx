@@ -54,7 +54,7 @@ const ConsentTextsPage = lazy(() =>
   })),
 );
 const RequestsPage = lazy(() =>
-  import("../../requests/components/RequestsPage.js").then((m) => ({
+  import("../../pages/admin/requests/RequestsPage.js").then((m) => ({
     default: m.RequestsPage,
   })),
 );

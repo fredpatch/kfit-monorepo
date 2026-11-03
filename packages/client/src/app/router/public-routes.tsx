@@ -36,7 +36,7 @@ const PublicConsentPage = lazy(() =>
   })),
 );
 const PublicRequestPage = lazy(() =>
-  import("../../requests/components/PublicRequestForm.js").then((m) => ({
+  import("../../pages/public/request/PublicRequestPage.js").then((m) => ({
     default: m.PublicRequestPage,
   })),
 );

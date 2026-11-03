@@ -3,7 +3,8 @@ import { hasRole, statusDotTone } from "@kfit/shared";
 import { useAuth } from "../../auth/state/auth-context.js";
 import { followUpsApi } from "../../follow-ups/api/follow-ups-api.js";
 import { dashboardApi } from "../../dashboard/api/dashboard-api.js";
-import { adminRequestsApiClient } from "../../requests/api/admin-requests-api.js";
+import { adminRequestsApiClient } from "../../features/requests/api/admin-requests-api.js";
+import { requestKeys } from "../../features/requests/queries/request-keys.js";
 import {
   supervisionApi,
   supervisionKeys,
@@ -22,7 +23,7 @@ export function useNavBadges(): Record<NavBadgeSource, NavBadgeValue> {
     refetchInterval: 60_000,
   });
   const newRequests = useQuery({
-    queryKey: ["requests", "admin-queue", "submitted"],
+    queryKey: requestKeys.adminQueueByStatus("submitted"),
     queryFn: () => adminRequestsApiClient.listQueue("submitted"),
     refetchInterval: 60_000,
   });

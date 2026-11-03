@@ -22,6 +22,7 @@ import {
   outcomeLabels,
   qualificationOutcomeLabels,
 } from "../lib/request-labels.js";
+import { requestKeys } from "../queries/request-keys.js";
 import {
   Dialog,
   DialogClose,
@@ -29,17 +30,17 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
-} from "../../components/ui/dialog.js";
-import { Button } from "../../components/ui/button.js";
-import { Field } from "../../components/ui/field.js";
-import { Input, NativeSelect, Textarea } from "../../components/ui/input.js";
-import { SegmentedControl } from "../../components/ui/segmented-control.js";
+} from "../../../components/ui/dialog.js";
+import { Button } from "../../../components/ui/button.js";
+import { Field } from "../../../components/ui/field.js";
+import { Input, NativeSelect, Textarea } from "../../../components/ui/input.js";
+import { SegmentedControl } from "../../../components/ui/segmented-control.js";
 import {
   dateFr,
   fromLocalInput,
   moneyXaf,
   toLocalInput,
-} from "../../lib/format.js";
+} from "../../../lib/format.js";
 
 /** Refresh the detail, every queue key (incl. the nav badge) and, after conversion, customers. */
 export function useRequestRefresh(requestId: string) {
@@ -47,9 +48,9 @@ export function useRequestRefresh(requestId: string) {
   return async (alsoCustomers = false) => {
     await Promise.all([
       client.invalidateQueries({
-        queryKey: ["requests", "admin-detail", requestId],
+        queryKey: requestKeys.adminDetail(requestId),
       }),
-      client.invalidateQueries({ queryKey: ["requests", "admin-queue"] }),
+      client.invalidateQueries({ queryKey: requestKeys.adminQueue() }),
       ...(alsoCustomers
         ? [client.invalidateQueries({ queryKey: ["customers"] })]
         : []),

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "react-router";
 import { toast } from "sonner";
 import {
@@ -24,7 +23,7 @@ import {
   PrivacyMenuItems,
   UnarchiveDialog,
   usePrivacyDialog,
-} from "../../privacy/components/SubjectPrivacyDialogs.js";
+} from "../../../privacy/components/SubjectPrivacyDialogs.js";
 import { adminRequestsApiClient } from "../api/admin-requests-api.js";
 import { requestErrorMessage } from "../lib/request-error-messages.js";
 import {
@@ -36,6 +35,7 @@ import {
   transitionLabels,
   waitlistEntryStatusLabels,
 } from "../lib/request-labels.js";
+import { useAdminRequestDetail } from "../queries/request-queries.js";
 import {
   ConfirmDialog,
   ContactAttemptSheet,
@@ -45,19 +45,19 @@ import {
   conversionState,
   useRequestRefresh,
 } from "./request-actions.js";
-import { Avatar } from "../../components/ui/avatar.js";
-import { Button } from "../../components/ui/button.js";
+import { Avatar } from "../../../components/ui/avatar.js";
+import { Button } from "../../../components/ui/button.js";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu.js";
-import { StatusPill } from "../../components/ui/status-pill.js";
-import { cn } from "../../lib/utils.js";
-import { requestStatus } from "../../lib/status-map.js";
-import { dateFr, dateTimeFr, moneyXaf } from "../../lib/format.js";
+} from "../../../components/ui/dropdown-menu.js";
+import { StatusPill } from "../../../components/ui/status-pill.js";
+import { cn } from "../../../lib/utils.js";
+import { requestStatus } from "../../../lib/status-map.js";
+import { dateFr, dateTimeFr, moneyXaf } from "../../../lib/format.js";
 
 const waLink = (phone: string) =>
   `https://wa.me/${phone.replace(/[^0-9]/g, "")}`;
@@ -218,10 +218,7 @@ export function RequestDetail({
   requestId: string;
   onBack?: () => void;
 }) {
-  const query = useQuery({
-    queryKey: ["requests", "admin-detail", requestId],
-    queryFn: () => adminRequestsApiClient.getDetail(requestId),
-  });
+  const query = useAdminRequestDetail(requestId);
   const refresh = useRequestRefresh(requestId);
   const [open, setOpen] = useState<Action | null>(null);
   const privacyDialog = usePrivacyDialog<PrivacyMenuAction>();

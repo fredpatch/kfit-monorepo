@@ -1,9 +1,10 @@
-import axios, { type AxiosInstance } from "axios";
+import type { AxiosInstance } from "axios";
 import {
   requestsApiRoutes,
   type RequestSubmissionInput,
   type RequestSubmissionResponse,
 } from "@kfit/shared";
+import { createApiHttpClient } from "../../../shared/api/http-client.js";
 
 export type RequestsApiClientOptions = {
   baseUrl?: string;
@@ -14,14 +15,11 @@ export type RequestsApiClient = {
   submit(input: RequestSubmissionInput): Promise<RequestSubmissionResponse>;
 };
 
-function resolveBaseUrl(baseUrl: string | undefined): string {
-  return baseUrl ?? import.meta.env.VITE_API_BASE_URL ?? "";
-}
-
 function createDefaultHttpClient(baseUrl: string | undefined): AxiosInstance {
-  return axios.create({
-    baseURL: resolveBaseUrl(baseUrl),
-    headers: { accept: "application/json" },
+  return createApiHttpClient({
+    ...(baseUrl === undefined ? {} : { baseUrl }),
+    withCsrf: false,
+    config: { withCredentials: false },
   });
 }
 

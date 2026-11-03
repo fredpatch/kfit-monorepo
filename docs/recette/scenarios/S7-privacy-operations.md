@@ -1,8 +1,8 @@
 ---
 titre: S7 - Confidentialité et opérations
 public: développeur
-statut: à revoir
-vérifié-sur: da0eee3
+statut: validé
+vérifié-sur: e5880e7
 couvre: [Sprint 8, UAT review]
 ---
 
@@ -51,8 +51,8 @@ Sur un sujet synthétique archivé :
 
 ## Journal / récupération
 
-- [ ] L'action de confidentialité est représentée dans le journal durable prévu.
-- [ ] Les outils de synchronisation/replay restent idempotents au niveau métier.
+- [x] L'action de confidentialité est représentée dans le journal durable prévu.
+- [x] Les outils de synchronisation/replay restent idempotents au niveau métier.
 
 ## Sauvegarde / restauration
 
@@ -65,3 +65,10 @@ Le drill complet a déjà été validé au Sprint 7. Pour Sprint 8 :
 ## Sortie
 
 Les limites de confidentialité restent cohérentes avec le reste du parcours V1 Core.
+
+
+## Validation locale 2026-11-03
+
+Fred a vérifié dans DBeaver que les événements privacy sont persistés dans le journal durable. Les tests de synchronisation/replay déjà exécutés restent verts et confirment l'idempotence métier.
+
+Limite UX non bloquante : aucun écran admin ne permet encore de parcourir/filtrer le journal d'audit. Cette amélioration est différée au backlog opérations/Supervision.

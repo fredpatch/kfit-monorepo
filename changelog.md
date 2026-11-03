@@ -2,6 +2,15 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-11-03 - FE-ARCH-02 catalogue feature migration
+
+- Implementation: `da91b4f` - `refactor(catalogue): migrate frontend capability to feature layer`.
+- Moved the full catalogue frontend capability under `features/catalogue/` and removed the old top-level `src/catalogue/` directory.
+- Added public route composition through `pages/public/catalogue/PublicCataloguePage.tsx`; admin catalogue continues through `pages/admin/catalogue/CataloguePage.tsx`.
+- Catalogue now reuses the canonical shared HTTP infrastructure while preserving public no-credential behavior and admin credential/CSRF behavior.
+- Stable catalogue query keys and all business behavior remain unchanged.
+- Fred validated public catalogue, request handoff and admin catalogue browser flows green on 2026-11-03.
+
 ## 2026-11-03 - UAT-002 completion blocker semantics
 
 - Implementation: `e5880e7` - `fix(subscriptions): derive completion blocker from entitlement`.

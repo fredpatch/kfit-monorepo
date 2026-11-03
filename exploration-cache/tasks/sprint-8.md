@@ -210,7 +210,7 @@ Not Sprint 8 blockers, but production blockers for Sprint 9:
 
 ## Current task
 
-S5 - finance, payment proofs, quotes, receipts and personalized documents. S4 is validated green.
+UAT-002 - P1 completion blocker/override correction. S8/S9 exit gate remains blocked pending Fred retest.
 
 ## Architecture rule during UAT
 
@@ -315,3 +315,54 @@ Validated:
 Validation/docs commit: `26e8087`.
 
 Next scenario: S5 - finance and documents.
+
+
+## UAT-002 - completion blocker override bypass
+
+Status: P1 / OPEN.
+
+### Fred's accepted problem statement
+
+Completion can succeed from `completion_due` while a completion blocker is displayed, with the override checkbox left unchecked and no reason supplied. Fred reports the same result with superadmin and admin/coach accounts.
+
+No new technical diagnosis is asserted here. The earlier interpretation in commit `1536ff3` is historical only and is not the accepted description of the defect.
+
+### Severity decision
+
+P1 - major.
+
+Rationale: the report concerns an authoritative lifecycle safeguard. If completion succeeds without satisfying the blocker or the explicit override contract, the V1 completion flow is not reliable.
+
+### Locked correction behavior
+
+1. If a completion blocker exists, normal completion must be rejected.
+2. Completion is allowed only through an explicit override path.
+3. Override requires:
+   - explicit user selection/intent;
+   - a non-empty reason.
+4. This rule applies equally to:
+   - admin/coach;
+   - superadmin.
+5. Superadmin has no implicit bypass.
+6. Leaving the override unchecked must never be interpreted as override permission.
+7. Missing/blank reason must never authorize override.
+8. Successful override must preserve audit/history evidence sufficient to show that the completion was exceptional and why.
+9. Normal completion without blocker remains unchanged.
+10. Finance/component/history invariants from S5.1 remain unchanged.
+11. Renewal behavior is out of scope except for regression safety.
+12. No unrelated frontend ARCH migration in this fix.
+
+### Required retest
+
+Fred must retest at minimum:
+
+- blocker present + override unchecked + no reason -> completion refused;
+- blocker present + override unchecked + reason present -> completion refused;
+- blocker present + override checked + blank reason -> completion refused;
+- blocker present + override checked + valid reason -> completion succeeds exactly once;
+- same matrix with admin/coach and superadmin;
+- no blocker -> normal completion succeeds;
+- history/audit records distinguish normal vs overridden completion;
+- balances/components/finance remain unchanged by the correction.
+
+Sprint 8 cannot close while UAT-002 remains OPEN.

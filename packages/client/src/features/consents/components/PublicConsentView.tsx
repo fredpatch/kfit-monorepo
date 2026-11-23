@@ -8,7 +8,7 @@ import {
   type ConsentDecisions,
   type ConsentType,
 } from "@kfit/shared";
-import { Button } from "../../components/ui/button.js";
+import { Button } from "../../../components/ui/button.js";
 import {
   PublicChoice,
   PublicLoading,
@@ -17,12 +17,13 @@ import {
   PublicTitle,
   PublicUnavailable,
   publicPrimaryClass,
-} from "../../components/public/PublicShell.js";
-import { cn } from "../../lib/utils.js";
+} from "../../../components/public/PublicShell.js";
+import { cn } from "../../../lib/utils.js";
 import { consentApi, consentErrorMessage } from "../api/consent-api.js";
+import { consentKeys } from "../queries/consent-keys.js";
 
 /** Token in the URL hash; a new hash = a fresh page. */
-export function PublicConsentPage() {
+export function PublicConsentView() {
   const [link, setLink] = useState(() => ({
     token: window.location.hash.slice(1),
     key: crypto.randomUUID(),
@@ -70,7 +71,7 @@ function PublicConsentContent({
   );
   const inFlight = useRef(false);
   const query = useQuery({
-    queryKey: ["public-consent", queryId],
+    queryKey: consentKeys.publicLink(queryId),
     queryFn: () => consentApi.publicGet(token),
     retry: false,
     refetchOnWindowFocus: false,

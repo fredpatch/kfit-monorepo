@@ -49,7 +49,7 @@ const QuestionnairesPage = lazy(() =>
   })),
 );
 const ConsentTextsPage = lazy(() =>
-  import("../../consents/components/ConsentTextsPage.js").then((m) => ({
+  import("../../pages/admin/consents/ConsentTextsPage.js").then((m) => ({
     default: m.ConsentTextsPage,
   })),
 );

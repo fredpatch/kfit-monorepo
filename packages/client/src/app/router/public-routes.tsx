@@ -31,7 +31,7 @@ const PublicPaymentProofPage = lazy(() =>
   ),
 );
 const PublicConsentPage = lazy(() =>
-  import("../../consents/components/PublicConsentPage.js").then((m) => ({
+  import("../../pages/public/consent/PublicConsentPage.js").then((m) => ({
     default: m.PublicConsentPage,
   })),
 );

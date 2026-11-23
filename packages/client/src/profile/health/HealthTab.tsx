@@ -36,7 +36,7 @@ import { focusReturnTarget } from "../../lib/focus.js";
 import {
   consentApi,
   consentErrorMessage,
-} from "../../consents/api/consent-api.js";
+} from "../../features/consents/api/consent-api.js";
 import {
   questionnaireApi,
   questionnaireErrorMessage,

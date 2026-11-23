@@ -1,6 +1,4 @@
-import axios, { AxiosHeaders } from "axios";
 import {
-  authCsrfHeaderName,
   consentApiRoutes,
   consentDefinitionApiRoutes,
   type ConsentDecisions,
@@ -15,29 +13,21 @@ import {
   type ConsentType,
   type OptionalConsentType,
 } from "@kfit/shared";
-import { buildCsrfHeaders, requiresCsrfHeader } from "../../auth/api/csrf.js";
+import {
+  apiErrorCode,
+  apiHttpClient,
+  createApiHttpClient,
+} from "../../../shared/api/http-client.js";
 import {
   commonApiErrorMessage,
   type ApiErrorAudience,
-} from "../../lib/api-error-messages.js";
-const admin = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? "",
-  withCredentials: true,
-  headers: { accept: "application/json" },
-});
-admin.interceptors.request.use((config) => {
-  if (requiresCsrfHeader(config.method)) {
-    const headers = AxiosHeaders.from(config.headers);
-    const token = buildCsrfHeaders(config.method)[authCsrfHeaderName];
-    if (token) headers.set(authCsrfHeaderName, token);
-    config.headers = headers;
-  }
-  return config;
-});
-const publicHttp = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? "",
-  withCredentials: false,
-  headers: { accept: "application/json" },
+} from "../../../lib/api-error-messages.js";
+/** Coach transport: session cookie + CSRF on mutating methods. */
+const admin = apiHttpClient;
+/** Public link transport: the token is the only credential (no cookie, no CSRF). */
+const publicHttp = createApiHttpClient({
+  withCsrf: false,
+  config: { withCredentials: false },
 });
 function route(path: string, id: string) {
   return path.replace(":subscriptionId", encodeURIComponent(id));
@@ -181,18 +171,14 @@ export const consentDefinitionsApi = {
   },
 };
 export function consentErrorCode(error: unknown): string | null {
-  const code: unknown = axios.isAxiosError(error)
-    ? error.response?.data?.error
-    : null;
+  const code = apiErrorCode(error);
   return typeof code === "string" ? code : null;
 }
 export function consentErrorMessage(
   error: unknown,
   audience: ApiErrorAudience = "admin",
 ): string {
-  const code: unknown = axios.isAxiosError(error)
-    ? error.response?.data?.error
-    : null;
+  const code = apiErrorCode(error);
   const common = commonApiErrorMessage(code, audience);
   if (common) return common;
   const messages: Record<string, string> = {

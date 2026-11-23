@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -8,34 +8,40 @@ import {
   type ConsentDefinitionSummary,
   type ConsentType,
 } from "@kfit/shared";
-import { AdminPage } from "../../app/layout/AdminPage.js";
-import { Button } from "../../components/ui/button.js";
-import { Card, CardHeader, CardTitle } from "../../components/ui/card.js";
+import { AdminPage } from "../../../app/layout/AdminPage.js";
+import { Button } from "../../../components/ui/button.js";
+import { Card, CardHeader, CardTitle } from "../../../components/ui/card.js";
 import {
   Dialog,
   DialogContent,
   Sheet,
   SheetContent,
-} from "../../components/ui/dialog.js";
-import { Field } from "../../components/ui/field.js";
-import { Input, Textarea } from "../../components/ui/input.js";
-import { StatusPill } from "../../components/ui/status-pill.js";
-import type { StatusDescriptor } from "../../lib/status-map.js";
-import { dateTimeFr } from "../../lib/format.js";
-import { focusReturnTarget } from "../../lib/focus.js";
-import { authApiClient } from "../../auth/api/auth-api.js";
+} from "../../../components/ui/dialog.js";
+import { Field } from "../../../components/ui/field.js";
+import { Input, Textarea } from "../../../components/ui/input.js";
+import { StatusPill } from "../../../components/ui/status-pill.js";
+import type { StatusDescriptor } from "../../../lib/status-map.js";
+import { dateTimeFr } from "../../../lib/format.js";
+import { focusReturnTarget } from "../../../lib/focus.js";
+import { authApiClient } from "../../../auth/api/auth-api.js";
 import {
   authFailureOf,
   authMessages,
   commonAuthMessage,
   sensitiveOtpRequestMessage,
-} from "../../auth/api/auth-errors.js";
-import { OtpCodeInput } from "../../auth/components/OtpCodeInput.js";
+} from "../../../auth/api/auth-errors.js";
+import { OtpCodeInput } from "../../../auth/components/OtpCodeInput.js";
 import {
   consentDefinitionsApi,
   consentErrorCode,
   consentErrorMessage,
 } from "../api/consent-api.js";
+import { consentKeys } from "../queries/consent-keys.js";
+import {
+  useConsentDefinition,
+  useConsentDefinitionImpact,
+  useConsentDefinitions,
+} from "../queries/consent-queries.js";
 
 /**
  * « Textes de consentement » (CONS-02b, D7). Drafts are editable; a published version is immutable and stays
@@ -56,7 +62,6 @@ const statuses: Record<ConsentDefinitionSummary["status"], StatusDescriptor> = {
 };
 const isRequired = (type: ConsentType) =>
   requiredConsentTypes.some((required) => required === type);
-const queryKey = ["consent-definitions"] as const;
 
 type Action =
   | {
@@ -69,12 +74,9 @@ type Action =
   | { kind: "publish"; definition: ConsentDefinitionSummary }
   | { kind: "delete"; definition: ConsentDefinitionSummary };
 
-export function ConsentTextsPage() {
+export function ConsentTextsWorkspace() {
   const client = useQueryClient();
-  const list = useQuery({
-    queryKey,
-    queryFn: () => consentDefinitionsApi.list(),
-  });
+  const list = useConsentDefinitions();
   const [action, setAction] = useState<Action | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const open = (next: Action) => {
@@ -85,7 +87,8 @@ export function ConsentTextsPage() {
     event.preventDefault();
     if (opener.current?.isConnected) opener.current.focus();
   };
-  const refresh = () => client.invalidateQueries({ queryKey });
+  const refresh = () =>
+    client.invalidateQueries({ queryKey: consentKeys.definitions });
 
   return (
     <AdminPage
@@ -265,15 +268,6 @@ export function ConsentTextsPage() {
 
 type Common = { onClose: () => void; restoreFocus: (event: Event) => void };
 
-function useDefinition(id: string | null) {
-  return useQuery({
-    queryKey: ["consent-definition", id],
-    queryFn: () => consentDefinitionsApi.get(id!),
-    enabled: Boolean(id),
-    staleTime: Infinity,
-  });
-}
-
 /** New draft (prefilled from the version in force) or edit of an existing draft. The version number is chosen by the server. */
 function EditorSheet({
   action,
@@ -284,7 +278,7 @@ function EditorSheet({
   action: Extract<Action, { kind: "edit" }>;
   onDone: () => Promise<unknown>;
 }) {
-  const source = useDefinition(action.definitionId ?? action.sourceId);
+  const source = useConsentDefinition(action.definitionId ?? action.sourceId);
   const [title, setTitle] = useState(""),
     [content, setContent] = useState("");
   const [loaded, setLoaded] = useState(
@@ -418,7 +412,7 @@ function ReadSheet({
   onClose,
   restoreFocus,
 }: Common & { definitionId: string }) {
-  const query = useDefinition(definitionId);
+  const query = useConsentDefinition(definitionId);
   const d: ConsentDefinition | undefined = query.data?.definition;
   return (
     <Sheet
@@ -479,11 +473,7 @@ function PublishDialog({
   definition: ConsentDefinitionSummary;
   onDone: () => Promise<unknown>;
 }) {
-  const impact = useQuery({
-    queryKey: ["consent-definition-impact", definition.id],
-    queryFn: () => consentDefinitionsApi.impact(definition.id),
-    staleTime: 0,
-  });
+  const impact = useConsentDefinitionImpact(definition.id);
   const [step, setStep] = useState<PublishStep>({ kind: "confirm" });
   const [code, setCode] = useState(""),
     [busy, setBusy] = useState(false),

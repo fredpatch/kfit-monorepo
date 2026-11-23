@@ -517,6 +517,15 @@ Reference foundation is complete. Remaining domains migrate progressively; no bi
   - validated implementation commit: `5f76fb0`;
   - known remaining debt: `RequestsWorkspace` still imports `app/layout/AdminPage`; explicit privacy/catalogue/customer cache dependencies remain documented.
 
+- FE-ARCH-04: consents feature migration - validated by Fred.
+  - consents now lives under `features/consents/`;
+  - admin/public consent routes compose through `pages/`;
+  - consent transport uses `shared/api/http-client.ts`;
+  - consent query keys/hooks are centralized with identities preserved;
+  - old top-level `src/consents/` removed;
+  - validated implementation commit: `74c6871`;
+  - broad FE-ARCH migration is paused here for the Hostinger beta deployment checkpoint; FE-ARCH-05+ resumes after beta stabilization unless deployment exposes a concrete blocker.
+
 ## Definition of done for the architecture initiative
 
 FE-ARCH-01 is complete when:

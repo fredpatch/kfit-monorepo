@@ -5,68 +5,23 @@
 
 ## Now
 
-Sprint 6 S6.1-S6.4 are validated and Sprint 6 is closed on `main`. The former `sprint-5` branch remains historical.
-
 ```text
 Branch            main
-Sprint            8 - V1 Core UAT et corrections
-Active slice      S7 privacy journal/replay evidence
-Workflow state    UAT-002 RESOLVED on e5880e7; Fred confirmed corrected completion behavior fully green on 2026-11-03
-UAT review        UAT-001 and UAT-002 resolved; S7 has 2 unchecked journal/replay evidence checks; S9 exit gate remains pending
-UAT-001           Dedicated medical clearance command + Preparation confirmation; no migration; generic medical complete/waive forbidden; capacity and Ready remain explicit
-S7.3              closed 2026-10-26 (88e412b, d6fdf61, 356070a, 544b57d) - validated live by Fred: archive, anonymize, unarchive, holds, purge delay, links revoked, prospect flow, HTTP freeze finance/documents/quotes → 409 CUSTOMER_ARCHIVED with 0 rows written
-Last validated    S7.2 - validated by Fred 2026-10-25
-Implementation    2dc7c43 (S7.2a server) + 0eac6d4 (S7.2b client, UX-16)
-S7.2 delivered    S7.2a server (engine, outbox, jobs, API, migration 0014) + S7.2b client (UX-16 bell, panel, Réglages)
-S7.3 rules        Fred 2026-10-25: rules 2-9 approved, rule 1 amended; decisions D1-D12 in sprint-7.md
-S7.3a delivered   migration 0015, privacy module (archive, anonymize, holds, purge job, journal, privacy:replay/journal-sync); unit 569, integration 566
-Recette 2026-10-25 fixes
-  REG-F1          variant-less offers qualify and convert (R1-R4, no migration); validated by Fred 2026-10-25 (001f55d)
-  CONS-02a        optional consents + consent texts admin API (REG-F6, REG-F7), server slice; validated by Fred 2026-10-25 (sprint-7.md § CONS-02a execution); committed 2aae7f9
-  CONS-02b        client slice; validated live by Fred 2026-10-25 (b0af0a1)
-  CAT-03a         catalogue variants, components, rules editable (REG-F2), server slice; validated by Fred 2026-10-25 (5c5325b)
-  CAT-03b         client slice (D8 tabs + « Avant publication »); validated live by Fred 2026-10-25, committed (sprint-7.md § CAT-03b execution)
-  POL-01          recette polish F3 F4 F5 F8 F9 F10 F11 - committed 2026-10-25 (sprint-7.md § POL-01 execution); validated by Fred 2026-10-26
-TEST-01         integration DB kfit_test + dev « Données de test » cleanup - delivered and committed 2026-10-25 (sprint-7.md § TEST-01 execution); validated by Fred 2026-10-26
-Backlog (V1.1)    « RDV à clôturer dans À traiter » (POL-01 D8: display-only in POL-01)
-CI integration    kfit_test aligned 2026-10-26: service on 5433, .env.test written by CI, db:test:prepare (migrations + catalogue seed); was failing since TEST-01 (exit 9, .env.test absent)
-S7.3b-1         server read slice - validated, committed d6fdf61
-ARCH-01           archived freeze + unarchive - committed 356070a; validated live by Fred 2026-10-26
-S7.3b-2           privacy client - validated live by Fred 2026-10-26, committed 544b57d
-FIX-02            validated, committed 8d66297 (D5 flaky kept in backlog)
-SEC-01            validated, committed 92d352a, CI green 2026-10-26
-S7.4 prereqs      base image pinned to an exact patched Node tag; smoke test records node --version; security:check in the image build (SEC-01 D6)
-S7.4a             production entrypoint + refuse-to-start guards + X-Request-Id - validated, committed 302902d, CI green
-S7.4b             backup/restore tooling + security counters (migration 0017) - validated, committed d2fc5df
-S7.4c             drill run by Fred 2026-10-26 from the runbook - 2 defects → FIX-03
-S7.4              CLOSED 2026-10-27 (S7.4a 302902d, S7.4b d2fc5df, DOC-01a 953cb22, FIX-03 + DOC-01b 4db73be; drill by Fred 2026-10-26)
-DOC-01a           documentation foundation + S7.4c runbook - committed 953cb22
-FIX-03 + DOC-01b  paths from the repo root, ops runner, coach + admin guides - committed 4db73be
-SEC-02a           trusted devices + login OTP (server), no migration - validated, committed e0d6158
-SEC-02            closed (e0d6158, bb2e993), BOOT-01 closed (bb2e993)
-OPS-01a           supervision API + supervision_alert notifications (migration 0018) - committed 0a1c210 (Fred: migrate kfit_dev; validation after OPS-01b)
-ROLE-01           superadmin role, hasRole guard, migration 0019, ops:create-user / ops:set-role - validated by Fred, committed 2363b57; style commit 99f2616 (Fred)
-PRETTY-01         Prettier 3.8.5 + format/format:check/lint:dashes in CI - validated by Fred, committed 2026-10-27
-OPS-01b           Supervision page, menu dot, 14 messages, generator fix - validated by Fred, committed 482f843
-RET-01            retention steps in privacy.purge, inactive prospects alert, 4 settings - validated by Fred live, committed 0457409
-Next action       Fred completes the 2 remaining S7 privacy journal/replay checks; then reconcile S9 exit gate and Sprint 8 closure
-FE-ARCH-01         reference foundation validated: 01a/01b/01c/01d/01e green; during Sprint 8 only touched frontend files follow the new architecture; broader ARCH migration resumes after UAT closes
-ARCH resume        immediately after Sprint 8 UAT closure and before Sprint 9 staging/deployment - continue remaining pages/features/shared/query migrations progressively
-Backlog (V1.1)    « Vue Demandes de prospects anonymisés (V1.1) »
-Backlog           « Flaky express unit tests (fetch failed, random test) - diagnose with the pgErrorInfo fix »
-Backlog           « OPS-01 Supervision (jobs, sauvegardes, contrôle de restauration, confidentialité, sécurité) - après SEC-02, avant UAT »
-Backlog           « RET-01 rétention : purge de la file e-mail après envoi, durées audit/notifications, rappel prospects inactifs dans Supervision (après OPS-01) »
-Test script       item 9: npm test now runs every compiled test (530 server, was 5); PDF Chromium tests SKIP without browser
-
-UI refonte        UX-1 → UX-15 done; Fred local checks of UX-9d, UX-10, UX-13 passed (2026-10-24)
-UX-9d/9e          Aujourd'hui fidelity fixes + alerts dedupe pushed (1d3a476, 6ca2a2f)
-UX-16             implemented inside S7.2b (bell + panel, mobile sheet, Configuration › Réglages)
-UX-12a/12b        all 7 customer token pages on the public shell (4288d46, 57e5613)
-UX-11             landing + request page pushed (bf87713)
-UX-15             « Paiements » + « Documents » pushed (27042a1, f86cdcb)
-UX-14             pushed (56f8454, b751757, 63279f3; OTP e-mail fix f989bec)
-UX-13             legacy stylesheet + wrapper removed, recette done (14106e7)
-UX next           Track B closed; UX-16 lands with S7.2. Remaining UI items wait on coach onboarding (name, logo, photo)
+Sprint            9A - Hostinger Beta Environment
+Active task       S9A.3 - Reverse proxy and TLS
+Workflow state    S9A.1 and S9A.2 VALIDATED locally by Fred on 2026-11-23
+S9A.1             VPS baseline/hardening complete: SSH keys, root/password login disabled, UFW 22/80/443, UTC sync, 2 GiB swap, Docker/Compose, /srv/kfit layout
+S9A.2             production-like Docker packaging complete and pushed
+Implementation    12ffc21 - build(deploy): add production-like Docker packaging
+Runtime floor     Node 22 >= 22.23.5; Node 24 >= 24.22.3; Node 26 >= 26.13.1
+Prod API runtime  Node 22.23.5, non-root
+Compose topology  client + API + PostgreSQL internal + ClamAV internal/egress + ops profile; no DB/ClamAV host ports
+PDF validation    Puppeteer preflight PASSED: valid 119483-byte PDF, 4 pages
+PDF exception     API cap_add: SYS_ADMIN accepted only for controlled beta/synthetic data; --no-sandbox, privileged and seccomp=unconfined forbidden
+Real-data gate    isolate PDF renderer and remove API SYS_ADMIN before any real customer data
+Beta policy       Konny + synthetic/demo customer data only
+Production gates  legal/privacy review + provider register + encrypted off-server backup/restore remain required
+Next action       S9A.3 - nginx reverse proxy + HTTPS/TLS; preserve secure cookies, proxy trust, SPA reloads and /health
 ```
 
 ## S7.1 - closed 2026-10-23

@@ -1,6 +1,15 @@
 # Sprint 9A - Hostinger Beta Environment
 
-Status: PLANNED. Do not implement until FE-ARCH-04 is validated.
+Status: IN PROGRESS. S9A.1 and S9A.2 validated locally by Fred; S9A.3 is active.
+
+## Execution status
+
+- ✅ S9A.1 - VPS baseline and host hardening: validated by Fred on 2026-11-23.
+- ✅ S9A.2 - Deployment packaging: validated by Fred on 2026-11-23; implementation commit `12ffc21`.
+- ⏳ S9A.3 - Reverse proxy and TLS: current task.
+- 🔜 S9A.4-S9A.9 remain dependency-ordered after S9A.3.
+- Real customer data remains forbidden during 9A until the production-readiness gates are satisfied.
+- Temporary security exception: the API currently receives `SYS_ADMIN` only so in-process Puppeteer can keep Chromium sandboxing enabled during the controlled synthetic-data beta. Before any real customer data, PDF rendering must be isolated and this capability removed from the API.
 
 ## Objective
 
@@ -230,4 +239,4 @@ Sprint 9A does not:
 
 ## Current next action
 
-Finish and validate FE-ARCH-04. Then begin S9A.1 only.
+Implement and validate S9A.3 - reverse proxy and TLS. Preserve secure cookies/proxy trust, SPA route reloads, `/health`, HTTPS redirect and upload/body limits. Do not start S9A.4 until Fred validates S9A.3 locally/on the VPS.

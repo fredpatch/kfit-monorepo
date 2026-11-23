@@ -2,6 +2,18 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-11-23 - Sprint 9A S9A.1-S9A.2 Hostinger beta foundation
+
+- S9A.1 VPS baseline/hardening validated by Fred: non-root SSH-key administration, root/password SSH disabled, UFW exposes only 22/80/443, UTC time sync, persistent 2 GiB swap, Docker/Compose operational and `/srv/kfit` persistent layout created with restricted permissions.
+- S9A.2 implementation: `12ffc21` - `build(deploy): add production-like Docker packaging`.
+- Added production-like API/client/ops images and Compose topology with PostgreSQL internal-only, ClamAV internal plus dedicated update egress, persistent PostgreSQL/ClamAV definitions, private storage and privacy journal mounts, health checks and restart policies.
+- Production API image runs as non-root on Node 22.23.5. The runtime security registry preserves CVE-2026-111497/Node2Shell's October floors and adds the November floor-driving advisory; Fred's host Node 26.13.1 passes `security:check`.
+- Fred validated full tests, `git diff --check`, Compose config, API/client/ops builds and the real Puppeteer PDF preflight. PDF output had a valid signature, 119483 bytes and 4 page objects.
+- Chromium sandboxing remains enabled. A temporary beta-only `SYS_ADMIN` capability is granted to the API because Puppeteer currently launches Chromium in-process; `--no-sandbox`, privileged mode and seccomp disabling remain forbidden.
+- Before any real customer data, PDF rendering must be isolated from the API and `SYS_ADMIN` removed. This is tracked as a critical Sprint 9 production-readiness gate in Notion.
+- Sprint 9A now advances to S9A.3 reverse proxy and HTTPS/TLS. Hosted beta remains Konny + synthetic/demo data only.
+
+
 ## 2026-11-23 - FE-ARCH-04 consents feature migration
 
 - Implementation: `74c6871` - `refactor(consents): migrate frontend capability to feature layer`.

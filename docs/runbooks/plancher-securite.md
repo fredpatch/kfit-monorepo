@@ -3,7 +3,7 @@ titre: Plancher de sécurité du runtime
 public: exploitation, développeur
 statut: à jour
 vérifié-sur: d2fc5df
-couvre: [SEC-01, S7.4a]
+couvre: [SEC-01, S7.4a, S9A.2]
 ---
 
 # Plancher de sécurité du runtime
@@ -14,11 +14,20 @@ Sources : `packages/server/src/security/security-floor.ts`, `runtime-floor.start
 
 Le plancher de sécurité est la liste des failles connues de **Node.js lui-même**, avec, pour chaque ligne majeure prise en charge, la première version corrigée. Les failles des paquets npm relèvent de `npm audit`, pas du plancher.
 
-Entrée actuelle : `CVE-2026-111497` (décodeur Brotli), versions minimales `22.23.4`, `24.22.1`, `26.12.1`.
+Entrées actuelles, dans l'ordre de publication :
+
+| Faille                                          | Publication | Versions minimales              | Rôle                                                          |
+| ----------------------------------------------- | ----------- | ------------------------------- | ------------------------------------------------------------- |
+| `CVE-2026-111497` (Node2Shell, décodeur Brotli) | 2026-10-22  | `22.23.4`, `24.22.1`, `26.12.1` | corrigée par la publication de sécurité d'octobre 2026        |
+| `CVE-2026-123863`                               | 2026-11-11  | `22.23.5`, `24.22.3`, `26.13.1` | publication de sécurité de novembre 2026 : relève le plancher |
+
+Plancher effectif de K'FIT (la version minimale la plus haute de chaque ligne) : **`22.23.5`, `24.22.3`, `26.13.1`**. Chaque faille garde ses propres versions corrigées : la publication de novembre ne modifie pas l'entrée Node2Shell, elle ajoute une entrée. K'FIT (`.nvmrc`, images Docker) est épinglé sur `22.23.5`.
+
+Une machine sous ce plancher (par exemple un poste resté en Node `24.22.1`) est volontairement refusée par `npm run security:check` : mettre Node à jour (§ 4), ne jamais abaisser le plancher pour la faire passer.
 
 Règles :
 
-- Une ligne majeure absente de l'entrée (Node 20, Node 23…) est **non prise en charge** : refusée.
+- Une ligne majeure absente d'une entrée (Node 20, Node 23…) est **non prise en charge** : refusée.
 - Une version illisible (préversion, suffixe de build) est refusée.
 
 Trois endroits lisent cette même table :
@@ -35,7 +44,7 @@ Trois endroits lisent cette même table :
 npm run security:check
 ```
 
-Attendu : `✔ security:check - Node v22.23.4 meets the runtime security floor` (avec la version installée), code `0`.
+Attendu : `✔ security:check - Node v22.23.5 meets the runtime security floor` (avec la version installée), code `0`.
 
 ## 3. Ajouter la prochaine faille
 
@@ -56,10 +65,10 @@ Aucun autre fichier à modifier : le script de CI et le contrôle de démarrage 
 
 ## 4. Mettre à jour Node
 
-1. `.nvmrc` : nouvelle version exacte (ex. `22.23.4`).
+1. `.nvmrc` : nouvelle version exacte (ex. `22.23.5`).
 2. `package.json` (racine) : `engines.node` à `>=<nouvelle version>`.
 3. CI : rien à changer. `.github/workflows/ci.yml` lit `.nvmrc` (`node-version-file`), puis lance le contrôle du plancher.
-4. Image Docker : étiquette exacte et corrigée, jamais une étiquette flottante (ex. `node:22.23.4-alpine`, jamais `node:22`). **Sprint 9** : l'image n'existe pas encore.
+4. Images Docker : étiquette exacte et corrigée, jamais une étiquette flottante (ex. `node:22.23.5-bookworm-slim`, jamais `node:22`). Fichiers : `packages/server/Dockerfile` (étapes `deps` et `runtime`) et `packages/client/Dockerfile` (étape `build`), alignés sur `.nvmrc`.
 5. Localement : installer la version (`nvm install` / `nvm use`), puis `npm ci`, `npm run security:check`, `npm test`.
 
 ## 5. Revue mensuelle

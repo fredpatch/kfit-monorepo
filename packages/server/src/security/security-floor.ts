@@ -22,6 +22,13 @@ export const SECURITY_FLOOR: readonly RuntimeAdvisory[] = [
     publishedAt: "2026-10-22",
     note: "Brotli decoder OOB write (Node2Shell / HTTP2Shell)",
   },
+  {
+    id: "CVE-2026-123863",
+    component: "node",
+    minimumByLine: { 22: "22.23.5", 24: "24.22.3", 26: "26.13.1" },
+    publishedAt: "2026-11-11",
+    note: "November 2026 Node.js security release (floor-driving entry)",
+  },
 ];
 
 export type RuntimeFloorFailure = {

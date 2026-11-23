@@ -1,11 +1,19 @@
 name: kfit-prod
 
+# S9A.2: production-like stack (client, api, postgres, clamav). No service publishes a host port:
+# the public reverse proxy and TLS (S9A.3) will join the kfit_edge network.
+#
+# Runtime environment file: KFIT_ENV_FILE (default .env.prod, copied from .env.prod.example).
+# On the host: KFIT_ENV_FILE=/srv/kfit/config/.env.prod docker compose -f docker-compose.prod.yml ...
+# A missing file does not block `config` or `build`; the API and PostgreSQL refuse to start without their values.
+
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     env_file:
-      - .env.prod
+      - path: ${KFIT_ENV_FILE:-.env.prod}
+        required: false
     volumes:
       - kfit_postgres_prod_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,10 +27,142 @@ services:
     expose:
       - "5432"
 
+  clamav:
+    image: clamav/clamav:1.5.5
+    restart: unless-stopped
+    volumes:
+      - kfit_clamav_prod_data:/var/lib/clamav
+    healthcheck:
+      # Script shipped in the official image (clamd PING). First start loads the signature database: long grace period.
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 6m
+    # backend: clamd for the API. kfit_clamav_egress: outbound only, for freshclam signature updates.
+    networks:
+      - kfit_backend
+      - kfit_clamav_egress
+    expose:
+      - "3310"
+
+  api:
+    build:
+      context: .
+      dockerfile: packages/server/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    # Reaps Chrome child processes spawned by Puppeteer.
+    init: true
+    # Chrome uses /dev/shm for rendering; Docker's 64 MB default is too small for multi-page PDFs.
+    shm_size: "256mb"
+    # TEMPORARY EXCEPTION (Fred, 2026-11-23): in-process Puppeteer needs SYS_ADMIN for Chromium's own sandbox
+    # (no --no-sandbox, no privileged mode). Accepted only for the controlled Hostinger beta with Konny/synthetic data.
+    # Before any real customer data: isolate PDF rendering so this API container no longer needs the capability.
+    # See exploration-cache/project/decisions.md (2026-11-23).
+    cap_add:
+      - SYS_ADMIN
+    env_file:
+      - path: ${KFIT_ENV_FILE:-.env.prod}
+        required: false
+    # Values bound to this topology (bind, mounts, service names) override the env file.
+    environment:
+      NODE_ENV: production
+      KFIT_API_HOST: 0.0.0.0
+      KFIT_API_PORT: "3000"
+      PRIVATE_STORAGE_ROOT: /srv/kfit/private
+      KFIT_PRIVACY_JOURNAL_DIR: /srv/kfit/privacy-journal
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
+    volumes:
+      # Host directories must exist and be writable by uid 1000 (the image's `node` user); they are never created implicitly.
+      - type: bind
+        source: ${KFIT_PRIVATE_HOST_DIR:-/srv/kfit/private}
+        target: /srv/kfit/private
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${KFIT_PRIVACY_JOURNAL_HOST_DIR:-/srv/kfit/privacy-journal}
+        target: /srv/kfit/privacy-journal
+        bind:
+          create_host_path: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    # backend: PostgreSQL and ClamAV. edge: outbound SMTP and, from S9A.3, the public reverse proxy.
+    networks:
+      - kfit_backend
+      - kfit_edge
+    expose:
+      - "3000"
+
+  client:
+    build:
+      context: .
+      dockerfile: packages/client/Dockerfile
+      target: runtime
+      args:
+        # Non-secret public contact links baked into the SPA (optional).
+        VITE_PUBLIC_WHATSAPP: ${VITE_PUBLIC_WHATSAPP:-}
+        VITE_PUBLIC_INSTAGRAM: ${VITE_PUBLIC_INSTAGRAM:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - kfit_edge
+    expose:
+      - "80"
+
+  # Explicit one-off tooling only (profile `ops`): never part of `docker compose up -d`, never restarted.
+  # Migrations are run deliberately (S9A.6), e.g.:
+  #   docker compose -f docker-compose.prod.yml --profile ops run --rm ops npm run db:migrate --workspace @kfit/server
+  ops:
+    build:
+      context: .
+      dockerfile: packages/server/Dockerfile
+      target: ops
+    profiles:
+      - ops
+    restart: "no"
+    env_file:
+      - path: ${KFIT_ENV_FILE:-.env.prod}
+        required: false
+    environment:
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kfit_backend
+
 volumes:
   kfit_postgres_prod_data:
+  kfit_clamav_prod_data:
 
 networks:
   kfit_backend:
     driver: bridge
     internal: true
+  kfit_edge:
+    driver: bridge
+  # ClamAV only: gives freshclam Internet access without joining the edge network. No published port.
+  kfit_clamav_egress:
+    driver: bridge

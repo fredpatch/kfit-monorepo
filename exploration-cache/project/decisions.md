@@ -1,3 +1,15 @@
+## 2026-11-23 - S9A.2 temporary SYS_ADMIN for in-process Puppeteer (beta only)
+
+**Sources**: Fred's explicit decision during S9A.2 validation (2026-11-23); `claude/s9a-2-production-compose-brief.md` (Puppeteer / Chromium invariant).
+
+**Context**: PDFs (receipts, quotes, progress summaries, `preflight:pdf`) are rendered by Puppeteer inside the API process with `puppeteer.launch({ headless: true })`, Chromium sandbox enabled. In the non-root API container, Docker's default seccomp profile blocks the namespace syscalls the Chromium sandbox needs. The S9A.2 invariants forbid `--no-sandbox` and privileged mode.
+
+**Decision**: The `api` service in `docker-compose.prod.yml` receives `cap_add: [SYS_ADMIN]` so Chromium keeps its own sandbox. This is a temporary exception, accepted only for the controlled Hostinger beta with Konny/synthetic data. Still forbidden: `--no-sandbox`, privileged mode, running the API as root.
+
+**Exit condition**: Before hosting real customer data, PDF rendering must be isolated (for example a separate rendering service or container) so the main API container no longer requires `SYS_ADMIN`; the capability is then removed from the `api` service.
+
+**Impact**: Wider kernel attack surface for the API container during the beta only. Operator note in `docs/runbooks/demarrage-production.md` § 6. The isolation work must be planned and validated before any real-customer go-live gate.
+
 ## 2026-10-23 - S7.1 prospective cadence authority and cumulative funnel
 
 **Sources**: Fred's approved S7.1 historical-feasibility amendment, explicit database overlap-guard approval and cumulative-stage-reach decision; `exploration-cache/tasks/sprint-7.md`.

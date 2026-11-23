@@ -34,7 +34,7 @@ const goodEnv = (): NodeJS.ProcessEnv => ({
   AUTH_RECOVERY_TOKEN_SECRET: secret("recovery"),
   AUTH_DEVICE_PEPPER: secret("device"),
 });
-const patched = "v22.23.4";
+const patched = "v22.23.5";
 const codes = (env: NodeJS.ProcessEnv, version = patched) =>
   evaluateProductionEnv(env, version).failures.map((f) => f.code);
 const detail = (env: NodeJS.ProcessEnv, code: string) =>
@@ -100,7 +100,7 @@ test("S7.4 D2: a secret shorter than 32 characters is ENV_WEAK_SECRET", () => {
 });
 
 test("S7.4 D2: the security floor, an http base URL and a dev or test database each refuse alone", () => {
-  assert.deepEqual(codes(goodEnv(), "v22.23.3"), ["SECURITY_FLOOR"]);
+  assert.deepEqual(codes(goodEnv(), "v22.23.4"), ["SECURITY_FLOOR"]);
   assert.deepEqual(
     codes({ ...goodEnv(), KFIT_APP_BASE_URL: "http://app.kfit.ga" }),
     ["APP_BASE_URL_NOT_HTTPS"],

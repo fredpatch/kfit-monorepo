@@ -1,0 +1,33 @@
+# S9A.2: Docker build context (repository root). Keep secrets, local data and host build output out of images.
+
+# Environment files and secrets: never in an image (the runtime environment comes from compose).
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Host dependencies and build output: images install and compile their own.
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+coverage
+
+# Local private data, journals, backups and scratch output.
+storage
+backups
+tmp
+packages/tmp
+packages/server/privacy-journal
+privacy-journal
+docs/diffs
+
+# Not needed to build the images.
+.git
+.github
+.vscode
+.idea
+claude
+exploration-cache
+docs
+*.log
+.DS_Store

@@ -21,11 +21,11 @@ const run = (env: Record<string, string>) => {
 test("SEC-01 D3: security:check passes on this runner (above the floor) and fails on an overridden vulnerable version", () => {
   const current = run({});
   assert.equal(current.status, 0, current.stderr);
-  const vulnerable = run({ KFIT_SECURITY_FLOOR_TEST_VERSION: "v22.23.3" });
+  const vulnerable = run({ KFIT_SECURITY_FLOOR_TEST_VERSION: "v22.23.4" });
   assert.equal(vulnerable.status, 1);
   assert.match(
     vulnerable.stderr,
-    /CVE-2026-111497: below_minimum \(required ≥ 22\.23\.4\)/,
+    /CVE-2026-123863: below_minimum \(required ≥ 22\.23\.5\)/,
   );
   assert.equal(run({ KFIT_SECURITY_FLOOR_TEST_VERSION: "v20.19.0" }).status, 1);
 });
@@ -34,7 +34,7 @@ test("SEC-01 D3: the version override is ignored when NODE_ENV=production", () =
   assert.equal(
     run({
       NODE_ENV: "production",
-      KFIT_SECURITY_FLOOR_TEST_VERSION: "v22.23.3",
+      KFIT_SECURITY_FLOOR_TEST_VERSION: "v22.23.4",
     }).status,
     0,
   );

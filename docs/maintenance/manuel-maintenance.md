@@ -3,7 +3,7 @@ titre: Manuel de maintenance
 public: développeur, exploitation
 statut: brouillon
 vérifié-sur: d2fc5df
-couvre: [S7.4a, S7.4b, SEC-01, TEST-01, DOC-01a]
+couvre: [S7.4a, S7.4b, SEC-01, TEST-01, DOC-01a, S9A.2]
 ---
 
 # Manuel de maintenance
@@ -12,11 +12,11 @@ Ce qui existe aujourd'hui. Les sections marquées « À rédiger » ou « Sprint
 
 ## 1. Environnements
 
-| Environnement | Fichier compose                                    | Fichier d'environnement                          | PostgreSQL                                                                                           |
-| ------------- | -------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| Développement | `docker-compose.yml` (PostgreSQL, Mailpit, ClamAV) | `.env` (copie de `.env.example`)                 | port `5433` de l'hôte ; bases `kfit_dev` (API de développement) et `kfit_test` (tests d'intégration) |
-| Staging       | `docker-compose.staging.yml`                       | `.env.staging` (copie de `.env.staging.example`) | non publié sur l'hôte                                                                                |
-| Production    | `docker-compose.prod.yml`                          | `.env.prod` (copie de `.env.prod.example`)       | non publié sur l'hôte (réseau interne)                                                               |
+| Environnement | Fichier compose                                                                      | Fichier d'environnement                                                     | PostgreSQL                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Développement | `docker-compose.yml` (PostgreSQL, Mailpit, ClamAV)                                   | `.env` (copie de `.env.example`)                                            | port `5433` de l'hôte ; bases `kfit_dev` (API de développement) et `kfit_test` (tests d'intégration) |
+| Staging       | `docker-compose.staging.yml`                                                         | `.env.staging` (copie de `.env.staging.example`)                            | non publié sur l'hôte                                                                                |
+| Production    | `docker-compose.prod.yml` (client, API, PostgreSQL, ClamAV ; outil `ops` sur profil) | `.env.prod` (copie de `.env.prod.example`), ou le chemin de `KFIT_ENV_FILE` | non publié sur l'hôte (réseau interne)                                                               |
 
 Règles :
 
@@ -78,7 +78,9 @@ Catalogue complet, généré : [scripts npm](../reference/scripts-npm.md).
 
 ## 7. Déploiement
 
-**Sprint 9** : image Docker, service API dans le compose de production, nginx, TLS, timer de sauvegarde, copie hors serveur.
+Empaquetage de production (S9A.2) : images API et client, compose de production sans port publié. Détail : [démarrage en production § 6](../runbooks/demarrage-production.md#6-empaquetage-docker-s9a2). Pas encore validé sur l'hébergement Hostinger.
+
+À venir dans Sprint 9A : proxy public nginx et TLS (S9A.3), migrations sur l'hôte (S9A.6), timer de sauvegarde et copie hors serveur (S9A.7).
 
 ## 8. Mise à jour des dépendances
 

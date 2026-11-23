@@ -2,8 +2,8 @@
 titre: Démarrage en production
 public: exploitation
 statut: à jour
-vérifié-sur: 4db73be
-couvre: [S7.4a, SEC-01, FIX-03, SEC-02a]
+vérifié-sur: 2365597
+couvre: [S7.4a, SEC-01, FIX-03, SEC-02a, S9A.2]
 ---
 
 # Démarrage en production
@@ -16,7 +16,7 @@ L'API de production refuse de démarrer tant qu'un contrôle échoue. Tous les �
 
 - [ ] Node à la version de `.nvmrc`, ou au moins au [plancher de sécurité](plancher-securite.md) : `npm run security:check` → `✔`.
 - [ ] Dépendances et build : `npm ci` puis `npm run build` à la racine. `start:prod` lit `packages/server/dist/` et ne compile pas.
-- [ ] PostgreSQL démarré, base de production migrée (`npm run db:migrate` avec le `DATABASE_URL` de production dans l'environnement). **À vérifier - Sprint 9** : procédure de migration dans le compose de production.
+- [ ] PostgreSQL démarré, base de production migrée (`npm run db:migrate` avec le `DATABASE_URL` de production dans l'environnement). Dans le compose de production, la migration est une commande explicite du service `ops` (§ 6), jamais lancée au démarrage de l'API. Procédure d'exécution : S9A.6.
 - [ ] Dossier du journal de confidentialité (`KFIT_PRIVACY_JOURNAL_DIR`) créé et accessible en écriture.
 - [ ] Dossier des fichiers privés (`PRIVATE_STORAGE_ROOT`) persistant. Ce dossier et celui du journal sont donnés en **chemins absolus**.
 - [ ] Toutes les variables « requis en production » renseignées, sans valeur d'exemple ([liste](../reference/variables-environnement.md)). Modèle : `.env.prod.example`.
@@ -27,7 +27,7 @@ L'API de production refuse de démarrer tant qu'un contrôle échoue. Tous les �
 
 ## 2. Démarrer et arrêter
 
-Le point d'entrée ne charge **aucun** fichier `.env` : l'environnement vient du processus (et du compose au Sprint 9).
+Le point d'entrée ne charge **aucun** fichier `.env` : l'environnement vient du processus, ou du compose de production (§ 6).
 
 ```bash
 NODE_ENV=production npm run start:prod
@@ -104,13 +104,30 @@ Délai de chaque contrôle : 3 secondes. Les identifiants de `DATABASE_URL` ne s
   - `trust proxy` limité au proxy local (`loopback`) ;
   - outils de développement (« Données de test ») jamais montés.
 
-## 6. Sprint 9
+## 6. Empaquetage Docker (S9A.2)
 
-Prévu au Sprint 9, non disponible aujourd'hui :
+Le paquetage existe ; il n'est **pas encore validé sur l'hébergement Hostinger** (porte de validation ultérieure de Sprint 9A).
 
-- service API dans `docker-compose.prod.yml` ;
-- image Docker à étiquette Node exacte et corrigée ;
-- nginx en proxy inverse et certificats TLS (Certbot) ;
-- timer de l'hôte pour les sauvegardes ;
-- copie hors serveur ;
+`docker-compose.prod.yml` assemble quatre services, sans aucun port publié sur l'hôte :
+
+| Service    | Image                                                                        | Réseaux                              | Rôle                                                                    |
+| ---------- | ---------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------- |
+| `postgres` | `postgres:16-alpine`                                                         | `kfit_backend`                       | base de production (volume nommé `kfit_postgres_prod_data`)             |
+| `clamav`   | `clamav/clamav:1.5.5`                                                        | `kfit_backend`, `kfit_clamav_egress` | antivirus (volume nommé `kfit_clamav_prod_data`)                        |
+| `api`      | `packages/server/Dockerfile`, cible `runtime` (`node:22.23.5-bookworm-slim`) | `kfit_backend`, `kfit_edge`          | API (`scripts/prod/api-server.mjs`), utilisateur non root, `init: true` |
+| `client`   | `packages/client/Dockerfile` (`nginx:1.27-alpine`)                           | `kfit_edge`                          | application web statique, port 80 interne                               |
+
+- `kfit_backend` est un réseau interne (pas de sortie). `kfit_edge` est un réseau ordinaire : il donne à l'API l'accès SMTP sortant et recevra le proxy public au S9A.3. `kfit_clamav_egress` est un réseau ordinaire réservé à ClamAV : seule sortie de `freshclam` pour mettre à jour les signatures, sans port publié.
+- Fichier d'environnement : `KFIT_ENV_FILE` (par défaut `.env.prod`, modèle `.env.prod.example`). Le compose impose les valeurs liées à la topologie : `NODE_ENV=production`, `KFIT_API_HOST=0.0.0.0`, `KFIT_API_PORT=3000`, `PRIVATE_STORAGE_ROOT=/srv/kfit/private`, `KFIT_PRIVACY_JOURNAL_DIR=/srv/kfit/privacy-journal`, `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310`.
+- Fichiers privés et journal de confidentialité : dossiers de l'hôte `/srv/kfit/private` et `/srv/kfit/privacy-journal`, montés aux mêmes chemins. Ils doivent exister et appartenir à l'utilisateur `1000` de l'image ; le compose ne les crée jamais.
+- Contrôles de santé : `pg_isready` (PostgreSQL), `clamdcheck.sh` (ClamAV), `GET /health` sur `127.0.0.1:3000` dans le conteneur (API), page d'accueil (client). L'API attend PostgreSQL et ClamAV « healthy ».
+- PDF : l'image API contient le Chrome de Puppeteer (`/opt/puppeteer`) et ses bibliothèques. Le bac à sable de Chrome reste actif. Contrôle : `npm run preflight:pdf` dans l'image.
+- **Exception temporaire `SYS_ADMIN`** (décision du 2026-11-23) : le service `api` reçoit la capacité `SYS_ADMIN`, nécessaire au bac à sable de Chromium tant que Puppeteer tourne dans le processus de l'API. Pas de `--no-sandbox`, pas de mode privilégié. Acceptée **uniquement** pour la bêta Hostinger contrôlée, avec les données de Konny ou des données synthétiques. **Avant toute donnée client réelle**, le rendu PDF doit être isolé pour que le conteneur API n'ait plus besoin de cette capacité.
+- Migrations : service `ops` (profil `ops`, image avec `drizzle-kit`), lancé seulement par une commande explicite. `docker compose up -d` ne le démarre jamais.
+
+Encore à venir dans Sprint 9A :
+
+- nginx en proxy inverse public et certificats TLS (Certbot) : S9A.3 ;
+- exécution des migrations sur l'hôte : S9A.6 ;
+- timer de l'hôte pour les sauvegardes et copie hors serveur : S9A.7 ;
 - mode maintenance.

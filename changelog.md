@@ -2,6 +2,16 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-11-23 - FE-ARCH-04 consents feature migration
+
+- Implementation: `74c6871` - `refactor(consents): migrate frontend capability to feature layer`.
+- Moved Consents under `features/consents/` and removed the old top-level `src/consents/` directory.
+- Added route composition through `pages/admin/consents/ConsentTextsPage.tsx` and `pages/public/consent/PublicConsentPage.tsx`.
+- Consent API now reuses canonical shared HTTP transport while preserving authenticated admin CSRF semantics and public no-credential/no-CSRF semantics.
+- Consent query keys/hooks are centralized with existing cache identities and public hash-token behavior preserved.
+- Fred validated admin consent definitions, fresh-OTP publish flow, public consent link/replay behavior, Health/profile integration and route reloads green on 2026-11-23.
+- FE-ARCH-05+ is paused at the deployment checkpoint; Sprint 9A Hostinger beta environment is now the active execution front.
+
 ## 2026-11-03 - FE-ARCH-03 requests feature migration
 
 - Implementation: `5f76fb0` - `refactor(requests): migrate frontend capability to feature layer`.

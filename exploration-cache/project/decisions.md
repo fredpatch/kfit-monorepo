@@ -124,6 +124,16 @@ For submitted request cohorts, later-stage reach implies earlier-stage reach; co
 
 > Append-only - newest at top.
 
+## 2026-11-23 - FE-ARCH checkpoint before Hostinger beta deployment
+
+**Context**: Sprint 8 V1 Core UAT is closed and Konny now has a Hostinger KVM 2 VPS available. FE-ARCH-02 Catalogue and FE-ARCH-03 Requests are validated; FE-ARCH-04 Consents is active. The application is functionally mature enough for a controlled hosted beta, while the deployment layer intentionally remains Sprint 9 work.
+
+**Decision**: FE-ARCH-04 is the last broad frontend migration before the deployment checkpoint. After FE-ARCH-04 is locally validated, pause FE-ARCH-05+ unless deployment exposes a specific architecture blocker. Open Sprint 9A as the Hostinger Beta Environment: production-like Docker Compose, reverse proxy/TLS, real SMTP, private persistent storage, privacy journal, ClamAV, migrations/bootstrap, encrypted backup baseline, startup/preflight verification, then Konny hands-on acceptance. The first hosted phase uses Konny plus synthetic/demo data. Real customer data is not authorized until the minimum legal/privacy hosting review and an encrypted off-server backup destination are in place.
+
+**Rationale**: Deployment is now the highest-value validation frontier. Continuing broad source reorganization before the first real remote environment would delay sponsor feedback without reducing the main remaining operational risk.
+
+**Impact**: Sprint 9A targets the Hostinger KVM 2 VPS as beta/staging, not final production. Sprint 9B covers production-readiness gates including off-server encrypted backup, provider/legal documentation, training and production release. Postponed frontend migrations resume after beta stabilization or when required by a concrete deployment/feature change.
+
 ## 2026-08-25 - Dedicated application monorepo
 
 **Context**: Existing `fredpatch/kfit_website` is a static WordPress/GitHub Pages export and cannot serve as the V1 platform base.

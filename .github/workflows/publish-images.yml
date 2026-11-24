@@ -165,4 +165,5 @@ jobs:
         with:
           name: release-manifest-${{ github.sha }}
           path: release-manifest.json
-          retention-days: 400
+          # The brief targets 400 days; this public repository caps artifacts at 90. The VPS keeps its own copy per release.
+          retention-days: 90

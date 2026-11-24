@@ -2,7 +2,7 @@
 titre: Démarrage en production
 public: exploitation
 statut: à jour
-vérifié-sur: 12ffc21
+vérifié-sur: 4243058
 couvre: [S7.4a, SEC-01, FIX-03, SEC-02a, S9A.2, S9A.2b]
 ---
 
@@ -124,6 +124,35 @@ Le paquetage existe ; il n'est **pas encore validé sur l'hébergement Hostinger
 - PDF : l'image API contient le Chrome de Puppeteer (`/opt/puppeteer`) et ses bibliothèques. Le bac à sable de Chrome reste actif. Contrôle : `npm run preflight:pdf` dans l'image.
 - **Exception temporaire `SYS_ADMIN`** (décision du 2026-11-23) : le service `api` reçoit la capacité `SYS_ADMIN`, nécessaire au bac à sable de Chromium tant que Puppeteer tourne dans le processus de l'API. Pas de `--no-sandbox`, pas de mode privilégié. Acceptée **uniquement** pour la bêta Hostinger contrôlée, avec les données de Konny ou des données synthétiques. **Avant toute donnée client réelle**, le rendu PDF doit être isolé pour que le conteneur API n'ait plus besoin de cette capacité.
 - Migrations : service `ops` (profil `ops`, image avec `drizzle-kit`), lancé seulement par une commande explicite. `docker compose up -d` ne le démarre jamais.
+
+### Images publiées (S9A.2b)
+
+Les images applicatives (`api`, `client`, `ops`) ne sont **jamais construites sur le VPS** dans le parcours normal. GitHub Actions (`.github/workflows/publish-images.yml`) les construit à chaque push sur `main`, après la CI complète, puis :
+
+- vérifie l'image exacte avant publication (`ops/ci/verify-image.sh`, étiquette de révision, `npm run preflight:pdf` avec `--cap-add=SYS_ADMIN`) ;
+- publie uniquement `ghcr.io/fredpatch/kfit-monorepo/<image>:sha-<commit>` ;
+- produit l'artefact `release-manifest-<commit>` : références par digest (`@sha256:...`) des trois images et bloc `compose_env`.
+
+GitHub ne se connecte jamais au VPS et ne déploie rien.
+
+Revue locale (poste de développement) : `docker compose -f docker-compose.prod.yml build api client` ; sans variables, les images portent les noms locaux `kfit-prod-*:local`.
+
+Mise en production sur le VPS, à partir du manifeste de la version choisie :
+
+```bash
+export KFIT_API_IMAGE=ghcr.io/fredpatch/kfit-monorepo/api@sha256:<digest>
+export KFIT_CLIENT_IMAGE=ghcr.io/fredpatch/kfit-monorepo/client@sha256:<digest>
+export KFIT_OPS_IMAGE=ghcr.io/fredpatch/kfit-monorepo/ops@sha256:<digest>
+docker compose -f docker-compose.prod.yml config --quiet
+docker compose -f docker-compose.prod.yml --profile ops pull api client ops
+docker compose -f docker-compose.prod.yml up -d --no-build
+```
+
+- `--no-build` est obligatoire : le compose garde ses sections `build:`, et une image absente serait sinon reconstruite sur le VPS.
+- Jamais de `latest` : seules les références par digest du manifeste sont déployées.
+- Conserver le manifeste de chaque version déployée sur le VPS (par exemple `/srv/kfit/releases/<commit>.json`) : l'artefact GitHub expire après 90 jours (maximum d'un dépôt public).
+- Retour arrière : reprendre les trois références du manifeste précédent, puis `pull` et `up -d --no-build`.
+- Si les paquets GHCR sont privés : `docker login ghcr.io` sur le VPS avec un jeton en lecture seule (`read:packages`), jamais stocké dans le dépôt.
 
 Encore à venir dans Sprint 9A :
 

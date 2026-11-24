@@ -25,6 +25,9 @@ case "$kind" in
       test -d /app/packages/server/dist &&
       test -d /app/packages/shared/dist &&
       test ! -d /app/packages/server/src' || fail "api runtime layout"
+    # drizzle-kit is dev-only (typescript is not: puppeteer pulls it in), so its presence means the prune was skipped.
+    in_image 'test ! -e /app/node_modules/drizzle-kit &&
+      test ! -e /app/packages/server/node_modules/drizzle-kit' || fail "api ships dev dependencies"
     in_image 'find /opt/puppeteer -type f -name chrome -perm -111 -print -quit | grep -q .' ||
       fail "Puppeteer Chrome missing"
     leaks=$(in_image 'find /app /opt/puppeteer -path "*/node_modules" -prune -o \( -name ".env*" -o -name "*.pem" -o -name "*.key" \) -print 2>/dev/null || true')

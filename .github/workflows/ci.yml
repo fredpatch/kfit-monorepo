@@ -13,7 +13,8 @@ concurrency:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, whose native pg_dump emits settings PostgreSQL 16 rejects (S7.4 restore drill).
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     services:
@@ -95,10 +96,19 @@ jobs:
           git diff --exit-code -- packages/server
           test -z "$(git status --porcelain -- packages/server)"
 
+      # S7.4 native backup/restore drill: pg_dump/pg_restore must match the postgres:16 service, not the runner default.
+      - name: PostgreSQL 16 client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client-16
+          echo /usr/lib/postgresql/16/bin >> "$GITHUB_PATH"
+          /usr/lib/postgresql/16/bin/pg_dump --version
+
       # TEST-01: integration reads the root .env.test; db:test:prepare migrates and seeds the catalogue, as locally.
+      # A developer's .env supplies AUTH_OTP_PEPPER to the ops:create-user tests; CI has no .env, so a synthetic one is set.
       - name: Integration database (.env.test, migrations, catalogue seed)
         run: |
-          echo "DATABASE_URL=$DATABASE_URL" > .env.test
+          printf 'DATABASE_URL=%s\nAUTH_OTP_PEPPER=%s\n' "$DATABASE_URL" "ci-synthetic-otp-pepper-0123456789abcdef" > .env.test
           npm run db:test:prepare
 
       - name: Integration tests (real PostgreSQL)

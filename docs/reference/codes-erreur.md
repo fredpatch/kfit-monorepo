@@ -167,13 +167,13 @@ Source : `packages/shared/src/documents/contracts.ts · documentErrorCodes`
 | `DOCUMENT_INVALID_INPUT` | Vérifie les informations saisies. |
 | `DOCUMENT_TYPE_INVALID` | Choisis un type de document valide. |
 | `DOCUMENT_STATUS_INVALID` | Cette action n'est plus disponible pour ce document. |
-| `DOCUMENT_FILE_TOO_LARGE` | La photo dépasse 10 Mo. / Le fichier dépasse la limite de 10 Mo. |
-| `DOCUMENT_FILE_TYPE_UNSUPPORTED` | Format non pris en charge. Utilise une photo JPG, PNG ou WebP. / Format non pris en charge. Utilise PDF, JPG, PNG ou WebP. |
-| `DOCUMENT_FILE_SIGNATURE_INVALID` | Ce fichier n'est pas une photo lisible. Choisis une photo JPG, PNG ou WebP. / Le contenu du fichier ne correspond pas à son format. |
-| `DOCUMENT_FILE_INFECTED` | La photo a été bloquée par l'analyse antivirus. / Le fichier a été bloqué par l'analyse antivirus. |
-| `DOCUMENT_FILE_SCAN_FAILED` | L'analyse antivirus est indisponible. La photo n'a pas été enregistrée. / L'analyse antivirus est indisponible. Le fichier n'a pas été enregistré. |
+| `DOCUMENT_FILE_TOO_LARGE` | Le fichier dépasse la limite de 10 Mo. / La photo dépasse 10 Mo. |
+| `DOCUMENT_FILE_TYPE_UNSUPPORTED` | Format non pris en charge. Utilise PDF, JPG, PNG ou WebP. / Format non pris en charge. Utilise une photo JPG, PNG ou WebP. |
+| `DOCUMENT_FILE_SIGNATURE_INVALID` | Le contenu du fichier ne correspond pas à son format. / Ce fichier n'est pas une photo lisible. Choisis une photo JPG, PNG ou WebP. |
+| `DOCUMENT_FILE_INFECTED` | Le fichier a été bloqué par l'analyse antivirus. / La photo a été bloquée par l'analyse antivirus. |
+| `DOCUMENT_FILE_SCAN_FAILED` | L'analyse antivirus est indisponible. Le fichier n'a pas été enregistré. / L'analyse antivirus est indisponible. La photo n'a pas été enregistrée. |
 | `DOCUMENT_DUPLICATE_UPLOAD` | Ce fichier est déjà enregistré pour ce document. |
-| `DOCUMENT_STORAGE_FAILURE` | La photo n'a pas pu être enregistrée. Réessaie dans un instant. / Le fichier n'a pas pu être enregistré. Réessaie dans un instant. |
+| `DOCUMENT_STORAGE_FAILURE` | Le fichier n'a pas pu être enregistré. Réessaie dans un instant. / La photo n'a pas pu être enregistrée. Réessaie dans un instant. |
 | `DOCUMENT_HEALTH_CONSENT_REQUIRED` | Le consentement aux données de santé est requis pour générer un bilan. |
 | `DOCUMENT_PHOTO_CONSENT_REQUIRED` | Le consentement au stockage des photos de progression est requis. |
 | `DOCUMENT_MEASUREMENT_INVALID` | Cette mesure est introuvable. Actualise l'onglet Progression. |

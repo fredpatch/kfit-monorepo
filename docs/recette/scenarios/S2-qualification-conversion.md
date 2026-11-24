@@ -1,3 +1,11 @@
+---
+titre: S2 - Contact, qualification et conversion
+public: développeur
+statut: à jour
+vérifié-sur: e5880e7
+couvre: [Sprint 8]
+---
+
 # S2 - Contact, qualification et conversion
 
 ## But

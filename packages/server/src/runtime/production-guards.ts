@@ -13,6 +13,7 @@ import { users } from "../db/schema/auth.js";
 import { consentDefinitions } from "../db/schema/onboarding.js";
 import { PRIVACY_JOURNAL_DIR_ENV } from "../modules/privacy/services/privacy-journal.js";
 import { evaluateRuntimeFloor } from "../security/security-floor.js";
+import { parseTrustedProxyIp, TRUSTED_PROXY_IP_ENV } from "./trusted-proxy.js";
 
 /*
  * S7.4 D2 (Gate 1 approved 2026-10-26): the production API refuses to start until every check passes. All failures are
@@ -29,6 +30,7 @@ export const productionGuardCodes = [
   "PATH_NOT_ABSOLUTE",
   "PRIVACY_JOBS_DISABLED",
   "DEMO_CONSENT_PUBLISHED",
+  "TRUSTED_PROXY_INVALID",
 ] as const;
 export type ProductionGuardCode = (typeof productionGuardCodes)[number];
 export type ProductionGuardFailure = {
@@ -63,6 +65,7 @@ export const PRODUCTION_REQUIRED_ENV = [
   "SMTP_USER",
   "SMTP_PASS",
   "SMTP_FROM",
+  "KFIT_TRUSTED_PROXY_IP",
   ...PRODUCTION_SECRET_ENV,
 ] as const;
 /** FIX-03 F2: directories the production API must receive as absolute paths (a relative one depends on where it is started). */
@@ -174,6 +177,16 @@ export function evaluateProductionEnv(
         detail: "KFIT_APP_BASE_URL",
       });
   }
+
+  // S9A.3: the trusted reverse-proxy hop is one exact private gateway address; anything else would widen proxy trust.
+  if (
+    !missing.includes(TRUSTED_PROXY_IP_ENV) &&
+    !parseTrustedProxyIp(env[TRUSTED_PROXY_IP_ENV])
+  )
+    failures.push({
+      code: "TRUSTED_PROXY_INVALID",
+      detail: TRUSTED_PROXY_IP_ENV,
+    });
 
   const databaseUrl = env.DATABASE_URL?.trim();
   if (databaseUrl && !missing.includes("DATABASE_URL")) {

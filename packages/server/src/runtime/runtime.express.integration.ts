@@ -16,17 +16,15 @@ import {
   users,
 } from "../db/schema/auth.js";
 import { CANONICAL_UUID_PATTERN } from "../http/request-id.middleware.js";
+import { hashAuditContext } from "../modules/auth/services/audit.service.js";
 import { PasswordService } from "../modules/auth/services/password.service.js";
 import {
   digestDeviceToken,
   generateDeviceToken,
 } from "../modules/auth/services/crypto/device-token.crypto.js";
 import { assertLocalTestDatabase } from "../testing/integration-fixtures.js";
-import {
-  createRuntime,
-  PRODUCTION_TRUST_PROXY,
-  type RuntimeMode,
-} from "../runtime.js";
+import { createRuntime, type RuntimeMode } from "../runtime.js";
+import { TrustedProxyConfigError } from "./trusted-proxy.js";
 import { DevToolsController } from "../modules/dev-tools/controllers/dev-tools.controller.js";
 import { DrizzleTestDataRepository } from "../modules/dev-tools/repositories/test-data.repository.js";
 import { TestDataService } from "../modules/dev-tools/services/test-data.service.js";
@@ -41,6 +39,7 @@ const env: NodeJS.ProcessEnv = {
   NODE_ENV: "test",
   AUTH_OTP_PEPPER: "synthetic-runtime-pepper-0123456789abcdef",
   AUTH_DEVICE_PEPPER: "synthetic-runtime-device-pepper-0123456789",
+  KFIT_TRUSTED_PROXY_IP: "10.247.13.1",
 };
 // SEC-02: these tests cover the session cookies, so the browser is a trusted device (without SMTP an unknown one gets 503).
 const deviceToken = generateDeviceToken();
@@ -119,9 +118,9 @@ const login = (url: string, requestId: string) =>
     body: JSON.stringify({ email, password }),
   });
 
-test("S7.4 D1: the production runtime sets Secure on every login cookie, trusts the loopback proxy only and never mounts dev tools", async () => {
+test("S7.4 D1 / S9A.3: the production runtime sets Secure on every login cookie, trusts loopback and the kfit_edge gateway only and never mounts dev tools", async () => {
   const app = appFor("production");
-  assert.equal(app.get("trust proxy"), PRODUCTION_TRUST_PROXY);
+  assert.deepEqual(app.get("trust proxy"), ["loopback", "10.247.13.1"]);
   await serve(app, async (url) => {
     const response = await login(url, randomUUID());
     assert.equal(response.status, 200, await response.clone().text());
@@ -163,5 +162,43 @@ test("S7.4 D4: an audited write with a non-UUID X-Request-Id succeeds and audits
       .from(auditEvents)
       .where(eq(auditEvents.requestId, echoed));
     assert.equal(row?.requestId, echoed);
+  });
+});
+
+test("S9A.3: production refuses to build without one valid kfit_edge gateway to trust", () => {
+  for (const value of [undefined, "10.247.13.0/24", "203.0.113.1"])
+    assert.throws(
+      () =>
+        createRuntime({
+          mode: "production",
+          env: { ...env, KFIT_TRUSTED_PROXY_IP: value },
+        }),
+      TrustedProxyConfigError,
+      String(value),
+    );
+});
+
+test("S9A.3: through the trusted proxy hop, the audit row hashes the client nginx saw, never a spoofed hop or the proxy", async () => {
+  await serve(appFor("production"), async (url) => {
+    const requestId = randomUUID();
+    const response = await fetch(url + authApiRoutes.login, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-request-id": requestId,
+        "x-forwarded-for": "198.51.100.66, 203.0.113.9",
+        cookie: `kfit_device=${deviceToken}`,
+      },
+      body: JSON.stringify({ email, password }),
+    });
+    assert.equal(response.status, 200, await response.clone().text());
+    const [row] = await db
+      .select({ ipHash: auditEvents.ipHash })
+      .from(auditEvents)
+      .where(eq(auditEvents.requestId, requestId));
+    const pepper = env.AUTH_OTP_PEPPER!;
+    assert.equal(row?.ipHash, hashAuditContext("203.0.113.9", pepper));
+    assert.notEqual(row?.ipHash, hashAuditContext("198.51.100.66", pepper));
+    assert.notEqual(row?.ipHash, hashAuditContext("127.0.0.1", pepper));
   });
 });

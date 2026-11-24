@@ -1,4 +1,5 @@
 import { createServerApp } from "./app.js";
+import { productionTrustProxy } from "./runtime/trusted-proxy.js";
 import { ReceiptsController } from "./modules/receipts/controllers/receipts.controller.js";
 import { ReceiptsService } from "./modules/receipts/services/receipts.service.js";
 import { DrizzleReceiptsRepository } from "./modules/receipts/repositories/receipts.repository.js";
@@ -131,8 +132,6 @@ export type RuntimeOptions = {
   env: NodeJS.ProcessEnv;
   devToolsController?: DevToolsControllerFactory;
 };
-/** S7.4 D1: nginx runs on the same host (Sprint 9), so only a loopback proxy is trusted for the client address. */
-export const PRODUCTION_TRUST_PROXY = "loopback";
 
 /** App plus the S7.2 scheduled jobs (started by the dev or prod entry script, not by tests that only need the app). */
 export function createRuntime({
@@ -624,7 +623,7 @@ export function createRuntime({
         }
       : {}),
   });
-  if (mode === "production") app.set("trust proxy", PRODUCTION_TRUST_PROXY);
+  if (mode === "production") app.set("trust proxy", productionTrustProxy(env));
   return {
     app,
     startNotificationJobs,

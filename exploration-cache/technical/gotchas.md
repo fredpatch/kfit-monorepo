@@ -14,6 +14,12 @@ The full integration suite remains failed. The three-attempt loop breaker stoppe
 
 Actual catalogue-seed-versus-override/activation races were code-inspected but not directly runtime-tested in S7.1; helper atomicity and database exclusion concurrency were tested. Preserve this coverage distinction in future validation reports.
 
+## Docker loopback-published ports do not keep loopback as the source
+
+A port published as `127.0.0.1:<host>:<container>` is reachable only from the host, but a connection from a host process (for example host nginx) arrives inside the container from the gateway of the container's Docker network, not from `127.0.0.1`. Measured on the Hostinger VPS (2026-11-24): `172.17.0.1` on the default bridge.
+
+Consequence: an Express `trust proxy` of `"loopback"` does not trust host nginx, and `req.ip` becomes the gateway for every visitor. K'FIT production therefore trusts loopback plus the exact `kfit_edge` gateway (`KFIT_TRUSTED_PROXY_IP`, fixed in `docker-compose.prod.yml`), never the subnet. Docker Desktop on Windows has different networking, so this cannot be reproduced or disproved locally: measure on a Linux host.
+
 ## PostgreSQL host-port ambiguity on Windows dev
 
 K'FIT can coexist with a native PostgreSQL installation, but they must not share the same host endpoint.

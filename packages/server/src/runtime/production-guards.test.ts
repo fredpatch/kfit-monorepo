@@ -33,6 +33,7 @@ const goodEnv = (): NodeJS.ProcessEnv => ({
   AUTH_ACCESS_TOKEN_SECRET: secret("access"),
   AUTH_RECOVERY_TOKEN_SECRET: secret("recovery"),
   AUTH_DEVICE_PEPPER: secret("device"),
+  KFIT_TRUSTED_PROXY_IP: "10.247.13.1",
 });
 const patched = "v22.23.5";
 const codes = (env: NodeJS.ProcessEnv, version = patched) =>
@@ -124,6 +125,21 @@ test("S7.4 D2: the security floor, an http base URL and a dev or test database e
     forbiddenDatabaseTarget("postgresql://u:p@localhost:5432/kfit_prod"),
     null,
   );
+});
+
+test("S9A.3: a KFIT_TRUSTED_PROXY_IP that is not one private IPv4 gateway is TRUSTED_PROXY_INVALID, by name only", () => {
+  for (const value of [
+    "10.247.13.0/24",
+    "10.247.13.1,10.247.13.2",
+    "127.0.0.1",
+    "203.0.113.1",
+    "true",
+    "loopback",
+  ]) {
+    const env = { ...goodEnv(), KFIT_TRUSTED_PROXY_IP: value };
+    assert.deepEqual(codes(env), ["TRUSTED_PROXY_INVALID"], value);
+    assert.equal(detail(env, "TRUSTED_PROXY_INVALID"), "KFIT_TRUSTED_PROXY_IP");
+  }
 });
 
 test("S7.4 D3: KFIT_PRIVACY_JOBS=off is refused; KFIT_NOTIFICATION_JOBS=off is only a warning", () => {

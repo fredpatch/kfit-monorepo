@@ -2,13 +2,19 @@ name: kfit-prod
 
 # S9A.2/S9A.3: production-like stack (client, api, postgres, clamav).
 # PostgreSQL and ClamAV never publish host ports. API/client publish loopback-only ports for host nginx;
-# public ingress is owned by host nginx on 80/443 so Express can keep its loopback-only trust-proxy policy.
+# public ingress is owned by host nginx on 80/443; Express trusts loopback plus the kfit_edge gateway only.
 #
 # Runtime environment file: KFIT_ENV_FILE (default .env.prod, copied from .env.prod.example).
 # On the host: KFIT_ENV_FILE=/srv/kfit/config/.env.prod docker compose -f docker-compose.prod.yml ...
 # A missing file does not block `config` or `build`; the API and PostgreSQL refuse to start without their values.
 # Normal VPS releases do not build application images: KFIT_API_IMAGE/KFIT_CLIENT_IMAGE/KFIT_OPS_IMAGE
 # are set to GHCR digest refs from the S9A.2b release manifest, then Compose pulls them explicitly.
+
+# S9A.3: single source for the kfit_edge gateway. Host nginx -> 127.0.0.1:13000 reaches the API from this address
+# (Docker port publishing does not keep loopback as the source), so it is both the IPAM gateway below and the one
+# proxy hop the API trusts besides loopback (KFIT_TRUSTED_PROXY_IP). 10.247.13.0/24 sits outside Docker's default
+# pools (172.17-31.x, 192.168.x). Never widen the trusted address to the subnet without a new security review.
+x-kfit-edge-gateway: &kfit_edge_gateway 10.247.13.1
 
 services:
   postgres:
@@ -80,6 +86,7 @@ services:
       KFIT_PRIVACY_JOURNAL_DIR: /srv/kfit/privacy-journal
       CLAMAV_HOST: clamav
       CLAMAV_PORT: "3310"
+      KFIT_TRUSTED_PROXY_IP: *kfit_edge_gateway
     volumes:
       # Host directories must exist and be writable by uid 1000 (the image's `node` user); they are never created implicitly.
       - type: bind
@@ -110,7 +117,8 @@ services:
       retries: 3
       start_period: 60s
     # backend: PostgreSQL and ClamAV. edge: outbound SMTP.
-    # S9A.3: host nginx reaches the API only through loopback; production Express trusts loopback proxies only.
+    # S9A.3: host nginx reaches the API only through 127.0.0.1:13000; the hop arrives from the kfit_edge gateway,
+    # which production Express trusts together with loopback (KFIT_TRUSTED_PROXY_IP above).
     networks:
       - kfit_backend
       - kfit_edge
@@ -175,6 +183,10 @@ networks:
     internal: true
   kfit_edge:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 10.247.13.0/24
+          gateway: *kfit_edge_gateway
   # ClamAV only: gives freshclam Internet access without joining the edge network. No published port.
   kfit_clamav_egress:
     driver: bridge

@@ -1,3 +1,15 @@
+## 2026-11-24 - S9A.3 trusted reverse-proxy hop: loopback plus the exact kfit_edge gateway
+
+**Sources**: `claude/s9a-3-trust-proxy-implementation-brief.md`; Gate 0 measured by Fred on the Hostinger VPS (2026-11-24): a container reached through `-p 127.0.0.1:13999:80` saw `172.17.0.1`, the default bridge gateway.
+
+**Context**: Host nginx is the public proxy and reaches the API through `127.0.0.1:13000`. Docker port publishing delivers that hop from the gateway of the container's network, not from loopback. Production Express trusted only `"loopback"` (S7.4 D1), so `req.ip` would have been the gateway for every visitor, collapsing per-IP rate limits and audit IP attribution.
+
+**Decision**: `kfit_edge` gets a fixed subnet `10.247.13.0/24` with gateway `10.247.13.1` (outside Docker's default pools). One Compose anchor feeds both the IPAM gateway and the API's `KFIT_TRUSTED_PROXY_IP`. Production sets `trust proxy` to `["loopback", <that address>]`; the value must be one canonical private IPv4 address, otherwise the production guards (`ENV_MISSING` / `TRUSTED_PROXY_INVALID`) and `createRuntime` refuse to start. Development and tests are unchanged. Host nginx, the loopback-only publishes (API `127.0.0.1:13000`, client `127.0.0.1:18080`) and the unexposed PostgreSQL/ClamAV stay as they are.
+
+**Forbidden without a new security review**: trusting the whole subnet, RFC 1918 ranges, a hop count or `true`; publishing the API on a non-loopback address.
+
+**Impact**: `packages/server/src/runtime/trusted-proxy.ts`, production guards, `docker-compose.prod.yml`, runbook `docs/runbooks/demarrage-production.md` §7. VPS validation (external client IP seen by the API/audit, distinct clients distinguishable) pending with Fred.
+
 ## 2026-11-23 - S9A.2 temporary SYS_ADMIN for in-process Puppeteer (beta only)
 
 **Sources**: Fred's explicit decision during S9A.2 validation (2026-11-23); `claude/s9a-2-production-compose-brief.md` (Puppeteer / Chromium invariant).

@@ -2,8 +2,8 @@
 titre: Démarrage en production
 public: exploitation
 statut: à jour
-vérifié-sur: 4243058
-couvre: [S7.4a, SEC-01, FIX-03, SEC-02a, S9A.2, S9A.2b]
+vérifié-sur: c38dc9f
+couvre: [S7.4a, SEC-01, FIX-03, SEC-02a, S9A.2, S9A.2b, S9A.3]
 ---
 
 # Démarrage en production
@@ -101,7 +101,7 @@ Délai de chaque contrôle : 3 secondes. Les identifiants de `DATABASE_URL` ne s
 - Les jobs `privacy.purge` et, sauf `KFIT_NOTIFICATION_JOBS=off`, `notifications.reconcile` et `notifications.email-delivery` s'exécutent une première fois au démarrage, puis selon leur planning ([jobs](../reference/jobs.md)). Leurs échecs sont journalisés : `✖ <job> failed (<code>)`.
 - Différences avec le développement :
   - cookies `Secure` ;
-  - `trust proxy` limité au proxy local (`loopback`) ;
+  - `trust proxy` limité à `loopback` et à l'adresse exacte `KFIT_TRUSTED_PROXY_IP` (passerelle `kfit_edge`, voir §7) ;
   - outils de développement (« Données de test ») jamais montés.
 
 ## 6. Empaquetage Docker (S9A.2)
@@ -162,12 +162,35 @@ Encore à venir dans Sprint 9A :
 
 ## 7. Reverse proxy et HTTPS (S9A.3)
 
-Le proxy public tourne sur l'hôte, pas dans Docker. Ce choix est volontaire : le runtime de production Express fait confiance uniquement au proxy loopback. Docker publie donc seulement :
+Le proxy public tourne sur l'hôte, pas dans Docker. Docker publie donc seulement, sur la boucle locale de l'hôte :
 
 - API : `127.0.0.1:13000 -> api:3000`
 - client : `127.0.0.1:18080 -> client:80`
 
 PostgreSQL et ClamAV restent sans port hôte. Les ports publics 80/443 appartiennent uniquement à nginx.
+
+### Adresse du client et relais de confiance
+
+Docker ne conserve pas `127.0.0.1` comme source : une connexion de nginx vers `127.0.0.1:13000` arrive dans le conteneur depuis la passerelle du réseau Docker (mesuré sur le VPS Hostinger le 2026-11-24 : `172.17.0.1` pour le réseau `bridge` par défaut). Sans confiance dans ce relais, l'API verrait la passerelle comme adresse de tous les visiteurs : limites de débit par IP partagées par tous, empreintes d'IP d'audit identiques.
+
+Frontière de confiance (exacte, rien d'autre) :
+
+- `loopback` ;
+- la passerelle du réseau `kfit_edge`, fixée dans `docker-compose.prod.yml` (sous-réseau `10.247.13.0/24`, passerelle `10.247.13.1`, hors des plages automatiques de Docker `172.17-31.x` et `192.168.x`).
+
+Le compose définit cette passerelle une seule fois (ancre `x-kfit-edge-gateway`) et l'utilise à la fois pour le réseau et pour `KFIT_TRUSTED_PROXY_IP` du service `api`. L'API de production refuse de démarrer si la valeur manque (`ENV_MISSING`) ou n'est pas une adresse IPv4 privée unique (`TRUSTED_PROXY_INVALID`). nginx ajoute l'adresse réelle du client à droite de `X-Forwarded-For` ; Express s'arrête au premier relais non fiable en partant de la droite, donc les relais ajoutés par le client sont ignorés.
+
+Vérifier sur le VPS :
+
+```bash
+docker network inspect kfit-prod_kfit_edge --format '{{json .IPAM.Config}}'
+docker compose -f docker-compose.prod.yml exec api printenv KFIT_TRUSTED_PROXY_IP
+ip -4 route
+```
+
+Les deux premières commandes doivent afficher la même passerelle ; `ip -4 route` ne doit montrer aucune autre route vers `10.247.13.0/24`.
+
+**Interdit sans nouvelle revue de sécurité** : élargir la confiance (sous-réseau entier, plages privées, nombre de relais, `true`) ou publier l'API ailleurs que sur `127.0.0.1`.
 
 Nom canonique bêta : `https://kfitpulse.io`. `www.kfitpulse.io` redirige vers le domaine racine.
 

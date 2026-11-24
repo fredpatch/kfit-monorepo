@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 /*
@@ -6,6 +7,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  * single node command (no `&&` chain, where Windows cmd escaping left a trailing `^` on a quoted path). The build runs as
  * a separate process that never sees the user's arguments; the target script then reads them unchanged in process.argv.
  * Test-only (NODE_ENV=test): --skip-build, and KFIT_OPS_RUNNER_TARGET to replace the target script.
+ * S9A.6: the production images compile dist at build time, ship it read-only to the non-root user and set
+ * KFIT_OPS_PREBUILT=true, so the runner uses that dist instead of recompiling (which cannot write there).
  */
 const TARGETS = {
   backup: "./backup.mjs",
@@ -31,8 +34,15 @@ if (skipBuild && !testMode) {
   process.exit(1);
 }
 const args = skipBuild ? rest.slice(1) : rest;
+const prebuilt = process.env.KFIT_OPS_PREBUILT === "true";
+if (prebuilt && !existsSync(new URL("../../dist/", import.meta.url))) {
+  console.error(
+    "✖ KFIT_OPS_PREBUILT=true but dist/ is missing; nothing was run.",
+  );
+  process.exit(1);
+}
 
-if (!skipBuild) {
+if (!skipBuild && !prebuilt) {
   // A fixed command string: no user input reaches the shell (npm is a .cmd script on Windows).
   const build = spawnSync("npm run build", {
     cwd: fileURLToPath(new URL("../../", import.meta.url)),

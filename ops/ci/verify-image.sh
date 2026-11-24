@@ -17,6 +17,14 @@ in_image() {
 
 user=$(docker image inspect --format '{{.Config.User}}' "$image")
 
+# S9A.6: ops commands (scripts/ops/run.mjs) must run the image's compiled dist, never recompile into the read-only tree.
+check_prebuilt_ops() {
+  docker image inspect --format '{{json .Config.Env}}' "$image" | grep -q '"KFIT_OPS_PREBUILT=true"' ||
+    fail "KFIT_OPS_PREBUILT=true missing"
+  out=$(in_image 'cd /app/packages/server && node scripts/ops/run.mjs set-role 2>&1 || true')
+  if echo "$out" | grep -qE 'npm run build|> tsc|build failed'; then fail "ops runner recompiles at run time"; fi
+}
+
 case "$kind" in
   api)
     [ "$user" = "node" ] || fail "api must run as node, got '$user'"
@@ -30,6 +38,7 @@ case "$kind" in
       test ! -e /app/packages/server/node_modules/drizzle-kit' || fail "api ships dev dependencies"
     in_image 'find /opt/puppeteer -type f -name chrome -perm -111 -print -quit | grep -q .' ||
       fail "Puppeteer Chrome missing"
+    check_prebuilt_ops
     leaks=$(in_image 'find /app /opt/puppeteer -path "*/node_modules" -prune -o \( -name ".env*" -o -name "*.pem" -o -name "*.key" \) -print 2>/dev/null || true')
     [ -z "$leaks" ] || fail "forbidden runtime files: $leaks"
     ;;
@@ -51,6 +60,7 @@ case "$kind" in
       test -d /app/packages/server/src/db/migrations &&
       test -x /app/node_modules/.bin/drizzle-kit &&
       test -f /app/packages/server/package.json' || fail "ops tooling layout"
+    check_prebuilt_ops
     cmd=$(docker image inspect --format '{{json .Config.Cmd}}' "$image")
     echo "$cmd" | grep -q 'api-server.mjs' && fail "ops must not start the API by default"
     ;;

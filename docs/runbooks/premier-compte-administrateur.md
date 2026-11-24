@@ -39,22 +39,31 @@ La variable n'est pas obligatoire au démarrage : sans elle, l'API démarre et l
 
 Le premier compte (super-administrateur) est celui de l'exploitation. La coach a son propre compte, avec le rôle administrateur : tout l'espace coach et la configuration, sans la Supervision.
 
-1. Sur le serveur, depuis la racine du dépôt :
+1. Sur le VPS, depuis le dépôt, avec `KFIT_ENV_FILE` et `KFIT_OPS_IMAGE` exportés ([images publiées](demarrage-production.md#images-publiées-s9a2b)), dans le conteneur `ops` :
+
    ```bash
-   npm run ops:create-user -- --email <e-mail de la coach> --role admin --label <prénom>
+   docker compose -f docker-compose.prod.yml --profile ops run --rm ops \
+     npm run ops:create-user --workspace @kfit/server -- --email <e-mail de la coach> --role admin --label <prénom>
    ```
-   Résultat attendu : `Compte créé. La personne doit choisir son mot de passe via « Mot de passe oublié » sur l'écran de connexion.`, code de sortie 0. La commande compile l'API avant de s'exécuter.
+
+   En local : `npm run ops:create-user -- --email … --role admin --label …` depuis la racine du dépôt.
+
+   Résultat attendu : `Compte créé. La personne doit choisir son mot de passe via « Mot de passe oublié » sur l'écran de connexion.`, code de sortie 0. En local, la commande compile l'API avant de s'exécuter. Dans les images de production (`KFIT_OPS_PREBUILT=true`), elle utilise le `dist/` compilé à la construction de l'image et ne compile jamais.
    - Le compte est actif, avec un mot de passe aléatoire jamais affiché ni enregistré en clair : aucun mot de passe ne l'ouvre tant que la coach n'en a pas choisi un.
    - L'e-mail est enregistré en minuscules, sans espaces. Une adresse déjà utilisée, quelle que soit la casse, est refusée (`USER_EMAIL_TAKEN`). `--role superadmin` est refusé (`SUPERADMIN_ONLY_VIA_BOOTSTRAP`).
    - Trace : audit `auth.user.created` (acteur `system:ops`, rôle, prénom s'il est donné, jamais l'e-mail) et une ligne `ops.create_user` dans `scheduled_job_runs` ([scripts d'exploitation](../reference/jobs.md#scripts-dexploitation)).
+
 2. La coach ouvre l'application, choisit « Mot de passe oublié », saisit son e-mail, reçoit le code et choisit son mot de passe.
 3. Elle se connecte. Son navigateur est inconnu : l'écran « Nouvel appareil » demande le code envoyé à son e-mail. Sur son poste personnel, elle coche « Faire confiance à cet appareil pendant 30 jours ».
 
 **Changer le rôle d'un compte** (administrateur ↔ coach) :
 
 ```bash
-npm run ops:set-role -- --email <e-mail> --role admin|coach
+docker compose -f docker-compose.prod.yml --profile ops run --rm ops \
+  npm run ops:set-role --workspace @kfit/server -- --email <e-mail> --role admin|coach
 ```
+
+En local : `npm run ops:set-role -- --email <e-mail> --role admin|coach`.
 
 Résultat attendu : `Rôle modifié. Il s'applique à la prochaine connexion ou au prochain rafraîchissement de session.` Le rôle porté par la session est relu au rafraîchissement, soit 15 minutes au plus avec la durée par défaut (`AUTH_ACCESS_TOKEN_TTL_MS`). Jamais vers ni depuis super-administrateur (`SUPERADMIN_ONLY_VIA_BOOTSTRAP`) : le dernier super-administrateur ne peut donc pas perdre son rôle. Audit `auth.user.role_changed` (ancien et nouveau rôle), ligne `ops.set_role`. Aucun écran ni route HTTP ne gère les comptes.
 

@@ -80,7 +80,9 @@ RUN apt-get update \
     libxtst6 \
   && rm -rf /var/lib/apt/lists/*
 
+# KFIT_OPS_PREBUILT: dist is compiled above and read-only here, so scripts/ops/run.mjs runs it without recompiling.
 ENV NODE_ENV=production \
+    KFIT_OPS_PREBUILT=true \
     PUPPETEER_CACHE_DIR=/opt/puppeteer \
     KFIT_API_HOST=0.0.0.0 \
     KFIT_API_PORT=3000
@@ -117,7 +119,9 @@ CMD ["node", "scripts/prod/api-server.mjs"]
 # ---------- ops ----------
 # One-off tooling (e.g. `npm run db:migrate --workspace @kfit/server`). Never started by `docker compose up`.
 FROM build AS ops
-ENV NODE_ENV=production
+# dist was compiled in the build stage and stays root-owned: ops commands (scripts/ops/run.mjs) use it as is.
+ENV NODE_ENV=production \
+    KFIT_OPS_PREBUILT=true
 USER node
 WORKDIR /app/packages/server
 CMD ["node", "-e", "console.log(\"K'FIT ops image: run an explicit command, e.g. npm run db:migrate --workspace @kfit/server\")"]

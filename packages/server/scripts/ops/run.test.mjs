@@ -51,6 +51,20 @@ test("FIX-03 F3: arguments with spaces, quotes and carets reach the target scrip
   });
 });
 
+test("S9A.6: in a prebuilt image (KFIT_OPS_PREBUILT=true) the runner never recompiles and runs the job with its arguments", async () => {
+  await withProbe(async ({ probe, read }) => {
+    const args = ["--email", "coach@kfit.invalid", "--role", "admin"];
+    const result = run(["create-user", ...args], {
+      NODE_ENV: "test",
+      KFIT_OPS_PREBUILT: "true",
+      KFIT_OPS_RUNNER_TARGET: probe,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.doesNotMatch(result.stdout + result.stderr, /npm run build|> tsc/);
+    assert.deepEqual(await read(), args);
+  });
+});
+
 test("FIX-03 F3: --skip-build and the target override are refused outside NODE_ENV=test; an unknown job is refused", async () => {
   await withProbe(async ({ probe }) => {
     const refused = run(["backup", "--skip-build"], {

@@ -8,20 +8,21 @@
 ```text
 Branch            main
 Sprint            9A - Hostinger Beta Environment
-Active task       S9A.2b - GHCR image publication
-Workflow state    S9A.1 and S9A.2 VALIDATED locally by Fred on 2026-11-23
+Active task       S9A.3 - Reverse proxy and TLS
+Workflow state    S9A.1, S9A.2 and S9A.2b VALIDATED by Fred; S9A.3 is next
 S9A.1             VPS baseline/hardening complete: SSH keys, root/password login disabled, UFW 22/80/443, UTC sync, 2 GiB swap, Docker/Compose, /srv/kfit layout
 S9A.2             production-like Docker packaging complete and pushed
-Implementation    12ffc21 - build(deploy): add production-like Docker packaging
+S9A.2b            GHCR publication validated 2026-11-24: GitHub run 45338259559 green; release commit bfa7dae; VPS digest pull/runtime/PDF/Compose checks green
+Implementation    12ffc21 (S9A.2); bfa7dae release validated for S9A.2b
 Runtime floor     Node 22 >= 22.23.5; Node 24 >= 24.22.3; Node 26 >= 26.13.1
 Prod API runtime  Node 22.23.5, non-root
 Compose topology  client + API + PostgreSQL internal + ClamAV internal/egress + ops profile; no DB/ClamAV host ports
-PDF validation    Puppeteer preflight PASSED: valid 119483-byte PDF, 4 pages
+PDF validation    Published API digest passed Puppeteer preflight on VPS: valid 119483-byte PDF, 4 pages
 PDF exception     API cap_add: SYS_ADMIN accepted only for controlled beta/synthetic data; --no-sandbox, privileged and seccomp=unconfined forbidden
 Real-data gate    isolate PDF renderer and remove API SYS_ADMIN before any real customer data
 Beta policy       Konny + synthetic/demo customer data only
 Production gates  legal/privacy review + provider register + encrypted off-server backup/restore remain required
-Next action       Validate S9A.2b GitHub publication: CI -> api/client/ops GHCR -> release manifest -> pull by digest; then resume S9A.3
+Next action       Start S9A.3: inspect/reuse reverse-proxy/TLS pattern, define K'FIT nginx/TLS contract, then implement and validate on Hostinger
 ```
 
 ## S7.1 - closed 2026-10-23

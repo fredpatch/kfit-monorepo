@@ -1,7 +1,7 @@
 ---
 titre: S7 - Confidentialité et opérations
 public: développeur
-statut: validé
+statut: à jour
 vérifié-sur: e5880e7
 couvre: [Sprint 8, UAT review]
 ---

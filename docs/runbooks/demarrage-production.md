@@ -160,3 +160,57 @@ Encore à venir dans Sprint 9A :
 - exécution des migrations sur l'hôte : S9A.6 ;
 - timer de l'hôte pour les sauvegardes et copie hors serveur : S9A.7 ;
 - mode maintenance.
+
+
+## Reverse proxy et HTTPS — S9A.3
+
+Le proxy public tourne sur l'hôte, pas dans Docker. Ce choix est volontaire : le runtime de production Express fait confiance uniquement au proxy loopback. Docker publie donc seulement :
+
+- API : `127.0.0.1:13000 -> api:3000`
+- client : `127.0.0.1:18080 -> client:80`
+
+PostgreSQL et ClamAV restent sans port hôte. Les ports publics 80/443 appartiennent uniquement à nginx.
+
+Nom canonique bêta : `https://kfitpulse.io`. `www.kfitpulse.io` redirige vers le domaine racine.
+
+Fichiers versionnés :
+
+- `ops/nginx/kfitpulse-bootstrap.conf` : HTTP minimal pour le premier challenge ACME ;
+- `ops/nginx/kfitpulse.conf` : redirection HTTP→HTTPS, TLS et reverse proxy ;
+- `ops/certbot/reload-nginx.sh` : hook de rechargement nginx après renouvellement.
+
+Le proxy reproduit les racines API définies dans `packages/client/vite.config.ts`. Ne jamais proxyfier tout `/admin/` ou `/public/`, car ces namespaces contiennent aussi des routes SPA.
+
+La limite publique est `client_max_body_size 12m`, au-dessus du justificatif de paiement maximum de 10 MiB et de la limite Express de 11 MiB.
+
+### Première émission du certificat
+
+Après installation de nginx et Certbot sur l'hôte :
+
+```bash
+sudo mkdir -p /var/www/certbot
+sudo cp ops/nginx/kfitpulse-bootstrap.conf /etc/nginx/sites-available/kfitpulse.conf
+sudo ln -sfn /etc/nginx/sites-available/kfitpulse.conf /etc/nginx/sites-enabled/kfitpulse.conf
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Vérifier le challenge HTTP avant Certbot, puis émettre le certificat SAN pour `kfitpulse.io` et `www.kfitpulse.io` avec le plugin webroot. Utiliser une adresse e-mail d'exploitation réelle :
+
+```bash
+sudo certbot certonly --webroot -w /var/www/certbot \
+  -d kfitpulse.io -d www.kfitpulse.io \
+  --email <CERTBOT_EMAIL> --agree-tos --no-eff-email
+```
+
+Une fois le certificat présent :
+
+```bash
+sudo cp ops/nginx/kfitpulse.conf /etc/nginx/sites-available/kfitpulse.conf
+sudo install -m 0755 ops/certbot/reload-nginx.sh /etc/letsencrypt/renewal-hooks/deploy/kfit-reload-nginx
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Le déploiement applicatif continue à utiliser les références GHCR immuables du manifeste et `docker compose ... up -d --no-build`. nginx ne construit ni ne choisit les images.

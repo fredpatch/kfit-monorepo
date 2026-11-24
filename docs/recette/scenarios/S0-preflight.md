@@ -1,3 +1,11 @@
+---
+titre: S0 - Préflight de recette
+public: développeur
+statut: à jour
+vérifié-sur: e5880e7
+couvre: [Sprint 8]
+---
+
 # S0 - Préflight de recette
 
 ## But

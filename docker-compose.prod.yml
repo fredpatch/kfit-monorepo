@@ -149,6 +149,28 @@ services:
     ports:
       - "127.0.0.1:18080:80"
 
+  # TEMPORARY S9A.3 bridge (profile `mailpit-bridge`), removed in S9A.4 when real SMTP replaces it: catches the
+  # API's mail so login codes can be read while no real SMTP account exists. Never part of `up -d` without the profile.
+  # SMTP stays on the internal backend network (api -> mailpit:1025, no host port). Nodemailer always sends AUTH when
+  # SMTP_USER is set, and the production guard requires SMTP_USER/SMTP_PASS, so Mailpit accepts any credentials over
+  # plain SMTP: the network, not the password, is the boundary. The UI is published on host loopback only (SSH tunnel),
+  # through its own non-internal network because Docker does not publish ports of internal-only networks.
+  mailpit:
+    image: axllent/mailpit:v1.33.1@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce
+    profiles:
+      - mailpit-bridge
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+    networks:
+      - kfit_backend
+      - kfit_mailpit_ui
+    expose:
+      - "1025"
+    ports:
+      - "127.0.0.1:8025:8025"
+
   # Explicit one-off tooling only (profile `ops`): never part of `docker compose up -d`, never restarted.
   # Migrations are run deliberately (S9A.6), e.g.:
   #   docker compose -f docker-compose.prod.yml --profile ops run --rm ops npm run db:migrate --workspace @kfit/server
@@ -189,4 +211,7 @@ networks:
           gateway: *kfit_edge_gateway
   # ClamAV only: gives freshclam Internet access without joining the edge network. No published port.
   kfit_clamav_egress:
+    driver: bridge
+  # TEMPORARY S9A.3 Mailpit bridge only: carries the loopback-published UI port. Removed with the mailpit service.
+  kfit_mailpit_ui:
     driver: bridge

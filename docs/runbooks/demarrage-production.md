@@ -235,3 +235,46 @@ sudo systemctl reload nginx
 ```
 
 Le déploiement applicatif continue à utiliser les références GHCR immuables du manifeste et `docker compose ... up -d --no-build`. nginx ne construit ni ne choisit les images.
+
+### Pont SMTP temporaire Mailpit (S9A.3, retiré en S9A.4)
+
+Tant qu'aucun compte SMTP réel n'existe, le service `mailpit` (profil `mailpit-bridge`) reçoit les e-mails de l'API pour lire les codes de connexion. Ce n'est pas la validation SMTP de S9A.4 : aucun e-mail ne quitte le serveur.
+
+- SMTP : `mailpit:1025` sur le réseau interne `kfit_backend`, sans port sur l'hôte.
+- Interface : `127.0.0.1:8025` sur l'hôte uniquement (réseau `kfit_mailpit_ui`, car Docker ne publie pas de port sur un réseau interne), lue par tunnel SSH. Aucune route nginx.
+- Nodemailer envoie toujours `AUTH` dès que `SMTP_USER` est défini, et les contrôles de production exigent `SMTP_USER` et `SMTP_PASS`. Mailpit accepte donc n'importe quels identifiants en SMTP sans TLS (`MP_SMTP_AUTH_ACCEPT_ANY`, `MP_SMTP_AUTH_ALLOW_INSECURE`) : la frontière est le réseau interne, pas le mot de passe.
+- Image figée par empreinte (`axllent/mailpit:v1.33.1@sha256:...`), stockage éphémère : les messages disparaissent à la recréation du conteneur.
+
+Valeurs du pont dans `/srv/kfit/config/.env.prod` (non secrètes, propres à Mailpit) :
+
+```dotenv
+SMTP_HOST=mailpit
+SMTP_PORT=1025
+SMTP_SECURE=false
+SMTP_USER=kfit-mailpit-bridge
+SMTP_PASS=kfit-mailpit-bridge-only
+SMTP_FROM=no-reply@kfitpulse.io
+```
+
+Démarrer le pont avant l'API, puis l'API sans le profil :
+
+```bash
+docker compose -f docker-compose.prod.yml --profile mailpit-bridge up -d mailpit
+docker compose -f docker-compose.prod.yml up -d api
+```
+
+Lire l'interface depuis le poste de l'exploitant :
+
+```bash
+ssh -N -L 8025:127.0.0.1:8025 <utilisateur>@<hôte du VPS>
+```
+
+puis ouvrir `http://localhost:8025`.
+
+Retrait (S9A.4) :
+
+1. remplacer les six lignes `SMTP_*` par les valeurs du fournisseur réel ;
+2. `docker compose -f docker-compose.prod.yml --profile mailpit-bridge rm -s -f mailpit`, puis `docker network rm kfit-prod_kfit_mailpit_ui` ;
+3. `docker compose -f docker-compose.prod.yml up -d --force-recreate api` : le journal doit afficher `✔ SMTP ready (<hôte réel>:<port>)` ;
+4. supprimer du compose le service `mailpit` et le réseau `kfit_mailpit_ui`, puis vérifier qu'aucun fichier ne mentionne plus `mailpit-bridge` ;
+5. dérouler ensuite la validation SMTP de S9A.4.

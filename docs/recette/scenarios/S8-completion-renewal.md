@@ -1,7 +1,7 @@
 ---
 titre: S8 - Fin d'abonnement et renouvellement
 public: développeur
-statut: validé
+statut: à jour
 vérifié-sur: e5880e7
 couvre: [Sprint 8, UAT-002]
 ---

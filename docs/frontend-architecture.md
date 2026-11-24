@@ -1,3 +1,11 @@
+---
+titre: Architecture frontend K'FIT
+public: développeur
+statut: à jour
+vérifié-sur: 276f271
+couvre: [FE-ARCH-01, FE-ARCH-02, FE-ARCH-03, FE-ARCH-04]
+---
+
 # K'FIT Frontend Architecture
 
 > Status: target architecture approved by Fred on 2026-11-02.

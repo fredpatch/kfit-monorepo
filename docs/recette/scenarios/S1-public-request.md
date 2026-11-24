@@ -1,3 +1,11 @@
+---
+titre: S1 - Catalogue public et demande
+public: développeur
+statut: à jour
+vérifié-sur: e5880e7
+couvre: [Sprint 8]
+---
+
 # S1 - Catalogue public et demande
 
 ## But

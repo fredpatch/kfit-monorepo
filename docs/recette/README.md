@@ -1,7 +1,7 @@
 ---
 titre: Recette
 public: coach, développeur
-statut: Sprint 8 - en cours
+statut: à jour
 vérifié-sur: d2fc5df
 couvre: [Sprint 8]
 ---

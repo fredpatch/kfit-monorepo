@@ -15,6 +15,7 @@ Reference pattern reviewed: `ai-invoice-manager/deploy/homelab` and `.github/wor
    - `api` from `packages/server/Dockerfile`, target `runtime`;
    - `client` from `packages/client/Dockerfile`, target `runtime`;
    - `ops` from `packages/server/Dockerfile`, target `ops`.
+
 2. Do not publish PostgreSQL or ClamAV; keep the trusted upstream images already referenced by Compose.
 3. Registry: GitHub Container Registry (GHCR).
 4. Image namespace:
@@ -98,6 +99,7 @@ Pin third-party GitHub Actions by full commit SHA, following the reviewed invoic
 
   - `VITE_PUBLIC_WHATSAPP=${{ vars.KFIT_PUBLIC_WHATSAPP || '' }}`
   - `VITE_PUBLIC_INSTAGRAM=${{ vars.KFIT_PUBLIC_INSTAGRAM || '' }}`
+
 - do not pass secrets into Docker build args.
 
 ## Image verification before push
@@ -112,6 +114,7 @@ It must run against the exact locally loaded image with network disabled where p
 - verify OCI revision label separately in the workflow equals `GITHUB_SHA`.
 
 ### api
+
 - image user is `node`;
 - `node --version` is exactly `v22.23.5`;
 - production entry script and compiled server/shared output exist;
@@ -120,12 +123,14 @@ It must run against the exact locally loaded image with network disabled where p
 - execute the real PDF preflight before publish using `--init --shm-size=256m --cap-add=SYS_ADMIN`; this is build verification only and must not alter the image.
 
 ### client
+
 - nginx configuration validates with `nginx -t`;
 - `index.html` exists;
 - at least one built JS asset exists;
 - no server source or env file is baked into the image.
 
 ### ops
+
 - image user is `node`;
 - `node --version` is exactly `v22.23.5`;
 - Drizzle/source/migrations required for explicit migration commands exist;

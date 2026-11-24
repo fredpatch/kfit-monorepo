@@ -37,7 +37,8 @@ for (const file of files) {
   }
 
   const prefix = `ghcr.io/${repository}/${part.image}@sha256:`;
-  const digest = typeof part.ref === "string" ? part.ref.slice(prefix.length) : "";
+  const digest =
+    typeof part.ref === "string" ? part.ref.slice(prefix.length) : "";
   if (!part.ref?.startsWith(prefix) || !/^[a-f0-9]{64}$/.test(digest)) {
     throw new Error(`unexpected reference for ${part.image}`);
   }

@@ -2,8 +2,8 @@
 titre: Démarrage en production
 public: exploitation
 statut: à jour
-vérifié-sur: 2365597
-couvre: [S7.4a, SEC-01, FIX-03, SEC-02a, S9A.2]
+vérifié-sur: 12ffc21
+couvre: [S7.4a, SEC-01, FIX-03, SEC-02a, S9A.2, S9A.2b]
 ---
 
 # Démarrage en production

@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main, "sprint-*"]
+    branches: ["sprint-*"]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: ci-${{ github.ref }}

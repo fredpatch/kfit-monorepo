@@ -6,7 +6,8 @@ Status: IN PROGRESS. S9A.1 and S9A.2 validated locally by Fred; S9A.3 is active.
 
 - ✅ S9A.1 - VPS baseline and host hardening: validated by Fred on 2026-11-23.
 - ✅ S9A.2 - Deployment packaging: validated by Fred on 2026-11-23; implementation commit `12ffc21`.
-- ⏳ S9A.3 - Reverse proxy and TLS: current task.
+- ⏳ S9A.2b - GHCR image publication: current task; implementation awaiting GitHub/Fred validation.
+- 🔜 S9A.3 - Reverse proxy and TLS resumes after S9A.2b validation.
 - 🔜 S9A.4-S9A.9 remain dependency-ordered after S9A.3.
 - Real customer data remains forbidden during 9A until the production-readiness gates are satisfied.
 - Temporary security exception: the API currently receives `SYS_ADMIN` only so in-process Puppeteer can keep Chromium sandboxing enabled during the controlled synthetic-data beta. Before any real customer data, PDF rendering must be isolated and this capability removed from the API.
@@ -99,6 +100,28 @@ Acceptance:
 - complete stack can start from documented environment + Compose;
 - PostgreSQL is not published to host/Internet;
 - API production guards pass.
+
+### S9A.2b - GHCR image publication
+
+Move application image builds off the VPS:
+
+- make the existing CI reusable by the publication workflow;
+- build `api`, `client` and `ops` on GitHub Actions for linux/amd64;
+- verify the exact loaded images before registry login/push;
+- run the real API PDF preflight before publication;
+- publish only immutable `sha-<commit>` tags to GHCR;
+- capture registry digests in one release manifest;
+- let Compose consume `KFIT_API_IMAGE`, `KFIT_CLIENT_IMAGE` and `KFIT_OPS_IMAGE`;
+- keep deployment explicit on the VPS: pull selected digest refs, then start; no SSH/auto-deploy from GitHub.
+
+Acceptance:
+
+- reusable CI is green inside the publication workflow;
+- api/client/ops publish jobs are green;
+- the release manifest contains exactly the three digest refs for the release commit;
+- Fred pulls and inspects at least the API image by digest;
+- API reports Node 22.23.5, revision label matches the release commit and PDF preflight passes;
+- Compose config is green with the manifest digest refs.
 
 ### S9A.3 - Reverse proxy and TLS
 
@@ -253,4 +276,4 @@ Sprint 9A does not:
 
 ## Current next action
 
-Implement and validate S9A.3 - reverse proxy and TLS. Preserve secure cookies/proxy trust, SPA route reloads, `/health`, HTTPS redirect and upload/body limits. Do not start S9A.4 until Fred validates S9A.3 locally/on the VPS.
+Push and validate S9A.2b through GitHub Actions: reusable CI, api/client/ops GHCR publication, release manifest, then Fred pulls the API by digest and verifies Node/revision/PDF. Resume S9A.3 only after this gate is green.

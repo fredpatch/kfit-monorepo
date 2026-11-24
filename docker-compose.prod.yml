@@ -6,6 +6,8 @@ name: kfit-prod
 # Runtime environment file: KFIT_ENV_FILE (default .env.prod, copied from .env.prod.example).
 # On the host: KFIT_ENV_FILE=/srv/kfit/config/.env.prod docker compose -f docker-compose.prod.yml ...
 # A missing file does not block `config` or `build`; the API and PostgreSQL refuse to start without their values.
+# Normal VPS releases do not build application images: KFIT_API_IMAGE/KFIT_CLIENT_IMAGE/KFIT_OPS_IMAGE
+# are set to GHCR digest refs from the S9A.2b release manifest, then Compose pulls them explicitly.
 
 services:
   postgres:
@@ -47,6 +49,9 @@ services:
       - "3310"
 
   api:
+    # S9A.2b: production deployment sets KFIT_API_IMAGE to an immutable GHCR digest ref.
+    # The local default keeps explicit docker compose build usable for review.
+    image: ${KFIT_API_IMAGE:-kfit-prod-api:local}
     build:
       context: .
       dockerfile: packages/server/Dockerfile
@@ -111,6 +116,8 @@ services:
       - "3000"
 
   client:
+    # S9A.2b: production deployment sets KFIT_CLIENT_IMAGE to an immutable GHCR digest ref.
+    image: ${KFIT_CLIENT_IMAGE:-kfit-prod-client:local}
     build:
       context: .
       dockerfile: packages/client/Dockerfile
@@ -135,6 +142,8 @@ services:
   # Migrations are run deliberately (S9A.6), e.g.:
   #   docker compose -f docker-compose.prod.yml --profile ops run --rm ops npm run db:migrate --workspace @kfit/server
   ops:
+    # S9A.2b: one-off production tooling uses the exact release digest as the API/client release.
+    image: ${KFIT_OPS_IMAGE:-kfit-prod-ops:local}
     build:
       context: .
       dockerfile: packages/server/Dockerfile

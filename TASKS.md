@@ -8,7 +8,7 @@
 ```text
 Branch            main
 Sprint            9A - Hostinger Beta Environment
-Active task       S9A.3 - Reverse proxy and TLS
+Active task       S9A.2b - GHCR image publication
 Workflow state    S9A.1 and S9A.2 VALIDATED locally by Fred on 2026-11-23
 S9A.1             VPS baseline/hardening complete: SSH keys, root/password login disabled, UFW 22/80/443, UTC sync, 2 GiB swap, Docker/Compose, /srv/kfit layout
 S9A.2             production-like Docker packaging complete and pushed
@@ -21,7 +21,7 @@ PDF exception     API cap_add: SYS_ADMIN accepted only for controlled beta/synth
 Real-data gate    isolate PDF renderer and remove API SYS_ADMIN before any real customer data
 Beta policy       Konny + synthetic/demo customer data only
 Production gates  legal/privacy review + provider register + encrypted off-server backup/restore remain required
-Next action       S9A.3 - nginx reverse proxy + HTTPS/TLS; preserve secure cookies, proxy trust, SPA reloads and /health
+Next action       Validate S9A.2b GitHub publication: CI -> api/client/ops GHCR -> release manifest -> pull by digest; then resume S9A.3
 ```
 
 ## S7.1 - closed 2026-10-23

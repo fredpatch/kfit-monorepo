@@ -2,6 +2,15 @@
 
 > Only locally validated changes are recorded here.
 
+## 2026-11-24 - Sprint 9A S9A.2b GHCR publication validated
+
+- Release commit `bfa7dae63139e1e7a91bfb266ad5acc5aeaf55d6` passed GitHub Actions publication run `45338259559`: reusable CI, api/client/ops publication, image verification and release-manifest assembly all green.
+- GHCR publishes immutable SHA-tagged K'FIT application images and the release manifest pins api/client/ops by `@sha256` digest; GitHub performs no SSH or automatic VPS deployment.
+- Fred validated the published API artifact on the Hostinger VPS by immutable digest `sha256:948a0b444bf4bceea27b6e1027e06cbceb2d7013d47edf48dea964f8004bc8ba`.
+- VPS runtime checks confirmed Node `v22.23.5`, OCI revision `bfa7dae63139e1e7a91bfb266ad5acc5aeaf55d6`, and the real Puppeteer PDF preflight passed with the approved beta-only `SYS_ADMIN` capability (119483 bytes, 4 pages).
+- Compose validation passed with the release digest refs for API, client and ops, including the `ops` profile; PostgreSQL and ClamAV remain upstream service images.
+- S9A.2b is closed. S9A.3 reverse proxy and HTTPS/TLS is the active next task. Real customer data remains forbidden until the existing production-readiness gates are satisfied.
+
 ## 2026-11-23 - Sprint 9A S9A.1-S9A.2 Hostinger beta foundation
 
 - S9A.1 VPS baseline/hardening validated by Fred: non-root SSH-key administration, root/password SSH disabled, UFW exposes only 22/80/443, UTC time sync, persistent 2 GiB swap, Docker/Compose operational and `/srv/kfit` persistent layout created with restricted permissions.

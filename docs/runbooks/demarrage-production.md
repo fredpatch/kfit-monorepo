@@ -117,7 +117,7 @@ Le paquetage existe ; il n'est **pas encore validé sur l'hébergement Hostinger
 | `api`      | `packages/server/Dockerfile`, cible `runtime` (`node:22.23.5-bookworm-slim`) | `kfit_backend`, `kfit_edge`          | API (`scripts/prod/api-server.mjs`), utilisateur non root, `init: true` |
 | `client`   | `packages/client/Dockerfile` (`nginx:1.27-alpine`)                           | `kfit_edge`                          | application web statique, port 80 interne                               |
 
-- `kfit_backend` est un réseau interne (pas de sortie). `kfit_edge` est un réseau ordinaire : il donne à l'API l'accès SMTP sortant et recevra le proxy public au S9A.3. `kfit_clamav_egress` est un réseau ordinaire réservé à ClamAV : seule sortie de `freshclam` pour mettre à jour les signatures, sans port publié.
+- `kfit_backend` est un réseau interne (pas de sortie). `kfit_edge` est un réseau ordinaire : il donne à l'API l'accès SMTP sortant. Le proxy public (S9A.3) tourne sur l'hôte, voir §7. `kfit_clamav_egress` est un réseau ordinaire réservé à ClamAV : seule sortie de `freshclam` pour mettre à jour les signatures, sans port publié.
 - Fichier d'environnement : `KFIT_ENV_FILE` (par défaut `.env.prod`, modèle `.env.prod.example`). Le compose impose les valeurs liées à la topologie : `NODE_ENV=production`, `KFIT_API_HOST=0.0.0.0`, `KFIT_API_PORT=3000`, `PRIVATE_STORAGE_ROOT=/srv/kfit/private`, `KFIT_PRIVACY_JOURNAL_DIR=/srv/kfit/privacy-journal`, `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310`.
 - Fichiers privés et journal de confidentialité : dossiers de l'hôte `/srv/kfit/private` et `/srv/kfit/privacy-journal`, montés aux mêmes chemins. Ils doivent exister et appartenir à l'utilisateur `1000` de l'image ; le compose ne les crée jamais.
 - Contrôles de santé : `pg_isready` (PostgreSQL), `clamdcheck.sh` (ClamAV), `GET /health` sur `127.0.0.1:3000` dans le conteneur (API), page d'accueil (client). L'API attend PostgreSQL et ClamAV « healthy ».
@@ -156,13 +156,11 @@ docker compose -f docker-compose.prod.yml up -d --no-build
 
 Encore à venir dans Sprint 9A :
 
-- nginx en proxy inverse public et certificats TLS (Certbot) : S9A.3 ;
 - exécution des migrations sur l'hôte : S9A.6 ;
 - timer de l'hôte pour les sauvegardes et copie hors serveur : S9A.7 ;
 - mode maintenance.
 
-
-## Reverse proxy et HTTPS — S9A.3
+## 7. Reverse proxy et HTTPS (S9A.3)
 
 Le proxy public tourne sur l'hôte, pas dans Docker. Ce choix est volontaire : le runtime de production Express fait confiance uniquement au proxy loopback. Docker publie donc seulement :
 

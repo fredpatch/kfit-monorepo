@@ -1,7 +1,7 @@
 ---
 titre: S3 - Onboarding, consentements, questionnaire et avis médical
 public: développeur
-statut: validé
+statut: à jour
 vérifié-sur: 15476f3
 couvre: [Sprint 8, UAT-001]
 ---

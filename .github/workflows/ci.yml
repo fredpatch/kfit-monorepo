@@ -71,7 +71,14 @@ jobs:
         run: npm run lint:dashes
 
       - name: Documentation references and links (DOC-01)
+        id: docs_check
         run: npm run docs:check
+
+      - name: Show documentation diff on DOC-01 failure
+        if: failure() && steps.docs_check.outcome == 'failure'
+        run: |
+          npm run docs:generate
+          git diff -- docs/reference
 
       - name: Build
         run: npm run build

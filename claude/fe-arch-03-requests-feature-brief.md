@@ -103,6 +103,7 @@ export function RequestsPage() {
 Update admin router to lazy-load the page wrapper.
 
 Do not change URL/search-param behavior:
+
 - `/admin/demandes`
 - `vue`
 - `demande`
@@ -128,6 +129,7 @@ Keep route:
 `/demande/:offre`
 
 Do not change:
+
 - intake fields;
 - idempotency token;
 - honeypot;
@@ -180,6 +182,7 @@ Use normal authenticated shared transport with credentials + CSRF.
 Preserve injectable `http` options for tests.
 
 After this slice:
+
 - no `axios.create()` inside Requests;
 - no direct CSRF helper plumbing inside Requests API clients.
 
@@ -208,6 +211,7 @@ export const requestKeys = {
 ```
 
 Important:
+
 - resulting arrays must match existing identities exactly;
 - invalidating `adminQueue()` must continue to invalidate all queue variants.
 
@@ -256,6 +260,7 @@ Also inspect RequestDetail for existing cross-feature imports (privacy, customer
 ## Generic infrastructure
 
 Requests may continue importing current:
+
 - `components/ui`;
 - `components/public`;
 - `lib/utils`;
@@ -267,6 +272,7 @@ Do not migrate generic UI/lib in FE-ARCH-03.
 ## No behavior changes
 
 Do not change:
+
 - public request rules;
 - anti-abuse controls;
 - request state transitions;
@@ -338,10 +344,12 @@ Only Fred validation moves FE-ARCH-03 to Terminé.
 ## Documentation/state
 
 Before Fred validation:
+
 - report IMPLEMENTED / awaiting validation;
 - do not add validated changelog entry.
 
 After Fred validation:
+
 - update architecture status;
 - update changelog;
 - close Notion task;
@@ -350,6 +358,7 @@ After Fred validation:
 ## Out of scope
 
 Do NOT:
+
 - migrate catalogue again;
 - migrate customers/privacy/subscriptions;
 - migrate generic shared UI;
@@ -360,6 +369,7 @@ Do NOT:
 ## Expected report
 
 Return:
+
 1. base commit;
 2. files moved/renamed;
 3. files created;

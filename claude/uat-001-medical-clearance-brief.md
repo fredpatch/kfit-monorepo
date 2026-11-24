@@ -68,7 +68,7 @@ Capacity reservation remains independent.
 7. Audit metadata may contain only structural evidence:
    - `medicalClearanceRecordId`;
    - `triggerSource`.
-   Never include the note or questionnaire answers.
+     Never include the note or questionnaire answers.
 8. Generic onboarding permissions stay unchanged:
    `medical_clearance -> canComplete=false, canWaive=false`.
 9. No catalogue-policy or questionnaire mutation may act as a clearance shortcut.
@@ -87,8 +87,7 @@ Update:
 Add route:
 
 ```ts
-medicalClearance:
-  "/admin/subscriptions/:subscriptionId/onboarding/medical-clearance/clear"
+medicalClearance: "/admin/subscriptions/:subscriptionId/onboarding/medical-clearance/clear";
 ```
 
 Add caller-owned input type:
@@ -204,7 +203,7 @@ Prove:
 - missing note -> null;
 - whitespace note -> null;
 - note trimmed;
-- >2000 invalid;
+- > 2000 invalid;
 - non-string invalid;
 - unrelated body field invalid;
 - clear_medical never accepts itemId as a business identifier.

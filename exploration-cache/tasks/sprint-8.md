@@ -220,7 +220,6 @@ If a UAT fix touches frontend code, apply the validated FE-ARCH rules to that to
 
 After Sprint 8 closes, resume the broader ARCH migration before Sprint 9 deployment/staging work.
 
-
 ## UAT-001 - medical clearance workflow missing
 
 Status: P1 / RESOLVED - Fred validated locally on 2026-11-02. Implementation a28b7e1; docs/closure 15476f3.
@@ -279,12 +278,12 @@ Must prove:
 - `ready_to_start` becomes possible only when every other blocker + capacity rule is satisfied;
 - risk/policy trigger history remains unchanged.
 
-
 ### S3 validation - 2026-11-02
 
 Fred confirmed the complete onboarding scenario green after UAT-001 resolution.
 
 Validated:
+
 - preparation/checklist;
 - required/optional consents;
 - health-data boundary;
@@ -297,12 +296,12 @@ Validated:
 
 Next scenario: S4 - active coaching, appointments, follow-ups and progress.
 
-
 ### S4 validation - 2026-11-02
 
 Fred confirmed the complete active-coaching scenario green.
 
 Validated:
+
 - activation and lifecycle dates;
 - appointments, response link, replay safety and component consumption;
 - rescheduling;
@@ -315,7 +314,6 @@ Validated:
 Validation/docs commit: `26e8087`.
 
 Next scenario: S5 - finance and documents.
-
 
 ## UAT-002 - completion blocker override bypass
 
@@ -369,7 +367,6 @@ Fred must retest at minimum:
 
 Sprint 8 cannot close while UAT-002 remains OPEN.
 
-
 ### UAT-002 clarification - remaining entitlement vs finance
 
 Fred clarified the intended business rule on 2026-11-03 using a real UAT subscription showing 0/1 and 0/1 prestations delivered while completion presented no blocker.
@@ -389,11 +386,13 @@ serviceRemaining =
 ```
 
 If `serviceRemaining` is true:
+
 - completion is blocked by default;
 - explicit override + non-empty reason can force completion;
 - same rule for admin/coach and superadmin.
 
 Financial balance is a separate axis:
+
 - unpaid/partially-paid does not block operational completion;
 - UI should show a strong financial warning;
 - debt remains outstanding after completion;
@@ -401,12 +400,12 @@ Financial balance is a separate axis:
 
 The prior UAT-002 implementation attempt that only hardened `quantityOwedByCoach > 0` is insufficient for final retest and must be amended before UAT-002 can move to RESOLVED.
 
-
 ### UAT-002 validation - 2026-11-03
 
 Fred confirmed the amended completion behavior fully green on `e5880e7`.
 
 Validated:
+
 - remaining entitlement (`quantityConsumed < quantityEntitled`) is the service completion blocker;
 - explicit override + non-empty reason required;
 - no implicit superadmin bypass;

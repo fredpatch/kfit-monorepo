@@ -107,6 +107,7 @@ Route remains:
 `/admin/consentements`
 
 Do not change:
+
 - draft/publish/delete flow;
 - fresh OTP flow;
 - impact preview;
@@ -142,6 +143,7 @@ Route remains:
 Token remains in URL hash exactly as before.
 
 Do not change:
+
 - hash-token handling;
 - per-link query identity semantics;
 - required vs optional handling;
@@ -163,6 +165,7 @@ to use:
 ### Admin transport
 
 Preserve:
+
 - credentials enabled;
 - CSRF on mutating methods.
 
@@ -171,6 +174,7 @@ Use canonical shared client/factory.
 ### Public transport
 
 Preserve:
+
 - credentials disabled;
 - CSRF disabled.
 
@@ -186,12 +190,14 @@ const publicHttp = createApiHttpClient({
 or behavior-equivalent.
 
 After migration:
+
 - no `axios.create()` in Consents;
 - no direct `buildCsrfHeaders` / `requiresCsrfHeader` imports in Consents.
 
 Error helpers may use `apiErrorData` / `apiErrorCode` where behavior remains identical.
 
 Do not change:
+
 - route paths;
 - request/response payloads;
 - typed errors;
@@ -211,24 +217,23 @@ Recommended factory:
 ```ts
 export const consentKeys = {
   definitions: ["consent-definitions"] as const,
-  definition: (id: string | null) =>
-    ["consent-definition", id] as const,
-  definitionImpact: (id: string) =>
-    ["consent-definition-impact", id] as const,
-  publicLink: (queryId: string) =>
-    ["public-consent", queryId] as const,
+  definition: (id: string | null) => ["consent-definition", id] as const,
+  definitionImpact: (id: string) => ["consent-definition-impact", id] as const,
+  publicLink: (queryId: string) => ["public-consent", queryId] as const,
 };
 ```
 
 Do not change key semantics.
 
 Use these keys in:
+
 - admin definitions list;
 - definition detail;
 - publish impact;
 - public link.
 
 Create hooks only where they reduce duplication without changing behavior:
+
 - `useConsentDefinitions()`
 - `useConsentDefinition(id)`
 - `useConsentDefinitionImpact(id)`
@@ -240,6 +245,7 @@ Public link hook is optional because its enabled/retry/refetch semantics are tig
 ### Auth
 
 Consent publishing depends on:
+
 - `authApiClient`;
 - OTP components/helpers.
 
@@ -270,6 +276,7 @@ Record it alongside CatalogueWorkspace/RequestsWorkspace as the same recurring f
 ## Generic infrastructure
 
 Consents may continue importing current:
+
 - `components/ui`;
 - `components/public`;
 - `lib/format`;
@@ -281,6 +288,7 @@ Do not migrate generic UI/lib in FE-ARCH-04.
 ## No behavior changes
 
 Do not change:
+
 - consent definitions;
 - required/optional types;
 - versioning;
@@ -350,10 +358,12 @@ Only Fred validation moves FE-ARCH-04 to Terminé.
 ## Documentation/state
 
 Before Fred validation:
+
 - report IMPLEMENTED / awaiting validation;
 - do not add validated changelog entry.
 
 After Fred validation:
+
 - update architecture status;
 - update changelog;
 - close Notion task;
@@ -362,6 +372,7 @@ After Fred validation:
 ## Out of scope
 
 Do NOT:
+
 - migrate Questionnaires;
 - migrate Auth;
 - migrate Profile/Health;
@@ -373,6 +384,7 @@ Do NOT:
 ## Expected report
 
 Return:
+
 1. base commit;
 2. files moved/renamed;
 3. files created;

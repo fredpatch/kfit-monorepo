@@ -13,7 +13,6 @@
 - Before any real customer data, PDF rendering must be isolated from the API and `SYS_ADMIN` removed. This is tracked as a critical Sprint 9 production-readiness gate in Notion.
 - Sprint 9A now advances to S9A.3 reverse proxy and HTTPS/TLS. Hosted beta remains Konny + synthetic/demo data only.
 
-
 ## 2026-11-23 - FE-ARCH-04 consents feature migration
 
 - Implementation: `74c6871` - `refactor(consents): migrate frontend capability to feature layer`.

@@ -19,9 +19,12 @@ export const notificationsApi = {
     cursor?: string | null,
   ): Promise<NotificationListResponse> {
     return (
-      await apiHttpClient.get<NotificationListResponse>(notificationApiRoutes.list, {
-        params: { vue: view, ...(cursor ? { curseur: cursor } : {}) },
-      })
+      await apiHttpClient.get<NotificationListResponse>(
+        notificationApiRoutes.list,
+        {
+          params: { vue: view, ...(cursor ? { curseur: cursor } : {}) },
+        },
+      )
     ).data;
   },
   async unreadCount(): Promise<NotificationUnreadCountResponse> {

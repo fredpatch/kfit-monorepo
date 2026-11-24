@@ -9,6 +9,7 @@ Base: current `main` after Sprint 8 closure.
 Sprint 8 UAT is closed. The approved architecture initiative now resumes before Sprint 9.
 
 Reference architecture:
+
 - `docs/frontend-architecture.md`
 - FE-ARCH-01a..01e already validated.
 
@@ -100,6 +101,7 @@ Required:
 3. Add:
    `pages/public/catalogue/PublicCataloguePage.tsx`
 4. Page wrapper contains composition only:
+
    ```tsx
    import { PublicCatalogueView } from "../../../features/catalogue/components/PublicCatalogueView.js";
 
@@ -107,6 +109,7 @@ Required:
      return <PublicCatalogueView />;
    }
    ```
+
 5. Router imports/lazy-loads the page wrapper, never the feature view directly.
 
 Do not change public catalogue copy, layout, filters, links, FAQ, price logic, or request URLs.
@@ -143,6 +146,7 @@ features/catalogue/components/OfferCover
 This cross-feature dependency is accepted for this slice because the public request screen consumes catalogue read data and catalogue-owned visual representation.
 
 Do NOT:
+
 - move request code into catalogue;
 - duplicate catalogue API calls;
 - create a shared catalogue abstraction;
@@ -151,6 +155,7 @@ Do NOT:
 ## Catalogue shared HTTP migration
 
 Current catalogue API duplicates:
+
 - Axios instance creation;
 - credentials;
 - CSRF interceptor;
@@ -199,6 +204,7 @@ Do not create raw `axios.create()` inside catalogue after this slice.
 For API error parsing, use shared helpers such as `apiErrorData` / `apiErrorCode` where they preserve existing reason/error behavior.
 
 Do not change:
+
 - route URLs;
 - payloads;
 - typed errors;
@@ -216,6 +222,7 @@ After moving catalogue files:
 - preserve explicit `.js` import suffix convention.
 
 Catalogue feature is allowed to import:
+
 - `@kfit/shared`;
 - `shared/api`;
 - current generic UI/lib infrastructure until later shared migrations;
@@ -226,6 +233,7 @@ Note: `CatalogueWorkspace` currently imports `app/layout/AdminPage`. This is an 
 ## No behavior changes
 
 Do not alter:
+
 - catalogue business rules;
 - publish/archive/reorder behavior;
 - variants/components/rules editing;
@@ -244,6 +252,7 @@ No server/shared-contract/database changes.
 Preserve exact catalogue query keys from FE-ARCH-01e.
 
 Moving files must not change the arrays returned by:
+
 - `catalogueKeys.adminOverview()`
 - `catalogueKeys.publicServices()`
 - `catalogueKeys.deliverability(...)`
@@ -261,6 +270,7 @@ packages/client/src/catalogue/
 has no remaining source files.
 
 Search all imports for:
+
 - `/catalogue/`
 - `../catalogue`
 - `../../catalogue`
@@ -268,6 +278,7 @@ Search all imports for:
 and verify every catalogue domain import points to `features/catalogue` or the appropriate page wrapper.
 
 Also verify:
+
 - app router does not import catalogue feature directly;
 - admin page imports feature;
 - public page imports feature;
@@ -314,10 +325,12 @@ Only after Fred confirms green may FE-ARCH-02 be marked validated.
 ## Documentation/state
 
 After implementation, but before Fred validation:
+
 - do not mark changelog validated;
 - report FE-ARCH-02 as IMPLEMENTED / awaiting Fred validation.
 
 After Fred validation:
+
 - update `docs/frontend-architecture.md` migration status;
 - update active project state;
 - add validated changelog entry;
@@ -326,6 +339,7 @@ After Fred validation:
 ## Out of scope
 
 Do NOT:
+
 - migrate requests;
 - migrate shared UI/components;
 - migrate generic lib;
@@ -341,6 +355,7 @@ Do NOT:
 ## Expected report
 
 Return:
+
 1. base commit;
 2. files moved;
 3. files newly created;

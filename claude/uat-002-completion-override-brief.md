@@ -210,10 +210,12 @@ Keep server errors as final authority.
 The dialog must also surface current finance status when the subscription has remaining client balance.
 
 Source of truth:
+
 - existing finance read model for the same subscription;
 - `remainingXaf > 0` means a financial balance remains.
 
 Behavior:
+
 - show a visually strong warning;
 - do NOT disable completion because of finance alone;
 - do NOT auto-check service override because of finance;

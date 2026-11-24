@@ -77,7 +77,6 @@ npm run test:integration
 - [x] Sprint 8 prêt à fermer.
 - [x] Prochaine étape = reprise ARCH avant Sprint 9.
 
-
 ## Clôture Sprint 8
 
 Fred confirme la recette locale V1 Core finale verte le 2026-11-03.

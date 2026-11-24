@@ -54,6 +54,7 @@ The catalogue workspace retains the existing domain UI, queries, actions and bus
 ## Why this route
 
 `/admin/offres` is a clean admin route:
+
 - no special redirect;
 - no role-specific wrapper beyond normal admin auth;
 - mature real UI;
@@ -83,12 +84,14 @@ Do not move business/query logic into the page.
 `CatalogueWorkspace.tsx` keeps all existing behavior currently in `CataloguePage.tsx`.
 
 Allowed changes inside that file:
+
 - filename;
 - exported function name;
 - comment wording only if needed to clarify workspace ownership;
 - import paths only if mechanically required.
 
 Forbidden:
+
 - refactoring internal functions;
 - extracting hooks;
 - changing query keys;
@@ -116,6 +119,7 @@ Lazy loading must remain.
 ## Static checks
 
 Before commands, verify:
+
 1. old `catalogue/components/CataloguePage.tsx` no longer exists;
 2. `CatalogueWorkspace.tsx` contains the unchanged catalogue implementation;
 3. page wrapper contains no query/API/business logic;
@@ -139,6 +143,7 @@ git diff --check
 ## Fred manual validation
 
 Only:
+
 1. open `/admin/offres`;
 2. reload directly on `/admin/offres`;
 3. switch Published / Drafts / Archived tabs;
@@ -152,6 +157,7 @@ No full UAT required for this architecture-only slice.
 ## Definition of done
 
 Implemented when:
+
 - `pages/admin/catalogue/CataloguePage.tsx` exists;
 - domain-heavy implementation is named `CatalogueWorkspace`;
 - admin router points to the page layer;
@@ -163,6 +169,7 @@ Validated only after Fred confirms the catalogue smoke test.
 ## Out of scope
 
 Do NOT:
+
 - migrate any second page;
 - create `features/`;
 - move shared UI;
@@ -175,6 +182,7 @@ Do NOT:
 ## Expected report
 
 Return:
+
 1. base commit;
 2. files moved/created/changed;
 3. before/after dependency path;

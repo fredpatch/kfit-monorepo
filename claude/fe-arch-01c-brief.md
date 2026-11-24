@@ -15,6 +15,7 @@ This slice is architecture-only.
 ## Current problem
 
 `App.tsx` currently owns:
+
 - BrowserRouter;
 - all public route declarations;
 - all admin route declarations;
@@ -147,6 +148,7 @@ No feature imports.
 ### AppRouter.tsx
 
 Own:
+
 - BrowserRouter;
 - top-level Routes;
 - composition of public route group;
@@ -158,6 +160,7 @@ Do not import every feature screen here if route modules can own them.
 ### public-routes.tsx
 
 Own:
+
 - lazy imports for public screens;
 - public route elements;
 - DEV-only UiGallery route.
@@ -167,6 +170,7 @@ A small helper for `<Suspense fallback={null}>` is allowed if it reduces repetit
 ### admin-routes.tsx
 
 Own:
+
 - lazy imports for admin screens;
 - AdminRoot;
 - SupervisionRoute;
@@ -229,6 +233,7 @@ Do not run server/project commands beyond these client/static checks unless a fa
 After implementation, Fred will validate:
 
 ### Public
+
 - `/`
 - one `/demande/:offre`
 - `/questionnaire`
@@ -236,6 +241,7 @@ After implementation, Fred will validate:
 - one token-based public route if test data is available
 
 ### Admin
+
 - `/admin`
 - `/admin/clients`
 - one `/admin/clients/:id`
@@ -245,14 +251,17 @@ After implementation, Fred will validate:
 - `/admin/reglages`
 
 ### Redirects
+
 - `/admin/follow-up-queue`
 - one legacy subscription URL if test data is available
 
 ### Role guard
+
 - `/admin/supervision` still works for superadmin
 - non-superadmin still gets admin not-found behavior
 
 ### Navigation
+
 - desktop sidebar
 - mobile bottom navigation
 - reload on a nested admin URL

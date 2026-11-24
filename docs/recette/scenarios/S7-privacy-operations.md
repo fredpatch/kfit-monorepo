@@ -66,7 +66,6 @@ Le drill complet a déjà été validé au Sprint 7. Pour Sprint 8 :
 
 Les limites de confidentialité restent cohérentes avec le reste du parcours V1 Core.
 
-
 ## Validation locale 2026-11-03
 
 Fred a vérifié dans DBeaver que les événements privacy sont persistés dans le journal durable. Les tests de synchronisation/replay déjà exécutés restent verts et confirment l'idempotence métier.

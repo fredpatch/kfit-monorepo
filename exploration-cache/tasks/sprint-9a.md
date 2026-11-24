@@ -32,11 +32,13 @@ Required before implementation starts:
 ## Beta data policy
 
 Phase 1:
+
 - Konny account;
 - synthetic/demo customers only;
 - no real customer health or personal data.
 
 Real customer beta data may start only after:
+
 - applicable legal/privacy hosting review is minimally completed;
 - Hostinger and SMTP provider are documented as processors/providers as applicable;
 - encrypted off-server backup destination is configured and restore-tested.
@@ -73,6 +75,7 @@ Host PostgreSQL must not be publicly exposed.
 - basic resource monitoring.
 
 Acceptance:
+
 - Fred can reconnect with SSH key after hardening;
 - only intended public ports are reachable;
 - Docker/Compose operational.
@@ -92,6 +95,7 @@ Create/finish production-like deployment artifacts:
 - no dev tools, Mailpit or test-cleanup routes.
 
 Acceptance:
+
 - complete stack can start from documented environment + Compose;
 - PostgreSQL is not published to host/Internet;
 - API production guards pass.
@@ -107,6 +111,7 @@ Acceptance:
 - request/body limits compatible with K'FIT document/photo rules.
 
 Acceptance:
+
 - public HTTPS URL works;
 - nested admin/public route reloads work;
 - auth cookies retain Secure/HttpOnly/SameSite behavior;
@@ -122,6 +127,7 @@ Acceptance:
 - notification email delivery.
 
 Acceptance:
+
 - real mailbox receives each required OTP/email type;
 - failed SMTP behavior is observable;
 - no Mailpit dependency in beta.
@@ -135,6 +141,7 @@ Acceptance:
 - validate upload scan, secure storage and generated PDF.
 
 Acceptance:
+
 - clean upload accepted;
 - malware test file rejected;
 - private files survive stack restart;
@@ -151,6 +158,7 @@ Acceptance:
 - publish non-demo consent definitions required for onboarding.
 
 Acceptance:
+
 - clean DB bootstraps without manual DB edits;
 - Konny can authenticate from a new device;
 - production guards no longer report demo consent/bootstrap issues.
@@ -158,6 +166,7 @@ Acceptance:
 ### S9A.7 - Backup baseline
 
 Before Konny beta:
+
 - production backup key;
 - encrypted primary backup;
 - encrypted secondary copy separate from live app/private-storage paths;
@@ -167,6 +176,7 @@ Before Konny beta:
 For Phase 1 synthetic beta, secondary copy may still be on the VPS only as an interim control, explicitly marked non-production.
 
 Acceptance:
+
 - scheduled backup runs;
 - backup artifact encrypted;
 - restore drill succeeds;
@@ -193,6 +203,7 @@ Run the deployment gate:
 - no dev endpoints.
 
 Acceptance:
+
 - no P0/P1 deployment blocker.
 
 ### S9A.9 - Konny hosted beta acceptance
@@ -214,6 +225,7 @@ Konny performs hands-on acceptance from her own device:
 Fred records findings one at a time; P0/P1 blocks beta progression.
 
 Exit:
+
 - Konny accepts hosted functional beta;
 - known P2/P3 items triaged;
 - deployment runbook reflects reality.
@@ -221,6 +233,7 @@ Exit:
 ## Sprint 9B - production readiness (not part of 9A implementation)
 
 Before real-customer production:
+
 - encrypted off-server backup destination;
 - restore drill from off-server copy;
 - legal/privacy review for Gabon and selected hosting/SMTP providers;
@@ -232,6 +245,7 @@ Before real-customer production:
 ## Explicit non-goals
 
 Sprint 9A does not:
+
 - resume broad FE-ARCH migrations;
 - add unrelated V1.1 product features;
 - redesign business flows;

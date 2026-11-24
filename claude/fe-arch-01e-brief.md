@@ -114,6 +114,7 @@ export function useCatalogueAdminOverview() {
 The public hook follows the same pattern.
 
 Deliverability must preserve current behavior in both:
+
 - `DeliverabilityChecklist` (normal enabled query);
 - `CatalogueWorkspace` publish confirmation (disabled until a valid publishing service id exists).
 
@@ -137,10 +138,12 @@ Do not narrow invalidation in this slice.
 ### CatalogueWorkspace
 
 Should no longer define:
+
 - admin overview query key/fetch pair;
 - deliverability query key/fetch pair.
 
 It may still hold:
+
 - local UI state;
 - drag/drop;
 - mutation orchestration;
@@ -187,6 +190,7 @@ git diff --check
 Because behavior should be identical, validate only catalogue surfaces:
 
 Admin:
+
 1. open `/admin/offres`;
 2. switch Publiées / Brouillons / Archivées;
 3. open an offer;
@@ -194,16 +198,14 @@ Admin:
 5. close/reopen the sheet and verify data stays coherent;
 6. perform one harmless action that triggers catalogue refresh if practical.
 
-Public:
-7. open `/`;
-8. confirm published offers still load;
-9. if a harmless visibility/content change was made in dev, confirm refresh consistency.
+Public: 7. open `/`; 8. confirm published offers still load; 9. if a harmless visibility/content change was made in dev, confirm refresh consistency.
 
 No full UAT required.
 
 ## Definition of done
 
 Implemented when:
+
 - stable `catalogueKeys` exists;
 - query hooks exist;
 - catalogue components use them;
@@ -216,6 +218,7 @@ Validated only after Fred confirms the catalogue admin/public smoke test.
 ## Out of scope
 
 Do NOT:
+
 - create mutation hooks;
 - move catalogue into `features/`;
 - migrate another domain;
@@ -229,6 +232,7 @@ Do NOT:
 ## Expected report
 
 Return:
+
 1. base commit;
 2. files created/changed;
 3. exact old -> new query key mapping;

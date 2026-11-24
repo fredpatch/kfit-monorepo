@@ -15,17 +15,24 @@ export const dashboardApi = {
     periode: DashboardPeriod,
   ): Promise<DashboardAnalyticsResponse> {
     return (
-      await apiHttpClient.get<DashboardAnalyticsResponse>(dashboardApiRoutes.analytics, {
-        params: { periode },
-      })
+      await apiHttpClient.get<DashboardAnalyticsResponse>(
+        dashboardApiRoutes.analytics,
+        {
+          params: { periode },
+        },
+      )
     ).data;
   },
   async alerts(): Promise<DashboardAlertsResponse> {
-    return (await apiHttpClient.get<DashboardAlertsResponse>(dashboardApiRoutes.alerts))
-      .data;
+    return (
+      await apiHttpClient.get<DashboardAlertsResponse>(
+        dashboardApiRoutes.alerts,
+      )
+    ).data;
   },
   async today(): Promise<TodayResponse> {
-    return (await apiHttpClient.get<TodayResponse>(dashboardApiRoutes.today)).data;
+    return (await apiHttpClient.get<TodayResponse>(dashboardApiRoutes.today))
+      .data;
   },
   async agenda(
     from: string,

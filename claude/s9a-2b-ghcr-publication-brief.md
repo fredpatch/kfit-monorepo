@@ -11,6 +11,7 @@ Reference pattern reviewed: `ai-invoice-manager/deploy/homelab` and `.github/wor
 ## Locked decisions
 
 1. Publish only K'FIT-owned images:
+
    - `api` from `packages/server/Dockerfile`, target `runtime`;
    - `client` from `packages/client/Dockerfile`, target `runtime`;
    - `ops` from `packages/server/Dockerfile`, target `ops`.
@@ -29,8 +30,10 @@ Reference pattern reviewed: `ai-invoice-manager/deploy/homelab` and `.github/wor
 11. Build platform for the Hostinger KVM is `linux/amd64`.
 12. Preserve all S9A.2 runtime rules: Node 22.23.5 in production images, API non-root, Chromium sandbox enabled, no `--no-sandbox`, no privileged mode, temporary runtime `SYS_ADMIN` remains a Compose concern only.
 13. Client build-time public values are optional GitHub repository variables, never secrets:
+
     - `vars.KFIT_PUBLIC_WHATSAPP`
     - `vars.KFIT_PUBLIC_INSTAGRAM`
+
     Missing values build as empty strings, matching current behavior.
 
 ## CI trigger adaptation
@@ -38,6 +41,7 @@ Reference pattern reviewed: `ai-invoice-manager/deploy/homelab` and `.github/wor
 Modify `.github/workflows/ci.yml` so it can be called by the publication workflow.
 
 Required behavior:
+
 - add `workflow_call`;
 - keep pull-request validation;
 - keep manual `workflow_dispatch`;
@@ -51,6 +55,7 @@ Do not weaken or remove any existing validation step.
 Create `.github/workflows/publish-images.yml`.
 
 Behavior:
+
 - triggers on push to `main` and `workflow_dispatch`;
 - minimal default permissions: `contents: read`;
 - first job calls local reusable CI;
@@ -74,19 +79,23 @@ Pin third-party GitHub Actions by full commit SHA, following the reviewed invoic
 ## Exact image build mapping
 
 ### api
+
 - Dockerfile: `packages/server/Dockerfile`
 - target: `runtime`
 - no build secrets.
 
 ### ops
+
 - Dockerfile: `packages/server/Dockerfile`
 - target: `ops`
 - no build secrets.
 
 ### client
+
 - Dockerfile: `packages/client/Dockerfile`
 - target: `runtime`
 - optional build args:
+
   - `VITE_PUBLIC_WHATSAPP=${{ vars.KFIT_PUBLIC_WHATSAPP || '' }}`
   - `VITE_PUBLIC_INSTAGRAM=${{ vars.KFIT_PUBLIC_INSTAGRAM || '' }}`
 - do not pass secrets into Docker build args.
@@ -98,6 +107,7 @@ Add `ops/ci/verify-image.sh` or equivalent.
 It must run against the exact locally loaded image with network disabled where practical and fail closed.
 
 ### Common
+
 - reject env files, private keys and obvious test files baked into runtime images where applicable;
 - verify OCI revision label separately in the workflow equals `GITHUB_SHA`.
 
@@ -160,6 +170,7 @@ Output example:
 ```
 
 The assembler must reject:
+
 - missing/extra image kinds;
 - refs outside this repository namespace;
 - malformed digest;
@@ -170,6 +181,7 @@ The assembler must reject:
 Update `docker-compose.prod.yml` so K'FIT can consume published images without losing local build capability.
 
 For `api`, `client`, and `ops`:
+
 - add an `image:` field driven by:
   - `KFIT_API_IMAGE`
   - `KFIT_CLIENT_IMAGE`
@@ -181,6 +193,7 @@ For `api`, `client`, and `ops`:
 - do not change runtime capabilities/networking in this task.
 
 Deployment documentation must make the distinction explicit:
+
 - local review: `docker compose build ...`;
 - VPS release: set image variables to digest refs from the release manifest, run explicit `docker compose pull`, then `docker compose up -d`;
 - never build application images on the VPS in the normal deployment path.
@@ -188,6 +201,7 @@ Deployment documentation must make the distinction explicit:
 ## Documentation/state
 
 Update:
+
 - `docs/runbooks/demarrage-production.md`;
 - `exploration-cache/tasks/sprint-9a.md`;
 - `TASKS.md` only as needed to show S9A.2b current while implementation is unvalidated.
@@ -197,11 +211,13 @@ Do not add S9A.2b to `changelog.md` until Fred validates it.
 ## Required non-Docker checks by implementation agent
 
 Run:
+
 - `npm run format:check`
 - `npm run lint:dashes`
 - `git diff --check`
 
 Static review:
+
 - no secrets in workflow/build args;
 - no auto-deploy/VPS SSH;
 - no mutable-only `latest` deployment contract;

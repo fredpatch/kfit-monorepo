@@ -58,7 +58,14 @@ jobs:
         run: npm run typecheck
 
       - name: Format (PRETTY-01)
+        id: format_check
         run: npm run format:check
+
+      - name: Show formatting diff on PRETTY-01 failure
+        if: failure() && steps.format_check.outcome == 'failure'
+        run: |
+          npm run format
+          git diff -- .
 
       - name: No long dashes (PRETTY-01)
         run: npm run lint:dashes

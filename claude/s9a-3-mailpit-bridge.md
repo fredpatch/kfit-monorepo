@@ -57,7 +57,7 @@ Do not weaken production guards just for Mailpit.
 
 Add Mailpit only through an explicit temporary profile such as:
 
-  profiles: ["mailpit-bridge"]
+profiles: ["mailpit-bridge"]
 
 or another equally explicit mechanism.
 
@@ -79,13 +79,14 @@ Do not make Mailpit part of the default production stack after S9A.4 is complete
 
 Fred's production env file is:
 
-  /srv/kfit/config/.env.prod
+/srv/kfit/config/.env.prod
 
 Do not commit actual runtime secrets/values.
 
 Document the exact temporary SMTP values Fred should add.
 
 Because production guards reject values containing:
+
 - change-me
 - changeme
 - change_me
@@ -98,12 +99,12 @@ choose bridge sentinel values that cannot be mistaken for production credentials
 
 Example concept only; inspect actual SMTP loader first:
 
-  SMTP_HOST=mailpit
-  SMTP_PORT=1025
-  SMTP_SECURE=false
-  SMTP_USER=kfit-mailpit-bridge
-  SMTP_PASS=kfit-mailpit-bridge-pass
-  SMTP_FROM=no-reply@kfitpulse.io
+SMTP_HOST=mailpit
+SMTP_PORT=1025
+SMTP_SECURE=false
+SMTP_USER=kfit-mailpit-bridge
+SMTP_PASS=kfit-mailpit-bridge-pass
+SMTP_FROM=no-reply@kfitpulse.io
 
 If the SMTP transport passes auth credentials through to Mailpit and that causes auth failure, configure Mailpit SMTP auth explicitly OR choose the supported Mailpit no-auth approach while still satisfying K'FIT's production guard without weakening it. Inspect Mailpit support and existing repo conventions before deciding.
 
@@ -150,7 +151,7 @@ Runtime validation by Fred:
 
 Document the exact S9A.4 cleanup:
 
-- replace SMTP_* with real provider credentials;
+- replace SMTP\_\* with real provider credentials;
 - stop/remove Mailpit bridge profile/container;
 - remove any Mailpit-specific Compose additions if intended as temporary-only artifact, or keep profile disabled and documented if there is value for future staging;
 - confirm no dependency on Mailpit remains;

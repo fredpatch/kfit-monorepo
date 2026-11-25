@@ -8,11 +8,12 @@
 ```text
 Branch            main
 Sprint            9A - Hostinger Beta Environment
-Active task       S9A.3 - Reverse proxy and TLS
-Workflow state    S9A.1, S9A.2 and S9A.2b VALIDATED by Fred; S9A.3 is next
+Active task       S9A.4 - Real SMTP and authentication
+Workflow state    S9A.1, S9A.2, S9A.2b and S9A.3 VALIDATED by Fred; S9A.4 is active
 S9A.1             VPS baseline/hardening complete: SSH keys, root/password login disabled, UFW 22/80/443, UTC sync, 2 GiB swap, Docker/Compose, /srv/kfit layout
 S9A.2             production-like Docker packaging complete and pushed
 S9A.2b            GHCR publication validated 2026-11-24: GitHub run 45338259559 green; release commit bfa7dae; VPS digest pull/runtime/PDF/Compose checks green
+S9A.3             reverse proxy/TLS validated 2026-11-25: public HTTPS/redirects, nested SPA routes, secure cookie contract, CSRF, exact trusted client IP attribution and exposure checks green
 Implementation    12ffc21 (S9A.2); bfa7dae release validated for S9A.2b
 Runtime floor     Node 22 >= 22.23.5; Node 24 >= 24.22.3; Node 26 >= 26.13.1
 Prod API runtime  Node 22.23.5, non-root
@@ -22,7 +23,7 @@ PDF exception     API cap_add: SYS_ADMIN accepted only for controlled beta/synth
 Real-data gate    isolate PDF renderer and remove API SYS_ADMIN before any real customer data
 Beta policy       Konny + synthetic/demo customer data only
 Production gates  legal/privacy review + provider register + encrypted off-server backup/restore remain required
-Next action       Start S9A.3: inspect/reuse reverse-proxy/TLS pattern, define K'FIT nginx/TLS contract, then implement and validate on Hostinger
+Next action       S9A.4: configure real SMTP, remove the temporary Mailpit dependency, then validate login OTP, password recovery, sensitive-action OTP and notification delivery
 ```
 
 ## S7.1 - closed 2026-10-23

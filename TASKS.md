@@ -351,9 +351,9 @@ S9A.5 validated 2026-11-25: production bind mounts writable/persistent across AP
 
 S9A.6 validated 2026-11-25: 21/21 migrations applied, bootstrap closed and token removed, Fred superadmin + Konny admin active, required production consent definitions service_terms/privacy_notice published
 
-S9A.7             validated 2026-11-25: encrypted primary + secondary backup, native PostgreSQL 16 ops path, isolated restore drill cleanup, systemd daily timer and rotation all green on Hostinger
+S9A.7 validated 2026-11-25: encrypted primary + secondary backup, native PostgreSQL 16 ops path, isolated restore drill cleanup, systemd daily timer and rotation all green on Hostinger
 
-S9A.8             validated 2026-11-25: release 712bbbd deployed by immutable digest; startup guards, DB/ClamAV/Mailpit bridge, request IDs, nested SPA routes, scheduled jobs, dev-route absence and new-device OTP flow all green; no new P0/P1 blocker
+S9A.8 validated 2026-11-25: release 712bbbd deployed by immutable digest; startup guards, DB/ClamAV/Mailpit bridge, request IDs, nested SPA routes, scheduled jobs, dev-route absence and new-device OTP flow all green; no new P0/P1 blocker
 
-S9A.9             acceptance in progress: Konny login + desktop/mobile usability green so far; catalogue drafting started; feedback captured asynchronously
-S9B               engineering started 2026-11-25: isolate Chromium/Puppeteer into internal renderer, remove API SYS_ADMIN before any real customer data; implementation brief 8516f3d
+S9A.9 acceptance in progress: Konny login + desktop/mobile usability green so far; catalogue drafting started; feedback captured asynchronously
+S9B engineering started 2026-11-25: isolate Chromium/Puppeteer into internal renderer, remove API SYS_ADMIN before any real customer data; implementation brief 8516f3d

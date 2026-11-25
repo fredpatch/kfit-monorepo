@@ -7,6 +7,7 @@
 - Exact proxy trust was validated against real traffic: audit IP hashes matched external/VPS source addresses while the Docker gateway, loopback and a spoofed `X-Forwarded-For` address did not appear.
 - Exposure checks passed: only nginx 80/443 are public; API/client/Mailpit UI are loopback-only; PostgreSQL, ClamAV and Mailpit SMTP have no host-published ports. External checks for 13000/18080/5432/3310 all failed as intended.
 - S9A.3 is closed. S9A.4 real SMTP and authentication delivery is the active next task. The temporary Mailpit bridge remains only until real SMTP is validated.
+
 # K'FIT Changelog
 
 > Only locally validated changes are recorded here.

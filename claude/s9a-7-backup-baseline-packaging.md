@@ -7,6 +7,7 @@ Task: S9A.7 — Backup baseline
 ## Context
 
 Validated before this task:
+
 - PostgreSQL production database is migrated (21/21 migrations).
 - `/srv/kfit/private` and `/srv/kfit/privacy-journal` are persistent host bind mounts.
 - S9A.5 storage/ClamAV/PDF gates are green.
@@ -14,6 +15,7 @@ Validated before this task:
 - Real SMTP S9A.4 remains deferred pending Konny Gmail.
 
 S9A.7 inspection found:
+
 - `/srv/kfit/backups` exists on the VPS but is currently `root:root 700`.
 - no `BACKUP_*` values are present in `/srv/kfit/config/.env.prod`.
 - `docker-compose.prod.yml` gives `ops` no private-storage, journal, or backup mounts.
@@ -30,6 +32,7 @@ Make the existing S7.4b backup / restore / restore-drill implementation executab
 Use **native PostgreSQL mode** from the ops container.
 
 Reason:
+
 - ops already joins `kfit_backend` and receives `DATABASE_URL`;
 - native mode avoids Docker socket access and host Docker control;
 - existing backup code already supports native `pg_dump` / `pg_restore`;
@@ -40,11 +43,13 @@ Reason:
 ### 1. Ops image PostgreSQL tools
 
 Adapt the `ops` Dockerfile target so it contains the PostgreSQL client tools required by existing native backup/restore code:
+
 - `pg_dump`
 - `pg_restore`
 - `psql` if required by existing ops helpers
 
 Keep:
+
 - non-root `node` user;
 - `KFIT_OPS_PREBUILT=true`;
 - no Docker CLI;
@@ -56,6 +61,7 @@ Use a client major compatible with production PostgreSQL 16 and the existing maj
 ### 2. Production compose mounts for ops
 
 Add explicit bind mounts to the `ops` service:
+
 - `${KFIT_PRIVATE_HOST_DIR:-/srv/kfit/private}` -> `/srv/kfit/private`
 - `${KFIT_PRIVACY_JOURNAL_HOST_DIR:-/srv/kfit/privacy-journal}` -> `/srv/kfit/privacy-journal`
 - `${KFIT_BACKUP_HOST_DIR:-/srv/kfit/backups}` -> `/srv/kfit/backups`
@@ -63,6 +69,7 @@ Add explicit bind mounts to the `ops` service:
 Use `create_host_path: false`.
 
 The ops tooling must be able to:
+
 - read private files and journal for backup;
 - write encrypted bundles under primary and secondary backup directories;
 - perform the existing isolated restore drill without touching production files.
@@ -84,6 +91,7 @@ BACKUP_PG_SERVICE=postgres
 For native mode, `BACKUP_COMPOSE_FILE` should be absent/empty unless the existing implementation truly requires it.
 
 Document host provisioning:
+
 - `/srv/kfit/backups/primary`
 - `/srv/kfit/backups/secondary`
 - both writable by UID/GID 1000 used by ops;
@@ -95,6 +103,7 @@ For the controlled synthetic beta, primary + secondary may temporarily be two se
 ### 4. Host scheduler artifacts
 
 Add versioned systemd artifacts under an appropriate `ops/systemd/` location:
+
 - oneshot service invoking the production backup through `docker compose ... --profile ops run --rm --no-deps ops ...`;
 - timer with a sensible daily schedule;
 - scheduled path must load immutable image refs and fail closed.
@@ -107,6 +116,7 @@ Do not persist secrets in the systemd unit.
 The runbook says release manifests should be retained under `/srv/kfit/releases/<commit>.json`, but the VPS currently has no `/srv/kfit/releases`.
 
 For this task:
+
 - document required directory/permissions;
 - ensure scheduler can source selected immutable ops image without rebuilding locally;
 - prefer a non-secret release env file such as `/srv/kfit/config/release.env` containing only immutable image refs, or an equally fail-closed mechanism;
@@ -116,6 +126,7 @@ For this task:
 ### 6. Validation / tests
 
 Add/update static or CI checks for:
+
 - ops image contains required PostgreSQL client tools;
 - production compose ops service contains required mounts;
 - no Docker socket mount exists;
@@ -127,6 +138,7 @@ Add/update static or CI checks for:
 ## Runtime acceptance by Fred
 
 After implementation is merged/published:
+
 1. provision backup dirs + encryption key;
 2. pull/use new immutable ops image;
 3. run one production backup;
@@ -149,6 +161,7 @@ Do not mark S9A.7 complete before Fred's runtime validation.
 ## Implementation report required
 
 Return:
+
 - files changed;
 - design choices;
 - tests run/results;

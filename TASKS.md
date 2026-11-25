@@ -347,6 +347,6 @@ Locked rules:
 
 Implementation is authorized for S7.2 only. S7.3 remains closed until Fred locally validates S7.2.
 
-S9A.5             validated 2026-11-25: production bind mounts writable/persistent across API recreation, ClamAV clean+EICAR preflight passed, PDF/Puppeteer preflight passed on immutable GHCR API digest
+S9A.5 validated 2026-11-25: production bind mounts writable/persistent across API recreation, ClamAV clean+EICAR preflight passed, PDF/Puppeteer preflight passed on immutable GHCR API digest
 
-S9A.6             validated 2026-11-25: 21/21 migrations applied, bootstrap closed and token removed, Fred superadmin + Konny admin active, required production consent definitions service_terms/privacy_notice published
+S9A.6 validated 2026-11-25: 21/21 migrations applied, bootstrap closed and token removed, Fred superadmin + Konny admin active, required production consent definitions service_terms/privacy_notice published

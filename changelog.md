@@ -366,3 +366,10 @@
 - Confirmed typecheck, build and `db:check` green; `npm test` executed server 110/110 and shared 12/12; real PostgreSQL integration suite executed 15/15 green.
 - Reviewer and QA passes completed; Fred validated the browser/DBeaver Gate 2 flow for waitlist creation, duplicate prevention, withdrawal, request-state synchronization and safe audit metadata.
 - Sprint 3 now delivers the validated acquisition path from public request intake through contact management, qualification decision and manual waitlist handling.
+
+## 2026-11-25 - Sprint 9A.5 persistent storage, ClamAV and PDF validation
+
+- Fred validated the Hostinger production-like runtime with the immutable GHCR API digest `sha256:da154690dfe61c0d29cc4addc5d89d141955055f83a0b8cd480f315b6bb2fcc1`.
+- `/srv/kfit/private` and `/srv/kfit/privacy-journal` are writable bind mounts for the non-root API user and both survived forced API container recreation.
+- File-storage preflight passed against the production private-storage bind, including signature validation, 10 MiB limit, opaque naming, SHA-256, clean ClamAV scan, EICAR detection and temporary purge.
+- Puppeteer PDF preflight passed in the deployed API image with valid PDF signature, 119483-byte output and 4 detected page objects.

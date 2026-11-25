@@ -8,8 +8,8 @@
 ```text
 Branch            main
 Sprint            9A - Hostinger Beta Environment
-Active task       S9A.7 - Backup baseline
-Workflow state    S9A.1-S9A.3, S9A.5 and S9A.6 VALIDATED by Fred; S9A.4 blocked pending Konny Gmail; S9A.7 active
+Active task       S9A.8 - Deployment preflight
+Workflow state    S9A.1-S9A.3, S9A.5-S9A.7 VALIDATED by Fred; S9A.4 blocked pending Konny Gmail; S9A.8 active
 S9A.1             VPS baseline/hardening complete: SSH keys, root/password login disabled, UFW 22/80/443, UTC sync, 2 GiB swap, Docker/Compose, /srv/kfit layout
 S9A.2             production-like Docker packaging complete and pushed
 S9A.2b            GHCR publication validated 2026-11-24: GitHub run 45338259559 green; release commit bfa7dae; VPS digest pull/runtime/PDF/Compose checks green
@@ -24,7 +24,7 @@ PDF exception     API cap_add: SYS_ADMIN accepted only for controlled beta/synth
 Real-data gate    isolate PDF renderer and remove API SYS_ADMIN before any real customer data
 Beta policy       Konny + synthetic/demo customer data only
 Production gates  legal/privacy review + provider register + encrypted off-server backup/restore remain required
-Next action       S9A.7: validate production backup baseline, encrypted primary backup, secondary copy strategy and isolated restore drill
+Next action       S9A.8: execute the full deployment preflight and clear every P0/P1 blocker before hosted beta acceptance
 ```
 
 ## S7.1 - closed 2026-10-23
@@ -350,3 +350,5 @@ Implementation is authorized for S7.2 only. S7.3 remains closed until Fred local
 S9A.5 validated 2026-11-25: production bind mounts writable/persistent across API recreation, ClamAV clean+EICAR preflight passed, PDF/Puppeteer preflight passed on immutable GHCR API digest
 
 S9A.6 validated 2026-11-25: 21/21 migrations applied, bootstrap closed and token removed, Fred superadmin + Konny admin active, required production consent definitions service_terms/privacy_notice published
+
+S9A.7             validated 2026-11-25: encrypted primary + secondary backup, native PostgreSQL 16 ops path, isolated restore drill cleanup, systemd daily timer and rotation all green on Hostinger

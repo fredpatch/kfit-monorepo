@@ -1,6 +1,6 @@
 # Sprint 9A - Hostinger Beta Environment
 
-Status: IN PROGRESS. S9A.1, S9A.2, S9A.2b and S9A.3 validated by Fred; S9A.4 is active.
+Status: IN PROGRESS. S9A.1, S9A.2, S9A.2b and S9A.3 validated by Fred; S9A.4 is blocked pending Konny Gmail credentials; S9A.5 is active.
 
 ## Execution status
 
@@ -8,8 +8,9 @@ Status: IN PROGRESS. S9A.1, S9A.2, S9A.2b and S9A.3 validated by Fred; S9A.4 is 
 - ✅ S9A.2 - Deployment packaging: validated by Fred on 2026-11-23; implementation commit `12ffc21`.
 - ✅ S9A.2b - GHCR image publication: validated by Fred on 2026-11-24; GitHub run 45338259559 green for release commit `bfa7dae63139e1e7a91bfb266ad5acc5aeaf55d6`; VPS pulled API by digest, confirmed Node 22.23.5 + revision label, passed PDF preflight, and Compose resolved api/client/ops digest refs.
 - ✅ S9A.3 - Reverse proxy and TLS: validated by Fred on 2026-11-25; HTTPS/redirects, SPA reloads, production cookie attributes, CSRF refresh/logout behavior, trusted real client-IP attribution and public exposure checks passed on the Hostinger VPS.
-- ⏳ S9A.4 - Real SMTP and authentication: active task.
-- 🔜 S9A.5-S9A.9 remain dependency-ordered after S9A.4.
+- ⏸️ S9A.4 - Real SMTP and authentication: blocked pending Konny Gmail credentials; temporary Mailpit bridge remains in use.
+- ⏳ S9A.5 - Persistent storage, ClamAV and PDFs: active task.
+- 🔜 S9A.6-S9A.9 remain after the current validation work; S9A.4 must still be completed before beta SMTP acceptance.
 - Real customer data remains forbidden during 9A until the production-readiness gates are satisfied.
 - Temporary security exception: the API currently receives `SYS_ADMIN` only so in-process Puppeteer can keep Chromium sandboxing enabled during the controlled synthetic-data beta. Before any real customer data, PDF rendering must be isolated and this capability removed from the API.
 
@@ -277,4 +278,4 @@ Sprint 9A does not:
 
 ## Current next action
 
-S9A.3 is validated. Start S9A.4 by selecting/configuring the real transactional SMTP provider, replacing the temporary Mailpit bridge, then validating startup SMTP, unknown-device login OTP, password recovery OTP, sensitive-action OTP and notification e-mail delivery.
+S9A.4 is blocked pending Konny Gmail credentials. Keep the temporary Mailpit bridge for beta auth e-mails and proceed with S9A.5: validate persistent private storage, ClamAV upload scanning, restart persistence and PDF generation on the Hostinger VPS. Return to S9A.4 as soon as the Gmail credentials are available.

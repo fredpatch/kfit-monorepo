@@ -108,3 +108,10 @@ Category: Security.
 
 - `packages/server/scripts/preflight/files.mjs` derives a repository-local temporary path from `process.cwd()` (`../../storage/private/preflight`). In the hardened production API image, `/app` is intentionally non-writable for the non-root user, so the script fails with `EACCES: mkdir '/app/storage'` even when the real production bind mount `/srv/kfit/private` is healthy. For hosted validation, run it from a temporary working directory under the production private bind mount; future tooling hardening should make the preflight honor `PRIVATE_STORAGE_ROOT` explicitly.
 - Running `docker compose up -d --force-recreate api` without exporting `KFIT_API_IMAGE` can silently fall back to the compose default `kfit-prod-api:local` and build on the VPS. Production operations must restore/export the immutable GHCR digest and use `--no-build`. Persist the selected release manifest under `/srv/kfit/releases` and harden the deploy helper/runbook so missing digest variables fail closed instead of rebuilding locally.
+
+## Production backup ops packaging
+
+- Production backup/restore runs in the dedicated non-root `ops` image using native PostgreSQL 16 client tools on `kfit_backend`; do not mount the Docker socket or add Docker CLI merely to make backup mode work.
+- The production ops service needs explicit bind mounts for private storage, the privacy journal and `/srv/kfit/backups`; otherwise backups can silently target ephemeral container storage or fail to include host data.
+- Scheduled backups must fail closed on an immutable `KFIT_OPS_IMAGE=ghcr.io/.../ops@sha256:...` already present on the host. Never permit the Compose fallback `kfit-prod-ops:local` in production scheduling.
+- For the controlled synthetic beta, primary and secondary directories may coexist on the VPS. Before real customer data, the secondary copy must be off-server and restore-tested from that external copy.

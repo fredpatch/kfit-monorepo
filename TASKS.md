@@ -357,3 +357,5 @@ S9A.8 validated 2026-11-25: release 712bbbd deployed by immutable digest; startu
 
 S9A.9 acceptance in progress: Konny login + desktop/mobile usability green so far; catalogue drafting started; feedback captured asynchronously
 S9B engineering started 2026-11-25: isolate Chromium/Puppeteer into internal renderer, remove API SYS_ADMIN before any real customer data; implementation brief 8516f3d
+
+S9B implementation  956abd4 + a240988; pushed, CI run 45596154165 green; static review clean; NOT VPS-validated yet. Next gate: deploy four-image release and verify renderer/API isolation on Hostinger.

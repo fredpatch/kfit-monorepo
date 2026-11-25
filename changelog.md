@@ -373,3 +373,10 @@
 - `/srv/kfit/private` and `/srv/kfit/privacy-journal` are writable bind mounts for the non-root API user and both survived forced API container recreation.
 - File-storage preflight passed against the production private-storage bind, including signature validation, 10 MiB limit, opaque naming, SHA-256, clean ClamAV scan, EICAR detection and temporary purge.
 - Puppeteer PDF preflight passed in the deployed API image with valid PDF signature, 119483-byte output and 4 detected page objects.
+
+## 2026-11-25 - Sprint 9A.6 database/bootstrap validation
+
+- Fred validated 21 applied Drizzle migrations against the current 21 SQL migration files.
+- Production bootstrap reports `required: false`, the bootstrap token is absent from `.env.prod`, and the bootstrap path is closed after first-account creation.
+- The active account set was verified as Fred `superadmin` and Konny `admin`.
+- Required production consent definitions were published as version 1: `service_terms` (Conditions de service) and `privacy_notice` (Notice de confidentialité).

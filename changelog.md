@@ -389,3 +389,14 @@
 - Two isolated restore drills succeeded against the generated bundle, with table/file/migration checks and privacy replay clean, and no `kfit_restore_%` database left behind.
 - The host `kfit-backup.service` oneshot succeeded, the daily `kfit-backup.timer` was enabled for 02:00 Libreville time with randomized delay, and retention rotation kept the latest valid primary and secondary bundle while removing the prior same-day copy.
 - The synthetic-beta secondary copy currently remains on the same VPS. Before any real customer data, an encrypted off-server secondary copy and restore test from that copy remain mandatory.
+
+## 2026-11-25 - Sprint 9A S9A.8 deployment preflight
+
+- Fred validated the deployment preflight on Hostinger using release commit `712bbbd9822f41d9ea146a59ee6a202d6d36644d` and the immutable API/client/ops image digests from its release manifest.
+- API and client were recreated from the intended GHCR digests and remained healthy alongside PostgreSQL, ClamAV and the temporary Mailpit bridge.
+- Production startup guards passed: database, SMTP bridge and ClamAV readiness were green, with no startup guard failure reported.
+- Public health checks passed with generated and preserved `X-Request-Id`; nested SPA routes `/admin/supervision` and `/reglages` returned `200 text/html` through nginx.
+- Scheduled-job preflight passed advisory-lock, idempotency, failure/retry and cleanup checks; recent notification, backup and restore-drill runs were recorded as succeeded.
+- The production API returned `404` for `/admin/dev/test-data`, confirming dev-tools routes are not mounted in production.
+- Fred validated the unknown/new-device authentication flow end-to-end through the deployed environment and temporary Mailpit bridge.
+- No new P0/P1 deployment blocker was found. S9A.4 real SMTP remains explicitly deferred pending Konny Gmail credentials.

@@ -119,9 +119,21 @@ CMD ["node", "scripts/prod/api-server.mjs"]
 # ---------- ops ----------
 # One-off tooling (e.g. `npm run db:migrate --workspace @kfit/server`). Never started by `docker compose up`.
 FROM build AS ops
+# S9A.7: native backup/restore (BACKUP_PG_MODE=native) runs pg_dump/pg_restore here, over kfit_backend. The client major
+# must be >= the server's (postgres:16 in docker-compose.prod.yml, PG_CLIENT_TOO_OLD otherwise); bookworm only ships 15,
+# so the client comes from the PostgreSQL (PGDG) repository, signed by the key shipped in Debian's postgresql-common.
+# No Docker CLI: the ops container never controls the host's Docker.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates postgresql-common \
+  && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+    > /etc/apt/sources.list.d/pgdg.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends postgresql-client-16 \
+  && rm -rf /var/lib/apt/lists/*
 # dist was compiled in the build stage and stays root-owned: ops commands (scripts/ops/run.mjs) use it as is.
 ENV NODE_ENV=production \
-    KFIT_OPS_PREBUILT=true
+    KFIT_OPS_PREBUILT=true \
+    PATH=/usr/lib/postgresql/16/bin:$PATH
 USER node
 WORKDIR /app/packages/server
 CMD ["node", "-e", "console.log(\"K'FIT ops image: run an explicit command, e.g. npm run db:migrate --workspace @kfit/server\")"]

@@ -61,6 +61,11 @@ case "$kind" in
       test -x /app/node_modules/.bin/drizzle-kit &&
       test -f /app/packages/server/package.json' || fail "ops tooling layout"
     check_prebuilt_ops
+    # S9A.7: native backups need PostgreSQL 16 client tools (>= the postgres:16 server) and no Docker access.
+    for tool in pg_dump pg_restore psql; do
+      in_image "$tool --version" | grep -Eq "^$tool \(PostgreSQL\) 16\." || fail "$tool 16 missing"
+    done
+    in_image '! command -v docker >/dev/null 2>&1' || fail "ops must not ship a Docker CLI"
     cmd=$(docker image inspect --format '{{json .Config.Cmd}}' "$image")
     echo "$cmd" | grep -q 'api-server.mjs' && fail "ops must not start the API by default"
     ;;

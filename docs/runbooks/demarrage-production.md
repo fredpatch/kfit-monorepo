@@ -151,13 +151,14 @@ docker compose -f docker-compose.prod.yml up -d --no-build
 - `--no-build` est obligatoire : le compose garde ses sections `build:`, et une image absente serait sinon reconstruite sur le VPS.
 - Jamais de `latest` : seules les références par digest du manifeste sont déployées.
 - Conserver le manifeste de chaque version déployée sur le VPS (par exemple `/srv/kfit/releases/<commit>.json`) : l'artefact GitHub expire après 90 jours (maximum d'un dépôt public).
+- S9A.7 : copier ce manifeste dans `/srv/kfit/releases/<commit>.json` et en dériver `/srv/kfit/config/release.env` (trois références d'images, aucun secret), que lit le timer de sauvegarde. Procédure : [sauvegarde et restauration](sauvegarde-restauration.md#42-version-déployée-releaseenv).
 - Retour arrière : reprendre les trois références du manifeste précédent, puis `pull` et `up -d --no-build`.
 - Si les paquets GHCR sont privés : `docker login ghcr.io` sur le VPS avec un jeton en lecture seule (`read:packages`), jamais stocké dans le dépôt.
 
 Encore à venir dans Sprint 9A :
 
 - exécution des migrations sur l'hôte : S9A.6 ;
-- timer de l'hôte pour les sauvegardes et copie hors serveur : S9A.7 ;
+- timer de l'hôte pour les sauvegardes : empaqueté en S9A.7 ([sauvegarde et restauration](sauvegarde-restauration.md#4-production-sur-le-vps-s9a7)), validation sur le VPS en attente ; copie hors serveur avant toute donnée client réelle ;
 - mode maintenance.
 
 ## 7. Reverse proxy et HTTPS (S9A.3)

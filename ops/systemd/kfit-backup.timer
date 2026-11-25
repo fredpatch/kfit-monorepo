@@ -1,0 +1,11 @@
+# S9A.7: daily K'FIT backup at 02:00 Libreville time (01:00 UTC); a run missed while the VPS was down starts at boot.
+[Unit]
+Description=K'FIT daily encrypted backup
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 Africa/Libreville
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

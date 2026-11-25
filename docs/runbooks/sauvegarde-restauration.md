@@ -3,7 +3,7 @@ titre: Sauvegarde et restauration
 public: exploitation
 statut: à jour
 vérifié-sur: 0457409
-couvre: [S7.4b, S7.4c, FIX-03, CAT-04]
+couvre: [S7.4b, S7.4c, FIX-03, CAT-04, S9A.7]
 ---
 
 # Sauvegarde et restauration
@@ -124,9 +124,9 @@ BACKUP_PG_SERVICE=postgres
   docker compose [-f BACKUP_COMPOSE_FILE] exec -T <BACKUP_PG_SERVICE> …
   ```
 
-  Ils s'exécutent avec l'utilisateur `POSTGRES_USER` du conteneur, et aucun identifiant ne sort du conteneur. C'est le mode prévu pour la production, où PostgreSQL n'est pas exposé à l'hôte.
+  Ils s'exécutent avec l'utilisateur `POSTGRES_USER` du conteneur, et aucun identifiant ne sort du conteneur. C'est le mode du développement local (compose `docker-compose.yml`).
 
-- **`native`** : `pg_dump`, `pg_restore` et la connexion viennent de l'hôte (outils sur le `PATH`, connexion lue dans `DATABASE_URL`). Le mot de passe passe par l'environnement du processus, jamais par la ligne de commande. C'est le mode de la CI.
+- **`native`** : `pg_dump`, `pg_restore` et la connexion viennent du processus qui lance le script (outils sur le `PATH`, connexion lue dans `DATABASE_URL`). Le mot de passe passe par l'environnement du processus, jamais par la ligne de commande. C'est le mode de la CI et **de la production (S9A.7)** : le conteneur `ops` contient les outils PostgreSQL 16 et rejoint PostgreSQL par le réseau interne `kfit_backend`, sans accès au Docker de l'hôte. Le compose de production impose `BACKUP_PG_MODE=native` au service `ops`.
 
 Dans les deux cas, la version majeure de `pg_dump` / `pg_restore` doit être au moins celle du serveur. Sinon, le script refuse avec `PG_CLIENT_TOO_OLD`.
 
@@ -194,48 +194,88 @@ Dans les deux cas, la version majeure de `pg_dump` / `pg_restore` doit être au 
 
 5. Vérifier les dossiers : `BACKUP_DIR/kfit-backup-…/` et `BACKUP_SECONDARY_DIR/kfit-backup-…/` contiennent chacun les 4 fichiers. Aucun dossier `.tmp-…` ne doit rester.
 
-## 4. Planifier (installé au Sprint 9)
+## 4. Production sur le VPS (S9A.7)
 
-La sauvegarde est lancée par un timer de l'hôte, pas par l'API (décision S7.4 D8). L'installation se fait au Sprint 9. Les exemples ci-dessous sont des modèles : chemins et utilisateur sont fictifs.
+En production, les scripts `ops:*` tournent dans le conteneur `ops` (image GHCR immuable, utilisateur `node`, uid 1000, `dist/` déjà compilé). Le service `ops` de `docker-compose.prod.yml` monte :
 
-**systemd** (`/etc/systemd/system/kfit-backup.service`) :
+| Hôte (variable, défaut)                                       | Conteneur                   | Usage                                               |
+| ------------------------------------------------------------- | --------------------------- | --------------------------------------------------- |
+| `KFIT_PRIVATE_HOST_DIR` (`/srv/kfit/private`)                 | `/srv/kfit/private`         | fichiers privés, lus par la sauvegarde              |
+| `KFIT_PRIVACY_JOURNAL_HOST_DIR` (`/srv/kfit/privacy-journal`) | `/srv/kfit/privacy-journal` | journal de confidentialité, lu par la sauvegarde    |
+| `KFIT_BACKUP_HOST_DIR` (`/srv/kfit/backups`)                  | `/srv/kfit/backups`         | `BACKUP_DIR` et `BACKUP_SECONDARY_DIR`, en écriture |
 
-```ini
-[Unit]
-Description=K'FIT sauvegarde chiffrée
+Aucun socket Docker n'est monté. Les montages ne créent jamais le dossier hôte (`create_host_path: false`) : un dossier absent fait échouer la commande.
 
-[Service]
-Type=oneshot
-User=kfit
-WorkingDirectory=/opt/kfit
-EnvironmentFile=/etc/kfit/backup.env
-ExecStart=/usr/bin/npm run ops:backup
+### 4.1 Préparer l'hôte (une fois)
+
+```bash
+sudo install -d -o 1000 -g 1000 -m 0700 /srv/kfit/backups /srv/kfit/backups/primary /srv/kfit/backups/secondary
+sudo install -d -m 0755 /srv/kfit/releases
+stat -c '%n %u:%g %a' /srv/kfit/backups /srv/kfit/backups/primary /srv/kfit/backups/secondary   # 1000:1000 700
 ```
 
-`/etc/systemd/system/kfit-backup.timer` :
+Ajouter à `/srv/kfit/config/.env.prod` (fichier en 0600), sans afficher la clé :
 
-```ini
-[Unit]
-Description=K'FIT sauvegarde quotidienne
-
-[Timer]
-OnCalendar=*-*-* 02:00:00 Africa/Libreville
-Persistent=true
-
-[Install]
-WantedBy=timers.target
+```bash
+F=/srv/kfit/config/.env.prod
+sudo grep -c '^BACKUP_' "$F"   # 0 attendu
+printf 'BACKUP_ENCRYPTION_KEY=%s\n' "$(openssl rand -hex 32)" | sudo tee -a "$F" >/dev/null
+printf '%s\n' BACKUP_DIR=/srv/kfit/backups/primary BACKUP_SECONDARY_DIR=/srv/kfit/backups/secondary \
+  BACKUP_PG_MODE=native BACKUP_PG_SERVICE=postgres | sudo tee -a "$F" >/dev/null
+sudo chmod 600 "$F"
 ```
 
-Activer : `systemctl enable --now kfit-backup.timer`. Contrôler : `systemctl list-timers kfit-backup.timer` et `journalctl -u kfit-backup.service`.
+`BACKUP_COMPOSE_FILE` reste absent : il ne sert qu'au mode `docker`. Copier ensuite la clé hors du serveur (§ 2.2), par un moyen qui ne laisse pas de trace dans un journal.
 
-**cron** (alternative) :
+**Bêta synthétique.** `BACKUP_DIR` et `BACKUP_SECONDARY_DIR` sont provisoirement deux dossiers du même VPS. **Avant toute donnée client réelle**, la copie secondaire doit être hors du serveur, et une restauration doit avoir été testée depuis cette copie.
 
-```cron
-CRON_TZ=Africa/Libreville
-0 2 * * * cd /opt/kfit && /usr/bin/npm run ops:backup >> /var/log/kfit/backup.log 2>&1
+### 4.2 Version déployée (`release.env`)
+
+Le timer lit l'image `ops` dans `/srv/kfit/config/release.env`, un fichier **non secret** qui ne contient que les trois références d'images par digest. Le script refuse toute autre ligne (donc toute clé) et toute image `ops` qui n'est pas `ghcr.io/fredpatch/kfit-monorepo/ops@sha256:<64 hex>` déjà présente sur l'hôte. Il lance Compose avec `--pull never` : il ne peut ni tirer une autre image ni construire `kfit-prod-ops:local`.
+
+À chaque déploiement, depuis le manifeste de la version (`release-manifest-<commit>`, § Images publiées de [démarrage en production](demarrage-production.md)) :
+
+```bash
+C=<commit de 40 caractères>
+sudo cp release-manifest.json /srv/kfit/releases/$C.json
+python3 -c 'import json,sys;[print(f"{k}={v}") for k,v in json.load(open(sys.argv[1]))["compose_env"].items()]' \
+  /srv/kfit/releases/$C.json | sudo tee /srv/kfit/config/release.env >/dev/null
+sudo chmod 644 /srv/kfit/config/release.env
+set -a; . /srv/kfit/config/release.env; set +a
+docker compose -f docker-compose.prod.yml --profile ops pull ops
 ```
 
-Le contrôle de restauration hebdomadaire (§ 5) se planifie de la même façon, par exemple le dimanche à 04:00 avec `npm run ops:restore-drill`.
+### 4.3 Sauvegarde et contrôle à la main
+
+Depuis le dépôt, avec `KFIT_ENV_FILE=/srv/kfit/config/.env.prod` et les images de `release.env` exportés :
+
+```bash
+docker compose -f docker-compose.prod.yml --profile ops run --rm --no-deps ops npm run ops:backup --workspace @kfit/server
+docker compose -f docker-compose.prod.yml --profile ops run --rm --no-deps ops npm run ops:restore-drill --workspace @kfit/server
+```
+
+Résultats attendus : ceux des § 3 et § 5. Le contrôle restaure dans une base jetable `kfit_restore_<8 hex>` et un dossier temporaire du conteneur, puis supprime les deux ; il n'écrit jamais dans `/srv/kfit/private` ni dans la base de production.
+
+### 4.4 Timer systemd
+
+Fichiers versionnés : `ops/systemd/kfit-backup.sh` (lanceur, échoue fermé), `ops/systemd/kfit-backup.service` (oneshot, aucun secret) et `ops/systemd/kfit-backup.timer` (tous les jours à 02:00, heure de Libreville). Installation depuis la racine du dépôt, avec le compte qui lance `docker compose` (membre du groupe `docker`, lecteur de `.env.prod`) :
+
+```bash
+sed -e "s|@KFIT_USER@|$(id -un)|" -e "s|@KFIT_REPO@|$(pwd)|" ops/systemd/kfit-backup.service |
+  sudo tee /etc/systemd/system/kfit-backup.service >/dev/null
+sudo cp ops/systemd/kfit-backup.timer /etc/systemd/system/kfit-backup.timer
+sudo systemctl daemon-reload
+sudo systemctl start kfit-backup.service && systemctl status kfit-backup.service --no-pager   # une exécution tout de suite
+sudo systemctl enable --now kfit-backup.timer
+systemctl list-timers kfit-backup.timer
+journalctl -u kfit-backup.service --no-pager | tail -20
+```
+
+Le service utilise le `docker-compose.prod.yml` de ce dépôt : après un `git pull`, la nouvelle version s'applique au prochain lancement. Le contrôle de restauration reste lancé à la main (§ 5), au moins une fois par semaine.
+
+### 4.5 Développement local
+
+Hors du VPS, `npm run ops:backup` se lance depuis la racine du dépôt (compilation automatique, `.env` local) ; un timer ou une tâche cron locale peut appeler la même commande.
 
 ## 5. Contrôle de restauration (`ops:restore-drill`)
 
@@ -417,8 +457,8 @@ Objectif : prouver de bout en bout qu'une sauvegarde se restaure et qu'une anony
 
 **Attend le Sprint 9 :**
 
-- Exercice sur `docker-compose.prod.yml`. Le service `postgres` de production est sur un réseau interne sans port publié, alors que les scripts ont besoin de `DATABASE_URL` joignable depuis l'hôte (comptages, lignes d'exécution, replay). Le mode d'accès reste à décider au Sprint 9 : port publié sur `127.0.0.1` ou scripts lancés dans le réseau.
-- Timer de l'hôte (§ 4), copie hors serveur, coupure du trafic par le proxy, bascule de l'API sur la base restaurée.
+- Mode d'accès en production : décidé en S9A.7, scripts lancés dans le conteneur `ops` sur le réseau interne (§ 4), sans port PostgreSQL publié. L'exercice complet sur le VPS reste à valider.
+- Copie hors serveur, coupure du trafic par le proxy, bascule de l'API sur la base restaurée.
 
 ## 8. Dépannage
 

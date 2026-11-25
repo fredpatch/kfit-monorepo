@@ -174,6 +174,7 @@ services:
   # Explicit one-off tooling only (profile `ops`): never part of `docker compose up -d`, never restarted.
   # Migrations are run deliberately (S9A.6), e.g.:
   #   docker compose -f docker-compose.prod.yml --profile ops run --rm ops npm run db:migrate --workspace @kfit/server
+  # Scheduled backups (S9A.7) go through ops/systemd/kfit-backup.sh, which refuses anything but a pulled digest ref.
   ops:
     # S9A.2b: one-off production tooling uses the exact release digest as the API/client release.
     image: ${KFIT_OPS_IMAGE:-kfit-prod-ops:local}
@@ -187,8 +188,31 @@ services:
     env_file:
       - path: ${KFIT_ENV_FILE:-.env.prod}
         required: false
+    # S9A.7: backup/restore reach PostgreSQL natively over kfit_backend (pg_dump/pg_restore in the image), never through
+    # the host's Docker: no Docker socket is mounted here. Paths below are bound to the mounts, like the api service.
     environment:
       NODE_ENV: production
+      BACKUP_PG_MODE: native
+      PRIVATE_STORAGE_ROOT: /srv/kfit/private
+      KFIT_PRIVACY_JOURNAL_DIR: /srv/kfit/privacy-journal
+    # Same private files and privacy journal as the api (read by backups, written only by a deliberate ops:restore), plus
+    # the backup root holding BACKUP_DIR and BACKUP_SECONDARY_DIR. All must exist and be writable by uid 1000 (`node`).
+    volumes:
+      - type: bind
+        source: ${KFIT_PRIVATE_HOST_DIR:-/srv/kfit/private}
+        target: /srv/kfit/private
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${KFIT_PRIVACY_JOURNAL_HOST_DIR:-/srv/kfit/privacy-journal}
+        target: /srv/kfit/privacy-journal
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${KFIT_BACKUP_HOST_DIR:-/srv/kfit/backups}
+        target: /srv/kfit/backups
+        bind:
+          create_host_path: false
     depends_on:
       postgres:
         condition: service_healthy

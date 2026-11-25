@@ -1,3 +1,12 @@
+## 2026-11-25 - Sprint 9A S9A.3 reverse proxy and HTTPS/TLS
+
+- Fred validated the Hostinger reverse-proxy/TLS path end-to-end on `kfitpulse.io`.
+- Public HTTPS, HTTP-to-HTTPS redirect, www-to-apex redirect, certificate renewal dry-run, `/health`, and nested SPA route reloads passed.
+- Production authentication cookies preserved the required contract through nginx: device/access/refresh cookies are `HttpOnly; Secure; SameSite=Lax; Path=/`; CSRF is `Secure; SameSite=Lax; Path=/` and intentionally readable by the client.
+- CSRF runtime behavior passed: session 200, refresh without CSRF 403, refresh with CSRF 200, logout 200, and session after logout 401.
+- Exact proxy trust was validated against real traffic: audit IP hashes matched external/VPS source addresses while the Docker gateway, loopback and a spoofed `X-Forwarded-For` address did not appear.
+- Exposure checks passed: only nginx 80/443 are public; API/client/Mailpit UI are loopback-only; PostgreSQL, ClamAV and Mailpit SMTP have no host-published ports. External checks for 13000/18080/5432/3310 all failed as intended.
+- S9A.3 is closed. S9A.4 real SMTP and authentication delivery is the active next task. The temporary Mailpit bridge remains only until real SMTP is validated.
 # K'FIT Changelog
 
 > Only locally validated changes are recorded here.

@@ -381,3 +381,11 @@
 - Production bootstrap reports `required: false`, the bootstrap token is absent from `.env.prod`, and the bootstrap path is closed after first-account creation.
 - The active account set was verified as Fred `superadmin` and Konny `admin`.
 - Required production consent definitions were published as version 1: `service_terms` (Conditions de service) and `privacy_notice` (Notice de confidentialité).
+
+## 2026-11-25 - Sprint 9A.7 backup baseline validation
+
+- Fred validated the first production-style encrypted backup on Hostinger through the immutable ops image `sha256:7a8dcf8e9a1550334984dfe5fc9778544258be858e6b001c33b73ddcc217e1ea` with PostgreSQL 16 native client tools and no Docker socket access.
+- Primary and secondary encrypted bundles were created successfully with `db.dump.enc`, `files.tar.enc`, `journal.jsonl.enc` and signed `manifest.json`; no temporary backup directory remained.
+- Two isolated restore drills succeeded against the generated bundle, with table/file/migration checks and privacy replay clean, and no `kfit_restore_%` database left behind.
+- The host `kfit-backup.service` oneshot succeeded, the daily `kfit-backup.timer` was enabled for 02:00 Libreville time with randomized delay, and retention rotation kept the latest valid primary and secondary bundle while removing the prior same-day copy.
+- The synthetic-beta secondary copy currently remains on the same VPS. Before any real customer data, an encrypted off-server secondary copy and restore test from that copy remain mandatory.

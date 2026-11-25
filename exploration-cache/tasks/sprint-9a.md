@@ -1,6 +1,6 @@
 # Sprint 9A - Hostinger Beta Environment
 
-Status: IN PROGRESS. S9A.1, S9A.2, S9A.2b, S9A.3 and S9A.5-S9A.7 validated by Fred; S9A.4 is blocked pending Konny Gmail credentials; S9A.8 is active.
+Status: IN PROGRESS. S9A.1, S9A.2, S9A.2b, S9A.3 and S9A.5-S9A.8 validated by Fred; S9A.4 is blocked pending Konny Gmail credentials; S9A.9 is active.
 
 ## Execution status
 
@@ -12,8 +12,9 @@ Status: IN PROGRESS. S9A.1, S9A.2, S9A.2b, S9A.3 and S9A.5-S9A.7 validated by Fr
 - ✅ S9A.5 - Persistent storage, ClamAV and PDFs: validated by Fred on 2026-11-25; production bind mounts writable and persistent across API recreation, ClamAV clean/EICAR checks green, PDF/Puppeteer preflight green on the immutable GHCR API digest.
 - ✅ S9A.6 - Database migration and bootstrap: validated by Fred on 2026-11-25; 21 migrations applied, bootstrap closed, bootstrap token absent, Fred superadmin and Konny admin active, required production consent definitions published.
 - ✅ S9A.7 - Backup baseline: validated by Fred on 2026-11-25; encrypted primary/secondary bundles, native PostgreSQL 16 ops path, restore drill cleanup, host systemd timer and rotation are green on Hostinger. Same-VPS secondary remains synthetic-beta only; off-server copy is mandatory before real customer data.
-- ⏳ S9A.8 - Deployment preflight: active task.
-- 🔜 S9A.9 remains after the current validation work; S9A.4 must still be completed before beta SMTP acceptance.
+- ✅ S9A.8 - Deployment preflight: validated by Fred on 2026-11-25; immutable release deployment, startup guards, DB/ClamAV/Mailpit bridge, request IDs, nested SPA routes, scheduled jobs, production dev-route absence and new-device OTP flow are green. No new P0/P1 blocker found.
+- ⏳ S9A.9 - Konny hosted beta acceptance: active task.
+- S9A.4 still must be completed when Konny Gmail is available; until then Mailpit remains the documented beta-only SMTP bridge.
 - Real customer data remains forbidden during 9A until the production-readiness gates are satisfied.
 - Temporary security exception: the API currently receives `SYS_ADMIN` only so in-process Puppeteer can keep Chromium sandboxing enabled during the controlled synthetic-data beta. Before any real customer data, PDF rendering must be isolated and this capability removed from the API.
 

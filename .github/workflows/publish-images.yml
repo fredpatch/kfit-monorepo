@@ -41,6 +41,9 @@ jobs:
           - image: ops
             dockerfile: packages/server/Dockerfile
             target: ops
+          - image: renderer
+            dockerfile: packages/server/Dockerfile
+            target: renderer
     env:
       IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.image }}
     steps:
@@ -97,11 +100,13 @@ jobs:
       - name: Verify the exact image that will be pushed
         run: sh ops/ci/verify-image.sh "${{ matrix.image }}" "$IMAGE:sha-$GITHUB_SHA"
 
-      - name: Verify API PDF rendering
-        if: matrix.image == 'api'
+      # S9B: real Chromium behind the renderer's own POST /render, with the Compose runtime settings (init, shm,
+      # SYS_ADMIN for the sandbox) and no network; the preflight also proves external resources are blocked.
+      - name: Verify renderer PDF rendering
+        if: matrix.image == 'renderer'
         run: |
           docker run --rm --init --network none --shm-size=256m --cap-add=SYS_ADMIN \
-            "$IMAGE:sha-$GITHUB_SHA" npm run preflight:pdf
+            "$IMAGE:sha-$GITHUB_SHA" node scripts/preflight/pdf.mjs
 
       - name: Check source commit metadata
         run: |

@@ -34,6 +34,7 @@ const goodEnv = (): NodeJS.ProcessEnv => ({
   AUTH_RECOVERY_TOKEN_SECRET: secret("recovery"),
   AUTH_DEVICE_PEPPER: secret("device"),
   KFIT_TRUSTED_PROXY_IP: "10.247.13.1",
+  PDF_RENDERER_URL: "http://renderer:3100",
 });
 const patched = "v22.23.5";
 const codes = (env: NodeJS.ProcessEnv, version = patched) =>
@@ -140,6 +141,24 @@ test("S9A.3: a KFIT_TRUSTED_PROXY_IP that is not one private IPv4 gateway is TRU
     assert.deepEqual(codes(env), ["TRUSTED_PROXY_INVALID"], value);
     assert.equal(detail(env, "TRUSTED_PROXY_INVALID"), "KFIT_TRUSTED_PROXY_IP");
   }
+});
+
+test("S9B: a PDF_RENDERER_URL that is not one internal http(s) origin is PDF_RENDERER_INVALID, by name only", () => {
+  for (const value of [
+    "renderer:3100",
+    "file:///srv/kfit/private",
+    "ftp://renderer",
+    "http://user:pass@renderer:3100",
+    "http://renderer:3100/render",
+    "http://renderer:3100/?u=1",
+  ]) {
+    const env = { ...goodEnv(), PDF_RENDERER_URL: value };
+    assert.deepEqual(codes(env), ["PDF_RENDERER_INVALID"], value);
+    assert.equal(detail(env, "PDF_RENDERER_INVALID"), "PDF_RENDERER_URL");
+  }
+  const { PDF_RENDERER_URL: _, ...missing } = goodEnv();
+  assert.deepEqual(codes(missing), ["ENV_MISSING"]);
+  assert.match(detail(missing, "ENV_MISSING") ?? "", /PDF_RENDERER_URL/);
 });
 
 test("S7.4 D3: KFIT_PRIVACY_JOBS=off is refused; KFIT_NOTIFICATION_JOBS=off is only a warning", () => {

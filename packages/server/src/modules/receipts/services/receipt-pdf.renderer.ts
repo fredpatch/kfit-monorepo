@@ -1,37 +1,16 @@
-import puppeteer from "puppeteer";
 import type { ReceiptSnapshot } from "@kfit/shared";
+import {
+  pinPdfTimestamps,
+  type HtmlPdfRenderer,
+} from "../../../pdf/html-pdf-renderer.js";
 import { receiptHtml } from "./receipt-snapshot.js";
-export class PuppeteerReceiptRenderer {
+
+/** S9B: the API builds the receipt HTML from the frozen snapshot; only the HTML -> PDF step leaves the process. */
+export class ReceiptPdfRenderer {
+  constructor(private readonly htmlPdf: HtmlPdfRenderer) {}
+
   async render(snapshot: ReceiptSnapshot): Promise<Buffer> {
-    const browser = await puppeteer.launch({ headless: true });
-    try {
-      const page = await browser.newPage();
-      await page.setJavaScriptEnabled(false);
-      await page.setRequestInterception(true);
-      page.on("request", (request) => {
-        void request.abort();
-      });
-      await page.setContent(receiptHtml(snapshot), {
-        waitUntil: "load",
-        timeout: 15000,
-      });
-      const pdf = Buffer.from(
-        await page.pdf({
-          format: "A4",
-          printBackground: true,
-          preferCSSPageSize: true,
-          timeout: 15000,
-        }),
-      );
-      const stamp = snapshot.issuedAt.replace(/[-:T.Z]/g, "").slice(0, 14);
-      return Buffer.from(
-        pdf
-          .toString("latin1")
-          .replace(/D:\d{14}\+00'00'/g, `D:${stamp}+00'00'`),
-        "latin1",
-      );
-    } finally {
-      await browser.close();
-    }
+    const pdf = await this.htmlPdf.render(receiptHtml(snapshot));
+    return pinPdfTimestamps(pdf, snapshot.issuedAt);
   }
 }

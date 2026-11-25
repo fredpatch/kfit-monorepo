@@ -1,13 +1,14 @@
 # syntax=docker/dockerfile:1
 #
-# S9A.2: K'FIT API production image. Build context = repository root:
-#   docker compose -f docker-compose.prod.yml build api
+# S9A.2 / S9B: K'FIT server-side production images. Build context = repository root:
+#   docker compose -f docker-compose.prod.yml build api renderer
 #
 # Stages:
 #   deps       full workspace install (dev tooling + Puppeteer's Chrome in /opt/puppeteer)
 #   build      compiles @kfit/shared and @kfit/server
 #   prod-deps  deps pruned to production dependencies
-#   runtime    API image (default target): production deps, compiled output, scripts, Chrome, non-root user
+#   runtime    API image (default target): production deps, compiled output, scripts, non-root user, no browser
+#   renderer   internal HTML -> PDF service (S9B): only dist/pdf-renderer, Puppeteer's Chrome and its libraries
 #   ops        tooling image (drizzle-kit, sources, migrations) for explicit one-off commands only
 #
 # No env file, secret or build arg carrying a secret is used: the environment comes from compose at run time.
@@ -39,6 +40,52 @@ RUN npm prune --omit=dev \
 
 # ---------- runtime ----------
 FROM node:22.23.5-bookworm-slim AS runtime
+
+# S9B: no browser here. PDFs are rendered by the renderer image over kfit_backend (PDF_RENDERER_URL); the API keeps no
+# Chrome, no Chrome libraries or fonts, and needs no extra capability.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+# KFIT_OPS_PREBUILT: dist is compiled above and read-only here, so scripts/ops/run.mjs runs it without recompiling.
+ENV NODE_ENV=production \
+    KFIT_OPS_PREBUILT=true \
+    KFIT_API_HOST=0.0.0.0 \
+    KFIT_API_PORT=3000
+
+WORKDIR /app
+
+# Application files stay owned by root: the runtime user can read them, not modify them.
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/server/package.json packages/server/package.json
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=prod-deps /app/packages/shared/node_modules ./packages/shared/node_modules
+COPY --from=prod-deps /app/packages/server/node_modules ./packages/server/node_modules
+COPY --from=build /app/packages/shared/dist ./packages/shared/dist
+COPY --from=build /app/packages/server/dist ./packages/server/dist
+COPY packages/server/scripts ./packages/server/scripts
+
+# S9B: the Chromium launcher and the renderer server belong to the renderer image only; without them the API cannot
+# start a browser even by mistake (the development-only local adapter fails to load). Bind-mount targets for `node`.
+RUN rm -f /app/packages/server/dist/pdf-renderer/html-to-pdf.* /app/packages/server/dist/pdf-renderer/server.* \
+    /app/packages/server/scripts/prod/pdf-renderer-server.mjs /app/packages/server/scripts/preflight/pdf.mjs \
+  && mkdir -p /srv/kfit/private /srv/kfit/privacy-journal \
+  && chown node:node /srv/kfit/private /srv/kfit/privacy-journal
+
+# Official node image user (uid/gid 1000).
+USER node
+WORKDIR /app/packages/server
+EXPOSE 3000
+
+# Same entrypoint as `npm run start:prod --workspace @kfit/server`, started without npm so signals reach Node directly.
+CMD ["node", "scripts/prod/api-server.mjs"]
+
+# ---------- renderer ----------
+# S9B: internal PDF renderer. No database, storage, SMTP or API code: only the self-contained dist/pdf-renderer module,
+# the production node_modules (for Puppeteer) and Puppeteer's Chrome. Chrome keeps its default sandbox: no --no-sandbox,
+# no privileged mode; Compose grants this service alone SYS_ADMIN for that sandbox.
+FROM node:22.23.5-bookworm-slim AS renderer
 
 # Shared libraries and fonts required by Puppeteer's Chrome (headless PDF rendering) on Debian bookworm.
 RUN apt-get update \
@@ -79,42 +126,29 @@ RUN apt-get update \
     libxss1 \
     libxtst6 \
   && rm -rf /var/lib/apt/lists/*
-
-# KFIT_OPS_PREBUILT: dist is compiled above and read-only here, so scripts/ops/run.mjs runs it without recompiling.
 ENV NODE_ENV=production \
-    KFIT_OPS_PREBUILT=true \
     PUPPETEER_CACHE_DIR=/opt/puppeteer \
-    KFIT_API_HOST=0.0.0.0 \
-    KFIT_API_PORT=3000
+    KFIT_RENDERER_HOST=0.0.0.0 \
+    KFIT_RENDERER_PORT=3100
 
 WORKDIR /app
 
-# Application files stay owned by root: the runtime user can read them, not modify them.
-COPY package.json package-lock.json ./
-COPY packages/shared/package.json packages/shared/package.json
 COPY packages/server/package.json packages/server/package.json
 COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=prod-deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=prod-deps /app/packages/server/node_modules ./packages/server/node_modules
-COPY --from=build /app/packages/shared/dist ./packages/shared/dist
-COPY --from=build /app/packages/server/dist ./packages/server/dist
-COPY packages/server/scripts ./packages/server/scripts
+COPY --from=build /app/packages/server/dist/pdf-renderer ./packages/server/dist/pdf-renderer
+COPY packages/server/scripts/prod/pdf-renderer-server.mjs ./packages/server/scripts/prod/pdf-renderer-server.mjs
+COPY packages/server/scripts/preflight/pdf.mjs ./packages/server/scripts/preflight/pdf.mjs
 
-# Puppeteer's Chrome, readable and executable by the non-root runtime user.
+# Puppeteer's Chrome, readable and executable by the non-root runtime user. Compiled tests are not shipped.
 COPY --from=deps /opt/puppeteer /opt/puppeteer
 RUN chmod -R a+rX /opt/puppeteer \
-  # Writable locations for the runtime user, nothing else under /app: PDF preflight scratch
-  # (scripts/preflight/pdf.mjs writes to packages/tmp/preflight-pdf) and the bind-mount targets.
-  && mkdir -p /app/packages/tmp /srv/kfit/private /srv/kfit/privacy-journal \
-  && chown node:node /app/packages/tmp /srv/kfit/private /srv/kfit/privacy-journal
+  && rm -f /app/packages/server/dist/pdf-renderer/*.test.*
 
-# Official node image user (uid/gid 1000). Chrome keeps its default sandbox: no --no-sandbox, no privileged mode.
 USER node
 WORKDIR /app/packages/server
-EXPOSE 3000
-
-# Same entrypoint as `npm run start:prod --workspace @kfit/server`, started without npm so signals reach Node directly.
-CMD ["node", "scripts/prod/api-server.mjs"]
+EXPOSE 3100
+CMD ["node", "scripts/prod/pdf-renderer-server.mjs"]
 
 # ---------- ops ----------
 # One-off tooling (e.g. `npm run db:migrate --workspace @kfit/server`). Never started by `docker compose up`.

@@ -12,7 +12,7 @@ couvre: [DOC-01a]
 
 Sources : tableaux `…ErrorCodes` de `packages/shared/src`, codes serveur listés dans `scripts/docs/generate-references.mjs`. Message affiché : texte des tables de messages du client (`packages/client/src`), « - » quand le client n'en a pas (code non affiché tel quel ou message générique).
 
-341 codes, 25 modules.
+342 codes, 25 modules.
 
 ## appointments
 
@@ -488,6 +488,7 @@ Source : `packages/server/src/runtime/production-guards.ts · productionGuardCod
 | `PRIVACY_JOBS_DISABLED` | - |
 | `DEMO_CONSENT_PUBLISHED` | - |
 | `TRUSTED_PROXY_INVALID` | - |
+| `PDF_RENDERER_INVALID` | - |
 
 ## sauvegarde / restauration (S7.4b)
 

@@ -1,4 +1,4 @@
-// S9A.2b: merge api/client/ops GHCR digest records into one deployment manifest.
+// S9A.2b / S9B: merge api/client/ops/renderer GHCR digest records into one deployment manifest.
 // Usage: node release-manifest.mjs <parts-dir> <output-file>
 import fs from "node:fs";
 import path from "node:path";
@@ -20,7 +20,7 @@ if (repository !== "fredpatch/kfit-monorepo") {
   throw new Error("unexpected repository");
 }
 
-const expected = ["api", "client", "ops"];
+const expected = ["api", "client", "ops", "renderer"];
 const images = {};
 const files = fs
   .readdirSync(dir)
@@ -54,7 +54,7 @@ for (const file of files) {
 if (
   Object.keys(images).sort().join(",") !== expected.slice().sort().join(",")
 ) {
-  throw new Error("manifest needs exactly api, client and ops");
+  throw new Error("manifest needs exactly api, client, ops and renderer");
 }
 
 const manifest = {
@@ -67,6 +67,7 @@ const manifest = {
     KFIT_API_IMAGE: images.api.ref,
     KFIT_CLIENT_IMAGE: images.client.ref,
     KFIT_OPS_IMAGE: images.ops.ref,
+    KFIT_RENDERER_IMAGE: images.renderer.ref,
   },
 };
 

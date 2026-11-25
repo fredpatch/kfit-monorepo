@@ -50,6 +50,21 @@ if (!(await runStartupChecks(pool))) {
   process.exit(1);
 }
 
+// S9B: PDFs are rendered by the internal renderer service only; refuse to start until it answers its health check.
+const { HttpHtmlPdfRenderer, parsePdfRendererUrl } =
+  await import("../../dist/pdf/html-pdf-renderer.js");
+if (
+  !(await new HttpHtmlPdfRenderer(
+    parsePdfRendererUrl(process.env.PDF_RENDERER_URL),
+  ).ready())
+) {
+  logger.error(
+    "✖ K'FIT production API not started: PDF renderer unreachable (PDF_RENDERER_URL).",
+  );
+  await pool.end();
+  process.exit(1);
+}
+
 const { createProductionRuntime } = await import("../../dist/prod-app.js");
 const { app, startNotificationJobs, startPrivacyJobs } =
   createProductionRuntime(process.env);

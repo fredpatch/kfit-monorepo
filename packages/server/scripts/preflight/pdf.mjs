@@ -1,12 +1,17 @@
+/*
+ * S9B: PDF preflight of the isolated rendering path. Starts the internal renderer service (dist/pdf-renderer, the same
+ * code as the renderer image) with real Chromium, renders a multi-page French document through POST /render and checks
+ * that the page could not fetch anything (a local canary server must see no request). Writes no file. Run it in the
+ * renderer image (CI publish job) or locally after `npm run build`.
+ */
 import assert from "node:assert/strict";
-import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import puppeteer from "puppeteer";
+import { once } from "node:events";
+import { createServer } from "node:http";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const outputDir = path.resolve(__dirname, "../../../tmp/preflight-pdf");
-const pdfPath = path.join(outputDir, "kfit-preflight.pdf");
+const { createRendererServer } =
+  await import("../../dist/pdf-renderer/server.js");
+const { chromiumHtmlToPdf } =
+  await import("../../dist/pdf-renderer/html-to-pdf.js");
 
 const sections = Array.from(
   { length: 18 },
@@ -21,11 +26,12 @@ const sections = Array.from(
 `,
 ).join("");
 
-const html = `<!doctype html>
+const html = (canary) => `<!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
 <title>K'FIT - Pré-flight PDF</title>
+<link rel="stylesheet" href="${canary}/style.css" />
 <style>
   @page { size: A4; margin: 16mm 14mm 18mm; }
   * { box-sizing: border-box; }
@@ -55,49 +61,79 @@ const html = `<!doctype html>
   <strong>Devise :</strong> XAF
 </div>
 ${sections}
+<img src="${canary}/pixel.png" alt="" />
 <footer>K'FIT · Pré-flight PDF · document non contractuel</footer>
 </body>
 </html>`;
 
-await rm(outputDir, { recursive: true, force: true });
-await mkdir(outputDir, { recursive: true });
+const listen = async (server) => {
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  return `http://127.0.0.1:${server.address().port}`;
+};
 
-let browser;
+const canaryHits = [];
+const canary = createServer((request, response) => {
+  canaryHits.push(request.url);
+  response.end();
+});
+const blocked = [];
+const renderer = createRendererServer(
+  chromiumHtmlToPdf({ onBlockedRequest: (url) => blocked.push(url) }),
+);
+
 try {
-  browser = await puppeteer.launch({ headless: true });
-  const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: "networkidle0" });
+  const canaryOrigin = await listen(canary);
+  const origin = await listen(renderer);
+  const render = (body) =>
+    fetch(`${origin}/render`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
-  const buffer = await page.pdf({
-    format: "A4",
-    printBackground: true,
-    preferCSSPageSize: true,
-    displayHeaderFooter: false,
-  });
-
-  await writeFile(pdfPath, buffer);
-
-  const bytes = await readFile(pdfPath);
-  const info = await stat(pdfPath);
+  assert.equal(
+    (await fetch(`${origin}/health`)).status,
+    200,
+    "renderer health",
+  );
+  const response = await render({ html: html(canaryOrigin), profile: "a4" });
+  assert.equal(response.status, 200, "POST /render status");
+  assert.equal(response.headers.get("content-type"), "application/pdf");
+  const bytes = Buffer.from(await response.arrayBuffer());
   const header = bytes.subarray(0, 5).toString("ascii");
-  const pdfText = bytes.toString("latin1");
-  const pageObjects = pdfText.match(/\/Type\s*\/Page\b/g) ?? [];
+  const pageObjects =
+    bytes.toString("latin1").match(/\/Type\s*\/Page\b/g) ?? [];
 
   assert.equal(header, "%PDF-", "Output must have a valid PDF signature");
-  assert.ok(info.size > 10_000, `PDF unexpectedly small: ${info.size} bytes`);
+  assert.ok(
+    bytes.length > 10_000,
+    `PDF unexpectedly small: ${bytes.length} bytes`,
+  );
   assert.ok(
     pageObjects.length >= 2,
     `Expected multi-page PDF, detected ${pageObjects.length} page objects`,
   );
+  assert.deepEqual(canaryHits, [], "the page reached the network");
+  assert.ok(
+    blocked.some((url) => url.startsWith(canaryOrigin)),
+    "external resources were requested and refused",
+  );
+  const script = await render({ html: "<script>1</script>", profile: "a4" });
+  assert.equal(script.status, 422, "scripts are refused");
 
-  console.log(`PDF signature verified: ${header}`);
-  console.log(`PDF size verified: ${info.size} bytes`);
+  console.log(
+    `Renderer path verified: POST /render -> ${header} (${bytes.length} bytes)`,
+  );
   console.log(
     `Pagination verified: ${pageObjects.length} page objects detected`,
   );
-  console.log(`French/branding HTML rendered with local-only assets`);
-  console.log(`Generated file: ${pdfPath}`);
+  console.log(
+    `External fetch blocked: ${blocked.length} request(s) refused, canary hits 0`,
+  );
   console.log("PDF pre-flight PASSED");
 } finally {
-  if (browser) await browser.close();
+  renderer.closeAllConnections();
+  renderer.close();
+  canary.close();
 }

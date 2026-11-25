@@ -231,7 +231,7 @@ sudo chmod 600 "$F"
 
 ### 4.2 Version déployée (`release.env`)
 
-Le timer lit l'image `ops` dans `/srv/kfit/config/release.env`, un fichier **non secret** qui ne contient que les trois références d'images par digest. Le script refuse toute autre ligne (donc toute clé) et toute image `ops` qui n'est pas `ghcr.io/fredpatch/kfit-monorepo/ops@sha256:<64 hex>` déjà présente sur l'hôte. Il lance Compose avec `--pull never` : il ne peut ni tirer une autre image ni construire `kfit-prod-ops:local`.
+Le timer lit l'image `ops` dans `/srv/kfit/config/release.env`, un fichier **non secret** qui ne contient que les références d'images par digest (`KFIT_API_IMAGE`, `KFIT_CLIENT_IMAGE`, `KFIT_OPS_IMAGE` et, depuis S9B, `KFIT_RENDERER_IMAGE`). Le script n'utilise que l'image `ops` et refuse toute autre ligne (donc toute clé) et toute image `ops` qui n'est pas `ghcr.io/fredpatch/kfit-monorepo/ops@sha256:<64 hex>` déjà présente sur l'hôte. Il lance Compose avec `--pull never` : il ne peut ni tirer une autre image ni construire `kfit-prod-ops:local`.
 
 À chaque déploiement, depuis le manifeste de la version (`release-manifest-<commit>`, § Images publiées de [démarrage en production](demarrage-production.md)) :
 

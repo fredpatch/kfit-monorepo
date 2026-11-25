@@ -12,7 +12,7 @@ couvre: [S7.4a, S7.4b, DOC-01a]
 
 Source : clés et commentaires de `.env.example` (jamais les valeurs d'un `.env`). « Requis en production » = `PRODUCTION_REQUIRED_ENV` (`packages/server/src/runtime/production-guards.ts`) : l'API de production refuse de démarrer si la variable manque ou contient une valeur d'exemple. « Scripts ops » = lue par `ops:backup`, `ops:restore`, `ops:restore-drill`, pas par l'API.
 
-54 variables.
+55 variables.
 
 | Variable | Groupe | Requis en production | Scripts ops | Description |
 | --- | --- | --- | --- | --- |
@@ -70,3 +70,4 @@ Source : clés et commentaires de `.env.example` (jamais les valeurs d'un `.env`
 | `BACKUP_PG_SERVICE` | S7.4b sauvegardes (npm run ops:backup, ops:restore, ops:restore-drill) : BACKUP_ENCRYPTION_KEY ci-dessus chiffre aussi ces sauvegardes. | - | oui | - |
 | `PRIVATE_STORAGE_ROOT` | - | oui | - | Absente de .env.example : voir .env.prod.example. |
 | `KFIT_TRUSTED_PROXY_IP` | - | oui | - | Absente de .env.example : voir .env.prod.example. |
+| `PDF_RENDERER_URL` | - | oui | - | Absente de .env.example : voir .env.prod.example. |

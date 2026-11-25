@@ -11,7 +11,8 @@ import {
   receiptHtml,
   publicReceipt,
 } from "../services/receipt-snapshot.js";
-import { PuppeteerReceiptRenderer } from "../services/receipt-pdf.renderer.js";
+import { ReceiptPdfRenderer } from "../services/receipt-pdf.renderer.js";
+import { LocalChromiumHtmlPdfRenderer } from "../../../pdf/html-pdf-renderer.js";
 import {
   ReceiptDomainError,
   type ReceiptActor,
@@ -340,7 +341,7 @@ test(
   "real Chromium receipt PDF is deterministic for the identical frozen snapshot",
   { skip: chromiumUnavailable() },
   async () => {
-    const renderer = new PuppeteerReceiptRenderer(),
+    const renderer = new ReceiptPdfRenderer(new LocalChromiumHtmlPdfRenderer()),
       a = await renderer.render(snapshot),
       b = await renderer.render(structuredClone(snapshot));
     assert.equal(a.subarray(0, 5).toString(), "%PDF-");

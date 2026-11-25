@@ -14,6 +14,10 @@ import { consentDefinitions } from "../db/schema/onboarding.js";
 import { PRIVACY_JOURNAL_DIR_ENV } from "../modules/privacy/services/privacy-journal.js";
 import { evaluateRuntimeFloor } from "../security/security-floor.js";
 import { parseTrustedProxyIp, TRUSTED_PROXY_IP_ENV } from "./trusted-proxy.js";
+import {
+  parsePdfRendererUrl,
+  PDF_RENDERER_URL_ENV,
+} from "../pdf/html-pdf-renderer.js";
 
 /*
  * S7.4 D2 (Gate 1 approved 2026-10-26): the production API refuses to start until every check passes. All failures are
@@ -31,6 +35,7 @@ export const productionGuardCodes = [
   "PRIVACY_JOBS_DISABLED",
   "DEMO_CONSENT_PUBLISHED",
   "TRUSTED_PROXY_INVALID",
+  "PDF_RENDERER_INVALID",
 ] as const;
 export type ProductionGuardCode = (typeof productionGuardCodes)[number];
 export type ProductionGuardFailure = {
@@ -66,6 +71,7 @@ export const PRODUCTION_REQUIRED_ENV = [
   "SMTP_PASS",
   "SMTP_FROM",
   "KFIT_TRUSTED_PROXY_IP",
+  "PDF_RENDERER_URL",
   ...PRODUCTION_SECRET_ENV,
 ] as const;
 /** FIX-03 F2: directories the production API must receive as absolute paths (a relative one depends on where it is started). */
@@ -186,6 +192,16 @@ export function evaluateProductionEnv(
     failures.push({
       code: "TRUSTED_PROXY_INVALID",
       detail: TRUSTED_PROXY_IP_ENV,
+    });
+
+  // S9B: PDFs are rendered only by the internal renderer service; never a local Chromium fallback in production.
+  if (
+    !missing.includes(PDF_RENDERER_URL_ENV) &&
+    !parsePdfRendererUrl(env[PDF_RENDERER_URL_ENV])
+  )
+    failures.push({
+      code: "PDF_RENDERER_INVALID",
+      detail: PDF_RENDERER_URL_ENV,
     });
 
   const databaseUrl = env.DATABASE_URL?.trim();

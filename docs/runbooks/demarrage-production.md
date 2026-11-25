@@ -108,34 +108,36 @@ Délai de chaque contrôle : 3 secondes. Les identifiants de `DATABASE_URL` ne s
 
 Le paquetage existe ; il n'est **pas encore validé sur l'hébergement Hostinger** (porte de validation ultérieure de Sprint 9A).
 
-`docker-compose.prod.yml` assemble quatre services, sans aucun port publié sur l'hôte :
+`docker-compose.prod.yml` assemble cinq services. Seuls l'API et le client publient un port, sur `127.0.0.1` uniquement (§ 7) :
 
-| Service    | Image                                                                        | Réseaux                              | Rôle                                                                    |
-| ---------- | ---------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------- |
-| `postgres` | `postgres:16-alpine`                                                         | `kfit_backend`                       | base de production (volume nommé `kfit_postgres_prod_data`)             |
-| `clamav`   | `clamav/clamav:1.5.5`                                                        | `kfit_backend`, `kfit_clamav_egress` | antivirus (volume nommé `kfit_clamav_prod_data`)                        |
-| `api`      | `packages/server/Dockerfile`, cible `runtime` (`node:22.23.5-bookworm-slim`) | `kfit_backend`, `kfit_edge`          | API (`scripts/prod/api-server.mjs`), utilisateur non root, `init: true` |
-| `client`   | `packages/client/Dockerfile` (`nginx:1.27-alpine`)                           | `kfit_edge`                          | application web statique, port 80 interne                               |
+| Service    | Image                                                                         | Réseaux                              | Rôle                                                                       |
+| ---------- | ----------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------- |
+| `postgres` | `postgres:16-alpine`                                                          | `kfit_backend`                       | base de production (volume nommé `kfit_postgres_prod_data`)                |
+| `clamav`   | `clamav/clamav:1.5.5`                                                         | `kfit_backend`, `kfit_clamav_egress` | antivirus (volume nommé `kfit_clamav_prod_data`)                           |
+| `api`      | `packages/server/Dockerfile`, cible `runtime` (`node:22.23.5-bookworm-slim`)  | `kfit_backend`, `kfit_edge`          | API (`scripts/prod/api-server.mjs`), utilisateur non root, sans navigateur |
+| `renderer` | `packages/server/Dockerfile`, cible `renderer` (`node:22.23.5-bookworm-slim`) | `kfit_backend`                       | rendu HTML vers PDF (S9B), utilisateur non root, aucun accès aux données   |
+| `client`   | `packages/client/Dockerfile` (`nginx:1.27-alpine`)                            | `kfit_edge`                          | application web statique, port 80 interne                                  |
 
 - `kfit_backend` est un réseau interne (pas de sortie). `kfit_edge` est un réseau ordinaire : il donne à l'API l'accès SMTP sortant. Le proxy public (S9A.3) tourne sur l'hôte, voir §7. `kfit_clamav_egress` est un réseau ordinaire réservé à ClamAV : seule sortie de `freshclam` pour mettre à jour les signatures, sans port publié.
 - Fichier d'environnement : `KFIT_ENV_FILE` (par défaut `.env.prod`, modèle `.env.prod.example`). Le compose impose les valeurs liées à la topologie : `NODE_ENV=production`, `KFIT_API_HOST=0.0.0.0`, `KFIT_API_PORT=3000`, `PRIVATE_STORAGE_ROOT=/srv/kfit/private`, `KFIT_PRIVACY_JOURNAL_DIR=/srv/kfit/privacy-journal`, `CLAMAV_HOST=clamav`, `CLAMAV_PORT=3310`.
 - Fichiers privés et journal de confidentialité : dossiers de l'hôte `/srv/kfit/private` et `/srv/kfit/privacy-journal`, montés aux mêmes chemins. Ils doivent exister et appartenir à l'utilisateur `1000` de l'image ; le compose ne les crée jamais.
 - Contrôles de santé : `pg_isready` (PostgreSQL), `clamdcheck.sh` (ClamAV), `GET /health` sur `127.0.0.1:3000` dans le conteneur (API), page d'accueil (client). L'API attend PostgreSQL et ClamAV « healthy ».
-- PDF : l'image API contient le Chrome de Puppeteer (`/opt/puppeteer`) et ses bibliothèques. Le bac à sable de Chrome reste actif. Contrôle : `npm run preflight:pdf` dans l'image.
-- **Exception temporaire `SYS_ADMIN`** (décision du 2026-11-23) : le service `api` reçoit la capacité `SYS_ADMIN`, nécessaire au bac à sable de Chromium tant que Puppeteer tourne dans le processus de l'API. Pas de `--no-sandbox`, pas de mode privilégié. Acceptée **uniquement** pour la bêta Hostinger contrôlée, avec les données de Konny ou des données synthétiques. **Avant toute donnée client réelle**, le rendu PDF doit être isolé pour que le conteneur API n'ait plus besoin de cette capacité.
+- PDF (S9B) : l'API construit le HTML d'impression (reçu, devis, bilan de progression) à partir de ses données, puis l'envoie au service interne `renderer` (`POST /render` sur `http://renderer:3100`, imposé par le compose dans `PDF_RENDERER_URL`) et reçoit le PDF ; elle garde la persistance, le stockage privé et l'audit. L'image API ne contient ni Chrome ni ses bibliothèques. En production, l'API refuse de démarrer si `PDF_RENDERER_URL` manque ou est invalide (`ENV_MISSING`, `PDF_RENDERER_INVALID`) ou si le service ne répond pas à `GET /health`.
+- Service `renderer` : seule image avec le Chrome de Puppeteer (`/opt/puppeteer`). Il ne reçoit aucun fichier d'environnement, aucune donnée de base, aucun secret ni montage, et aucun port hôte ; `kfit_backend` étant interne, il ne joint pas Internet. JavaScript est désactivé dans la page et toute requête de ressource est bloquée. Contrôle : `node scripts/preflight/pdf.mjs` dans l'image `renderer`.
+- **`SYS_ADMIN`** : le bac à sable de Chromium (pas de `--no-sandbox`, pas de mode privilégié, profil seccomp par défaut) a besoin de cette capacité dans Docker. Depuis S9B, seul le service `renderer` la reçoit ; l'API ne l'a plus (exception temporaire du 2026-11-23 levée, **validation sur le VPS en attente**).
 - Migrations : service `ops` (profil `ops`, image avec `drizzle-kit`), lancé seulement par une commande explicite. `docker compose up -d` ne le démarre jamais.
 
 ### Images publiées (S9A.2b)
 
-Les images applicatives (`api`, `client`, `ops`) ne sont **jamais construites sur le VPS** dans le parcours normal. GitHub Actions (`.github/workflows/publish-images.yml`) les construit à chaque push sur `main`, après la CI complète, puis :
+Les images applicatives (`api`, `client`, `ops`, `renderer`) ne sont **jamais construites sur le VPS** dans le parcours normal. GitHub Actions (`.github/workflows/publish-images.yml`) les construit à chaque push sur `main`, après la CI complète, puis :
 
-- vérifie l'image exacte avant publication (`ops/ci/verify-image.sh`, étiquette de révision, `npm run preflight:pdf` avec `--cap-add=SYS_ADMIN`) ;
+- vérifie l'image exacte avant publication (`ops/ci/verify-image.sh`, étiquette de révision ; pour `renderer`, `node scripts/preflight/pdf.mjs` avec `--cap-add=SYS_ADMIN`, sans réseau) ;
 - publie uniquement `ghcr.io/fredpatch/kfit-monorepo/<image>:sha-<commit>` ;
-- produit l'artefact `release-manifest-<commit>` : références par digest (`@sha256:...`) des trois images et bloc `compose_env`.
+- produit l'artefact `release-manifest-<commit>` : références par digest (`@sha256:...`) des quatre images et bloc `compose_env` (`KFIT_API_IMAGE`, `KFIT_CLIENT_IMAGE`, `KFIT_OPS_IMAGE`, `KFIT_RENDERER_IMAGE`).
 
 GitHub ne se connecte jamais au VPS et ne déploie rien.
 
-Revue locale (poste de développement) : `docker compose -f docker-compose.prod.yml build api client` ; sans variables, les images portent les noms locaux `kfit-prod-*:local`.
+Revue locale (poste de développement) : `docker compose -f docker-compose.prod.yml build api renderer client` ; sans variables, les images portent les noms locaux `kfit-prod-*:local`.
 
 Mise en production sur le VPS, à partir du manifeste de la version choisie :
 
@@ -143,16 +145,17 @@ Mise en production sur le VPS, à partir du manifeste de la version choisie :
 export KFIT_API_IMAGE=ghcr.io/fredpatch/kfit-monorepo/api@sha256:<digest>
 export KFIT_CLIENT_IMAGE=ghcr.io/fredpatch/kfit-monorepo/client@sha256:<digest>
 export KFIT_OPS_IMAGE=ghcr.io/fredpatch/kfit-monorepo/ops@sha256:<digest>
+export KFIT_RENDERER_IMAGE=ghcr.io/fredpatch/kfit-monorepo/renderer@sha256:<digest>
 docker compose -f docker-compose.prod.yml config --quiet
-docker compose -f docker-compose.prod.yml --profile ops pull api client ops
+docker compose -f docker-compose.prod.yml --profile ops pull api client ops renderer
 docker compose -f docker-compose.prod.yml up -d --no-build
 ```
 
 - `--no-build` est obligatoire : le compose garde ses sections `build:`, et une image absente serait sinon reconstruite sur le VPS.
 - Jamais de `latest` : seules les références par digest du manifeste sont déployées.
 - Conserver le manifeste de chaque version déployée sur le VPS (par exemple `/srv/kfit/releases/<commit>.json`) : l'artefact GitHub expire après 90 jours (maximum d'un dépôt public).
-- S9A.7 : copier ce manifeste dans `/srv/kfit/releases/<commit>.json` et en dériver `/srv/kfit/config/release.env` (trois références d'images, aucun secret), que lit le timer de sauvegarde. Procédure : [sauvegarde et restauration](sauvegarde-restauration.md#42-version-déployée-releaseenv).
-- Retour arrière : reprendre les trois références du manifeste précédent, puis `pull` et `up -d --no-build`.
+- S9A.7 : copier ce manifeste dans `/srv/kfit/releases/<commit>.json` et en dériver `/srv/kfit/config/release.env` (quatre références d'images, aucun secret), que lit le timer de sauvegarde. Procédure : [sauvegarde et restauration](sauvegarde-restauration.md#42-version-déployée-releaseenv).
+- Retour arrière : reprendre les références du manifeste précédent (un manifeste antérieur à S9B n'a que trois images et une API avec Chrome), puis `pull` et `up -d --no-build`.
 - Si les paquets GHCR sont privés : `docker login ghcr.io` sur le VPS avec un jeton en lecture seule (`read:packages`), jamais stocké dans le dépôt.
 
 Encore à venir dans Sprint 9A :

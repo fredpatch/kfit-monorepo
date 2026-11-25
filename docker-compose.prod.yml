@@ -1,14 +1,14 @@
 name: kfit-prod
 
-# S9A.2/S9A.3: production-like stack (client, api, postgres, clamav).
-# PostgreSQL and ClamAV never publish host ports. API/client publish loopback-only ports for host nginx;
+# S9A.2/S9A.3/S9B: production-like stack (client, api, renderer, postgres, clamav).
+# PostgreSQL, ClamAV and the PDF renderer never publish host ports. API/client publish loopback-only ports for host nginx;
 # public ingress is owned by host nginx on 80/443; Express trusts loopback plus the kfit_edge gateway only.
 #
 # Runtime environment file: KFIT_ENV_FILE (default .env.prod, copied from .env.prod.example).
 # On the host: KFIT_ENV_FILE=/srv/kfit/config/.env.prod docker compose -f docker-compose.prod.yml ...
 # A missing file does not block `config` or `build`; the API and PostgreSQL refuse to start without their values.
-# Normal VPS releases do not build application images: KFIT_API_IMAGE/KFIT_CLIENT_IMAGE/KFIT_OPS_IMAGE
-# are set to GHCR digest refs from the S9A.2b release manifest, then Compose pulls them explicitly.
+# Normal VPS releases do not build application images: KFIT_API_IMAGE/KFIT_CLIENT_IMAGE/KFIT_OPS_IMAGE/
+# KFIT_RENDERER_IMAGE are set to GHCR digest refs from the release manifest, then Compose pulls them explicitly.
 
 # S9A.3: single source for the kfit_edge gateway. Host nginx -> 127.0.0.1:13000 reaches the API from this address
 # (Docker port publishing does not keep loopback as the source), so it is both the IPAM gateway below and the one
@@ -64,16 +64,7 @@ services:
       dockerfile: packages/server/Dockerfile
       target: runtime
     restart: unless-stopped
-    # Reaps Chrome child processes spawned by Puppeteer.
-    init: true
-    # Chrome uses /dev/shm for rendering; Docker's 64 MB default is too small for multi-page PDFs.
-    shm_size: "256mb"
-    # TEMPORARY EXCEPTION (Fred, 2026-11-23): in-process Puppeteer needs SYS_ADMIN for Chromium's own sandbox
-    # (no --no-sandbox, no privileged mode). Accepted only for the controlled Hostinger beta with Konny/synthetic data.
-    # Before any real customer data: isolate PDF rendering so this API container no longer needs the capability.
-    # See exploration-cache/project/decisions.md (2026-11-23).
-    cap_add:
-      - SYS_ADMIN
+    # S9B: no browser and no extra capability here; PDFs are rendered by the internal `renderer` service.
     env_file:
       - path: ${KFIT_ENV_FILE:-.env.prod}
         required: false
@@ -82,6 +73,7 @@ services:
       NODE_ENV: production
       KFIT_API_HOST: 0.0.0.0
       KFIT_API_PORT: "3000"
+      PDF_RENDERER_URL: http://renderer:3100
       PRIVATE_STORAGE_ROOT: /srv/kfit/private
       KFIT_PRIVACY_JOURNAL_DIR: /srv/kfit/privacy-journal
       CLAMAV_HOST: clamav
@@ -104,6 +96,8 @@ services:
         condition: service_healthy
       clamav:
         condition: service_healthy
+      renderer:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -116,7 +110,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 60s
-    # backend: PostgreSQL and ClamAV. edge: outbound SMTP.
+    # backend: PostgreSQL, ClamAV and the PDF renderer. edge: outbound SMTP.
     # S9A.3: host nginx reaches the API only through 127.0.0.1:13000; the hop arrives from the kfit_edge gateway,
     # which production Express trusts together with loopback (KFIT_TRUSTED_PROXY_IP above).
     networks:
@@ -124,6 +118,46 @@ services:
       - kfit_edge
     ports:
       - "127.0.0.1:13000:3000"
+
+  # S9B: internal HTML -> PDF renderer. The API sends finished print HTML to POST /render and gets PDF bytes back; the
+  # renderer has no database, SMTP, secret, private storage, privacy journal or backup access, and no host port.
+  # kfit_backend is internal, so the renderer cannot reach the Internet either.
+  renderer:
+    image: ${KFIT_RENDERER_IMAGE:-kfit-prod-renderer:local}
+    build:
+      context: .
+      dockerfile: packages/server/Dockerfile
+      target: renderer
+    restart: unless-stopped
+    # Reaps Chrome child processes spawned by Puppeteer.
+    init: true
+    # Chrome uses /dev/shm for rendering; Docker's 64 MB default is too small for multi-page PDFs.
+    shm_size: "256mb"
+    # Chromium keeps its own sandbox (no --no-sandbox, no privileged mode, default seccomp), which needs SYS_ADMIN in
+    # Docker. S9B moved this capability from the API (2026-11-23 temporary exception) to this isolated service only.
+    cap_add:
+      - SYS_ADMIN
+    # Explicit, non-secret values only: no env_file, so no production secret ever reaches this container.
+    environment:
+      NODE_ENV: production
+      KFIT_RENDERER_HOST: 0.0.0.0
+      KFIT_RENDERER_PORT: "3100"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3100/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - kfit_backend
+    expose:
+      - "3100"
 
   client:
     # S9A.2b: production deployment sets KFIT_CLIENT_IMAGE to an immutable GHCR digest ref.

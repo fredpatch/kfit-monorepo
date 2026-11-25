@@ -142,14 +142,28 @@ test(
         /may only contain/,
       );
       refused(
+        schedule([
+          `KFIT_OPS_IMAGE=${OPS_IMAGE}`,
+          `KFIT_WORKER_IMAGE=ghcr.io/fredpatch/kfit-monorepo/worker@sha256:${"d".repeat(64)}`,
+        ]),
+        /may only contain/,
+      );
+      refused(
+        schedule([`KFIT_OPS_IMAGE=${OPS_IMAGE}`, "$(touch /tmp/kfit-pwned)"]),
+        /may only contain/,
+      );
+      refused(
         schedule([`KFIT_OPS_IMAGE=${OPS_IMAGE}`], { FAKE_INSPECT: "1" }),
         /ops image not present locally/,
       );
 
+      // S9B: the release.env derived from a four-image manifest (api, client, ops, renderer) is accepted.
       const ok = schedule([
         "# release 0123abc",
         `KFIT_API_IMAGE=ghcr.io/fredpatch/kfit-monorepo/api@sha256:${"c".repeat(64)}`,
+        `KFIT_CLIENT_IMAGE=ghcr.io/fredpatch/kfit-monorepo/client@sha256:${"e".repeat(64)}`,
         `KFIT_OPS_IMAGE=${OPS_IMAGE}`,
+        `KFIT_RENDERER_IMAGE=ghcr.io/fredpatch/kfit-monorepo/renderer@sha256:${"f".repeat(64)}`,
       ]);
       assert.equal(ok.status, 0, ok.stderr);
       const [image, env, ...args] = readFileSync(log, "utf8")

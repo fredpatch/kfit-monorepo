@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import test from "node:test";
 import type { QuoteSnapshot } from "@kfit/shared";
-import { PuppeteerQuoteRenderer } from "../services/quote-pdf.renderer.js";
+import { QuotePdfRenderer } from "../services/quote-pdf.renderer.js";
+import { LocalChromiumHtmlPdfRenderer } from "../../../pdf/html-pdf-renderer.js";
 import { chromiumUnavailable } from "../../../testing/chromium.js";
 
 test(
@@ -26,7 +27,7 @@ test(
       terms: "Conditions commerciales synthétiques explicites.",
       templateVersion: "quote-v1",
     };
-    const renderer = new PuppeteerQuoteRenderer(),
+    const renderer = new QuotePdfRenderer(new LocalChromiumHtmlPdfRenderer()),
       first = await renderer.render(snapshot);
     await new Promise((resolve) => setTimeout(resolve, 1050));
     const second = await renderer.render(structuredClone(snapshot));

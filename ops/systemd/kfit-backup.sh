@@ -19,8 +19,9 @@ fail() {
 [ -f "$repo/docker-compose.prod.yml" ] || fail "docker-compose.prod.yml not found in $repo"
 
 # The release file holds image refs only (never a key): anything else is refused, and it is parsed, not sourced.
-if grep -Ev '^[[:space:]]*(#.*)?$|^KFIT_(API|CLIENT|OPS)_IMAGE=[^[:space:]]+$' "$release_env" >/dev/null; then
-  fail "release env file may only contain KFIT_API_IMAGE, KFIT_CLIENT_IMAGE and KFIT_OPS_IMAGE lines"
+# S9B: the release manifest's compose_env has four images; only the ops one is used here.
+if grep -Ev '^[[:space:]]*(#.*)?$|^KFIT_(API|CLIENT|OPS|RENDERER)_IMAGE=[^[:space:]]+$' "$release_env" >/dev/null; then
+  fail "release env file may only contain KFIT_API_IMAGE, KFIT_CLIENT_IMAGE, KFIT_OPS_IMAGE and KFIT_RENDERER_IMAGE lines"
 fi
 ops_image=$(sed -n 's/^KFIT_OPS_IMAGE=//p' "$release_env" | tail -n 1)
 echo "$ops_image" | grep -Eq '^ghcr\.io/fredpatch/kfit-monorepo/ops@sha256:[0-9a-f]{64}$' ||

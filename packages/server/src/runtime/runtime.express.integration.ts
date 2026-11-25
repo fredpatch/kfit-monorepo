@@ -25,6 +25,7 @@ import {
 import { assertLocalTestDatabase } from "../testing/integration-fixtures.js";
 import { createRuntime, type RuntimeMode } from "../runtime.js";
 import { TrustedProxyConfigError } from "./trusted-proxy.js";
+import { PdfRendererConfigError } from "../pdf/html-pdf-renderer.js";
 import { DevToolsController } from "../modules/dev-tools/controllers/dev-tools.controller.js";
 import { DrizzleTestDataRepository } from "../modules/dev-tools/repositories/test-data.repository.js";
 import { TestDataService } from "../modules/dev-tools/services/test-data.service.js";
@@ -40,6 +41,8 @@ const env: NodeJS.ProcessEnv = {
   AUTH_OTP_PEPPER: "synthetic-runtime-pepper-0123456789abcdef",
   AUTH_DEVICE_PEPPER: "synthetic-runtime-device-pepper-0123456789",
   KFIT_TRUSTED_PROXY_IP: "10.247.13.1",
+  // S9B: the production runtime refuses to build without its internal renderer (never called by these tests).
+  PDF_RENDERER_URL: "http://renderer:3100",
 };
 // SEC-02: these tests cover the session cookies, so the browser is a trusted device (without SMTP an unknown one gets 503).
 const deviceToken = generateDeviceToken();
@@ -163,6 +166,24 @@ test("S7.4 D4: an audited write with a non-UUID X-Request-Id succeeds and audits
       .where(eq(auditEvents.requestId, echoed));
     assert.equal(row?.requestId, echoed);
   });
+});
+
+test("S9B: production refuses to build without the internal PDF renderer and never falls back to local Chromium", () => {
+  for (const value of [
+    undefined,
+    "",
+    "file:///tmp",
+    "http://renderer:3100/render",
+  ])
+    assert.throws(
+      () =>
+        createRuntime({
+          mode: "production",
+          env: { ...env, PDF_RENDERER_URL: value },
+        }),
+      PdfRendererConfigError,
+      String(value),
+    );
 });
 
 test("S9A.3: production refuses to build without one valid kfit_edge gateway to trust", () => {

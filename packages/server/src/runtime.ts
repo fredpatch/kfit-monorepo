@@ -3,7 +3,7 @@ import { productionTrustProxy } from "./runtime/trusted-proxy.js";
 import { ReceiptsController } from "./modules/receipts/controllers/receipts.controller.js";
 import { ReceiptsService } from "./modules/receipts/services/receipts.service.js";
 import { DrizzleReceiptsRepository } from "./modules/receipts/repositories/receipts.repository.js";
-import { PuppeteerReceiptRenderer } from "./modules/receipts/services/receipt-pdf.renderer.js";
+import { ReceiptPdfRenderer } from "./modules/receipts/services/receipt-pdf.renderer.js";
 import { FinanceController } from "./modules/finance/controllers/finance.controller.js";
 import { PaymentProofsController } from "./modules/payment-proofs/controllers/payment-proofs.controller.js";
 import { PaymentProofsService } from "./modules/payment-proofs/services/payment-proofs.service.js";
@@ -11,7 +11,7 @@ import { DrizzlePaymentProofsRepository } from "./modules/payment-proofs/reposit
 import { QuotesController } from "./modules/quotes/controllers/quotes.controller.js";
 import { QuotesService } from "./modules/quotes/services/quotes.service.js";
 import { DrizzleQuotesRepository } from "./modules/quotes/repositories/quotes.repository.js";
-import { PuppeteerQuoteRenderer } from "./modules/quotes/services/quote-pdf.renderer.js";
+import { QuotePdfRenderer } from "./modules/quotes/services/quote-pdf.renderer.js";
 import { FinanceService } from "./modules/finance/services/finance.service.js";
 import { DrizzleFinanceRepository } from "./modules/finance/repositories/finance.repository.js";
 import { DashboardAnalyticsController } from "./modules/dashboard/controllers/analytics.controller.js";
@@ -23,7 +23,8 @@ import { DocumentsController } from "./modules/documents/controllers/documents.c
 import { DrizzleDocumentsRepository } from "./modules/documents/repositories/documents.repository.js";
 import { DocumentsService } from "./modules/documents/services/documents.service.js";
 import { PrivateDocumentStorage } from "./modules/documents/services/document-storage.service.js";
-import { PuppeteerProgressSummaryRenderer } from "./modules/documents/services/progress-summary.renderer.js";
+import { ProgressSummaryPdfRenderer } from "./modules/documents/services/progress-summary.renderer.js";
+import { pdfRendererFor } from "./pdf/html-pdf-renderer.js";
 import { ProgressController } from "./modules/progress/controllers/progress.controller.js";
 import { ProgressService } from "./modules/progress/services/progress.service.js";
 import { DrizzleProgressRepository } from "./modules/progress/repositories/progress.repository.js";
@@ -141,6 +142,9 @@ export function createRuntime({
 }: RuntimeOptions) {
   // SEC-01 D2: before anything else; refuses production below the runtime floor, warns once elsewhere.
   assertRuntimeSecurityFloor({ nodeEnv: env.NODE_ENV, log: logger });
+  // S9B: production converts HTML to PDF only through the internal renderer service (PDF_RENDERER_URL), never Chromium
+  // in this process; a missing or malformed URL refuses to build (PdfRendererConfigError).
+  const htmlPdf = pdfRendererFor(mode, env);
   const authConfig = loadAuthConfig(env);
   const audit = new AuditService(db, {
     auditHashPepper: authConfig.auditHashPepper,
@@ -471,13 +475,14 @@ export function createRuntime({
         verificationPepper: authConfig.otpPepper,
       }),
       new PrivateDocumentStorage(),
-      new PuppeteerProgressSummaryRenderer(),
+      new ProgressSummaryPdfRenderer(htmlPdf),
     ),
   );
 
   const proofStorage = new PrivateDocumentStorage();
   const receiptStorage = new PrivateDocumentStorage(),
-    receiptRenderer = new PuppeteerReceiptRenderer();
+    receiptRenderer = new ReceiptPdfRenderer(htmlPdf),
+    quoteRenderer = new QuotePdfRenderer(htmlPdf);
   const app = createServerApp({
     requestLogger: createHttpLogger(),
     recordSecurityEvent,
@@ -527,7 +532,7 @@ export function createRuntime({
             tokenPepper: authConfig.otpPepper,
           },
           {
-            render: (snapshot) => new PuppeteerQuoteRenderer().render(snapshot),
+            render: (snapshot) => quoteRenderer.render(snapshot),
             persist: (input) => new PrivateDocumentStorage().persist(input),
             read: (key) => new PrivateDocumentStorage().read(key),
             remove: (key) => new PrivateDocumentStorage().remove(key),

@@ -23,9 +23,10 @@ Ce guide suit ta journée dans K'FIT, dans l'ordre où tu travailles. Les mots e
 **Nouvel appareil.** Sur un ordinateur, un téléphone ou un navigateur que K'FIT ne connaît pas encore, ton mot de passe ne suffit pas. **Tu dois avoir accès à ta boîte mail sur tout nouvel appareil**, ou sur ton téléphone à côté.
 
 1. Après « Se connecter », l'écran « Nouvel appareil » s'ouvre : « Pour protéger ton compte, saisis le code à 6 chiffres envoyé à » ton e-mail, en partie masqué (par exemple f\*\*\*@domaine).
-2. Ouvre l'e-mail « K'FIT - Code de connexion » et saisis le code. Un code collé en entier est validé tout seul ; sinon, clique sur « Valider ». L'écran affiche « Code valable encore m:ss » (5 minutes).
+2. Ouvre l'e-mail « K'FIT - Code de connexion » et saisis ou colle le code. L'écran affiche « Code valable encore m:ss » (5 minutes).
 3. Sur un appareil personnel, coche « Faire confiance à cet appareil pendant 30 jours » : ce navigateur ne te redemandera pas de code pendant 30 jours. Ne coche pas sur un ordinateur partagé.
-4. « Retour » ramène à « Connexion » ; le code en cours n'est plus utilisable.
+4. Clique sur « Valider ». Le code n'est jamais envoyé avant ce clic, même collé en entier. Si la case est cochée, le message « Appareil enregistré : aucun code ne sera demandé ici pendant 30 jours. » confirme l'enregistrement.
+5. « Retour » ramène à « Connexion » ; le code en cours n'est plus utilisable.
 
 **Le code n'arrive pas.**
 

@@ -37,6 +37,8 @@ export const authMessages = {
   grantExpired:
     "Le délai pour choisir un nouveau mot de passe a expiré. Recommence la récupération.",
   resetDone: "Mot de passe modifié. Tu peux te connecter.",
+  deviceTrusted:
+    "Appareil enregistré : aucun code ne sera demandé ici pendant 30 jours.",
   bootstrapDone: "Compte initial créé. Tu peux te connecter.",
   otpDeliveryUnavailable:
     "Envoi du code indisponible. Contacte l'administrateur.",

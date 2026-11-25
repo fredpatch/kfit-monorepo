@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 import { loginOtpMaxResends } from "@kfit/shared";
 import { Button } from "../../components/ui/button.js";
 import { Field } from "../../components/ui/field.js";
 import {
   authFailureOf,
+  authMessages,
   loginOtpFailure,
   loginOtpMessages,
 } from "../api/auth-errors.js";
@@ -79,6 +81,7 @@ export function DeviceCodeStep({
         code: value,
         trustDevice,
       });
+      if (trustDevice) toast.success(authMessages.deviceTrusted);
     } catch (error) {
       const failure = loginOtpFailure(authFailureOf(error));
       if (failure.restart) return onRestart(failure.message);
@@ -151,12 +154,9 @@ export function DeviceCodeStep({
               autoFocus
               aria-invalid={message === loginOtpMessages.invalid || undefined}
               value={code}
-              onValueChange={(next) => {
-                setCode(next);
-                // A pasted (or autofilled) full code submits itself; typing the last digit still waits for « Valider ».
-                if (next.length === 6 && next.length - code.length > 1)
-                  void verify(next);
-              }}
+              // Only « Valider » submits: a pasted or autofilled code used to submit at once, before the trust choice
+              // below could be made, so the device was never remembered.
+              onValueChange={setCode}
             />
           )}
         </Field>

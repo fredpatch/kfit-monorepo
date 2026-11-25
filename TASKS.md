@@ -8,7 +8,7 @@
 ```text
 Branch            main
 Sprint            9A - Hostinger Beta Environment
-Active task       S9A.9 - Konny hosted beta acceptance
+Active task       S9B - PDF renderer isolation (engineering); S9A.9 acceptance continues in parallel
 Workflow state    S9A.1-S9A.3, S9A.5-S9A.8 VALIDATED by Fred; S9A.4 blocked pending Konny Gmail; S9A.9 active
 S9A.1             VPS baseline/hardening complete: SSH keys, root/password login disabled, UFW 22/80/443, UTC sync, 2 GiB swap, Docker/Compose, /srv/kfit layout
 S9A.2             production-like Docker packaging complete and pushed
@@ -24,7 +24,7 @@ PDF exception     API cap_add: SYS_ADMIN accepted only for controlled beta/synth
 Real-data gate    isolate PDF renderer and remove API SYS_ADMIN before any real customer data
 Beta policy       Konny + synthetic/demo customer data only
 Production gates  legal/privacy review + provider register + encrypted off-server backup/restore remain required
-Next action       S9A.9: execute Konny hosted beta acceptance on the deployed Hostinger environment
+Next action       S9B: implement isolated internal PDF renderer and remove SYS_ADMIN from the API; keep S9A.9 feedback checklist open
 ```
 
 ## S7.1 - closed 2026-10-23
@@ -354,3 +354,6 @@ S9A.6 validated 2026-11-25: 21/21 migrations applied, bootstrap closed and token
 S9A.7             validated 2026-11-25: encrypted primary + secondary backup, native PostgreSQL 16 ops path, isolated restore drill cleanup, systemd daily timer and rotation all green on Hostinger
 
 S9A.8             validated 2026-11-25: release 712bbbd deployed by immutable digest; startup guards, DB/ClamAV/Mailpit bridge, request IDs, nested SPA routes, scheduled jobs, dev-route absence and new-device OTP flow all green; no new P0/P1 blocker
+
+S9A.9             acceptance in progress: Konny login + desktop/mobile usability green so far; catalogue drafting started; feedback captured asynchronously
+S9B               engineering started 2026-11-25: isolate Chromium/Puppeteer into internal renderer, remove API SYS_ADMIN before any real customer data; implementation brief 8516f3d

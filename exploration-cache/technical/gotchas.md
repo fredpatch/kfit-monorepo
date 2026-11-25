@@ -103,3 +103,8 @@ Category: Security.
 - CVE-2026-111497 (published 2026-10-22): Node's Brotli decoder has an out-of-bounds write; patched in 22.23.4, 24.22.1, 26.12.1.
 - Express 5 / body-parser 2.x decode `Content-Encoding: br` (and gzip/deflate) request bodies by default; the API now answers 415 REQUEST_ENCODING_UNSUPPORTED to any request body encoding other than identity, before every parser.
 - The runtime floor is enforced by the security-floor registry (packages/server/src/security/security-floor.ts): startup refuses production below it, CI and `npm run security:check` fail below it. A new runtime advisory = one registry entry.
+
+## 2026-11-25 - S9A.5 production preflight and release-state gotchas
+
+- `packages/server/scripts/preflight/files.mjs` derives a repository-local temporary path from `process.cwd()` (`../../storage/private/preflight`). In the hardened production API image, `/app` is intentionally non-writable for the non-root user, so the script fails with `EACCES: mkdir '/app/storage'` even when the real production bind mount `/srv/kfit/private` is healthy. For hosted validation, run it from a temporary working directory under the production private bind mount; future tooling hardening should make the preflight honor `PRIVATE_STORAGE_ROOT` explicitly.
+- Running `docker compose up -d --force-recreate api` without exporting `KFIT_API_IMAGE` can silently fall back to the compose default `kfit-prod-api:local` and build on the VPS. Production operations must restore/export the immutable GHCR digest and use `--no-build`. Persist the selected release manifest under `/srv/kfit/releases` and harden the deploy helper/runbook so missing digest variables fail closed instead of rebuilding locally.

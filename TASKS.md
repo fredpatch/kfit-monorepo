@@ -8,8 +8,8 @@
 ```text
 Branch            main
 Sprint            9A - Hostinger Beta Environment
-Active task       S9A.5 - Persistent storage, ClamAV and PDFs
-Workflow state    S9A.1, S9A.2, S9A.2b and S9A.3 VALIDATED by Fred; S9A.4 blocked pending Konny Gmail; S9A.5 active
+Active task       S9A.6 - Database migration and bootstrap
+Workflow state    S9A.1-S9A.3 and S9A.5 VALIDATED by Fred; S9A.4 blocked pending Konny Gmail; S9A.6 active
 S9A.1             VPS baseline/hardening complete: SSH keys, root/password login disabled, UFW 22/80/443, UTC sync, 2 GiB swap, Docker/Compose, /srv/kfit layout
 S9A.2             production-like Docker packaging complete and pushed
 S9A.2b            GHCR publication validated 2026-11-24: GitHub run 45338259559 green; release commit bfa7dae; VPS digest pull/runtime/PDF/Compose checks green
@@ -24,7 +24,7 @@ PDF exception     API cap_add: SYS_ADMIN accepted only for controlled beta/synth
 Real-data gate    isolate PDF renderer and remove API SYS_ADMIN before any real customer data
 Beta policy       Konny + synthetic/demo customer data only
 Production gates  legal/privacy review + provider register + encrypted off-server backup/restore remain required
-Next action       S9A.5: validate persistent private storage, ClamAV upload scanning and PDF generation/restart persistence on the Hostinger VPS
+Next action       S9A.6: reconcile and validate database migration/bootstrap acceptance, including clean migration path, closed bootstrap state, Konny admin role and non-demo consent readiness
 ```
 
 ## S7.1 - closed 2026-10-23
@@ -346,3 +346,5 @@ Locked rules:
 32. Validation must cover dedupe/resolution/read semantics, SMTP failure/retry/exact-once behavior, scheduler locking, Africa/Libreville digest time, settings validation, recipient/privacy rules, no source mutation, stable error codes and Mailpit acceptance.
 
 Implementation is authorized for S7.2 only. S7.3 remains closed until Fred locally validates S7.2.
+
+S9A.5             validated 2026-11-25: production bind mounts writable/persistent across API recreation, ClamAV clean+EICAR preflight passed, PDF/Puppeteer preflight passed on immutable GHCR API digest

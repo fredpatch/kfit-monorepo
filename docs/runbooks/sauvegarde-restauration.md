@@ -233,21 +233,11 @@ sudo chmod 600 "$F"
 
 Le timer lit l'image `ops` dans `/srv/kfit/config/release.env`, un fichier **non secret** qui ne contient que les références d'images par digest (`KFIT_API_IMAGE`, `KFIT_CLIENT_IMAGE`, `KFIT_OPS_IMAGE` et, depuis S9B, `KFIT_RENDERER_IMAGE`). Le script n'utilise que l'image `ops` et refuse toute autre ligne (donc toute clé) et toute image `ops` qui n'est pas `ghcr.io/fredpatch/kfit-monorepo/ops@sha256:<64 hex>` déjà présente sur l'hôte. Il lance Compose avec `--pull never` : il ne peut ni tirer une autre image ni construire `kfit-prod-ops:local`.
 
-À chaque déploiement, depuis le manifeste de la version (`release-manifest-<commit>`, § Images publiées de [démarrage en production](demarrage-production.md)) :
-
-```bash
-C=<commit de 40 caractères>
-sudo cp release-manifest.json /srv/kfit/releases/$C.json
-python3 -c 'import json,sys;[print(f"{k}={v}") for k,v in json.load(open(sys.argv[1]))["compose_env"].items()]' \
-  /srv/kfit/releases/$C.json | sudo tee /srv/kfit/config/release.env >/dev/null
-sudo chmod 644 /srv/kfit/config/release.env
-set -a; . /srv/kfit/config/release.env; set +a
-docker compose -f docker-compose.prod.yml --profile ops pull ops
-```
+Depuis S9C, ce fichier est écrit uniquement par le script de déploiement `ops/deploy/kfit-release.sh` (§ Images publiées de [démarrage en production](demarrage-production.md)), après que les cinq services sont « healthy » : les quatre lignes du manifeste validé, mode `644`, remplacées d'un bloc. Il ne s'édite plus à la main. Le script a déjà tiré l'image `ops` de la version.
 
 ### 4.3 Sauvegarde et contrôle à la main
 
-Depuis le dépôt, avec `KFIT_ENV_FILE=/srv/kfit/config/.env.prod` et les images de `release.env` exportés :
+Depuis le dépôt, avec `KFIT_ENV_FILE=/srv/kfit/config/.env.prod` et les images de `release.env` exportés (`set -a; . /srv/kfit/config/release.env; set +a` : fichier écrit par le script de déploiement, quatre références d'images seulement) :
 
 ```bash
 docker compose -f docker-compose.prod.yml --profile ops run --rm --no-deps ops npm run ops:backup --workspace @kfit/server

@@ -139,23 +139,37 @@ GitHub ne se connecte jamais au VPS et ne déploie rien.
 
 Revue locale (poste de développement) : `docker compose -f docker-compose.prod.yml build api renderer client` ; sans variables, les images portent les noms locaux `kfit-prod-*:local`.
 
-Mise en production sur le VPS, à partir du manifeste de la version choisie :
+Mise en production sur le VPS (S9C) : une seule commande, à partir du manifeste de la version choisie.
 
 ```bash
-export KFIT_API_IMAGE=ghcr.io/fredpatch/kfit-monorepo/api@sha256:<digest>
-export KFIT_CLIENT_IMAGE=ghcr.io/fredpatch/kfit-monorepo/client@sha256:<digest>
-export KFIT_OPS_IMAGE=ghcr.io/fredpatch/kfit-monorepo/ops@sha256:<digest>
-export KFIT_RENDERER_IMAGE=ghcr.io/fredpatch/kfit-monorepo/renderer@sha256:<digest>
-docker compose -f docker-compose.prod.yml config --quiet
-docker compose -f docker-compose.prod.yml --profile ops pull api client ops renderer
-docker compose -f docker-compose.prod.yml up -d --no-build
+C=<commit de 40 caractères>
+sudo install -m 644 release-manifest.json /srv/kfit/releases/$C.json   # manifeste téléchargé depuis l'artefact GitHub
+cd /srv/kfit/app && git pull --ff-only                                  # outillage à jour et commit de la version présent
+sudo ops/deploy/kfit-release.sh /srv/kfit/releases/$C.json
 ```
 
-- `--no-build` est obligatoire : le compose garde ses sections `build:`, et une image absente serait sinon reconstruite sur le VPS.
+Le `git pull` met seulement à jour l'outillage de déploiement et rend le commit de la version disponible localement. Il ne garantit pas que le `docker-compose.prod.yml` de l'arbre de travail correspond au manifeste (par exemple lors d'un retour arrière) : le script ne l'utilise jamais pour la version.
+
+`ops/deploy/kfit-release.sh` (shell POSIX, Python 3, Git et Docker Compose ; ni Node ni npm sur l'hôte) :
+
+1. **valide le manifeste avant tout appel à Docker** : dépôt `fredpatch/kfit-monorepo`, commit de 40 caractères hexadécimaux minuscules, exactement `KFIT_API_IMAGE`, `KFIT_CLIENT_IMAGE`, `KFIT_OPS_IMAGE` et `KFIT_RENDERER_IMAGE`, chacune `ghcr.io/fredpatch/kfit-monorepo/<image>@sha256:<64 hex>` de la bonne image, bloc `images` cohérent avec `compose_env` et le commit. Refus : JSON invalide, clé dupliquée ou inconnue, étiquette, `latest`, image locale, espace ou retour à la ligne, manifeste antérieur à S9B (trois images). Le manifeste est lu par Python, jamais exécuté par le shell ;
+2. vérifie que le commit du manifeste existe dans `/srv/kfit/app` et en extrait `docker-compose.prod.yml` (`git show <commit>:docker-compose.prod.yml`) dans un fichier temporaire, sans toucher à l'arbre de travail. Toutes les commandes Compose de la version (`config`, `pull`, `up`, `ps`) utilisent ce fichier, avec `--project-directory /srv/kfit/app`. Commit absent (faire `git fetch`) ou fichier illisible : arrêt avant tout appel à Docker ;
+3. écrit ces quatre lignes dans un fichier temporaire et lance Compose avec `--env-file <temporaire>` et `KFIT_ENV_FILE=/srv/kfit/config/.env.prod`, après avoir effacé les variables `KFIT_*_IMAGE` et `COMPOSE_*` héritées (le shell l'emporte sinon sur `--env-file`) ;
+4. vérifie avec `docker compose config` que `api`, `client`, `ops` et `renderer` se résolvent exactement vers les références du manifeste et qu'aucun service construisible ne garde une image `kfit-prod-*:local` ou une étiquette ;
+5. tire les quatre images (`--profile ops pull api client ops renderer`) et vérifie que toutes les images sont présentes. Un échec arrête tout avant de toucher aux conteneurs ;
+6. déploie avec `docker compose up -d --no-build --pull never`, sans profil : `ops` et le pont Mailpit retiré ne sont jamais démarrés ;
+7. attend que `postgres`, `clamav`, `renderer`, `api` et `client` soient `healthy` (10 minutes au plus, `KFIT_DEPLOY_HEALTH_TIMEOUT` en secondes), puis vérifie que `api`, `client` et `renderer` tournent sur les images du manifeste ;
+8. **seulement alors**, archive le manifeste dans `/srv/kfit/releases/<commit>.json` s'il n'y est pas et remplace `/srv/kfit/config/release.env` par les quatre lignes (fichiers temporaires renommés dans le même dossier, mode `644`, propriétaire `root` par `sudo`). Un autre manifeste déjà archivé sous le même commit est refusé avant tout déploiement.
+
+En cas d'échec après le `up` (santé non atteinte, image inattendue), le script sort en erreur, laisse `release.env` sur la version précédente et affiche la commande de retour arrière avec le manifeste archivé correspondant. Il ne revient jamais en arrière tout seul.
+
+- Retour arrière : relancer le même script avec le manifeste précédent ; il déploie les quatre images **et** le `docker-compose.prod.yml` de cette version, par exemple `sudo ops/deploy/kfit-release.sh /srv/kfit/releases/<commit précédent>.json`. Un manifeste antérieur à S9B (trois images, Chrome dans l'API) est refusé : il ne respecte plus le niveau de sécurité actuel.
+- Chemins par défaut (disposition Hostinger), modifiables par variables passées à `sudo` : `KFIT_REPO=/srv/kfit/app`, `KFIT_ENV_FILE=/srv/kfit/config/.env.prod`, `KFIT_RELEASE_ENV=/srv/kfit/config/release.env`, `KFIT_RELEASES_DIR=/srv/kfit/releases`.
+- Un seul déploiement à la fois (verrou `/srv/kfit/releases/.kfit-release.lock`, retiré à la fin ; ne le supprimer à la main que si aucun déploiement ne tourne).
+- Les migrations restent une étape explicite séparée (S9A.6) : le script ne touche ni au schéma ni aux données.
+- Ne plus exporter les quatre variables `KFIT_*_IMAGE` à la main pour déployer : sans elles, Compose retombe sur `kfit-prod-*:local`, et une commande sans `--no-build` reconstruirait l'image sur le VPS.
 - Jamais de `latest` : seules les références par digest du manifeste sont déployées.
-- Conserver le manifeste de chaque version déployée sur le VPS (par exemple `/srv/kfit/releases/<commit>.json`) : l'artefact GitHub expire après 90 jours (maximum d'un dépôt public).
-- S9A.7 : copier ce manifeste dans `/srv/kfit/releases/<commit>.json` et en dériver `/srv/kfit/config/release.env` (quatre références d'images, aucun secret), que lit le timer de sauvegarde. Procédure : [sauvegarde et restauration](sauvegarde-restauration.md#42-version-déployée-releaseenv).
-- Retour arrière : reprendre les références du manifeste précédent (un manifeste antérieur à S9B n'a que trois images et une API avec Chrome), puis `pull` et `up -d --no-build`.
+- Conserver le manifeste de chaque version déployée dans `/srv/kfit/releases` : l'artefact GitHub expire après 90 jours (maximum d'un dépôt public). `release.env` sert au timer de sauvegarde ([sauvegarde et restauration](sauvegarde-restauration.md#42-version-déployée-releaseenv)).
 - Si les paquets GHCR sont privés : `docker login ghcr.io` sur le VPS avec un jeton en lecture seule (`read:packages`), jamais stocké dans le dépôt.
 
 Encore à venir dans Sprint 9A :

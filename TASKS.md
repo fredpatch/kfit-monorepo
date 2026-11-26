@@ -365,3 +365,5 @@ S9B VPS gate       2026-11-25: api 2c88cc0d + renderer d0681ad0 deployed healthy
 S9A.4 SMTP        2026-11-26: Gmail SMTP configured and validated for login OTP, password recovery OTP and sensitive-action OTP. Notification email path remains pending natural business activity; Mailpit bridge left in place until that path is observed.
 
 S9B backup gate    2026-11-26: systemd backup succeeded with 4-image release.env (bundle kfit-backup-20261126T061020Z, 59 tables/1026 rows); restore drill succeeded against latest bundle. Remaining: real receipt/quote/progress PDFs + ClamAV/private-storage regression.
+
+S9A.4 runtime      2026-11-26: temporary Mailpit bridge removed after Gmail SMTP validation; production auth mail now uses Gmail only. Notification-email path remains pending natural business activity.

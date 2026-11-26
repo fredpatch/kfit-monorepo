@@ -1035,12 +1035,17 @@ test(
         [t.marker, /token file not readable/],
         [t.releases, /must be a regular file/],
       ];
-      writeFileSync(path.join(t.dir, "two.token"), `${TOKEN}\n${TOKEN}\n`);
-      tokenCases.push([path.join(t.dir, "two.token"), /exactly one token/]);
-      writeFileSync(path.join(t.dir, "empty.token"), "\n");
-      tokenCases.push([path.join(t.dir, "empty.token"), /exactly one token/]);
-      writeFileSync(path.join(t.dir, "header.token"), `${TOKEN}\r\nX-Evil: 1`);
-      tokenCases.push([path.join(t.dir, "header.token"), /exactly one token/]);
+      // Content cases are 0600 so they pass the permission gate and reach the content check.
+      for (const [name, content] of [
+        ["two.token", `${TOKEN}\n${TOKEN}\n`],
+        ["empty.token", "\n"],
+        ["header.token", `${TOKEN}\r\nX-Evil: 1`],
+      ]) {
+        const file = path.join(t.dir, name);
+        writeFileSync(file, content);
+        if (process.platform !== "win32") chmodSync(file, 0o600);
+        tokenCases.push([file, /exactly one token/]);
+      }
       if (process.platform !== "win32") {
         writeFileSync(path.join(t.dir, "open.token"), `${TOKEN}\n`);
         chmodSync(path.join(t.dir, "open.token"), 0o644);

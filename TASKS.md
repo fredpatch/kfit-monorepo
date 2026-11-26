@@ -8,7 +8,7 @@
 ```text
 Branch            main
 Sprint            9A - Hostinger Beta Environment
-Active task       S9A.9 hosted beta acceptance continues asynchronously; next independent gate: true encrypted off-server backup
+Active task       S9D - true encrypted off-server backup; S9A.9 hosted beta acceptance continues asynchronously
 Workflow state    S9A.1-S9A.8 + S9B + S9C VALIDATED by Fred; S9A.4 Gmail SMTP infrastructure validated; S9A.9 active
 S9A.1             VPS baseline/hardening complete: SSH keys, root/password login disabled, UFW 22/80/443, UTC sync, 2 GiB swap, Docker/Compose, /srv/kfit layout
 S9A.2             production-like Docker packaging complete and pushed
@@ -24,7 +24,7 @@ PDF isolation     S9B deployed: API has no browser/SYS_ADMIN; internal renderer 
 Real-data gate    PDF renderer isolation complete; true encrypted off-server backup + legal/privacy/provider review remain before real customer data
 Beta policy       Konny + synthetic/demo customer data only
 Production gates  legal/privacy review + provider register + encrypted off-server backup/restore remain required
-Next action       Implement true encrypted off-server backup destination + restore drill; keep S9A.9/data-dependent checks open
+Next action       S9D: configure Cloudflare R2 transport, validate daily upload/read-back, then restore-drill from downloaded off-site bundle
 ```
 
 ## S7.1 - closed 2026-10-23

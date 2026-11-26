@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -176,6 +177,95 @@ test(
         args.slice(3).join(" "),
         "--profile ops run --rm --no-deps -T --pull never ops npm run ops:backup --workspace @kfit/server",
       );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+
+
+test("S9D: systemd chains verified off-site copy only after the encrypted backup succeeds", () => {
+  const service = repoFile("ops/systemd/kfit-backup.service");
+  assert.match(service, /^EnvironmentFile=\/srv\/kfit\/config\/offsite-backup\.env$/m);
+  assert.match(service, /^ExecStart=.*\/ops\/systemd\/kfit-backup\.sh$/m);
+  assert.match(service, /^ExecStartPost=.*\/ops\/systemd\/kfit-offsite-backup\.sh$/m);
+});
+
+test(
+  "S9D: off-site transport uploads only the latest complete bundle, append-only, then verifies by download",
+  { skip: !hasSh && "no POSIX sh" },
+  () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "kfit-offsite-backup-"));
+    try {
+      const bin = path.join(dir, "bin");
+      const backups = path.join(dir, "primary");
+      const log = path.join(dir, "rclone.log");
+      mkdirSync(bin);
+      mkdirSync(backups);
+
+      const fakeRclone = path.join(bin, "rclone");
+      writeFileSync(
+        fakeRclone,
+        `#!/bin/sh\nprintf '%s\\n' "$@" >> "$FAKE_RCLONE_LOG"\nprintf '%s\\n' -- >> "$FAKE_RCLONE_LOG"\nexit "${FAKE_RCLONE_STATUS:-0}"\n`,
+      );
+      chmodSync(fakeRclone, 0o755);
+
+      const config = path.join(dir, "rclone.conf");
+      writeFileSync(config, "[kfit-r2]\ntype = s3\n");
+      if (process.platform !== "win32") chmodSync(config, 0o600);
+
+      const makeBundle = (name) => {
+        const bundle = path.join(backups, name);
+        mkdirSync(bundle);
+        for (const file of [
+          "db.dump.enc",
+          "files.tar.enc",
+          "journal.jsonl.enc",
+          "manifest.json",
+        ]) {
+          writeFileSync(path.join(bundle, file), file);
+        }
+        return bundle;
+      };
+      makeBundle("kfit-backup-20261126T010000Z");
+      const latest = makeBundle("kfit-backup-20261126T020000Z");
+
+      const run = (extra = {}) =>
+        spawnSync("sh", [repoPath("ops/systemd/kfit-offsite-backup.sh")], {
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            PATH: `${bin}${path.delimiter}${process.env.PATH}`,
+            KFIT_BACKUP_PRIMARY_DIR: backups,
+            KFIT_RCLONE_CONFIG: config,
+            KFIT_OFFSITE_REMOTE: "kfit-r2:kfit-production-backups",
+            FAKE_RCLONE_LOG: log,
+            ...extra,
+          },
+        });
+
+      const ok = run();
+      assert.equal(ok.status, 0, ok.stderr);
+      assert.match(ok.stdout, /kfit-backup-20261126T020000Z uploaded and verified/);
+      const args = readFileSync(log, "utf8");
+      assert.match(args, new RegExp(`copy\\n${latest.replace(/[.*+?^$\\{\\}()|[\\]\\\\]/g, "\\\\$&")}\\n`));
+      assert.match(args, /kfit-r2:kfit-production-backups\/kfit-backup-20261126T020000Z/);
+      assert.match(args, /--immutable/);
+      assert.match(args, /check/);
+      assert.match(args, /--one-way/);
+      assert.match(args, /--download/);
+      assert.doesNotMatch(args, /sync|delete|purge/);
+
+      rmSync(log, { force: true });
+      const missingRemote = run({ KFIT_OFFSITE_REMOTE: "" });
+      assert.equal(missingRemote.status, 1);
+      assert.match(missingRemote.stderr, /KFIT_OFFSITE_REMOTE is required/);
+      assert.throws(() => readFileSync(log), "rclone never ran");
+
+      writeFileSync(path.join(latest, "unexpected.txt"), "no");
+      const malformed = run();
+      assert.equal(malformed.status, 1);
+      assert.match(malformed.stderr, /unexpected entries/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

@@ -1,4 +1,4 @@
-# S9A.7: K'FIT encrypted production backup (oneshot). Installed from the repository with the deploy account and
+# S9A.7: K'FIT encrypted production backup + verified off-site copy (oneshot). Installed from the repository with the deploy account and
 # checkout path substituted (docs/runbooks/sauvegarde-restauration.md section 4); no secret lives in this unit.
 [Unit]
 Description=K'FIT encrypted backup
@@ -9,5 +9,7 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 User=@KFIT_USER@
+EnvironmentFile=/srv/kfit/config/offsite-backup.env
 ExecStart=@KFIT_REPO@/ops/systemd/kfit-backup.sh
+ExecStartPost=@KFIT_REPO@/ops/systemd/kfit-offsite-backup.sh
 TimeoutStartSec=2h

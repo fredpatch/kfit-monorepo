@@ -248,9 +248,7 @@ Résultats attendus : ceux des § 3 et § 5. Le contrôle restaure dans une base
 
 ### 4.4 Timer systemd
 
-Fichiers versionnés : `ops/systemd/kfit-backup.sh` (création locale, échoue fermé), `ops/systemd/kfit-offsite-backup.sh` (S9D : transport hors VPS), `ops/systemd/kfit-backup.service` (oneshot) et `ops/systemd/kfit-backup.timer` (tous les jours à 02:00, heure de Libreville). Le service exécute d'abord la sauvegarde chiffrée locale, puis `ExecStartPost` envoie le dernier bundle complet vers l'off-site et le relit intégralement. L'unité n'est en succès que si les deux étapes réussissent.
-
-L'installation S9D se fait seulement après configuration de l'off-site (§ 4.5), avec le compte qui lance `docker compose` (membre du groupe `docker`, lecteur de `.env.prod`) :
+Fichiers versionnés : `ops/systemd/kfit-backup.sh` (lanceur, échoue fermé), `ops/systemd/kfit-backup.service` (oneshot, aucun secret) et `ops/systemd/kfit-backup.timer` (tous les jours à 02:00, heure de Libreville). Installation depuis la racine du dépôt, avec le compte qui lance `docker compose` (membre du groupe `docker`, lecteur de `.env.prod`) :
 
 ```bash
 sed -e "s|@KFIT_USER@|$(id -un)|" -e "s|@KFIT_REPO@|$(pwd)|" ops/systemd/kfit-backup.service |
@@ -265,80 +263,7 @@ journalctl -u kfit-backup.service --no-pager | tail -20
 
 Le service utilise le `docker-compose.prod.yml` de ce dépôt : après un `git pull`, la nouvelle version s'applique au prochain lancement. Le contrôle de restauration reste lancé à la main (§ 5), au moins une fois par semaine.
 
-### 4.5 Copie réellement hors VPS (S9D, Cloudflare R2)
-
-La copie secondaire locale de S9A.7 reste utile contre une erreur de chemin, mais elle ne protège pas contre la perte du VPS. S9D ajoute un transport séparé vers un bucket R2 privé. Les fichiers envoyés sont **déjà chiffrés** par `ops:backup`; le transport off-site n'a jamais accès à `BACKUP_ENCRYPTION_KEY`.
-
-Prérequis hôte :
-
-```bash
-sudo apt-get update
-sudo apt-get install -y rclone
-rclone version
-```
-
-Dans Cloudflare R2 :
-
-1. créer un bucket privé dédié, par exemple `kfit-production-backups`;
-2. créer un token S3 **Object Read & Write** limité uniquement à ce bucket;
-3. activer une règle **Bucket Lock** de 90 jours sur tout le bucket; le VPS n'a ainsi pas le pouvoir effectif d'écraser ou supprimer une sauvegarde protégée pendant cette période;
-4. optionnellement ajouter une lifecycle de suppression après une durée supérieure au lock (par exemple 120 jours) pour borner la croissance.
-
-Créer le fichier de configuration rclone avec le compte système qui exécute `kfit-backup.service`. Ne jamais copier ces identifiants dans `.env.prod`, Git ou un ticket :
-
-```ini
-[kfit-r2]
-type = s3
-provider = Cloudflare
-access_key_id = <ACCESS_KEY_ID>
-secret_access_key = <SECRET_ACCESS_KEY>
-region = auto
-endpoint = https://<ACCOUNT_ID>.r2.cloudflarestorage.com
-acl = private
-no_check_bucket = true
-```
-
-Installer en `/srv/kfit/config/rclone-offsite.conf`, propriétaire = utilisateur du service, mode `600`. Puis créer `/srv/kfit/config/offsite-backup.env` (pas de secret) :
-
-```dotenv
-KFIT_OFFSITE_REMOTE=kfit-r2:kfit-production-backups
-KFIT_RCLONE_CONFIG=/srv/kfit/config/rclone-offsite.conf
-KFIT_BACKUP_PRIMARY_DIR=/srv/kfit/backups/primary
-```
-
-Le script S9D choisit le dernier dossier `kfit-backup-<UTC>` complet, refuse tout bundle contenant autre chose que les quatre fichiers attendus, exécute `rclone copy --immutable` (aucun `sync`, `delete` ou `purge`), puis `rclone check --one-way --download`. Une divergence ou une panne réseau fait échouer l'unité systemd.
-
-Après configuration, réinstaller l'unité versionnée puis tester une exécution immédiate :
-
-```bash
-cd /srv/kfit/app
-sed -e "s|@KFIT_USER@|$(id -un)|" -e "s|@KFIT_REPO@|$(pwd)|" ops/systemd/kfit-backup.service |
-  sudo tee /etc/systemd/system/kfit-backup.service >/dev/null
-sudo systemctl daemon-reload
-sudo systemctl start kfit-backup.service
-systemctl status kfit-backup.service --no-pager
-journalctl -u kfit-backup.service --no-pager -l | tail -50
-```
-
-Attendu : `ops.backup status=succeeded`, puis `kfit-offsite-backup: <bundle> uploaded and verified`, unité en `status=0/SUCCESS`.
-
-**Gate restore depuis l'off-site.** Télécharger explicitement un bundle depuis R2 dans le répertoire de drill monté par `ops`, puis utiliser le contrôle de restauration existant :
-
-```bash
-mkdir -p /srv/kfit/backups/offsite-drill
-rclone --config /srv/kfit/config/rclone-offsite.conf copy \
-  kfit-r2:kfit-production-backups/<bundle> \
-  /srv/kfit/backups/offsite-drill/<bundle>
-
-# Charger les quatre références d'images de release.env avant la commande ops documentée en § 4.3.
-docker compose -f docker-compose.prod.yml --profile ops run --rm --no-deps ops \
-  npm run ops:restore-drill --workspace @kfit/server -- \
-  --bundle /srv/kfit/backups/offsite-drill/<bundle>
-```
-
-Le gate S9D n'est validé qu'après `status=succeeded` sur ce bundle réellement téléchargé. Supprimer ensuite uniquement la copie de drill locale; ne pas supprimer le bundle R2 depuis le VPS.
-
-### 4.6 Développement local
+### 4.5 Développement local
 
 Hors du VPS, `npm run ops:backup` se lance depuis la racine du dépôt (compilation automatique, `.env` local) ; un timer ou une tâche cron locale peut appeler la même commande.
 

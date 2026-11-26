@@ -1,6 +1,6 @@
 # Sprint 9A - Hostinger Beta Environment
 
-Status: IN PROGRESS. S9A.1-S9A.8, S9B and S9C are validated by Fred; S9A.9 remains active asynchronously. S9D off-server encrypted backup is the current independent production-readiness gate.
+Status: IN PROGRESS. S9A.1, S9A.2, S9A.2b, S9A.3 and S9A.5-S9A.8 validated by Fred; S9A.4 is blocked pending Konny Gmail credentials; S9A.9 is active.
 
 ## Execution status
 

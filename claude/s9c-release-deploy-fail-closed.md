@@ -232,6 +232,15 @@ The runbook should stop teaching manual export of four image variables as the pr
 - legal/privacy review;
 - S9A.9 acceptance.
 
+## Extension: commit mode (implemented after 79ab1c0)
+
+`sudo ops/deploy/kfit-release.sh <40-hex commit>` next to the manifest-path form (exactly 40 lowercase hex = commit, anything else = path).
+
+- Archived `/srv/kfit/releases/<commit>.json` is used first, with no GitHub access (rollback works offline).
+- Otherwise: local commit check, then the GitHub REST API (`curl`, no `gh`): `publish-images.yml` runs filtered by `head_sha`, repository, branch `main`; refuse pending, failed-only or several distinct successful runs (a rerun keeps its id, its latest attempt counts); exactly one unexpired `release-manifest-<commit>` artifact of that run and commit; ZIP read with Python `zipfile` (one regular `release-manifest.json`, 64 KiB); strict S9C validation plus `manifest.commit == requested commit`.
+- Token: fine-grained, repository `fredpatch/kfit-monorepo`, `Actions: Read` only, in `/srv/kfit/config/github-actions-read.token` (root, `0600`, override `KFIT_GITHUB_TOKEN_FILE`). Read by Python into a `0600` curl header file in the temporary directory; never printed, never on a command line, never in `release.env` or a manifest. Plain `--location` (never `--location-trusted`), so curl drops it on the cross-host artifact redirect.
+- Semantics: archived manifests are validated release inputs and may exist without being current; `release.env` alone names the current release. A downloaded candidate stays temporary until the existing health-gated commit point.
+
 ## Validation state
 
 Implementation/CI is not VPS validation.
@@ -239,7 +248,7 @@ Implementation/CI is not VPS validation.
 After implementation Fred will validate on Hostinger with a current release manifest:
 
 1. dry/static manifest rejection cases if provided safely;
-2. deploy current release through helper;
+2. deploy current release through helper (commit mode, with the read-only token, e.g. `a00ab0f7447f7095ed486fd54f74fc9a4eb319a8`, run 45814766545);
 3. all five healthchecks healthy;
 4. public /health 200;
 5. release.env exactly matches deployed four refs;

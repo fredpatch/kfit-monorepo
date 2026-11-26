@@ -139,32 +139,62 @@ GitHub ne se connecte jamais au VPS et ne déploie rien.
 
 Revue locale (poste de développement) : `docker compose -f docker-compose.prod.yml build api renderer client` ; sans variables, les images portent les noms locaux `kfit-prod-*:local`.
 
-Mise en production sur le VPS (S9C) : une seule commande, à partir du manifeste de la version choisie.
+Mise en production sur le VPS (S9C) : une seule commande, à partir du commit de la version choisie.
 
 ```bash
-C=<commit de 40 caractères>
-sudo install -m 644 release-manifest.json /srv/kfit/releases/$C.json   # manifeste téléchargé depuis l'artefact GitHub
-cd /srv/kfit/app && git pull --ff-only                                  # outillage à jour et commit de la version présent
-sudo ops/deploy/kfit-release.sh /srv/kfit/releases/$C.json
+cd /srv/kfit/app
+git pull --ff-only
+sudo ops/deploy/kfit-release.sh "$(git rev-parse HEAD)"
 ```
+
+Avec un commit (exactement 40 caractères hexadécimaux minuscules), le script prend `/srv/kfit/releases/<commit>.json` s'il existe, **sans contacter GitHub**. Sinon, il télécharge l'artefact `release-manifest-<commit>` de GitHub Actions (voir « Récupération du manifeste » ci-dessous). Tout autre argument est un chemin de manifeste, comme avant : `sudo ops/deploy/kfit-release.sh /chemin/release-manifest.json`.
 
 Le `git pull` met seulement à jour l'outillage de déploiement et rend le commit de la version disponible localement. Il ne garantit pas que le `docker-compose.prod.yml` de l'arbre de travail correspond au manifeste (par exemple lors d'un retour arrière) : le script ne l'utilise jamais pour la version.
 
 `ops/deploy/kfit-release.sh` (shell POSIX, Python 3, Git et Docker Compose ; ni Node ni npm sur l'hôte) :
 
-1. **valide le manifeste avant tout appel à Docker** : dépôt `fredpatch/kfit-monorepo`, commit de 40 caractères hexadécimaux minuscules, exactement `KFIT_API_IMAGE`, `KFIT_CLIENT_IMAGE`, `KFIT_OPS_IMAGE` et `KFIT_RENDERER_IMAGE`, chacune `ghcr.io/fredpatch/kfit-monorepo/<image>@sha256:<64 hex>` de la bonne image, bloc `images` cohérent avec `compose_env` et le commit. Refus : JSON invalide, clé dupliquée ou inconnue, étiquette, `latest`, image locale, espace ou retour à la ligne, manifeste antérieur à S9B (trois images). Le manifeste est lu par Python, jamais exécuté par le shell ;
+1. **valide le manifeste avant tout appel à Docker** (en mode commit, son `commit` doit être celui demandé) : dépôt `fredpatch/kfit-monorepo`, commit de 40 caractères hexadécimaux minuscules, exactement `KFIT_API_IMAGE`, `KFIT_CLIENT_IMAGE`, `KFIT_OPS_IMAGE` et `KFIT_RENDERER_IMAGE`, chacune `ghcr.io/fredpatch/kfit-monorepo/<image>@sha256:<64 hex>` de la bonne image, bloc `images` cohérent avec `compose_env` et le commit. Refus : JSON invalide, clé dupliquée ou inconnue, étiquette, `latest`, image locale, espace ou retour à la ligne, manifeste antérieur à S9B (trois images). Le manifeste est lu par Python, jamais exécuté par le shell ;
 2. vérifie que le commit du manifeste existe dans `/srv/kfit/app` et en extrait `docker-compose.prod.yml` (`git show <commit>:docker-compose.prod.yml`) dans un fichier temporaire, sans toucher à l'arbre de travail. Toutes les commandes Compose de la version (`config`, `pull`, `up`, `ps`) utilisent ce fichier, avec `--project-directory /srv/kfit/app`. Commit absent (faire `git fetch`) ou fichier illisible : arrêt avant tout appel à Docker ;
 3. écrit ces quatre lignes dans un fichier temporaire et lance Compose avec `--env-file <temporaire>` et `KFIT_ENV_FILE=/srv/kfit/config/.env.prod`, après avoir effacé les variables `KFIT_*_IMAGE` et `COMPOSE_*` héritées (le shell l'emporte sinon sur `--env-file`) ;
 4. vérifie avec `docker compose config` que `api`, `client`, `ops` et `renderer` se résolvent exactement vers les références du manifeste et qu'aucun service construisible ne garde une image `kfit-prod-*:local` ou une étiquette ;
 5. tire les quatre images (`--profile ops pull api client ops renderer`) et vérifie que toutes les images sont présentes. Un échec arrête tout avant de toucher aux conteneurs ;
 6. déploie avec `docker compose up -d --no-build --pull never`, sans profil : `ops` et le pont Mailpit retiré ne sont jamais démarrés ;
 7. attend que `postgres`, `clamav`, `renderer`, `api` et `client` soient `healthy` (10 minutes au plus, `KFIT_DEPLOY_HEALTH_TIMEOUT` en secondes), puis vérifie que `api`, `client` et `renderer` tournent sur les images du manifeste ;
-8. **seulement alors**, archive le manifeste dans `/srv/kfit/releases/<commit>.json` s'il n'y est pas et remplace `/srv/kfit/config/release.env` par les quatre lignes (fichiers temporaires renommés dans le même dossier, mode `644`, propriétaire `root` par `sudo`). Un autre manifeste déjà archivé sous le même commit est refusé avant tout déploiement.
+8. **seulement alors**, archive le manifeste (y compris celui téléchargé, resté jusque-là dans le dossier temporaire) dans `/srv/kfit/releases/<commit>.json` s'il n'y est pas et remplace `/srv/kfit/config/release.env` par les quatre lignes (fichiers temporaires renommés dans le même dossier, mode `644`, propriétaire `root` par `sudo`). Un autre manifeste déjà archivé sous le même commit est refusé avant tout déploiement.
 
-En cas d'échec après le `up` (santé non atteinte, image inattendue), le script sort en erreur, laisse `release.env` sur la version précédente et affiche la commande de retour arrière avec le manifeste archivé correspondant. Il ne revient jamais en arrière tout seul.
+En cas d'échec après le `up` (santé non atteinte, image inattendue), le script sort en erreur, laisse `release.env` sur la version précédente et affiche la commande de retour arrière avec le commit de la version en place. Il ne revient jamais en arrière tout seul. Un manifeste téléchargé n'est pas archivé dans ce cas.
 
-- Retour arrière : relancer le même script avec le manifeste précédent ; il déploie les quatre images **et** le `docker-compose.prod.yml` de cette version, par exemple `sudo ops/deploy/kfit-release.sh /srv/kfit/releases/<commit précédent>.json`. Un manifeste antérieur à S9B (trois images, Chrome dans l'API) est refusé : il ne respecte plus le niveau de sécurité actuel.
-- Chemins par défaut (disposition Hostinger), modifiables par variables passées à `sudo` : `KFIT_REPO=/srv/kfit/app`, `KFIT_ENV_FILE=/srv/kfit/config/.env.prod`, `KFIT_RELEASE_ENV=/srv/kfit/config/release.env`, `KFIT_RELEASES_DIR=/srv/kfit/releases`.
+Sens des fichiers : un manifeste de `/srv/kfit/releases` est une entrée de version **validée**, qui peut exister sans être en place (version précédente, ou manifeste copié à la main avant un déploiement). Seul `/srv/kfit/config/release.env` désigne la version en place.
+
+#### Récupération du manifeste depuis GitHub Actions
+
+Sans manifeste archivé, le script, avant tout appel à Docker :
+
+1. vérifie que le commit existe dans `/srv/kfit/app` (sinon `git fetch`) ;
+2. liste les exécutions du workflow `.github/workflows/publish-images.yml` pour ce commit (`/repos/fredpatch/kfit-monorepo/actions/workflows/publish-images.yml/runs?head_sha=<commit>`) et garde celles du dépôt `fredpatch/kfit-monorepo`, branche `main`, même commit. Refus si l'une est encore en cours, si aucune n'a réussi, ou si plusieurs exécutions **distinctes** ont réussi. Une exécution relancée garde son identifiant et GitHub donne l'état de sa dernière tentative : c'est cette tentative qui compte ;
+3. exige un seul artefact `release-manifest-<commit>` non expiré, rattaché à cette exécution et à ce commit ;
+4. télécharge le ZIP avec `curl` (HTTPS seulement, redirections suivies sans renvoyer le jeton vers un autre hôte, délais bornés, deux nouvelles tentatives sur erreur passagère, 1 Mio au plus) ;
+5. l'ouvre avec le module `zipfile` de Python (pas d'`unzip`) : un seul fichier ordinaire `release-manifest.json`, 64 Kio au plus, aucun autre chemin ;
+6. le valide comme tout manifeste, puis continue le déploiement normal.
+
+L'artefact expire après 90 jours : passé ce délai, seul le manifeste archivé permet de redéployer ou de revenir à cette version.
+
+#### Jeton GitHub (une fois)
+
+Jeton « fine-grained » en **lecture seule**, limité au dépôt `fredpatch/kfit-monorepo`, avec la seule permission **Actions: Read** (aucune écriture). Le créer dans GitHub (Settings, Developer settings, Fine-grained tokens), puis sur le VPS :
+
+```bash
+sudo install -o root -g root -m 600 /dev/null /srv/kfit/config/github-actions-read.token
+sudoedit /srv/kfit/config/github-actions-read.token
+```
+
+- Le fichier contient le jeton seul, sur une ligne. Le script refuse un fichier absent, qui n'est pas un fichier ordinaire, lisible par le groupe ou les autres, ou qui contient autre chose qu'un jeton.
+- Le jeton n'est jamais affiché, jamais passé en argument de commande (il va dans un fichier d'en-tête `0600` du dossier temporaire, lu par `curl`) et jamais écrit dans `release.env`, un manifeste ou `.env.prod`. Ne jamais le coller dans un journal, une conversation ou Git.
+- Autre emplacement : `KFIT_GITHUB_TOKEN_FILE` passé à `sudo`.
+- Un retour arrière vers une version archivée n'a besoin ni du jeton ni de GitHub.
+
+- Retour arrière : relancer le même script avec la version précédente ; il déploie les quatre images **et** le `docker-compose.prod.yml` de cette version, par exemple `sudo ops/deploy/kfit-release.sh <commit précédent>` (manifeste archivé, sans GitHub). Un manifeste antérieur à S9B (trois images, Chrome dans l'API) est refusé : il ne respecte plus le niveau de sécurité actuel.
+- Chemins par défaut (disposition Hostinger), modifiables par variables passées à `sudo` : `KFIT_REPO=/srv/kfit/app`, `KFIT_ENV_FILE=/srv/kfit/config/.env.prod`, `KFIT_RELEASE_ENV=/srv/kfit/config/release.env`, `KFIT_RELEASES_DIR=/srv/kfit/releases`, `KFIT_GITHUB_TOKEN_FILE=/srv/kfit/config/github-actions-read.token`.
 - Un seul déploiement à la fois (verrou `/srv/kfit/releases/.kfit-release.lock`, retiré à la fin ; ne le supprimer à la main que si aucun déploiement ne tourne).
 - Les migrations restent une étape explicite séparée (S9A.6) : le script ne touche ni au schéma ni aux données.
 - Ne plus exporter les quatre variables `KFIT_*_IMAGE` à la main pour déployer : sans elles, Compose retombe sur `kfit-prod-*:local`, et une commande sans `--no-build` reconstruirait l'image sur le VPS.

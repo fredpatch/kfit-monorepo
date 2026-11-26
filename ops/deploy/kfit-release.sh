@@ -1,8 +1,14 @@
 #!/bin/sh
 # S9C: the production deployment path. Deploys exactly the four GHCR digest refs of one release manifest
 # (api, client, ops, renderer) and never builds an application image on the VPS:
-#   sudo ops/deploy/kfit-release.sh /srv/kfit/releases/<commit>.json
-# Rollback is the same command with an older (S9B or later) manifest.
+#   sudo ops/deploy/kfit-release.sh <40-hex release commit>
+#   sudo ops/deploy/kfit-release.sh /path/to/release-manifest.json
+# Rollback is the same command with an older (S9B or later) release.
+#
+# Commit mode uses /srv/kfit/releases/<commit>.json when it exists (no network). Otherwise it downloads the
+# release-manifest-<commit> artifact of the one successful publish-images.yml run on main for that commit, with a
+# read-only token (Actions: Read) from /srv/kfit/config/github-actions-read.token passed to curl in a header file.
+# Archived manifests are validated release inputs; release.env alone names the current release.
 #
 # Compose runs the docker-compose.prod.yml of manifest.commit (git show into a temporary file), never the working
 # tree's: a checkout newer than the release cannot change its topology. This script itself is the newest tooling.
@@ -18,8 +24,15 @@ fail() {
   exit 1
 }
 
-[ $# -eq 1 ] || fail "usage: kfit-release.sh <release-manifest.json>"
+[ $# -eq 1 ] || fail "usage: kfit-release.sh <40-hex release commit> | <release-manifest.json>"
+# Exactly 40 lowercase hex characters is a commit; anything else is a manifest path.
+requested=
 manifest=$1
+case "$1" in
+  *[!0-9a-f]*) ;;
+  *) if [ ${#1} -eq 40 ]; then requested=$1; fi ;;
+esac
+token_file=${KFIT_GITHUB_TOKEN_FILE:-/srv/kfit/config/github-actions-read.token}
 repo=${KFIT_REPO:-/srv/kfit/app}
 env_file=${KFIT_ENV_FILE:-/srv/kfit/config/.env.prod}
 release_env=${KFIT_RELEASE_ENV:-/srv/kfit/config/release.env}
@@ -46,9 +59,12 @@ repo_git rev-parse --git-dir >/dev/null 2>&1 || fail "not a git repository: $rep
 # Strict manifest and Compose checks. Same contract as ops/ci/release-manifest.mjs.
 py() {
   python3 -I - "$@" <<'PY'
-import json, os, re, sys
+import json, os, re, stat, sys
 
 REPO = "fredpatch/kfit-monorepo"
+WORKFLOW = ".github/workflows/publish-images.yml"
+MAX_MANIFEST = 65536
+MAX_ARTIFACT = 1048576
 KEYS = {"KFIT_API_IMAGE": "api", "KFIT_CLIENT_IMAGE": "client", "KFIT_OPS_IMAGE": "ops", "KFIT_RENDERER_IMAGE": "renderer"}
 SERVICES = {kind: key for key, kind in KEYS.items()}
 TOP_LEVEL = {"repository", "commit", "workflow_run", "created", "images", "compose_env"}
@@ -82,10 +98,10 @@ def digest_ref(kind, value, label):
 def manifest(path, out):
     try:
         with open(path, "rb") as handle:
-            raw = handle.read(65537)
+            raw = handle.read(MAX_MANIFEST + 1)
     except OSError:
         die("manifest not readable: " + path)
-    if len(raw) > 65536:
+    if len(raw) > MAX_MANIFEST:
         die("manifest is larger than 64 KiB")
     try:
         data = json.loads(raw.decode("utf-8"), object_pairs_hook=unique_pairs, parse_constant=no_constant)
@@ -163,14 +179,117 @@ def current(release_path, releases):
             with open(os.path.join(releases, name), encoding="utf-8") as handle:
                 env = json.load(handle)["compose_env"]
             if sorted(f"{key}={value}" for key, value in env.items()) == lines:
-                print(os.path.join(releases, name))
+                print(name[:-5])
                 return
         except (OSError, ValueError, KeyError, TypeError, AttributeError):
             continue
 
 
+def token(path, header):
+    try:
+        info = os.lstat(path)
+    except OSError:
+        die("GitHub token file not readable: " + path)
+    if not stat.S_ISREG(info.st_mode):
+        die("GitHub token file must be a regular file: " + path)
+    if os.name == "posix" and info.st_mode & 0o077:
+        die("GitHub token file must not be readable by group or others (chmod 600): " + path)
+    try:
+        with open(path, "rb") as handle:
+            raw = handle.read(4097)
+    except OSError:
+        die("GitHub token file not readable: " + path)
+    values = [line.strip() for line in raw.decode("ascii", "replace").splitlines() if line.strip()]
+    if len(raw) > 4096 or len(values) != 1 or not re.fullmatch(r"[A-Za-z0-9_]{20,255}", values[0]):
+        die("GitHub token file must hold exactly one token (letters, digits and underscores): " + path)
+    descriptor = os.open(header, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "w", encoding="ascii", newline="\n") as handle:
+        handle.write("Authorization: Bearer " + values[0] + "\n")
+
+
+def api_list(path, key, what):
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        die(f"GitHub returned an unreadable {what} response")
+    items = data.get(key) if isinstance(data, dict) else None
+    if not isinstance(items, list) or data.get("total_count") != len(items):
+        die(f"GitHub {what} response is incomplete or paginated: refusing to guess")
+    return [item for item in items if isinstance(item, dict)]
+
+
+def positive_id(value, what):
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        die(f"GitHub returned an invalid {what} id")
+    return value
+
+
+def run(sha, path):
+    runs = [r for r in api_list(path, "workflow_runs", "workflow runs")
+            if r.get("head_sha") == sha and r.get("head_branch") == "main" and r.get("path") == WORKFLOW
+            and isinstance(r.get("repository"), dict) and r["repository"].get("full_name") == REPO]
+    if not runs:
+        die(f"no {WORKFLOW} run on main for commit {sha}")
+    pending = [r for r in runs if r.get("status") != "completed"]
+    if pending:
+        die(f"publish-images run {pending[0].get('id')} for {sha} is {pending[0].get('status')!r}, not completed:"
+            " wait for it to finish")
+    succeeded = [r for r in runs if r.get("conclusion") == "success"]
+    if not succeeded:
+        conclusions = ", ".join(sorted({repr(r.get("conclusion")) for r in runs}))
+        die(f"no successful publish-images run for {sha} (conclusion: {conclusions})")
+    ids = {r.get("id") for r in succeeded}
+    if len(ids) != 1:
+        die(f"several successful publish-images runs for {sha}: refusing to choose between them")
+    print(positive_id(succeeded[0].get("id"), "workflow run"))
+
+
+def artifact(sha, run_id, path):
+    name = "release-manifest-" + sha
+    found = [a for a in api_list(path, "artifacts", "artifacts") if a.get("name") == name]
+    if not found:
+        die(f"run {run_id} has no artifact {name}")
+    if len(found) > 1:
+        die(f"run {run_id} has several artifacts named {name}: refusing to choose")
+    item = found[0]
+    if item.get("expired") is not False:
+        die(f"artifact {name} has expired (GitHub keeps it 90 days): deploy from an archived manifest")
+    origin = item.get("workflow_run")
+    if (not isinstance(origin, dict) or str(origin.get("id")) != run_id or origin.get("head_sha") != sha
+            or origin.get("head_branch") != "main"):
+        die(f"artifact {name} does not belong to run {run_id} of commit {sha} on main")
+    size = item.get("size_in_bytes")
+    if isinstance(size, bool) or not isinstance(size, int) or not 0 < size <= MAX_ARTIFACT:
+        die(f"artifact {name} has an unexpected size")
+    print(positive_id(item.get("id"), "artifact"))
+
+
+def unzip(path, out):
+    import zipfile, zlib
+    try:
+        with zipfile.ZipFile(path) as archive:
+            entries = archive.infolist()
+            if len(entries) != 1 or entries[0].filename != "release-manifest.json":
+                die("artifact must contain exactly one file, release-manifest.json")
+            entry = entries[0]
+            if entry.is_dir() or (entry.external_attr >> 16) & 0o170000 not in (0, stat.S_IFREG):
+                die("release-manifest.json in the artifact is not a regular file")
+            if entry.file_size > MAX_MANIFEST or entry.compress_size > MAX_ARTIFACT:
+                die("release-manifest.json in the artifact is larger than 64 KiB")
+            with archive.open(entry) as source:
+                data = source.read(MAX_MANIFEST + 1)
+    except (OSError, EOFError, RuntimeError, NotImplementedError, ValueError, zipfile.BadZipFile, zlib.error):
+        die("artifact is not a valid ZIP archive")
+    if len(data) > MAX_MANIFEST:
+        die("release-manifest.json in the artifact is larger than 64 KiB")
+    with open(out, "wb") as handle:
+        handle.write(data)
+
+
 mode, *args = sys.argv[1:]
-{"manifest": manifest, "resolved": resolved, "current": current}[mode](*args)
+{"manifest": manifest, "resolved": resolved, "current": current, "token": token, "run": run, "artifact": artifact,
+ "unzip": unzip}[mode](*args)
 PY
 }
 
@@ -186,7 +305,40 @@ trap 'exit 1' HUP INT TERM
 mkdir "$lock" 2>/dev/null || fail "another deployment holds $lock (remove it only if no deployment is running)"
 locked=1
 
+# Commit mode: the archived manifest, or the GitHub artifact as a temporary candidate. It is archived only at the
+# commit point below, like any other manifest.
+if [ -n "$requested" ]; then
+  repo_git cat-file -e "$requested^{commit}" 2>/dev/null ||
+    fail "release commit $requested is not in $repo (git fetch first): nothing was changed"
+  manifest=$releases/$requested.json
+  if [ ! -e "$manifest" ]; then
+    command -v curl >/dev/null || fail "curl is required to download the release manifest"
+    manifest=$tmp/release-manifest.json
+    api=https://api.github.com/repos/fredpatch/kfit-monorepo/actions
+    # The token stays in a 0600 header file: never on a command line, in the output or in a written release file.
+    # Plain --location: curl drops the Authorization header when GitHub redirects the download to another host.
+    py token "$token_file" "$tmp/github.header"
+    github() {
+      curl --silent --show-error --fail --proto =https --proto-redir =https --location --max-redirs 5 \
+        --connect-timeout 10 --max-time 120 --retry 2 --retry-delay 3 --max-filesize 1048576 \
+        -H @"$tmp/github.header" -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
+        -o "$2" "$1" || fail "GitHub request failed ($3): nothing was changed"
+    }
+    echo "kfit-release: fetching the release manifest of $requested from GitHub Actions"
+    github "$api/workflows/publish-images.yml/runs?head_sha=$requested&per_page=100" "$tmp/runs.json" "workflow runs"
+    run_id=$(py run "$requested" "$tmp/runs.json")
+    github "$api/runs/$run_id/artifacts?name=release-manifest-$requested&per_page=100" "$tmp/artifacts.json" "artifacts"
+    artifact_id=$(py artifact "$requested" "$run_id" "$tmp/artifacts.json")
+    github "$api/artifacts/$artifact_id/zip" "$tmp/artifact.zip" "artifact download"
+    rm -f "$tmp/github.header"
+    py unzip "$tmp/artifact.zip" "$manifest"
+  fi
+fi
+
 commit=$(py manifest "$manifest" "$tmp/release.env")
+if [ -n "$requested" ] && [ "$commit" != "$requested" ]; then
+  fail "manifest commit $commit is not the requested commit $requested: nothing was changed"
+fi
 archive=$releases/$commit.json
 if [ -e "$archive" ] && ! cmp -s -- "$manifest" "$archive"; then
   fail "$archive already exists with different content: refusing an ambiguous release"
@@ -202,8 +354,8 @@ repo_git show "$commit:docker-compose.prod.yml" >"$compose_file" 2>/dev/null && 
 deploy_failed() {
   echo "kfit-release: $1" >&2
   echo "kfit-release: $release_env was not changed: release $commit is not recorded as current." >&2
-  echo "kfit-release: to roll back, rerun this helper with the previous manifest:" >&2
-  echo "kfit-release:   sudo $0 ${previous:-$releases/<previous commit>.json}" >&2
+  echo "kfit-release: to roll back, rerun this helper with the previous release:" >&2
+  echo "kfit-release:   sudo $0 ${previous:-<previous commit>}" >&2
   exit 1
 }
 

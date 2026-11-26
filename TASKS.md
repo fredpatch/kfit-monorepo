@@ -8,23 +8,23 @@
 ```text
 Branch            main
 Sprint            9A - Hostinger Beta Environment
-Active task       S9C - fail-closed immutable release deployment; S9A.9 acceptance continues asynchronously
-Workflow state    S9A.1-S9A.3, S9A.5-S9A.8 VALIDATED by Fred; S9A.4 blocked pending Konny Gmail; S9A.9 active
+Active task       S9A.9 hosted beta acceptance continues asynchronously; next independent gate: true encrypted off-server backup
+Workflow state    S9A.1-S9A.8 + S9B + S9C VALIDATED by Fred; S9A.4 Gmail SMTP infrastructure validated; S9A.9 active
 S9A.1             VPS baseline/hardening complete: SSH keys, root/password login disabled, UFW 22/80/443, UTC sync, 2 GiB swap, Docker/Compose, /srv/kfit layout
 S9A.2             production-like Docker packaging complete and pushed
 S9A.2b            GHCR publication validated 2026-11-24: GitHub run 45338259559 green; release commit bfa7dae; VPS digest pull/runtime/PDF/Compose checks green
 S9A.3             reverse proxy/TLS validated 2026-11-25: public HTTPS/redirects, nested SPA routes, secure cookie contract, CSRF, exact trusted client IP attribution and exposure checks green
-S9A.4             Gmail SMTP active; login/recovery/sensitive-action OTP validated; Mailpit removed; notification email pending natural business activity
+S9A.4             Gmail SMTP active; login/recovery/sensitive-action OTP validated; Mailpit removed; regular notification observation deferred to natural business activity
 Implementation    12ffc21 (S9A.2); bfa7dae release validated for S9A.2b
 Runtime floor     Node 22 >= 22.23.5; Node 24 >= 24.22.3; Node 26 >= 26.13.1
 Prod API runtime  Node 22.23.5, non-root
 Compose topology  client + API + PostgreSQL internal + ClamAV internal/egress + ops profile; no DB/ClamAV host ports
 PDF validation    Published API digest passed Puppeteer preflight on VPS: valid 119483-byte PDF, 4 pages
 PDF isolation     S9B deployed: API has no browser/SYS_ADMIN; internal renderer alone owns Chromium + CAP_SYS_ADMIN
-Real-data gate    isolate PDF renderer and remove API SYS_ADMIN before any real customer data
+Real-data gate    PDF renderer isolation complete; true encrypted off-server backup + legal/privacy/provider review remain before real customer data
 Beta policy       Konny + synthetic/demo customer data only
 Production gates  legal/privacy review + provider register + encrypted off-server backup/restore remain required
-Next action       S9C: implement manifest-driven fail-closed deploy helper; keep S9A.9/data-dependent checks open
+Next action       Implement true encrypted off-server backup destination + restore drill; keep S9A.9/data-dependent checks open
 ```
 
 ## S7.1 - closed 2026-10-23
@@ -368,4 +368,4 @@ S9B backup gate 2026-11-26: systemd backup succeeded with 4-image release.env (b
 
 S9A.4 runtime 2026-11-26: temporary Mailpit bridge removed after Gmail SMTP validation; production auth mail now uses Gmail only. Notification-email path remains pending natural business activity.
 
-S9C brief claude/s9c-release-deploy-fail-closed.md @ 752df97; Notion task 4240cc37-f8be-81fe-9e22-ffe1f9fb5824; implementation not started/validated yet.
+S9C validated 2026-11-26 on Hostinger: commit-mode GitHub artifact retrieval, strict 4-image digest deployment, no-build path, 5-service health gate, public HTTP/2 200, atomic release.env + archived manifest, backup compatibility, and archived same-release rollback/no-op drill all green. Release 40dec6e8713db5273cbf8bf3745e4cfc54bde8a5 is current.

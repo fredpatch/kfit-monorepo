@@ -1,3 +1,13 @@
+## 2026-11-26 - Sprint 9 S9C fail-closed immutable release deployment
+
+- Fred validated the S9C production deployment path end-to-end on the Hostinger VPS using release `40dec6e8713db5273cbf8bf3745e4cfc54bde8a5`.
+- The helper accepted the commit SHA, retrieved the exact successful GitHub Actions release-manifest artifact automatically through the read-only Actions credential, validated it strictly, and deployed the four application images only by immutable GHCR digest.
+- The deployment completed through the no-build path; PostgreSQL, ClamAV, renderer, API and client all reached healthy state, and public `https://kfitpulse.io/health` returned HTTP/2 200.
+- `/srv/kfit/config/release.env` was updated only after the health/runtime gate and contains exactly the api/client/ops/renderer digest refs; the validated manifest was archived under `/srv/kfit/releases/<commit>.json`.
+- The production backup service remained compatible with the S9C-managed release marker: bundle `kfit-backup-20261126T135449Z` succeeded with 59 tables and 1151 rows using native PostgreSQL 16 tooling.
+- With no older compatible archived four-image manifest available, Fred validated the documented same-release rollback/no-op path from the local archive; it required no GitHub manifest fetch, kept all five services healthy, and public health remained HTTP/2 200.
+- S9C is validated and closed. S9A.9 hosted acceptance continues asynchronously; true encrypted off-server backup and legal/privacy/provider review remain production gates before real customer data.
+
 ## 2026-11-25 - Sprint 9A S9A.3 reverse proxy and HTTPS/TLS
 
 - Fred validated the Hostinger reverse-proxy/TLS path end-to-end on `kfitpulse.io`.
